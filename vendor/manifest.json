@@ -32,8 +32,8 @@
       "localPath": "vendor/hyperswitch",
       "checkoutMode": "sparse-snapshot",
       "notes": [
-        "Copied from a sparse checkout to avoid Windows path-length failures in deep Postman fixtures",
-        "Includes source, config, migrations, scripts, and core docs needed for WTA integration planning"
+        "Copied as a trimmed sparse snapshot to avoid Windows path-length failures from large nonessential fixture and migration trees",
+        "Includes source, config, Docker, scripts, and core docs needed for WTA integration planning"
       ]
     }
   ]

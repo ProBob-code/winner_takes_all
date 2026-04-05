@@ -61,7 +61,7 @@ Recommended WTA integration:
 ## Notes About Checkout
 
 - `8Ball-Pool-HTML5` and `bracket` were copied from successful temp clones.
-- `hyperswitch` had Windows path-length failures in a deep Postman fixture tree, so it was imported from a sparse checkout containing the integration-relevant source and config.
+- `hyperswitch` was intentionally trimmed to the integration-relevant source, config, Docker, scripts, and core docs so the repo avoids Windows path-length failures from large fixture and migration trees that WTA does not need locally.
 - The working copies under `vendor/` are source snapshots, not nested git repositories.
 
 ## Suggested Next Implementation Order

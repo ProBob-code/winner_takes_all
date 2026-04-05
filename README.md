@@ -1,81 +1,101 @@
 # Winner Takes All (WTA)
 
-Winner Takes All is a multiplayer tournament platform for paid and free 8-ball competitions.  
-The long-term goal is a full production system where players can sign in, join tournaments, pay entry fees, get matched automatically, play 8-ball in real time, and progress through a live bracket until a winner is paid out.
+[![Status](https://img.shields.io/badge/status-production_core_layer-0a7ea4)](https://github.com/ProBob-code/winner_takes_all)
+[![Backend](https://img.shields.io/badge/backend-FastAPI-059669)](https://fastapi.tiangolo.com/)
+[![Frontend](https://img.shields.io/badge/frontend-Next.js-111827)](https://nextjs.org/)
+[![Database](https://img.shields.io/badge/database-SQLAlchemy%20%2B%20Alembic-7c3aed)](https://www.sqlalchemy.org/)
 
-This repository already includes the product foundation, the active FastAPI backend, the Next.js frontend, the database-backed core service layer, imported vendor references for the game/payment/bracket stack, and an executable local test path.
+Winner Takes All is a multiplayer tournament platform for paid and free 8-ball competitions. The long-term goal is a production-ready system where players can sign in, join tournaments, pay entry fees, get matched automatically, play live games, and move through a bracket until prizes are settled safely.
 
-## What The Project Does
+This repo already contains the product foundation, a working FastAPI backend, a connected Next.js frontend, a real repository layer with migrations, and pinned vendor snapshots for the game, bracket, and payment stack.
 
-WTA is designed to support this end-to-end user journey:
+## Quick View
+
+- Repo: [github.com/ProBob-code/winner_takes_all](https://github.com/ProBob-code/winner_takes_all)
+- Architecture notes: `docs/architecture.md`
+- Vendor integration notes: `docs/external-integrations.md`
+- Next execution plan: `docs/phase-2-checklist.md`
+- Pinned vendor commits: `vendor/manifest.json`
+
+## What It Does
+
+WTA is built around this player flow:
 
 1. A player signs up or logs in.
-2. The player gets an authenticated session through secure cookies.
-3. The player browses available tournaments.
-4. The player joins a tournament using wallet balance.
-5. The backend records tournament participation and wallet ledger changes.
-6. The platform eventually generates brackets, creates matches, runs gameplay, and pays out winners.
+2. The backend creates secure cookie-based sessions.
+3. The player browses tournaments and wallet state.
+4. The player joins a free or paid tournament.
+5. The backend records the join and wallet ledger updates.
+6. The next layers add payments, brackets, live matches, and payouts.
 
-Right now, the project is at the "production core layer" stage:
+The project is currently at the production core layer:
 
-- Working auth and session cookies
+- Working auth and refresh cookies
 - Working wallet ledger and balance deduction
-- Working tournament listing and join flow
+- Working tournament list and join flow
 - Working frontend-to-backend bridge
-- SQLAlchemy repository layer and Alembic migrations
-- Automated backend tests
+- SQLAlchemy repository layer with Alembic migrations
+- Automated backend tests and live HTTP smoke coverage
 
-Still planned:
+Still ahead:
 
-- Real payment orchestration with Hyperswitch
+- Hyperswitch payment orchestration
 - Real PostgreSQL runtime verification in this environment
-- Bracket engine integration
-- 8-ball game embedding
-- WebSocket multiplayer and live tournament progression
+- Bracket generation and tournament progression
+- 8-ball match embedding
+- WebSockets, Redis, and live state sync
 
-## Tech Stack
+## Core Languages
 
-### Active Stack
+- Backend: Python with FastAPI
+- Frontend: TypeScript with Next.js and React
+- Shared browser/server contracts: TypeScript
+- Vendor payment engine: Rust in the imported Hyperswitch snapshot
 
-- Frontend: Next.js App Router with React and TypeScript
-- Backend: FastAPI with Python
-- Data access: SQLAlchemy
-- Migrations: Alembic
-- Current local test database path: SQLite
-- Intended production database: PostgreSQL
-- Intended realtime/cache layer: Redis
-
-### Imported Vendor Repositories
-
-These source snapshots are already included under `vendor/`:
-
-- `vendor/8Ball-Pool-HTML5`
-  Purpose: browser game engine candidate for the match page
-- `vendor/bracket`
-  Purpose: tournament bracket engine and reference implementation
-- `vendor/hyperswitch`
-  Purpose: payment orchestration sidecar/service
-
-Pinned sources are documented in `vendor/manifest.json`, and integration notes live in `docs/external-integrations.md`.
+The active backend is Python-first. Older Node scaffold output is not part of the active runtime path anymore.
 
 ## Repository Structure
 
 ```text
 apps/
-  api/                 FastAPI backend, tests, migrations, DB layer
+  api/                 FastAPI backend, DB layer, tests, migrations
   web/                 Next.js frontend
 packages/
   contracts/           Shared TypeScript contracts
 infra/
-  docker/              Local infra compose file for postgres + redis
+  docker/              Local compose setup for future postgres + redis runs
 docs/
   architecture.md
   external-integrations.md
+  phase-2-checklist.md
 vendor/
-  8Ball-Pool-HTML5/
-  bracket/
-  hyperswitch/
+  8Ball-Pool-HTML5/    Game engine snapshot
+  bracket/             Bracket engine snapshot
+  hyperswitch/         Slimmed payment sidecar snapshot
 ```
+
+## Current Stack
+
+- Frontend: Next.js App Router with React and TypeScript
+- Backend: FastAPI with Python
+- Data access: SQLAlchemy
+- Migrations: Alembic
+- Local fallback DB for tests and bootstrap: SQLite
+- Intended production DB: PostgreSQL
+- Intended realtime/cache layer: Redis
+
+## Imported Vendor Repositories
+
+The repo includes pinned source snapshots under `vendor/`:
+
+- `vendor/8Ball-Pool-HTML5`
+  Purpose: browser game engine candidate for `/match/[id]`
+- `vendor/bracket`
+  Purpose: tournament bracket reference and engine source
+- `vendor/hyperswitch`
+  Purpose: payment orchestration sidecar
+
+The Hyperswitch snapshot has been trimmed to the integration-relevant source, config, Docker, and scripts so the repo avoids Windows path-length problems from unrelated fixtures and migration archives.
 
 ## Current Features
 
@@ -83,7 +103,7 @@ vendor/
 
 The active backend lives in `apps/api/app/`.
 
-Implemented:
+Implemented endpoints:
 
 - `POST /auth/signup`
 - `POST /auth/login`
@@ -101,7 +121,7 @@ Scaffolded but not implemented yet:
 
 - payments
 - live matches
-- admin dashboard logic
+- admin operations
 
 ### Frontend
 
@@ -119,29 +139,28 @@ Implemented pages:
 - `/match/[id]`
 - `/admin`
 
-The frontend already calls the FastAPI backend through a same-origin proxy/helper layer and renders real backend data for the working flows.
+The frontend already reads real backend data through a same-origin proxy/helper layer.
 
 ## How The Current App Works
 
 ### Auth Flow
 
-1. A user signs up or logs in from the Next.js frontend.
+1. A user signs up or logs in from the frontend.
 2. FastAPI creates access and refresh sessions.
 3. The backend sets HTTP-only cookies.
-4. Protected routes such as `/user/profile` and `/wallet` read those cookies.
+4. Protected routes like `/user/profile` and `/wallet` validate those cookies.
 
-### Wallet + Tournament Flow
+### Wallet And Tournament Flow
 
-1. The backend seeds a signup bonus wallet balance for new users.
+1. New users receive a seeded wallet balance.
 2. Tournaments can be free or paid.
-3. When a user joins a paid tournament, the backend deducts the entry fee.
-4. The wallet transaction is recorded in the ledger.
-5. The tournament participant list is updated.
+3. Joining a paid tournament deducts the entry fee from the wallet.
+4. The wallet transaction is stored in the ledger.
+5. The participant record is added to the tournament.
 
-### Current "Play" Loop
+### Current Playable Loop
 
-Today’s playable loop is not the final 8-ball experience yet.  
-What you can already do is:
+Today's playable loop is a product-flow demo rather than the final real-time pool experience:
 
 1. Sign up
 2. Log in
@@ -152,21 +171,21 @@ What you can already do is:
 
 ## Prerequisites
 
-### Required
+Required:
 
 - Python 3.12+
 - Node.js 20+
 - npm
 
-### For Future Production-Like Runs
+Useful for production-like local runs:
 
 - PostgreSQL 16+
 - Redis 7+
-- Docker Desktop if you want to use the compose file in `infra/docker/docker-compose.yml`
+- Docker Desktop for `infra/docker/docker-compose.yml`
 
 ## Environment Variables
 
-Copy `.env.example` to `.env.local` or export the variables in your shell as needed.
+Copy `.env.example` to `.env.local` or export what you need in your shell.
 
 Key values:
 
@@ -177,11 +196,11 @@ Key values:
 - `JWT_ACCESS_SECRET`
 - `JWT_REFRESH_SECRET`
 
-For a simple local run, the backend can still bootstrap itself using SQLite if PostgreSQL is not available yet.
+If PostgreSQL is not available yet, the backend can still bootstrap locally through the SQLite fallback path.
 
-## How To Run
+## Run It
 
-### 1. Create and activate the Python environment
+### 1. Create the Python virtual environment
 
 From the repository root:
 
@@ -198,9 +217,7 @@ python -m venv .venv
 
 ### 3. Run backend migrations
 
-If you have PostgreSQL available, point `DATABASE_URL` to it first.
-
-Example:
+If you have PostgreSQL available, point `DATABASE_URL` to it first:
 
 ```powershell
 $env:DATABASE_URL="postgresql+psycopg://postgres:postgres@localhost:5432/wta"
@@ -208,7 +225,7 @@ cd apps/api
 ..\..\.venv\Scripts\python.exe -m alembic upgrade head
 ```
 
-If PostgreSQL is not available yet, the backend can still run locally with SQLite fallback.
+If PostgreSQL is not available, the backend can still start with SQLite fallback for local work.
 
 ### 4. Start the FastAPI backend
 
@@ -227,28 +244,9 @@ npm install
 npm run dev:web
 ```
 
-The frontend will start on the default Next.js development port and call the API at `http://127.0.0.1:4000` unless overridden.
+The frontend will call the API at `http://127.0.0.1:4000` unless you override `WTA_API_URL`.
 
-## How To Play The Current Build
-
-Once both services are running:
-
-1. Open the frontend in your browser.
-2. Go to `/signup`.
-3. Create a new account.
-4. Open `/dashboard` to confirm you are signed in.
-5. Open `/wallet` to see your current balance.
-6. Open `/tournaments`.
-7. Join a free or paid tournament.
-8. Return to `/wallet` and `/tournaments/[id]` to verify the updated wallet and participant state.
-9. Open `/leaderboard` to inspect current leaderboard output.
-
-What "play" means today:
-
-- It is a product-flow demo of auth, wallet, and tournament progression.
-- The actual 8-ball gameplay screen is still a placeholder route until the game engine is wired in.
-
-## How To Test
+## Test It
 
 ### Backend tests
 
@@ -259,10 +257,10 @@ $env:PYTHONPATH="$PWD\\apps\\api"
 .\.venv\Scripts\python.exe -m pytest apps/api/tests/test_api.py -q
 ```
 
-Current verified coverage:
+Verified coverage today:
 
 - health endpoint
-- signup and cookie session creation
+- signup and session cookie creation
 - protected profile access
 - tournament join and wallet deduction
 - refresh flow
@@ -275,39 +273,58 @@ Current verified coverage:
 npm run typecheck
 ```
 
-## What Is Ready vs Not Ready
+## How To Play The Current Build
 
-### Ready
+Once both services are running:
 
-- Repo structure
-- Frontend shell
+1. Open the frontend in your browser.
+2. Visit `/signup`.
+3. Create a new account.
+4. Open `/dashboard` to confirm the session.
+5. Open `/wallet` to inspect the balance.
+6. Open `/tournaments`.
+7. Join a free or paid tournament.
+8. Return to `/wallet` and `/tournaments/[id]` to confirm the updated state.
+9. Open `/leaderboard` to inspect the current leaderboard output.
+
+What "play" means today:
+
+- It is a working auth, wallet, and tournament-flow demo.
+- The actual pool match screen is still waiting for the 8-ball engine integration.
+
+## Ready Vs Not Ready
+
+Ready now:
+
+- Monorepo structure
+- Connected frontend shell
 - FastAPI backend
 - DB-backed repository layer
 - Alembic initial schema
 - Local backend tests
-- Imported external vendor references
+- Imported vendor references
 
-### Not Ready Yet
+Not ready yet:
 
 - Real Hyperswitch payment flow
-- Real bracket generation in WTA
+- Real bracket generation inside WTA
 - Embedded 8-ball gameplay
 - WebSocket multiplayer
 - Redis-backed realtime updates
-- Admin operations
-- Real tournament completion and payouts
+- Admin controls
+- Tournament completion and payouts
 
 ## Recommended Next Steps
 
-1. Run the backend against a real PostgreSQL instance and repeat the full smoke test.
+1. Run the backend against a real PostgreSQL instance and repeat the smoke test.
 2. Build the `payments/` module around Hyperswitch.
-3. Add wallet top-up and payment webhook verification.
+3. Add wallet top-up and verified payment webhooks.
 4. Integrate bracket generation into the tournament engine.
 5. Embed the 8-ball game into the match page.
-6. Add Redis + WebSocket realtime infrastructure.
+6. Add Redis and WebSocket realtime infrastructure.
 
 ## Notes
 
-- This repo was prepared as a local Git-ready project and includes vendor source snapshots rather than nested Git submodules.
-- Some Windows/OneDrive filesystem restrictions affected earlier local SQLite and temp-directory behavior, so the local test path was adjusted to use safer temp locations where needed.
-- The current implementation is best understood as a strong product foundation plus a verified backend core, not the finished multiplayer tournament platform yet.
+- The vendor trees are source snapshots, not nested Git repos or submodules.
+- Some Windows and OneDrive filesystem behavior required safer local fallback paths and a slimmer Hyperswitch snapshot.
+- The current build is a strong product foundation with a verified backend core, not the finished multiplayer tournament platform yet.

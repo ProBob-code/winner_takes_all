@@ -18,3 +18,4 @@ __pycache__
 .pytest-tmp
 pytest-cache-files-*
 apps/api/data/
+*.tsbuildinfo
