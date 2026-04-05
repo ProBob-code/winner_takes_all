@@ -1,0 +1,18 @@
+{
+  "name": "@wta/contracts",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./auth": "./src/auth.ts",
+    "./common": "./src/common.ts",
+    "./leaderboard": "./src/leaderboard.ts",
+    "./matches": "./src/matches.ts",
+    "./payments": "./src/payments.ts",
+    "./tournaments": "./src/tournaments.ts",
+    "./wallet": "./src/wallet.ts"
+  },
+  "main": "src/index.ts",
+  "types": "src/index.ts"
+}

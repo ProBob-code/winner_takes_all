@@ -1,0 +1,102 @@
+#!/usr/bin/env python3
+import asyncio
+import functools
+import json
+from pathlib import Path
+from typing import Any
+
+import click
+from heliclockter import datetime_utc
+
+from bracket.app import app
+from bracket.config import config
+from bracket.database import database
+from bracket.logger import get_logger
+from bracket.models.db.account import UserAccountType
+from bracket.models.db.user import UserInsertable
+from bracket.sql.users import (
+    check_whether_email_is_in_use,
+    create_user,
+)
+from bracket.utils.db_init import sql_create_dev_db
+from bracket.utils.security import hash_password
+from openapi import openapi  # noqa: F401
+
+OPENAPI_JSON_PATH = "openapi/openapi.json"
+
+logger = get_logger("cli")
+
+
+def run_async(f: Any) -> Any:
+    @functools.wraps(f)
+    def wrapper(*args: Any, **kwargs: Any) -> Any:
+        loop = asyncio.new_event_loop()
+
+        async def inner() -> None:
+            try:
+                await database.connect()
+                await f(*args, **kwargs)
+
+            except KeyboardInterrupt:
+                logger.debug("Closing the process.")
+            except Exception as e:
+                logger.error(e, exc_info=True)
+                raise e
+            finally:
+                await database.disconnect()
+
+        return loop.run_until_complete(inner())
+
+    return wrapper
+
+
+@click.group()
+def cli() -> None:
+    pass
+
+
+@cli.command()
+def generate_openapi() -> None:
+    schema = app.openapi()
+    Path("openapi/openapi.json").write_text(json.dumps(schema, indent=2, sort_keys=True))
+    logger.info(f"OpenAPI schema saved to {OPENAPI_JSON_PATH}")
+
+
+@cli.command()
+def hash_password_cmd() -> None:
+    if config.admin_password is None:
+        logger.error("No admin password is given")
+    else:
+        hashed_pwd = hash_password(config.admin_password)
+        logger.info("Hashed password:")
+        logger.info(hashed_pwd)
+
+
+@cli.command()
+@run_async
+async def create_dev_db() -> None:
+    await sql_create_dev_db()
+
+
+@cli.command()
+@click.option("--email", prompt="Email", help="The email used to log into the account.")
+@click.option("--password", prompt="Password", help="The password used to log into the account.")
+@click.option("--name", prompt="Name", help="The name associated with the account.")
+@run_async
+async def register_user(email: str, password: str, name: str) -> None:
+    user = UserInsertable(
+        email=email,
+        password_hash=hash_password(password),
+        name=name,
+        created=datetime_utc.now(),
+        account_type=UserAccountType.REGULAR,
+    )
+    if await check_whether_email_is_in_use(email):
+        logger.error("Email address already in use")
+        raise SystemExit(1)
+    user_created = await create_user(user)
+    logger.info(f"Created user with id: {user_created.id}")
+
+
+if __name__ == "__main__":
+    cli()

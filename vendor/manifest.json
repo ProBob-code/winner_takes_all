@@ -1,0 +1,40 @@
+{
+  "vendors": [
+    {
+      "name": "8Ball-Pool-HTML5",
+      "role": "game-engine",
+      "source": "https://github.com/afzalimdad9/8Ball-Pool-HTML5",
+      "commit": "7c7ed602e1ab1c476f9c3562fc7388861b397b04",
+      "localPath": "vendor/8Ball-Pool-HTML5",
+      "checkoutMode": "snapshot",
+      "notes": [
+        "Static HTML5 game bundle copied without .git metadata",
+        "Primary entry point is index.html and assets/src/*"
+      ]
+    },
+    {
+      "name": "bracket",
+      "role": "tournament-brackets",
+      "source": "https://github.com/evroon/bracket",
+      "commit": "75c2574eecd1f5722e93a7a4f0aaa6e0a454d409",
+      "localPath": "vendor/bracket",
+      "checkoutMode": "snapshot",
+      "notes": [
+        "Full source tree copied without .git metadata",
+        "Contains a FastAPI backend and Vite frontend"
+      ]
+    },
+    {
+      "name": "hyperswitch",
+      "role": "payments",
+      "source": "https://github.com/juspay/hyperswitch",
+      "commit": "c5a3fce4daf059a3fdf7fe6016b497217285d626",
+      "localPath": "vendor/hyperswitch",
+      "checkoutMode": "sparse-snapshot",
+      "notes": [
+        "Copied from a sparse checkout to avoid Windows path-length failures in deep Postman fixtures",
+        "Includes source, config, migrations, scripts, and core docs needed for WTA integration planning"
+      ]
+    }
+  ]
+}
