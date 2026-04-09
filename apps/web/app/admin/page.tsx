@@ -1,34 +1,141 @@
-const controls = [
-  "Create and publish tournaments",
-  "Monitor payments and webhook health",
-  "Inspect wallet adjustments and refunds",
-  "Force-complete or cancel matches",
-  "Review user bans and fraud flags"
-];
+import { readBackendJson } from "@/lib/backend";
+import Link from "next/link";
 
-export default function AdminPage() {
-  return (
-    <main className="page">
-      <div className="shell page-grid">
-        <section className="panel page-card">
-          <h2>Admin control room</h2>
-          <div className="list">
-            {controls.map((item) => (
-              <div className="list-item" key={item}>
-                {item}
-              </div>
-            ))}
+type AdminResponse = {
+  ok: boolean;
+  totalTournaments: number;
+  activeTournaments: number;
+  completedTournaments: number;
+  totalMatches: number;
+  activeMatches: number;
+  pendingApprovals: Array<{
+    id: string;
+    tournamentId: string;
+    round: number;
+    player1: { id: string; name: string; score: number; submittedScore?: number | null } | null;
+    player2: { id: string; name: string; score: number; submittedScore?: number | null } | null;
+    status: string;
+  }>;
+  tournaments: Array<{
+    id: string;
+    name: string;
+    status: string;
+    joinedPlayers: number;
+    maxPlayers: number;
+  }>;
+};
+
+export default async function AdminPage() {
+  try {
+    const { payload } = await readBackendJson<AdminResponse>("/admin/overview");
+
+    return (
+      <main className="page">
+        <div className="shell">
+          <div className="panel page-card slide-in" style={{ marginBottom: "1.5rem" }}>
+            <h2>🛡️ Admin Dashboard</h2>
           </div>
-        </section>
 
-        <aside className="panel page-card">
-          <h2>High-risk operations</h2>
-          <p className="muted">
-            Refunds, force-complete actions, and wallet adjustments should require
-            reason codes, actor tracking, and immutable audit logs.
-          </p>
-        </aside>
+          <div className="admin-grid slide-in">
+            <div className="admin-stat">
+              <div className="admin-stat-value">{payload.totalTournaments}</div>
+              <div className="admin-stat-label">Total Tournaments</div>
+            </div>
+            <div className="admin-stat">
+              <div className="admin-stat-value">{payload.activeTournaments}</div>
+              <div className="admin-stat-label">Active</div>
+            </div>
+            <div className="admin-stat">
+              <div className="admin-stat-value">{payload.completedTournaments}</div>
+              <div className="admin-stat-label">Completed</div>
+            </div>
+            <div className="admin-stat">
+              <div className="admin-stat-value">{payload.totalMatches}</div>
+              <div className="admin-stat-label">Total Matches</div>
+            </div>
+            <div className="admin-stat">
+              <div className="admin-stat-value">{payload.activeMatches}</div>
+              <div className="admin-stat-label">Active Matches</div>
+            </div>
+            <div className="admin-stat">
+              <div className="admin-stat-value" style={{ color: (payload.pendingApprovals?.length || 0) > 0 ? "var(--yellow)" : undefined }}>
+                {payload.pendingApprovals?.length || 0}
+              </div>
+              <div className="admin-stat-label">Pending Approvals</div>
+            </div>
+          </div>
+
+          {/* Pending Score Approvals */}
+          {(payload.pendingApprovals?.length || 0) > 0 && (
+            <div className="panel page-card slide-in" style={{ marginBottom: "1.5rem" }}>
+              <h2>⏳ Pending Score Approvals</h2>
+              {payload.pendingApprovals.map(match => (
+                <ApprovalCard key={match.id} match={match} />
+              ))}
+            </div>
+          )}
+
+          {/* Tournaments */}
+          <div className="panel page-card slide-in">
+            <h2>Tournaments</h2>
+            <div className="list">
+              {(payload.tournaments || []).map(t => (
+                <Link key={t.id} href={`/tournaments/${t.id}`} style={{ textDecoration: "none", color: "inherit" }}>
+                  <div className="list-item">
+                    <div>
+                      <div style={{ fontWeight: 600 }}>{t.name}</div>
+                      <div className="muted" style={{ fontSize: ".8rem" }}>{t.joinedPlayers}/{t.maxPlayers} players</div>
+                    </div>
+                    <span className={`tournament-status status-${t.status}`}>{t.status.replace("_", " ")}</span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
+      </main>
+    );
+  } catch {
+    return (
+      <main className="page">
+        <div className="shell">
+          <div className="panel page-card">
+            <h2>Admin</h2>
+            <p className="muted">Could not load admin dashboard. Make sure the API is running and you are authenticated.</p>
+          </div>
+        </div>
+      </main>
+    );
+  }
+}
+
+function ApprovalCard({ match }: { match: any }) {
+  async function approve() {
+    "use server";
+    // Server action for score approval is handled client-side below
+  }
+
+  return (
+    <div className="approval-card">
+      <div style={{ fontSize: ".8rem", color: "var(--text-muted)", marginBottom: ".5rem" }}>
+        Round {match.round} · Match {match.id.slice(-8)}
       </div>
-    </main>
+      <div className="approval-scores">
+        <div className="approval-player">
+          <div style={{ fontWeight: 600 }}>{match.player1?.name || "Player 1"}</div>
+          <div className="approval-score">{match.player1?.submittedScore ?? "-"}</div>
+        </div>
+        <div style={{ color: "var(--text-muted)", fontWeight: 700 }}>VS</div>
+        <div className="approval-player">
+          <div style={{ fontWeight: 600 }}>{match.player2?.name || "Player 2"}</div>
+          <div className="approval-score">{match.player2?.submittedScore ?? "-"}</div>
+        </div>
+      </div>
+      <div className="cta-row" style={{ justifyContent: "center" }}>
+        <form action={`/api/matches/${match.id}/approve-scores`} method="POST">
+          <button type="submit" className="button-success button-sm">✅ Approve Scores</button>
+        </form>
+      </div>
+    </div>
   );
 }

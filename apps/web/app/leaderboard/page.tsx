@@ -1,5 +1,4 @@
 import { readBackendJson } from "@/lib/backend";
-import { formatMoney } from "@/lib/format";
 
 type LeaderboardResponse = {
   ok: boolean;
@@ -8,41 +7,87 @@ type LeaderboardResponse = {
     displayName: string;
     wins: number;
     losses: number;
-    earnings: {
-      amount: string;
-      currency: string;
-    };
+    points: number;
+    totalScore: number;
+    earnings: { amount: string; currency: string };
+    status: string;
   }>;
 };
 
 export default async function LeaderboardPage() {
   try {
     const { payload } = await readBackendJson<LeaderboardResponse>("/leaderboard/global");
+    const entries = payload.entries || [];
+
+    const top3 = entries.slice(0, 3);
+    const rest = entries.slice(3);
 
     return (
       <main className="page">
-        <div className="shell page-grid">
-          <section className="panel page-card">
-            <h2>Leaderboard</h2>
-            <div className="list">
-              {payload.entries.map((leader) => (
-                <div className="list-item" key={leader.userId}>
-                  <div className="value">{leader.displayName}</div>
-                  <p className="muted">
-                    {leader.wins} wins | {leader.losses} losses | {formatMoney(leader.earnings)}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </section>
+        <div className="shell" style={{ maxWidth: "900px" }}>
+          <div className="panel page-card slide-in" style={{ marginBottom: "1.5rem" }}>
+            <h2>🏆 Global Leaderboard</h2>
+            <p className="muted">Rankings based on tournament points (3 pts per win)</p>
+          </div>
 
-          <aside className="panel page-card">
-            <h2>Leaderboard slices</h2>
-            <p className="muted">
-              Global and tournament-local rankings now flow from FastAPI instead of mock
-              cards, which keeps the surface aligned with future payout logic.
-            </p>
-          </aside>
+          {/* Podium */}
+          {top3.length >= 3 && (
+            <div className="podium slide-in">
+              <div className="podium-place podium-2nd">
+                <div className="podium-medal">🥈</div>
+                <div className="podium-name">{top3[1].displayName}</div>
+                <div className="podium-score">{top3[1].points} pts</div>
+              </div>
+              <div className="podium-place podium-1st">
+                <div className="podium-medal">🥇</div>
+                <div className="podium-name">{top3[0].displayName}</div>
+                <div className="podium-score">{top3[0].points} pts</div>
+              </div>
+              <div className="podium-place podium-3rd">
+                <div className="podium-medal">🥉</div>
+                <div className="podium-name">{top3[2].displayName}</div>
+                <div className="podium-score">{top3[2].points} pts</div>
+              </div>
+            </div>
+          )}
+
+          {/* Full table */}
+          <div className="panel page-card slide-in">
+            <table className="leaderboard-table">
+              <thead>
+                <tr>
+                  <th>Rank</th>
+                  <th>Player</th>
+                  <th>Points</th>
+                  <th>Score</th>
+                  <th>W/L</th>
+                  <th>Earnings</th>
+                </tr>
+              </thead>
+              <tbody>
+                {entries.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} style={{ textAlign: "center", padding: "2rem", color: "var(--text-muted)" }}>
+                      No match data yet. Play some tournaments to appear on the leaderboard!
+                    </td>
+                  </tr>
+                ) : (
+                  entries.map((entry, i) => (
+                    <tr key={entry.userId}>
+                      <td className={`leaderboard-rank ${i < 3 ? `rank-${i + 1}` : ""}`}>
+                        {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : i + 1}
+                      </td>
+                      <td className="leaderboard-name">{entry.displayName}</td>
+                      <td style={{ fontWeight: 700 }}>{entry.points}</td>
+                      <td>{entry.totalScore}</td>
+                      <td>{entry.wins}W / {entry.losses}L</td>
+                      <td className="earnings-value">₹{entry.earnings.amount}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </main>
     );
@@ -50,13 +95,10 @@ export default async function LeaderboardPage() {
     return (
       <main className="page">
         <div className="shell">
-          <section className="panel page-card">
+          <div className="panel page-card">
             <h2>Leaderboard</h2>
-            <p className="muted">
-              The leaderboard could not reach the FastAPI backend. Start the API on port
-              4000 and refresh this page.
-            </p>
-          </section>
+            <p className="muted">Could not load leaderboard. Make sure the API is running.</p>
+          </div>
         </div>
       </main>
     );

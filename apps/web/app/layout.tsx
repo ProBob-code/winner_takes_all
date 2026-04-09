@@ -1,40 +1,68 @@
 import "./globals.css";
+import type { Metadata } from "next";
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { cookies } from "next/headers";
+import { NotificationBell } from "@/components/notification-bell";
 
-export const metadata = {
-  title: "Winner Takes All",
-  description: "Real-time multiplayer 8-ball tournament platform"
+export const metadata: Metadata = {
+  title: "Winner Takes All — Tournament Platform",
+  description: "Compete in 8-ball pool tournaments. Pay to play, winner takes the cash pool.",
 };
 
-const links = [
-  { href: "/", label: "Home" },
-  { href: "/login", label: "Login" },
-  { href: "/signup", label: "Signup" },
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/tournaments", label: "Tournaments" },
-  { href: "/leaderboard", label: "Leaderboard" },
-  { href: "/wallet", label: "Wallet" },
-  { href: "/admin", label: "Admin" }
-] as const;
+async function getUser() {
+  try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get("wta_access_token")?.value;
+    if (!token) return null;
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+    const apiUrl = process.env.WTA_API_URL || "http://127.0.0.1:4000";
+    const res = await fetch(`${apiUrl}/user/profile`, {
+      headers: { Cookie: `wta_access_token=${token}` },
+      cache: "no-store",
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.user || null;
+  } catch {
+    return null;
+  }
+}
+
+export default async function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const user = await getUser();
+
   return (
     <html lang="en">
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+      </head>
       <body>
         <header className="topbar">
-          <div className="shell topbar-inner">
-            <Link className="brand" href="/">
-              Winner Takes All
-            </Link>
-            <nav className="nav">
-              {links.map((link) => (
-                <Link key={link.href} href={link.href}>
-                  {link.label}
-                </Link>
-              ))}
-            </nav>
-          </div>
+          <Link href="/" className="topbar-brand">
+            <span className="logo-icon">🏆</span>
+            Winner Takes All
+          </Link>
+          <nav className="topbar-nav">
+            <Link href="/tournaments" className="topbar-link">Tournaments</Link>
+            <Link href="/leaderboard" className="topbar-link">Leaderboard</Link>
+            {user ? (
+              <>
+                <Link href="/wallet" className="topbar-link">Wallet</Link>
+                <Link href="/dashboard" className="topbar-link">Dashboard</Link>
+                <NotificationBell />
+              </>
+            ) : (
+              <>
+                <Link href="/login" className="topbar-link">Login</Link>
+                <Link href="/signup" className="button button-sm">Sign Up</Link>
+              </>
+            )}
+          </nav>
         </header>
         {children}
       </body>

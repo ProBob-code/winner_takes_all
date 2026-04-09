@@ -5,7 +5,7 @@ type MoneyLike = {
 
 const currencyMap: Record<string, string> = {
   USD: "$",
-  INR: "Rs "
+  INR: "₹"
 };
 
 export function formatMoney(money: MoneyLike) {

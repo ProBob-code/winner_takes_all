@@ -24,11 +24,13 @@ TournamentStatus = Literal[
     "cancelled",
 ]
 BracketType = Literal["single_elimination", "double_elimination"]
+MatchStatus = Literal["waiting", "pending", "in_progress", "score_submitted", "completed"]
+ParticipantStatus = Literal["registered", "active", "eliminated", "winner"]
 
 
 class Money(BaseModel):
     amount: str
-    currency: Currency
+    currency: Currency = "INR"
 
 
 class UserProfile(BaseModel):
@@ -60,6 +62,11 @@ class WalletDeductRequest(BaseModel):
     referenceId: str = Field(min_length=2, max_length=80)
 
 
+class WalletTopupRequest(BaseModel):
+    amount: int = Field(gt=0, description="Amount in INR (rupees, not paise)")
+    idempotencyKey: str | None = None
+
+
 class WalletTransaction(BaseModel):
     id: str
     type: WalletTransactionType
@@ -87,6 +94,69 @@ class TournamentDetail(TournamentSummary):
     prizePool: Money
     bracketType: BracketType
     bracketState: dict | None = None
+    platformFeePercent: int = 7
+    winnerId: str | None = None
+    startedAt: datetime | None = None
+    completedAt: datetime | None = None
+
+
+class MatchPlayer(BaseModel):
+    id: str
+    name: str
+    score: int = 0
+    submittedScore: int | None = None
+
+
+class MatchDetail(BaseModel):
+    id: str
+    tournamentId: str
+    round: int
+    matchOrder: int
+    player1: MatchPlayer | None = None
+    player2: MatchPlayer | None = None
+    winnerId: str | None = None
+    roomCode: str | None = None
+    status: str
+    scoreThreshold: int
+    scoresApproved: bool
+    lifelinesUsed: dict | None = None
+    scheduledAt: datetime | None = None
+    startedAt: datetime | None = None
+    completedAt: datetime | None = None
+
+
+class ScoreSubmitRequest(BaseModel):
+    score: int = Field(ge=0)
+
+
+class ScoreApproveRequest(BaseModel):
+    matchId: str
+
+
+class BracketRound(BaseModel):
+    name: str
+    roundNumber: int
+    scoreThreshold: int
+    matches: list[MatchDetail]
+
+
+class BracketResponse(BaseModel):
+    ok: bool = True
+    tournamentId: str
+    tournamentName: str
+    status: str
+    rounds: list[BracketRound]
+
+
+class ParticipantDetail(BaseModel):
+    userId: str
+    displayName: str
+    status: str
+    seed: int | None = None
+    totalScore: int = 0
+    wins: int = 0
+    losses: int = 0
+    eliminatedInRound: int | None = None
 
 
 class LeaderboardEntry(BaseModel):
@@ -94,8 +164,39 @@ class LeaderboardEntry(BaseModel):
     displayName: str
     wins: int
     losses: int
+    points: int = 0
+    totalScore: int = 0
     earnings: Money
+    status: str = "active"
 
+
+class NotificationItem(BaseModel):
+    id: str
+    type: str
+    title: str
+    message: str
+    tournamentId: str | None = None
+    matchId: str | None = None
+    read: bool
+    createdAt: datetime
+
+
+class PaymentOrderResponse(BaseModel):
+    ok: bool = True
+    orderId: str
+    razorpayOrderId: str
+    amount: int
+    currency: str = "INR"
+    keyId: str
+
+
+class PaymentVerifyRequest(BaseModel):
+    razorpayOrderId: str
+    razorpayPaymentId: str
+    razorpaySignature: str
+
+
+# ── Response wrappers ──
 
 class AuthResponse(BaseModel):
     ok: bool = True
@@ -128,6 +229,27 @@ class TournamentJoinResponse(BaseModel):
     wallet: WalletSnapshot
 
 
+class MatchResponse(BaseModel):
+    ok: bool = True
+    match: MatchDetail
+
+
+class MatchesResponse(BaseModel):
+    ok: bool = True
+    matches: list[MatchDetail]
+
+
 class LeaderboardResponse(BaseModel):
     ok: bool = True
     entries: list[LeaderboardEntry]
+
+
+class NotificationsResponse(BaseModel):
+    ok: bool = True
+    notifications: list[NotificationItem]
+    unreadCount: int = 0
+
+
+class ParticipantsResponse(BaseModel):
+    ok: bool = True
+    participants: list[ParticipantDetail]

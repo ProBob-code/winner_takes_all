@@ -5,10 +5,20 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from secrets import token_hex
 
-from sqlalchemy import delete, func, select
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.orm import selectinload, sessionmaker
 
-from .models import ParticipantORM, SessionORM, TournamentORM, UserORM, WalletORM, WalletTransactionORM
+from .models import (
+    MatchORM,
+    NotificationORM,
+    ParticipantORM,
+    PaymentORM,
+    SessionORM,
+    TournamentORM,
+    UserORM,
+    WalletORM,
+    WalletTransactionORM,
+)
 from .session import build_engine, init_db
 
 
@@ -66,6 +76,79 @@ class TournamentRecord:
     bracket_type: str
     bracket_state: dict | None = None
     participants: list[str] = field(default_factory=list)
+    platform_fee_percent: int = 7
+    winner_id: str | None = None
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
+
+
+@dataclass
+class MatchRecord:
+    id: str
+    tournament_id: str
+    round: int
+    match_order: int
+    player1_id: str | None
+    player2_id: str | None
+    winner_id: str | None
+    room_code: str | None
+    status: str
+    score_threshold: int
+    player1_score: int
+    player2_score: int
+    player1_submitted_score: int | None
+    player2_submitted_score: int | None
+    scores_approved: bool
+    lifelines_used: dict | None
+    scheduled_at: datetime | None
+    started_at: datetime | None
+    completed_at: datetime | None
+    created_at: datetime
+    player1_name: str | None = None
+    player2_name: str | None = None
+    winner_name: str | None = None
+
+
+@dataclass
+class PaymentRecord:
+    id: str
+    user_id: str
+    amount_cents: int
+    currency: str
+    provider: str
+    provider_order_id: str | None
+    provider_payment_id: str | None
+    idempotency_key: str
+    status: str
+    created_at: datetime
+
+
+@dataclass
+class NotificationRecord:
+    id: str
+    user_id: str
+    type: str
+    title: str
+    message: str
+    tournament_id: str | None
+    match_id: str | None
+    read: bool
+    created_at: datetime
+
+
+@dataclass
+class ParticipantRecord:
+    id: str
+    tournament_id: str
+    user_id: str
+    status: str
+    seed: int | None
+    total_score: int
+    wins: int
+    losses: int
+    eliminated_in_round: int | None
+    joined_at: datetime
+    user_name: str | None = None
 
 
 ACCESS_TTL = timedelta(minutes=15)
@@ -75,32 +158,31 @@ REFRESH_TTL = timedelta(days=7)
 DEFAULT_TOURNAMENTS = [
     {
         "name": "Friday Knockout",
-        "entry_fee_cents": 1000,
-        "prize_pool_cents": 8000,
+        "entry_fee_cents": 100000,
+        "prize_pool_cents": 800000,
         "max_players": 8,
         "status": "open",
         "bracket_type": "single_elimination",
         "bracket_state": {
             "rounds": [
-                {"name": "Quarterfinals", "matches": 4},
-                {"name": "Semifinals", "matches": 2},
-                {"name": "Final", "matches": 1},
+                {"name": "Quarterfinals", "matches": 4, "score_threshold": 40},
+                {"name": "Semifinals", "matches": 2, "score_threshold": 50},
+                {"name": "Final", "matches": 1, "score_threshold": 60},
             ]
         },
     },
     {
-        "name": "Sunday Finals Qualifier",
+        "name": "Sunday Free Cup",
         "entry_fee_cents": 0,
-        "prize_pool_cents": 2500,
-        "max_players": 16,
+        "prize_pool_cents": 250000,
+        "max_players": 8,
         "status": "open",
         "bracket_type": "single_elimination",
         "bracket_state": {
             "rounds": [
-                {"name": "Round of 16", "matches": 8},
-                {"name": "Quarterfinals", "matches": 4},
-                {"name": "Semifinals", "matches": 2},
-                {"name": "Final", "matches": 1},
+                {"name": "Quarterfinals", "matches": 4, "score_threshold": 40},
+                {"name": "Semifinals", "matches": 2, "score_threshold": 50},
+                {"name": "Final", "matches": 1, "score_threshold": 60},
             ]
         },
     },
@@ -157,6 +239,8 @@ class SQLAlchemyRepository:
                     )
                 )
 
+    # ── User operations ──
+
     def _to_user_record(self, user: UserORM | None) -> UserRecord | None:
         if user is None:
             return None
@@ -170,33 +254,6 @@ class SQLAlchemyRepository:
             role=user.role,
             wallet_balance_cents=balance_cents,
             created_at=ensure_utc(user.created_at),
-        )
-
-    def _to_wallet_entry_record(self, entry: WalletTransactionORM) -> WalletEntryRecord:
-        return WalletEntryRecord(
-            id=entry.id,
-            user_id=entry.user_id,
-            type=entry.type,
-            amount_cents=entry.amount_cents,
-            created_at=ensure_utc(entry.created_at),
-            reference_type=entry.reference_type,
-            reference_id=entry.reference_id,
-        )
-
-    def _to_tournament_record(self, tournament: TournamentORM | None) -> TournamentRecord | None:
-        if tournament is None:
-            return None
-
-        return TournamentRecord(
-            id=tournament.id,
-            name=tournament.name,
-            entry_fee_cents=tournament.entry_fee_cents,
-            prize_pool_cents=tournament.prize_pool_cents,
-            max_players=tournament.max_players,
-            status=tournament.status,
-            bracket_type=tournament.bracket_type,
-            bracket_state=tournament.bracket_state,
-            participants=[participant.user_id for participant in tournament.participants],
         )
 
     def get_user_by_email(self, email: str) -> UserRecord | None:
@@ -264,6 +321,19 @@ class SQLAlchemyRepository:
             session.flush()
             return self._to_user_record(user)
 
+    # ── Wallet operations ──
+
+    def _to_wallet_entry_record(self, entry: WalletTransactionORM) -> WalletEntryRecord:
+        return WalletEntryRecord(
+            id=entry.id,
+            user_id=entry.user_id,
+            type=entry.type,
+            amount_cents=entry.amount_cents,
+            created_at=ensure_utc(entry.created_at),
+            reference_type=entry.reference_type,
+            reference_id=entry.reference_id,
+        )
+
     def list_wallet_entries(self, user_id: str) -> list[WalletEntryRecord]:
         with self.session_factory() as session:
             entries = session.execute(
@@ -272,56 +342,6 @@ class SQLAlchemyRepository:
                 .order_by(WalletTransactionORM.created_at.desc())
             ).scalars().all()
             return [self._to_wallet_entry_record(entry) for entry in entries]
-
-    def create_session(self, *, token: str, user_id: str, kind: str, expires_at: datetime) -> None:
-        with self.session_factory.begin() as session:
-            session.add(
-                SessionORM(
-                    id=create_id("session"),
-                    token=token,
-                    user_id=user_id,
-                    kind=kind,
-                    expires_at=expires_at,
-                )
-            )
-
-    def get_session(self, token: str, kind: str) -> SessionRecord | None:
-        with self.session_factory() as session:
-            record = session.execute(
-                select(SessionORM)
-                .where(SessionORM.token == token, SessionORM.kind == kind)
-            ).scalar_one_or_none()
-            if record is None:
-                return None
-            return SessionRecord(
-                token=record.token,
-                user_id=record.user_id,
-                expires_at=ensure_utc(record.expires_at),
-            )
-
-    def delete_session(self, token: str, kind: str) -> None:
-        with self.session_factory.begin() as session:
-            session.execute(
-                delete(SessionORM).where(SessionORM.token == token, SessionORM.kind == kind)
-            )
-
-    def list_tournaments(self) -> list[TournamentRecord]:
-        with self.session_factory() as session:
-            tournaments = session.execute(
-                select(TournamentORM)
-                .options(selectinload(TournamentORM.participants))
-                .order_by(TournamentORM.name.asc())
-            ).scalars().all()
-            return [self._to_tournament_record(tournament) for tournament in tournaments if tournament is not None]
-
-    def get_tournament(self, tournament_id: str) -> TournamentRecord | None:
-        with self.session_factory() as session:
-            tournament = session.execute(
-                select(TournamentORM)
-                .where(TournamentORM.id == tournament_id)
-                .options(selectinload(TournamentORM.participants))
-            ).scalar_one_or_none()
-            return self._to_tournament_record(tournament)
 
     def deduct_wallet(
         self,
@@ -358,6 +378,131 @@ class SQLAlchemyRepository:
             session.flush()
             return self._to_user_record(user)
 
+    def credit_wallet(
+        self,
+        *,
+        user_id: str,
+        amount_cents: int,
+        reference_type: str,
+        reference_id: str,
+        transaction_type: str = "deposit",
+        payment_id: str | None = None,
+    ) -> UserRecord:
+        with self.session_factory.begin() as session:
+            user = session.execute(
+                select(UserORM)
+                .where(UserORM.id == user_id)
+                .options(selectinload(UserORM.wallet))
+            ).scalar_one_or_none()
+            if user is None or user.wallet is None:
+                raise ValueError("User not found")
+
+            user.wallet.balance_cents += amount_cents
+            session.add(
+                WalletTransactionORM(
+                    id=create_id("wallettxn"),
+                    wallet=user.wallet,
+                    user=user,
+                    type=transaction_type,
+                    amount_cents=amount_cents,
+                    balance_after_cents=user.wallet.balance_cents,
+                    reference_type=reference_type,
+                    reference_id=reference_id,
+                    payment_id=payment_id,
+                )
+            )
+            session.flush()
+            return self._to_user_record(user)
+
+    # ── Session operations ──
+
+    def create_session(self, *, token: str, user_id: str, kind: str, expires_at: datetime) -> None:
+        with self.session_factory.begin() as session:
+            session.add(
+                SessionORM(
+                    id=create_id("session"),
+                    token=token,
+                    user_id=user_id,
+                    kind=kind,
+                    expires_at=expires_at,
+                )
+            )
+
+    def get_session(self, token: str, kind: str) -> SessionRecord | None:
+        with self.session_factory() as session:
+            record = session.execute(
+                select(SessionORM)
+                .where(SessionORM.token == token, SessionORM.kind == kind)
+            ).scalar_one_or_none()
+            if record is None:
+                return None
+            return SessionRecord(
+                token=record.token,
+                user_id=record.user_id,
+                expires_at=ensure_utc(record.expires_at),
+            )
+
+    def delete_session(self, token: str, kind: str) -> None:
+        with self.session_factory.begin() as session:
+            session.execute(
+                delete(SessionORM).where(SessionORM.token == token, SessionORM.kind == kind)
+            )
+
+    # ── Tournament operations ──
+
+    def _to_tournament_record(self, tournament: TournamentORM | None) -> TournamentRecord | None:
+        if tournament is None:
+            return None
+
+        return TournamentRecord(
+            id=tournament.id,
+            name=tournament.name,
+            entry_fee_cents=tournament.entry_fee_cents,
+            prize_pool_cents=tournament.prize_pool_cents,
+            max_players=tournament.max_players,
+            status=tournament.status,
+            bracket_type=tournament.bracket_type,
+            bracket_state=tournament.bracket_state,
+            participants=[participant.user_id for participant in tournament.participants],
+            platform_fee_percent=tournament.platform_fee_percent,
+            winner_id=tournament.winner_id,
+            started_at=ensure_utc(tournament.started_at) if tournament.started_at else None,
+            completed_at=ensure_utc(tournament.completed_at) if tournament.completed_at else None,
+        )
+
+    def list_tournaments(self) -> list[TournamentRecord]:
+        with self.session_factory() as session:
+            tournaments = session.execute(
+                select(TournamentORM)
+                .options(selectinload(TournamentORM.participants))
+                .order_by(TournamentORM.name.asc())
+            ).scalars().all()
+            return [self._to_tournament_record(tournament) for tournament in tournaments if tournament is not None]
+
+    def get_tournament(self, tournament_id: str) -> TournamentRecord | None:
+        with self.session_factory() as session:
+            tournament = session.execute(
+                select(TournamentORM)
+                .where(TournamentORM.id == tournament_id)
+                .options(selectinload(TournamentORM.participants))
+            ).scalar_one_or_none()
+            return self._to_tournament_record(tournament)
+
+    def update_tournament_status(self, tournament_id: str, status: str, **kwargs) -> None:
+        with self.session_factory.begin() as session:
+            vals = {"status": status, **kwargs}
+            session.execute(
+                update(TournamentORM).where(TournamentORM.id == tournament_id).values(**vals)
+            )
+
+    def update_tournament_bracket_state(self, tournament_id: str, bracket_state: dict) -> None:
+        with self.session_factory.begin() as session:
+            session.execute(
+                update(TournamentORM)
+                .where(TournamentORM.id == tournament_id)
+                .values(bracket_state=bracket_state)
+            )
+
     def join_tournament(self, *, user_id: str, tournament_id: str) -> tuple[UserRecord, TournamentRecord]:
         with self.session_factory.begin() as session:
             user = session.execute(
@@ -377,7 +522,7 @@ class SQLAlchemyRepository:
                 raise LookupError("Tournament not found")
             if any(participant.user_id == user_id for participant in tournament.participants):
                 raise RuntimeError("User already joined this tournament")
-            if tournament.status != "open":
+            if tournament.status not in ("open", "in_progress"):
                 raise RuntimeError("Tournament is not open for new entries")
 
             joined_count = len(tournament.participants)
@@ -407,6 +552,7 @@ class SQLAlchemyRepository:
                     id=create_id("participant"),
                     user_id=user_id,
                     status="registered",
+                    seed=joined_count + 1,
                 )
             )
 
@@ -426,3 +572,310 @@ class SQLAlchemyRepository:
                 .order_by(UserORM.name.asc())
             ).scalars().all()
             return [self._to_user_record(user) for user in users if user is not None]
+
+    def get_participants(self, tournament_id: str) -> list[ParticipantRecord]:
+        with self.session_factory() as session:
+            participants = session.execute(
+                select(ParticipantORM)
+                .where(ParticipantORM.tournament_id == tournament_id)
+                .options(selectinload(ParticipantORM.user))
+                .order_by(ParticipantORM.seed.asc())
+            ).scalars().all()
+            return [
+                ParticipantRecord(
+                    id=p.id,
+                    tournament_id=p.tournament_id,
+                    user_id=p.user_id,
+                    status=p.status,
+                    seed=p.seed,
+                    total_score=p.total_score,
+                    wins=p.wins,
+                    losses=p.losses,
+                    eliminated_in_round=p.eliminated_in_round,
+                    joined_at=ensure_utc(p.joined_at),
+                    user_name=p.user.name if p.user else None,
+                )
+                for p in participants
+            ]
+
+    def update_participant(
+        self, tournament_id: str, user_id: str, **kwargs
+    ) -> None:
+        with self.session_factory.begin() as session:
+            session.execute(
+                update(ParticipantORM)
+                .where(
+                    ParticipantORM.tournament_id == tournament_id,
+                    ParticipantORM.user_id == user_id,
+                )
+                .values(**kwargs)
+            )
+
+    # ── Match operations ──
+
+    def _to_match_record(self, match: MatchORM | None) -> MatchRecord | None:
+        if match is None:
+            return None
+        return MatchRecord(
+            id=match.id,
+            tournament_id=match.tournament_id,
+            round=match.round,
+            match_order=match.match_order,
+            player1_id=match.player1_id,
+            player2_id=match.player2_id,
+            winner_id=match.winner_id,
+            room_code=match.room_code,
+            status=match.status,
+            score_threshold=match.score_threshold,
+            player1_score=match.player1_score,
+            player2_score=match.player2_score,
+            player1_submitted_score=match.player1_submitted_score,
+            player2_submitted_score=match.player2_submitted_score,
+            scores_approved=match.scores_approved,
+            lifelines_used=match.lifelines_used,
+            scheduled_at=ensure_utc(match.scheduled_at) if match.scheduled_at else None,
+            started_at=ensure_utc(match.started_at) if match.started_at else None,
+            completed_at=ensure_utc(match.completed_at) if match.completed_at else None,
+            created_at=ensure_utc(match.created_at),
+            player1_name=match.player1.name if match.player1 else None,
+            player2_name=match.player2.name if match.player2 else None,
+            winner_name=None,
+        )
+
+    def create_match(
+        self,
+        *,
+        tournament_id: str,
+        round_num: int,
+        match_order: int,
+        player1_id: str | None = None,
+        player2_id: str | None = None,
+        score_threshold: int = 40,
+        scheduled_at: datetime | None = None,
+    ) -> MatchRecord:
+        match = MatchORM(
+            id=create_id("match"),
+            tournament_id=tournament_id,
+            round=round_num,
+            match_order=match_order,
+            player1_id=player1_id,
+            player2_id=player2_id,
+            score_threshold=score_threshold,
+            room_code=create_id("room"),
+            status="pending" if player1_id and player2_id else "waiting",
+            scheduled_at=scheduled_at,
+        )
+        with self.session_factory.begin() as session:
+            session.add(match)
+            session.flush()
+            return self._to_match_record(match)
+
+    def get_match(self, match_id: str) -> MatchRecord | None:
+        with self.session_factory() as session:
+            match = session.execute(
+                select(MatchORM)
+                .where(MatchORM.id == match_id)
+                .options(
+                    selectinload(MatchORM.player1),
+                    selectinload(MatchORM.player2),
+                )
+            ).scalar_one_or_none()
+            return self._to_match_record(match)
+
+    def list_matches_by_tournament(self, tournament_id: str) -> list[MatchRecord]:
+        with self.session_factory() as session:
+            matches = session.execute(
+                select(MatchORM)
+                .where(MatchORM.tournament_id == tournament_id)
+                .options(
+                    selectinload(MatchORM.player1),
+                    selectinload(MatchORM.player2),
+                )
+                .order_by(MatchORM.round.asc(), MatchORM.match_order.asc())
+            ).scalars().all()
+            return [self._to_match_record(m) for m in matches if m is not None]
+
+    def update_match(self, match_id: str, **kwargs) -> None:
+        with self.session_factory.begin() as session:
+            session.execute(
+                update(MatchORM).where(MatchORM.id == match_id).values(**kwargs)
+            )
+
+    # ── Payment operations ──
+
+    def _to_payment_record(self, payment: PaymentORM | None) -> PaymentRecord | None:
+        if payment is None:
+            return None
+        return PaymentRecord(
+            id=payment.id,
+            user_id=payment.user_id,
+            amount_cents=payment.amount_cents,
+            currency=payment.currency,
+            provider=payment.provider,
+            provider_order_id=payment.provider_order_id,
+            provider_payment_id=payment.provider_payment_id,
+            idempotency_key=payment.idempotency_key,
+            status=payment.status,
+            created_at=ensure_utc(payment.created_at),
+        )
+
+    def create_payment(
+        self,
+        *,
+        user_id: str,
+        amount_cents: int,
+        currency: str = "INR",
+        provider_order_id: str | None = None,
+        idempotency_key: str,
+    ) -> PaymentRecord:
+        payment = PaymentORM(
+            id=create_id("payment"),
+            user_id=user_id,
+            amount_cents=amount_cents,
+            currency=currency,
+            provider="razorpay",
+            provider_order_id=provider_order_id,
+            idempotency_key=idempotency_key,
+            status="pending",
+        )
+        with self.session_factory.begin() as session:
+            session.add(payment)
+            session.flush()
+            return self._to_payment_record(payment)
+
+    def get_payment(self, payment_id: str) -> PaymentRecord | None:
+        with self.session_factory() as session:
+            payment = session.execute(
+                select(PaymentORM).where(PaymentORM.id == payment_id)
+            ).scalar_one_or_none()
+            return self._to_payment_record(payment)
+
+    def get_payment_by_order_id(self, provider_order_id: str) -> PaymentRecord | None:
+        with self.session_factory() as session:
+            payment = session.execute(
+                select(PaymentORM).where(PaymentORM.provider_order_id == provider_order_id)
+            ).scalar_one_or_none()
+            return self._to_payment_record(payment)
+
+    def get_payment_by_idempotency_key(self, idempotency_key: str) -> PaymentRecord | None:
+        with self.session_factory() as session:
+            payment = session.execute(
+                select(PaymentORM).where(PaymentORM.idempotency_key == idempotency_key)
+            ).scalar_one_or_none()
+            return self._to_payment_record(payment)
+
+    def update_payment(self, payment_id: str, **kwargs) -> None:
+        with self.session_factory.begin() as session:
+            session.execute(
+                update(PaymentORM).where(PaymentORM.id == payment_id).values(**kwargs)
+            )
+
+    # ── Notification operations ──
+
+    def _to_notification_record(self, n: NotificationORM) -> NotificationRecord:
+        return NotificationRecord(
+            id=n.id,
+            user_id=n.user_id,
+            type=n.type,
+            title=n.title,
+            message=n.message,
+            tournament_id=n.tournament_id,
+            match_id=n.match_id,
+            read=n.read,
+            created_at=ensure_utc(n.created_at),
+        )
+
+    def create_notification(
+        self,
+        *,
+        user_id: str,
+        type: str,
+        title: str,
+        message: str,
+        tournament_id: str | None = None,
+        match_id: str | None = None,
+    ) -> NotificationRecord:
+        notification = NotificationORM(
+            id=create_id("notif"),
+            user_id=user_id,
+            type=type,
+            title=title,
+            message=message,
+            tournament_id=tournament_id,
+            match_id=match_id,
+        )
+        with self.session_factory.begin() as session:
+            session.add(notification)
+            session.flush()
+            return self._to_notification_record(notification)
+
+    def list_notifications(self, user_id: str, limit: int = 20) -> list[NotificationRecord]:
+        with self.session_factory() as session:
+            notifications = session.execute(
+                select(NotificationORM)
+                .where(NotificationORM.user_id == user_id)
+                .order_by(NotificationORM.created_at.desc())
+                .limit(limit)
+            ).scalars().all()
+            return [self._to_notification_record(n) for n in notifications]
+
+    def count_unread_notifications(self, user_id: str) -> int:
+        with self.session_factory() as session:
+            return session.scalar(
+                select(func.count(NotificationORM.id))
+                .where(NotificationORM.user_id == user_id, NotificationORM.read == False)  # noqa: E712
+            ) or 0
+
+    def mark_notification_read(self, notification_id: str) -> None:
+        with self.session_factory.begin() as session:
+            session.execute(
+                update(NotificationORM)
+                .where(NotificationORM.id == notification_id)
+                .values(read=True)
+            )
+
+    # ── Stats operations ──
+
+    def get_user_match_stats(self, user_id: str) -> dict:
+        with self.session_factory() as session:
+            wins = session.scalar(
+                select(func.count(MatchORM.id))
+                .where(MatchORM.winner_id == user_id, MatchORM.scores_approved == True)  # noqa: E712
+            ) or 0
+            total_as_p1 = session.scalar(
+                select(func.count(MatchORM.id))
+                .where(MatchORM.player1_id == user_id, MatchORM.scores_approved == True)  # noqa: E712
+            ) or 0
+            total_as_p2 = session.scalar(
+                select(func.count(MatchORM.id))
+                .where(MatchORM.player2_id == user_id, MatchORM.scores_approved == True)  # noqa: E712
+            ) or 0
+            total_played = total_as_p1 + total_as_p2
+            losses = total_played - wins
+
+            # Sum of scores
+            score_as_p1 = session.scalar(
+                select(func.coalesce(func.sum(MatchORM.player1_score), 0))
+                .where(MatchORM.player1_id == user_id, MatchORM.scores_approved == True)  # noqa: E712
+            ) or 0
+            score_as_p2 = session.scalar(
+                select(func.coalesce(func.sum(MatchORM.player2_score), 0))
+                .where(MatchORM.player2_id == user_id, MatchORM.scores_approved == True)  # noqa: E712
+            ) or 0
+
+            # Sum of payout earnings
+            earnings = session.scalar(
+                select(func.coalesce(func.sum(WalletTransactionORM.amount_cents), 0))
+                .where(
+                    WalletTransactionORM.user_id == user_id,
+                    WalletTransactionORM.type == "tournament_payout",
+                )
+            ) or 0
+
+            return {
+                "wins": wins,
+                "losses": losses,
+                "total_score": score_as_p1 + score_as_p2,
+                "points": wins * 3,
+                "earnings_cents": earnings,
+            }
