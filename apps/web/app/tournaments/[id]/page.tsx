@@ -2,6 +2,7 @@ import Link from "next/link";
 import { readBackendJson } from "@/lib/backend";
 import { formatMoney } from "@/lib/format";
 import { BracketView } from "@/components/bracket-view";
+import { JoinTournamentButton } from "@/components/join-tournament-button";
 
 type TournamentDetailResponse = {
   ok: boolean;
@@ -116,10 +117,8 @@ export default async function TournamentDetailPage({
             </div>
 
             {isOpen && (
-              <div className="cta-row">
-                <form action={`/api/tournaments/${id}/join`} method="POST">
-                  <button type="submit" className="button">Join Tournament</button>
-                </form>
+              <div className="cta-row" style={{ marginTop: "1.5rem" }}>
+                <JoinTournamentButton tournamentId={id} />
               </div>
             )}
           </div>

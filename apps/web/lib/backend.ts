@@ -39,3 +39,18 @@ export async function readBackendJson<T>(path: string, init: RequestInit = {}) {
     payload
   };
 }
+
+export async function nextBackendProxy(request: Request, path: string) {
+  const body = request.method !== "GET" && request.method !== "HEAD" ? await request.json() : undefined;
+
+  const response = await backendFetch(path, {
+    method: request.method,
+    body: body ? JSON.stringify(body) : undefined,
+    headers: {
+      "Content-Type": "application/json"
+    }
+  });
+
+  const data = await response.json();
+  return Response.json(data, { status: response.status });
+}

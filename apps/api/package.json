@@ -3,12 +3,12 @@
   "private": true,
   "version": "0.1.0",
   "scripts": {
-    "dev": "python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 4000",
-    "start": "python -m uvicorn app.main:app --host 0.0.0.0 --port 4000",
-    "build": "python -m compileall app",
-    "lint": "python -m compileall app",
-    "test": "python -m pytest",
-    "migrate": "python -m alembic upgrade head",
-    "migrate:make": "python -m alembic revision --autogenerate -m core_schema"
+    "dev": "../../.venv/bin/python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 4000",
+    "start": "../../.venv/bin/python -m uvicorn app.main:app --host 0.0.0.0 --port 4000",
+    "build": "../../.venv/bin/python -m compileall app",
+    "lint": "../../.venv/bin/python -m compileall app",
+    "test": "../../.venv/bin/python -m pytest",
+    "migrate": "../../.venv/bin/python -m alembic upgrade head",
+    "migrate:make": "../../.venv/bin/python -m alembic revision --autogenerate -m core_schema"
   }
 }

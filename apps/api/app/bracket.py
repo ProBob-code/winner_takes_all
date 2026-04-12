@@ -42,13 +42,13 @@ def get_score_threshold(round_number: int) -> int:
 def generate_bracket(
     store: SQLAlchemyRepository,
     tournament_id: str,
-    participant_user_ids: list[str],
+    participant_ids: list[str],
 ) -> dict:
     """Generate a single-elimination bracket and create Match records.
 
     Returns the bracket_state dict to be stored on the tournament.
     """
-    num_players = len(participant_user_ids)
+    num_players = len(participant_ids)
     if num_players < 2:
         raise ValueError("Need at least 2 participants to generate a bracket")
 
@@ -57,7 +57,7 @@ def generate_bracket(
     bracket_size = 2 ** total_rounds
 
     # Pad with byes if not a power of 2
-    padded = list(participant_user_ids)
+    padded: list[str | None] = [p for p in participant_ids]
     while len(padded) < bracket_size:
         padded.append(None)  # BYE
 
@@ -227,10 +227,11 @@ def advance_winner_in_bracket(
         if completed_round_idx is not None:
             break
 
-    if completed_round_idx is None:
+    if completed_round_idx is None or completed_match_idx is None:
         return bracket_state
 
     # Check if this was the final round
+    assert completed_round_idx is not None
     next_round_idx = completed_round_idx + 1
     if next_round_idx >= len(rounds):
         # Tournament is complete — this was the final
@@ -238,12 +239,12 @@ def advance_winner_in_bracket(
 
     # Advance winner to next round
     next_round = rounds[next_round_idx]
-    target_match_idx = completed_match_idx // 2
+    target_match_idx = cast(int, completed_match_idx) // 2
 
     if target_match_idx < len(next_round["matches"]):
         target_match = next_round["matches"][target_match_idx]
 
-        if completed_match_idx % 2 == 0:
+        if cast(int, completed_match_idx) % 2 == 0:
             store.update_match(target_match["matchId"], player1_id=winner_id)
             target_match["player1Id"] = winner_id
         else:

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from datetime import datetime
 from decimal import Decimal, InvalidOperation
 
 from fastapi import HTTPException, Response
@@ -199,7 +200,7 @@ class WTAService:
             name=name.strip(),
             email=normalized_email,
             password_hash=hash_password(password),
-            bonus_cents=250000,  # ₹2,500.00 signup bonus
+            bonus_cents=300000,  # ₹3,000.00 signup bonus
         )
         self._set_session_cookies(response, user.id)
         return self.serialize_user(user)
@@ -242,10 +243,66 @@ class WTAService:
             raise HTTPException(status_code=409, detail=str(error)) from error
         return self.serialize_wallet(updated_user)
 
+    def transfer_credits(self, sender: UserRecord, recipient_id: str, amount: str) -> WalletSnapshot:
+        amount_cents = money_to_cents(amount)
+        if sender.id == recipient_id:
+            raise HTTPException(status_code=400, detail="Cannot transfer credits to yourself")
+
+        try:
+            # First, check if recipient exists
+            recipient = self.store.get_user_by_id(recipient_id)
+            if not recipient:
+                raise HTTPException(status_code=404, detail="Recipient user not found")
+
+            # Perform transfer in the store (atomic transaction recommended)
+            updated_sender = self.store.transfer_credits(
+                sender_id=sender.id,
+                recipient_id=recipient_id,
+                amount_cents=amount_cents
+            )
+
+            # Notify recipient
+            self.store.create_notification(
+                user_id=recipient_id,
+                type="credit_received",
+                title="Credits Received! 💸",
+                message=f"You received {amount} C from {sender.name}.",
+            )
+
+            return self.serialize_wallet(updated_sender)
+        except ValueError as error:
+            raise HTTPException(status_code=409, detail=str(error)) from error
+
     # ── Tournaments ──
 
     def list_tournaments(self) -> list[TournamentSummary]:
-        return [self.serialize_tournament_summary(t) for t in self.store.list_tournaments()]
+        tournaments = self.store.list_tournaments()
+        return [self.serialize_tournament_summary(t) for t in tournaments]
+
+    def create_tournament(
+        self,
+        *,
+        host: UserRecord,
+        name: str,
+        entry_fee: int,
+        max_players: int,
+        team_size: int,
+        tournament_type: str,
+        bracket_type: str,
+    ) -> TournamentDetail:
+        # entry_fee in rupees, convert to cents
+        entry_fee_cents = entry_fee * 100
+        
+        tournament = self.store.create_tournament(
+            name=name,
+            entry_fee_cents=entry_fee_cents,
+            max_players=max_players,
+            host_id=host.id,
+            team_size=team_size,
+            tournament_type=tournament_type,
+            bracket_type=bracket_type,
+        )
+        return self.serialize_tournament_detail(tournament)
 
     def get_tournament(self, tournament_id: str) -> TournamentDetail:
         tournament = self.store.get_tournament(tournament_id)
@@ -253,10 +310,19 @@ class WTAService:
             raise HTTPException(status_code=404, detail="Tournament not found")
         return self.serialize_tournament_detail(tournament)
 
-    def join_tournament(self, user: UserRecord, tournament_id: str) -> tuple[TournamentDetail, WalletSnapshot]:
+    def join_tournament(self, user: UserRecord, tournament_id: str, team_id: str | None = None, team_code: str | None = None) -> tuple[TournamentDetail, WalletSnapshot]:
+        actual_team_id = team_id
+        if team_code:
+            team = self.store.get_team_by_code(team_code)
+            if not team:
+                raise HTTPException(status_code=404, detail="Team not found with this code")
+            if team.tournament_id != tournament_id:
+                raise HTTPException(status_code=400, detail="Team does not belong to this tournament")
+            actual_team_id = team.id
+
         try:
             updated_user, tournament = self.store.join_tournament(
-                user_id=user.id, tournament_id=tournament_id,
+                user_id=user.id, tournament_id=tournament_id, team_id=actual_team_id
             )
         except LookupError as error:
             raise HTTPException(status_code=404, detail=str(error)) from error
@@ -281,7 +347,13 @@ class WTAService:
             return
 
         participants = self.store.get_participants(tournament_id)
-        participant_ids = [p.user_id for p in participants]
+        
+        # Determine if we should use teams or individual participants
+        if tournament.team_size > 1:
+            teams = self.store.list_teams_by_tournament(tournament_id)
+            participant_ids = [t.id for t in teams]
+        else:
+            participant_ids = [p.user_id for p in participants]
 
         # Update all participants to active
         for p in participants:
@@ -368,6 +440,30 @@ class WTAService:
             raise HTTPException(status_code=409, detail="Match cannot be started")
 
         self.store.update_match(match_id, status="in_progress", started_at=utcnow())
+        return self.get_match_detail(match_id)
+
+    def reschedule_match(self, match_id: str, new_time: datetime) -> MatchDetail:
+        match = self.store.get_match(match_id)
+        if not match:
+            raise HTTPException(status_code=404, detail="Match not found")
+        
+        if match.reschedules_remaining <= 0:
+            # Auto-disqualify: mark match as completed, assign winner to opponent
+            winner_id = match.player2_id if match.player1_id else None # This is simple, needs better logic for who gets DQ'd
+            # But wait, who is requesting the reschedule? The API should probably take the user_id of the requester.
+            # For now, I'll just block it as I did before, but with a clearer error.
+            raise HTTPException(
+                status_code=400, 
+                detail="No reschedules remaining. This team is subject to disqualification."
+            )
+
+        # Update match
+        self.store.update_match(
+            match_id, 
+            scheduled_at=new_time,
+            reschedules_remaining=match.reschedules_remaining - 1
+        )
+        
         return self.get_match_detail(match_id)
 
     def submit_score(self, match_id: str, user_id: str, score: int) -> MatchDetail:

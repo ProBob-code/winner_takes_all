@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Winner Takes All | The Ultimate Gaming Arena</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-deep: #05050a;
+            --accent-primary: #8b5cf6;
+            --accent-secondary: #06b6d4;
+            --accent-glow: rgba(139, 92, 246, 0.4);
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --font-display: 'Outfit', sans-serif;
+            --font-body: 'Inter', sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-deep);
+            color: var(--text-main);
+            font-family: var(--font-body);
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ── Animated Background ── */
+        .bg-glow {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: radial-gradient(circle at 20% 30%, rgba(139, 92, 246, 0.15), transparent 40%),
+                        radial-gradient(circle at 80% 70%, rgba(6, 182, 212, 0.15), transparent 40%);
+            filter: blur(80px);
+            animation: bgShift 20s infinite alternate ease-in-out;
+        }
+
+        @keyframes bgShift {
+            0% { transform: scale(1) translate(0, 0); }
+            100% { transform: scale(1.1) translate(2%, 2%); }
+        }
+
+        .scroll-container {
+            height: 100vh;
+            overflow-y: auto;
+            scroll-behavior: smooth;
+        }
+
+        /* ── Navigation ── */
+        nav {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem 4rem;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .logo {
+            font-family: var(--font-display);
+            font-weight: 800;
+            font-size: 1.75rem;
+            letter-spacing: -0.05em;
+            background: linear-gradient(135deg, #fff, var(--text-muted));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-decoration: none;
+        }
+
+        /* ── Hero Section ── */
+        .hero {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 0 2rem;
+            position: relative;
+        }
+
+        .hero-title {
+            font-family: var(--font-display);
+            font-size: clamp(3rem, 8vw, 6rem);
+            font-weight: 800;
+            line-height: 0.95;
+            margin-bottom: 2rem;
+            animation: fadeUp 1s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero-sub {
+            max-width: 600px;
+            font-size: 1.25rem;
+            color: var(--text-muted);
+            margin-bottom: 3rem;
+            animation: fadeUp 1s cubic-bezier(0.16, 1, 0.3, 1) 0.2s backwards;
+        }
+
+        /* ── Dynamic Button ── */
+        .btn-arena {
+            position: relative;
+            padding: 1.25rem 3rem;
+            font-family: var(--font-display);
+            font-weight: 800;
+            font-size: 1.25rem;
+            color: white;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            overflow: hidden;
+            border-radius: 12px;
+            transition: transform 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            animation: fadeUp 1s cubic-bezier(0.16, 1, 0.3, 1) 0.4s backwards;
+        }
+
+        .btn-arena::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            opacity: 0.9;
+            z-index: -1;
+            transition: opacity 0.3s ease;
+        }
+
+        .btn-arena:hover {
+            transform: scale(1.05) translateY(-5px);
+        }
+
+        .btn-arena:hover::before {
+            opacity: 1;
+        }
+
+        .btn-arena::after {
+            content: '';
+            position: absolute;
+            inset: -4px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            filter: blur(20px);
+            z-index: -2;
+            opacity: 0.5;
+            transition: opacity 0.3s ease;
+        }
+
+        .btn-arena:hover::after {
+            opacity: 0.8;
+        }
+
+        /* ── Info Cards ── */
+        .section {
+            padding: 10rem 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 2.5rem;
+        }
+
+        .card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 3rem;
+            transition: all 0.4s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .card:hover {
+            border-color: var(--accent-primary);
+            transform: translateY(-10px);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .card h3 {
+            font-family: var(--font-display);
+            font-size: 1.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .card p {
+            color: var(--text-muted);
+            line-height: 1.7;
+        }
+
+        .icon {
+            font-size: 2.5rem;
+            margin-bottom: 1.5rem;
+            display: block;
+        }
+
+        /* ── Footer ── */
+        footer {
+            padding: 4rem;
+            text-align: center;
+            border-top: 1px solid var(--glass-border);
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        /* ── Decorations ── */
+        .mouse-glow {
+            position: fixed;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(139, 92, 246, 0.1), transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 999;
+            transform: translate(-50%, -50%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        @media (max-width: 768px) {
+            nav { padding: 1rem 2rem; }
+            .hero-title { font-size: 3.5rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-glow"></div>
+    <div id="glow" class="mouse-glow"></div>
+
+    <nav>
+        <a href="#" class="logo">WINNER TAKES ALL</a>
+        <a href="http://localhost:3000/login" class="btn-arena" style="padding: 0.6rem 1.5rem; font-size: 0.9rem; border-radius: 8px;">SIGN IN</a>
+    </nav>
+
+    <div class="scroll-container">
+        <!-- Hero Section -->
+        <section class="hero">
+            <h1 class="hero-title">ENTER THE <br/><span class="gradient-text">ARENA.</span></h1>
+            <p class="hero-sub">The premier destination for high-stakes digital tournaments. Compete, dominate, and secure the ultimate prize.</p>
+            <a href="http://localhost:3000/tournaments" class="btn-arena">
+                LET'S GO <span>→</span>
+            </a>
+        </section>
+
+        <!-- Features -->
+        <section class="section">
+            <div class="grid">
+                <div class="card">
+                    <span class="icon">🚀</span>
+                    <h3>Instant Execution</h3>
+                    <p>Powered by ultra-fast processing, brackets update in real-time. No delays, just pure competitive intensity.</p>
+                </div>
+                <div class="card">
+                    <span class="icon">💎</span>
+                    <h3>Premium Experience</h3>
+                    <p>A sleek, dark-mode interface designed for professional players. Full glassmorphism and smooth transitions.</p>
+                </div>
+                <div class="card">
+                    <span class="icon">🛡️</span>
+                    <h3>Secure Payouts</h3>
+                    <p>Integrated wallet system with secure verification. Your winnings are processed instantly and safely.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA Section -->
+        <section class="section" style="text-align: center; border-top: 1px solid var(--glass-border);">
+            <h2 style="font-family: var(--font-display); font-size: 3rem; margin-bottom: 2rem;">Ready to take it all?</h2>
+            <a href="http://localhost:3000/signup" class="btn-arena">JOIN THE ELITE</a>
+        </section>
+
+        <footer>
+            <p>&copy; 2026 WINNER TAKES ALL. Designed for the Next Generation of Competitors.</p>
+        </footer>
+    </div>
+
+    <script>
+        const glow = document.getElementById('glow');
+        document.addEventListener('mousemove', (e) => {
+            glow.style.opacity = '1';
+            glow.style.left = e.clientX + 'px';
+            glow.style.top = e.clientY + 'px';
+        });
+    </script>
+</body>
+</html>

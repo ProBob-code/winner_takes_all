@@ -18,13 +18,22 @@ function getSetCookieHeaders(headers: Headers) {
 }
 
 export async function proxyJson(path: string, init: RequestInit = {}) {
-  const response = await fetch(`${getApiBaseUrl()}${path}`, {
-    ...init,
-    headers: new Headers(init.headers),
-    cache: "no-store"
-  });
+  let response;
+  let body;
+  try {
+    response = await fetch(`${getApiBaseUrl()}${path}`, {
+      ...init,
+      headers: new Headers(init.headers),
+      cache: "no-store"
+    });
+    body = await response.text();
+  } catch (error) {
+    return NextResponse.json(
+      { ok: false, message: "Backend connection failed. Please ensure the API is running." },
+      { status: 502 }
+    );
+  }
 
-  const body = await response.text();
   const nextResponse = new NextResponse(body, {
     status: response.status,
     headers: {

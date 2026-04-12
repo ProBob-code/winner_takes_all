@@ -62,6 +62,11 @@ class WalletDeductRequest(BaseModel):
     referenceId: str = Field(min_length=2, max_length=80)
 
 
+class WalletTransferRequest(BaseModel):
+    recipientId: str
+    amount: str
+
+
 class WalletTopupRequest(BaseModel):
     amount: int = Field(gt=0, description="Amount in INR (rupees, not paise)")
     idempotencyKey: str | None = None
@@ -90,6 +95,26 @@ class TournamentSummary(BaseModel):
     status: TournamentStatus
 
 
+class TeamDetail(BaseModel):
+    id: str
+    name: str | None = None
+    code: str | None = None
+    memberIds: list[str] = []
+
+
+class ParticipantDetail(BaseModel):
+    userId: str
+    displayName: str
+    status: str
+    teamId: str | None = None
+    teamName: str | None = None
+    seed: int | None = None
+    totalScore: int = 0
+    wins: int = 0
+    losses: int = 0
+    eliminatedInRound: int | None = None
+
+
 class TournamentDetail(TournamentSummary):
     prizePool: Money
     bracketType: BracketType
@@ -98,6 +123,25 @@ class TournamentDetail(TournamentSummary):
     winnerId: str | None = None
     startedAt: datetime | None = None
     completedAt: datetime | None = None
+    hostId: str | None = None
+    teamSize: int = 1
+    tournamentType: str = "online"
+    teams: list[TeamDetail] = []
+    participants: list[ParticipantDetail] = []
+
+
+class TournamentJoinRequest(BaseModel):
+    teamId: str | None = None
+    teamCode: str | None = None
+
+
+class TournamentCreateRequest(BaseModel):
+    name: str = Field(min_length=3, max_length=120)
+    entryFee: int = Field(ge=0)
+    maxPlayers: int = Field(ge=2, le=64)
+    teamSize: int = Field(default=1) # 1 or 2
+    tournamentType: str = Field(default="online") # online, offline, hybrid
+    bracketType: str = Field(default="single_elimination")
 
 
 class MatchPlayer(BaseModel):
@@ -148,15 +192,14 @@ class BracketResponse(BaseModel):
     rounds: list[BracketRound]
 
 
-class ParticipantDetail(BaseModel):
-    userId: str
-    displayName: str
-    status: str
-    seed: int | None = None
-    totalScore: int = 0
-    wins: int = 0
-    losses: int = 0
-    eliminatedInRound: int | None = None
+class TeamDetail(BaseModel):
+    id: str
+    name: str | None = None
+    code: str | None = None
+    memberIds: list[str] = []
+
+
+# Classes moved up for dependency management
 
 
 class LeaderboardEntry(BaseModel):

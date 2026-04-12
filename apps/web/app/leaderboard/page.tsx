@@ -52,41 +52,43 @@ export default async function LeaderboardPage() {
           )}
 
           {/* Full table */}
-          <div className="panel page-card slide-in">
-            <table className="leaderboard-table">
-              <thead>
-                <tr>
-                  <th>Rank</th>
-                  <th>Player</th>
-                  <th>Points</th>
-                  <th>Score</th>
-                  <th>W/L</th>
-                  <th>Earnings</th>
-                </tr>
-              </thead>
-              <tbody>
-                {entries.length === 0 ? (
+          <div className="panel page-card slide-in" style={{ padding: 0, overflow: "hidden" }}>
+            <div className="table-responsive" style={{ overflowX: "auto", width: "100%" }}>
+              <table className="leaderboard-table">
+                <thead>
                   <tr>
-                    <td colSpan={6} style={{ textAlign: "center", padding: "2rem", color: "var(--text-muted)" }}>
-                      No match data yet. Play some tournaments to appear on the leaderboard!
-                    </td>
+                    <th>Rank</th>
+                    <th>Player</th>
+                    <th>Points</th>
+                    <th>Score</th>
+                    <th>W/L</th>
+                    <th>Earnings</th>
                   </tr>
-                ) : (
-                  entries.map((entry, i) => (
-                    <tr key={entry.userId}>
-                      <td className={`leaderboard-rank ${i < 3 ? `rank-${i + 1}` : ""}`}>
-                        {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : i + 1}
+                </thead>
+                <tbody>
+                  {entries.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} style={{ textAlign: "center", padding: "2rem", color: "var(--text-muted)" }}>
+                        No match data yet. Play some tournaments to appear on the leaderboard!
                       </td>
-                      <td className="leaderboard-name">{entry.displayName}</td>
-                      <td style={{ fontWeight: 700 }}>{entry.points}</td>
-                      <td>{entry.totalScore}</td>
-                      <td>{entry.wins}W / {entry.losses}L</td>
-                      <td className="earnings-value">₹{entry.earnings.amount}</td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                  ) : (
+                    entries.map((entry, i) => (
+                      <tr key={entry.userId}>
+                        <td className={`leaderboard-rank ${i < 3 ? `rank-${i + 1}` : ""}`}>
+                          {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : i + 1}
+                        </td>
+                        <td className="leaderboard-name">{entry.displayName}</td>
+                        <td style={{ fontWeight: 700 }}>{entry.points}</td>
+                        <td>{entry.totalScore}</td>
+                        <td>{entry.wins}W / {entry.losses}L</td>
+                        <td className="earnings-value">₹{entry.earnings.amount}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </main>

@@ -1,25 +1,29 @@
 import { AuthForm } from "@/components/auth-form";
+import Link from "next/link";
 
 export default function LoginPage() {
   return (
-    <main className="page">
-      <div className="shell page-grid">
-        <section className="panel page-card">
-          <h2>Login</h2>
-          <p className="muted">
-            Use the FastAPI-backed session flow to enter the platform with HTTP-only
-            cookies and server-rendered protected routes.
-          </p>
+    <main className="page" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{
+        maxWidth: "440px",
+        width: "100%",
+        padding: "0 1rem"
+      }}>
+        <section className="panel" style={{ padding: "2.5rem 2rem" }}>
           <AuthForm mode="login" />
         </section>
-
-        <aside className="panel page-card">
-          <h2>Protected Routes</h2>
-          <p className="muted">
-            `/dashboard`, `/wallet`, `/match/:id`, and admin pages should require a
-            validated session before rendering.
-          </p>
-        </aside>
+        
+        <p style={{
+          textAlign: "center",
+          marginTop: "1.5rem",
+          color: "var(--text-muted)",
+          fontSize: "0.95rem"
+        }}>
+          Don't have an account?{" "}
+          <Link href="/signup" style={{ color: "var(--cyan)", fontWeight: 600 }}>
+            Create one
+          </Link>
+        </p>
       </div>
     </main>
   );

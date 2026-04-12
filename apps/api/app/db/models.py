@@ -70,6 +70,10 @@ class TournamentORM(Base):
     bracket_type: Mapped[str] = mapped_column(String(40), default="single_elimination")
     bracket_state: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     platform_fee_percent: Mapped[int] = mapped_column(Integer, default=7)
+    team_size: Mapped[int] = mapped_column(Integer, default=1)  # 1 for 1v1, 2 for 2v2
+    host_id: Mapped[str | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+    tournament_type: Mapped[str] = mapped_column(String(20), default="online") # online, offline, hybrid
+    
     winner_id: Mapped[str | None] = mapped_column(ForeignKey("users.id"), nullable=True)
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
@@ -85,6 +89,19 @@ class TournamentORM(Base):
         cascade="all, delete-orphan",
     )
     matches: Mapped[list["MatchORM"]] = relationship(back_populates="tournament")
+    teams: Mapped[list["TeamORM"]] = relationship(back_populates="tournament", cascade="all, delete-orphan")
+
+
+class TeamORM(Base):
+    __tablename__ = "teams"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    tournament_id: Mapped[str] = mapped_column(ForeignKey("tournaments.id", ondelete="CASCADE"), index=True)
+    name: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    code: Mapped[str | None] = mapped_column(String(10), unique=True, nullable=True) # For sharing
+    
+    tournament: Mapped[TournamentORM] = relationship(back_populates="teams")
+    participants: Mapped[list["ParticipantORM"]] = relationship(back_populates="team")
 
 
 class ParticipantORM(Base):
@@ -94,6 +111,7 @@ class ParticipantORM(Base):
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
     tournament_id: Mapped[str] = mapped_column(ForeignKey("tournaments.id", ondelete="CASCADE"), index=True)
     user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    team_id: Mapped[str | None] = mapped_column(ForeignKey("teams.id", ondelete="SET NULL"), nullable=True)
     status: Mapped[str] = mapped_column(String(20), default="registered")
     seed: Mapped[int | None] = mapped_column(Integer, nullable=True)
     total_score: Mapped[int] = mapped_column(Integer, default=0)
@@ -104,6 +122,7 @@ class ParticipantORM(Base):
 
     tournament: Mapped[TournamentORM] = relationship(back_populates="participants")
     user: Mapped[UserORM] = relationship(back_populates="participants")
+    team: Mapped[TeamORM | None] = relationship(back_populates="participants")
 
 
 class MatchORM(Base):
@@ -126,9 +145,11 @@ class MatchORM(Base):
     scores_approved: Mapped[bool] = mapped_column(Boolean, default=False)
     lifelines_used: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     result_meta: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    reschedules_remaining: Mapped[int] = mapped_column(Integer, default=3)
     scheduled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    reschedules_remaining: Mapped[int] = mapped_column(Integer, default=3)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_timestamp)
 
     tournament: Mapped[TournamentORM] = relationship(back_populates="matches")

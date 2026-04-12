@@ -84,6 +84,8 @@ model Tournament {
   prizePool      Decimal           @default(0) @db.Decimal(12, 2)
   maxPlayers     Int
   status         TournamentStatus  @default(DRAFT)
+  mode           String            @default("online")
+  game           String            @default("8ball")
   bracketType    String            @default("single_elimination")
   bracketState   Json?
   startsAt       DateTime?

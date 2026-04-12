@@ -14,6 +14,7 @@ from .models import (
     ParticipantORM,
     PaymentORM,
     SessionORM,
+    TeamORM,
     TournamentORM,
     UserORM,
     WalletORM,
@@ -27,6 +28,11 @@ def utcnow() -> datetime:
 
 
 def create_id(prefix: str) -> str:
+    if prefix == "user":
+        import secrets
+        import string
+        suffix = ''.join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(6))
+        return f"WTA-{suffix}"
     return f"{prefix}_{token_hex(8)}"
 
 
@@ -77,6 +83,9 @@ class TournamentRecord:
     bracket_state: dict | None = None
     participants: list[str] = field(default_factory=list)
     platform_fee_percent: int = 7
+    team_size: int = 1
+    host_id: str | None = None
+    tournament_type: str = "online"
     winner_id: str | None = None
     started_at: datetime | None = None
     completed_at: datetime | None = None
@@ -100,6 +109,7 @@ class MatchRecord:
     player2_submitted_score: int | None
     scores_approved: bool
     lifelines_used: dict | None
+    reschedules_remaining: int
     scheduled_at: datetime | None
     started_at: datetime | None
     completed_at: datetime | None
@@ -136,6 +146,15 @@ class NotificationRecord:
     created_at: datetime
 
 
+@dataclass(frozen=True)
+class TeamRecord:
+    id: str
+    tournament_id: str
+    name: str | None
+    code: str | None
+    member_ids: list[str]
+
+
 @dataclass
 class ParticipantRecord:
     id: str
@@ -146,9 +165,11 @@ class ParticipantRecord:
     total_score: int
     wins: int
     losses: int
-    eliminated_in_round: int | None
-    joined_at: datetime
+    team_id: str | None = None
+    eliminated_in_round: int | None = None
+    joined_at: datetime | None = None
     user_name: str | None = None
+    team_name: str | None = None
 
 
 ACCESS_TTL = timedelta(minutes=15)
@@ -414,6 +435,65 @@ class SQLAlchemyRepository:
             session.flush()
             return self._to_user_record(user)
 
+    def transfer_credits(
+        self,
+        *,
+        sender_id: str,
+        recipient_id: str,
+        amount_cents: int,
+    ) -> UserRecord:
+        with self.session_factory.begin() as session:
+            sender = session.execute(
+                select(UserORM)
+                .where(UserORM.id == sender_id)
+                .options(selectinload(UserORM.wallet))
+            ).scalar_one_or_none()
+            recipient = session.execute(
+                select(UserORM)
+                .where(UserORM.id == recipient_id)
+                .options(selectinload(UserORM.wallet))
+            ).scalar_one_or_none()
+
+            if sender is None or sender.wallet is None:
+                raise ValueError("Sender not found")
+            if recipient is None or recipient.wallet is None:
+                raise ValueError("Recipient not found")
+            if sender.wallet.balance_cents < amount_cents:
+                raise ValueError("Insufficient wallet balance")
+
+            # Deduct from sender
+            sender.wallet.balance_cents -= amount_cents
+            session.add(
+                WalletTransactionORM(
+                    id=create_id("wallettxn"),
+                    wallet=sender.wallet,
+                    user=sender,
+                    type="manual_adjustment",  # Using manual_adjustment for P2P for now
+                    amount_cents=amount_cents,
+                    balance_after_cents=sender.wallet.balance_cents,
+                    reference_type="p2p_transfer_out",
+                    reference_id=recipient_id,
+                )
+            )
+
+            # Credit to recipient
+            recipient.wallet.balance_cents += amount_cents
+            session.add(
+                WalletTransactionORM(
+                    id=create_id("wallettxn"),
+                    wallet=recipient.wallet,
+                    user=recipient,
+                    type="deposit",
+                    amount_cents=amount_cents,
+                    balance_after_cents=recipient.wallet.balance_cents,
+                    reference_type="p2p_transfer_in",
+                    reference_id=sender_id,
+                )
+            )
+
+            session.flush()
+            return self._to_user_record(sender)
+
     # ── Session operations ──
 
     def create_session(self, *, token: str, user_id: str, kind: str, expires_at: datetime) -> None:
@@ -460,6 +540,9 @@ class SQLAlchemyRepository:
             entry_fee_cents=tournament.entry_fee_cents,
             prize_pool_cents=tournament.prize_pool_cents,
             max_players=tournament.max_players,
+            team_size=tournament.team_size,
+            host_id=tournament.host_id,
+            tournament_type=tournament.tournament_type,
             status=tournament.status,
             bracket_type=tournament.bracket_type,
             bracket_state=tournament.bracket_state,
@@ -488,12 +571,95 @@ class SQLAlchemyRepository:
             ).scalar_one_or_none()
             return self._to_tournament_record(tournament)
 
+    def _to_team_record(self, team: TeamORM | None) -> TeamRecord | None:
+        if team is None:
+            return None
+        return TeamRecord(
+            id=team.id,
+            tournament_id=team.tournament_id,
+            name=team.name,
+            code=team.code,
+            member_ids=[p.user_id for p in team.participants],
+        )
+
+    def create_team(self, *, tournament_id: str, name: str | None = None) -> TeamRecord:
+        team = TeamORM(
+            id=create_id("team"),
+            tournament_id=tournament_id,
+            name=name,
+            code=token_hex(4).upper(),
+        )
+        with self.session_factory.begin() as session:
+            session.add(team)
+            session.flush()
+            record = self._to_team_record(team)
+            if record is None:
+                raise RuntimeError("Failed to create team record")
+            return record
+
+    def get_team_by_code(self, code: str) -> TeamRecord | None:
+        with self.session_factory() as session:
+            team = session.execute(
+                select(TeamORM)
+                .where(TeamORM.code == code)
+                .options(selectinload(TeamORM.participants))
+            ).scalar_one_or_none()
+            return self._to_team_record(team)
+
+    def get_team(self, team_id: str) -> TeamRecord | None:
+        with self.session_factory() as session:
+            team = session.execute(
+                select(TeamORM)
+                .where(TeamORM.id == team_id)
+                .options(selectinload(TeamORM.participants))
+            ).scalar_one_or_none()
+            return self._to_team_record(team)
+
+    def list_teams_by_tournament(self, tournament_id: str) -> list[TeamRecord]:
+        with self.session_factory() as session:
+            teams = session.execute(
+                select(TeamORM)
+                .where(TeamORM.tournament_id == tournament_id)
+                .options(selectinload(TeamORM.participants))
+            ).scalars().all()
+            return [self._to_team_record(t) for t in teams if t is not None]
+
     def update_tournament_status(self, tournament_id: str, status: str, **kwargs) -> None:
         with self.session_factory.begin() as session:
             vals = {"status": status, **kwargs}
             session.execute(
                 update(TournamentORM).where(TournamentORM.id == tournament_id).values(**vals)
             )
+
+    def create_tournament(
+        self,
+        *,
+        name: str,
+        entry_fee_cents: int,
+        max_players: int,
+        host_id: str,
+        team_size: int = 1,
+        tournament_type: str = "online",
+        bracket_type: str = "single_elimination",
+    ) -> TournamentRecord:
+        tournament = TournamentORM(
+            id=create_id("tournament"),
+            name=name,
+            entry_fee_cents=entry_fee_cents,
+            max_players=max_players,
+            host_id=host_id,
+            team_size=team_size,
+            tournament_type=tournament_type,
+            bracket_type=bracket_type,
+            status="open",
+        )
+        with self.session_factory.begin() as session:
+            session.add(tournament)
+            session.flush()
+            record = self._to_tournament_record(tournament)
+            if record is None:
+                raise RuntimeError("Failed to create tournament record")
+            return record
 
     def update_tournament_bracket_state(self, tournament_id: str, bracket_state: dict) -> None:
         with self.session_factory.begin() as session:
@@ -503,7 +669,7 @@ class SQLAlchemyRepository:
                 .values(bracket_state=bracket_state)
             )
 
-    def join_tournament(self, *, user_id: str, tournament_id: str) -> tuple[UserRecord, TournamentRecord]:
+    def join_tournament(self, *, user_id: str, tournament_id: str, team_id: str | None = None) -> tuple[UserRecord, TournamentRecord]:
         with self.session_factory.begin() as session:
             user = session.execute(
                 select(UserORM)
@@ -513,7 +679,10 @@ class SQLAlchemyRepository:
             tournament = session.execute(
                 select(TournamentORM)
                 .where(TournamentORM.id == tournament_id)
-                .options(selectinload(TournamentORM.participants))
+                .options(
+                    selectinload(TournamentORM.participants),
+                    selectinload(TournamentORM.teams).selectinload(TeamORM.participants)
+                )
             ).scalar_one_or_none()
 
             if user is None or user.wallet is None:
@@ -529,6 +698,33 @@ class SQLAlchemyRepository:
             if joined_count >= tournament.max_players:
                 tournament.status = "full"
                 raise RuntimeError("Tournament is already full")
+
+            # Team logic
+            actual_team_id = team_id
+            if tournament.team_size > 1:
+                if not actual_team_id:
+                    # Auto-assign: find a team with space
+                    available_team = next((team for team in tournament.teams if len(team.participants) < tournament.team_size), None)
+                    if available_team:
+                        actual_team_id = available_team.id
+                    else:
+                        # Create a new team
+                        new_team = TeamORM(
+                            id=create_id("team"),
+                            tournament_id=tournament_id,
+                            name=f"Team {len(tournament.teams) + 1}",
+                            code=token_hex(4).upper(),
+                        )
+                        session.add(new_team)
+                        session.flush()
+                        actual_team_id = new_team.id
+                else:
+                    # Verify team exists and has space
+                    team = session.execute(
+                        select(TeamORM).where(TeamORM.id == actual_team_id)
+                    ).scalar_one_or_none()
+                    if not team or len(team.participants) >= tournament.team_size:
+                        raise RuntimeError("Team is full or does not exist")
 
             if tournament.entry_fee_cents > 0:
                 if user.wallet.balance_cents < tournament.entry_fee_cents:
@@ -578,7 +774,10 @@ class SQLAlchemyRepository:
             participants = session.execute(
                 select(ParticipantORM)
                 .where(ParticipantORM.tournament_id == tournament_id)
-                .options(selectinload(ParticipantORM.user))
+                .options(
+                    selectinload(ParticipantORM.user),
+                    selectinload(ParticipantORM.team),
+                )
                 .order_by(ParticipantORM.seed.asc())
             ).scalars().all()
             return [
@@ -586,6 +785,7 @@ class SQLAlchemyRepository:
                     id=p.id,
                     tournament_id=p.tournament_id,
                     user_id=p.user_id,
+                    team_id=p.team_id,
                     status=p.status,
                     seed=p.seed,
                     total_score=p.total_score,
@@ -594,6 +794,7 @@ class SQLAlchemyRepository:
                     eliminated_in_round=p.eliminated_in_round,
                     joined_at=ensure_utc(p.joined_at),
                     user_name=p.user.name if p.user else None,
+                    team_name=p.team.name if p.team else None,
                 )
                 for p in participants
             ]
@@ -633,6 +834,7 @@ class SQLAlchemyRepository:
             player2_submitted_score=match.player2_submitted_score,
             scores_approved=match.scores_approved,
             lifelines_used=match.lifelines_used,
+            reschedules_remaining=match.reschedules_remaining,
             scheduled_at=ensure_utc(match.scheduled_at) if match.scheduled_at else None,
             started_at=ensure_utc(match.started_at) if match.started_at else None,
             completed_at=ensure_utc(match.completed_at) if match.completed_at else None,
@@ -664,6 +866,7 @@ class SQLAlchemyRepository:
             room_code=create_id("room"),
             status="pending" if player1_id and player2_id else "waiting",
             scheduled_at=scheduled_at,
+            reschedules_remaining=3,
         )
         with self.session_factory.begin() as session:
             session.add(match)

@@ -3,10 +3,16 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { NotificationBell } from "@/components/notification-bell";
+import { ThemeToggle } from "@/components/theme-toggle";
+import { Sidebar } from "@/components/sidebar";
+import { Inter, Outfit } from "next/font/google";
+
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
+const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit" });
 
 export const metadata: Metadata = {
-  title: "Winner Takes All — Tournament Platform",
-  description: "Compete in 8-ball pool tournaments. Pay to play, winner takes the cash pool.",
+  title: "WTA | Premium Tournament Platform",
+  description: "Compete in high-stakes multi-game tournaments. Professional grade.",
 };
 
 async function getUser() {
@@ -36,35 +42,53 @@ export default async function RootLayout({
   const user = await getUser();
 
   return (
-    <html lang="en">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-      </head>
+    <html lang="en" className={`${inter.variable} ${outfit.variable}`}>
       <body>
-        <header className="topbar">
-          <Link href="/" className="topbar-brand">
-            <span className="logo-icon">🏆</span>
-            Winner Takes All
-          </Link>
-          <nav className="topbar-nav">
-            <Link href="/tournaments" className="topbar-link">Tournaments</Link>
-            <Link href="/leaderboard" className="topbar-link">Leaderboard</Link>
-            {user ? (
-              <>
-                <Link href="/wallet" className="topbar-link">Wallet</Link>
-                <Link href="/dashboard" className="topbar-link">Dashboard</Link>
-                <NotificationBell />
-              </>
-            ) : (
-              <>
-                <Link href="/login" className="topbar-link">Login</Link>
-                <Link href="/signup" className="button button-sm">Sign Up</Link>
-              </>
-            )}
-          </nav>
-        </header>
-        {children}
+        <div className="app-container">
+          <Sidebar user={user} />
+          
+          <div className="main-content">
+            {/* Mobile-Only Header */}
+            <header className="mobile-header">
+              <Link href="/" style={{ display: "flex", alignItems: "center", gap: "0.75rem", textDecoration: "none" }}>
+                <span style={{ fontSize: "1.5rem" }}>👑</span>
+                <span style={{ fontWeight: 800, fontSize: "1rem", letterSpacing: "-0.5px", color: "white" }}>WTA</span>
+              </Link>
+              <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+                <ThemeToggle />
+                {user ? (
+                  <div className="user-initial" style={{ width: "32px", height: "32px", fontSize: "0.8rem" }}>
+                    {user.name?.[0]?.toUpperCase() || "U"}
+                  </div>
+                ) : (
+                  <Link href="/login" style={{ fontSize: "0.8rem", color: "var(--accent)", fontWeight: 600 }}>LOGIN</Link>
+                )}
+              </div>
+            </header>
+
+            <header className="topbar">
+              <div className="topbar-search">
+                {/* Search input could go here later */}
+              </div>
+              <nav className="topbar-nav">
+                <ThemeToggle />
+                {user ? (
+                  <>
+                    <NotificationBell />
+                    <div className="user-initial">{user.name?.[0]?.toUpperCase() || "U"}</div>
+                  </>
+                ) : (
+                  <>
+                    <Link href="/login" className="topbar-link">Login</Link>
+                    <Link href="/signup" className="button button-sm">Sign Up</Link>
+                  </>
+                )}
+              </nav>
+            </header>
+            
+            {children}
+          </div>
+        </div>
       </body>
     </html>
   );

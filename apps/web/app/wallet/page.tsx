@@ -44,41 +44,77 @@ export default async function WalletPage() {
     const wallet = payload.wallet;
 
     return (
-      <main className="page">
-        <div className="shell" style={{ maxWidth: "800px" }}>
-          <div className="wallet-balance-card slide-in" style={{ marginBottom: "1.5rem" }}>
-            <div className="wallet-balance-label">Available Balance</div>
-            <div className="wallet-balance-amount">₹{wallet.balance.amount}</div>
-            <PaymentButton />
+      <main className="page" style={{ padding: "1rem 2rem" }}>
+        <div className="shell" style={{ maxWidth: "1000px" }}>
+          
+          {/* Premium Hero Balance Section */}
+          <div className="wallet-hero slide-in" style={{ marginBottom: "2.5rem" }}>
+            <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}>
+              <div style={{ opacity: 0.6, letterSpacing: "3px", textTransform: "uppercase", fontSize: "0.8rem", marginBottom: "0.5rem" }}>
+                Active Arena Portfolio
+              </div>
+              <div className="glow-text" style={{ fontSize: "4.5rem", marginBottom: "1.5rem" }}>
+                ₹{wallet.balance.amount}
+              </div>
+              <PaymentButton />
+            </div>
           </div>
 
-          <div className="panel page-card slide-in">
-            <h2>Transaction History</h2>
-            <div className="list">
-              {wallet.transactions.length === 0 ? (
-                <p className="muted">No transactions yet.</p>
-              ) : (
-                wallet.transactions.map(tx => {
-                  const meta = TX_LABELS[tx.type] || { label: tx.type, icon: "📋", color: "var(--text-primary)" };
-                  const isCredit = tx.type === "deposit" || tx.type === "tournament_payout" || tx.type === "manual_adjustment" || tx.type === "refund";
-                  return (
-                    <div key={tx.id} className="list-item">
-                      <div style={{ display: "flex", alignItems: "center", gap: ".75rem" }}>
-                        <span style={{ fontSize: "1.25rem" }}>{meta.icon}</span>
-                        <div>
-                          <div style={{ fontWeight: 600, fontSize: ".9rem" }}>{meta.label}</div>
-                          <div className="muted" style={{ fontSize: ".75rem" }}>
-                            {tx.referenceType} · {new Date(tx.createdAt).toLocaleDateString()}
+          <div style={{ maxWidth: "800px", margin: "0 auto" }}>
+            
+            {/* Transaction History Feed */}
+            <div className="stack" style={{ gap: "1.5rem" }}>
+              <h3 style={{ fontSize: "1.5rem", marginBottom: "0.5rem" }}>Ledger Activity</h3>
+              <div className="list" style={{ gap: "0.75rem" }}>
+                {wallet.transactions.length === 0 ? (
+                  <div className="panel" style={{ textAlign: "center", padding: "3rem", opacity: 0.5 }}>
+                    No recorded activities yet.
+                  </div>
+                ) : (
+                  wallet.transactions.map(tx => {
+                    const meta = TX_LABELS[tx.type] || { label: tx.type, icon: "📋", color: "var(--text-primary)" };
+                    const isCredit = tx.type === "deposit" || tx.type === "tournament_payout" || tx.type === "manual_adjustment" || tx.type === "refund";
+                    return (
+                      <div key={tx.id} className="panel interactive-hover" style={{ 
+                        padding: "1.25rem 1.75rem", 
+                        display: "flex", 
+                        justifyContent: "space-between", 
+                        alignItems: "center",
+                        background: "rgba(255,255,255,0.02)",
+                        border: "1px solid rgba(255,255,255,0.05)"
+                      }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "1.25rem" }}>
+                          <div style={{ 
+                            width: "48px", 
+                            height: "48px", 
+                            borderRadius: "12px", 
+                            background: `${meta.color}11`, 
+                            display: "flex", 
+                            justifyContent: "center", 
+                            alignItems: "center",
+                            fontSize: "1.5rem",
+                            border: `1px solid ${meta.color}22`
+                          }}>
+                            {meta.icon}
+                          </div>
+                          <div>
+                            <div style={{ fontWeight: 700, fontSize: "1rem" }}>{meta.label}</div>
+                            <div className="muted" style={{ fontSize: "0.75rem", marginTop: "0.1rem" }}>
+                              {tx.referenceType} • {new Date(tx.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </div>
                           </div>
                         </div>
+                        <div style={{ textAlign: "right" }}>
+                          <div style={{ fontWeight: 800, color: meta.color, fontSize: "1.2rem" }}>
+                            {isCredit ? "+" : "-"}₹{tx.amount.amount}
+                          </div>
+                          <div style={{ fontSize: "0.65rem", opacity: 0.4 }}>SUCCESS</div>
+                        </div>
                       </div>
-                      <div style={{ fontWeight: 700, color: meta.color, fontSize: ".95rem" }}>
-                        {isCredit ? "+" : "-"}₹{tx.amount.amount}
-                      </div>
-                    </div>
-                  );
-                })
-              )}
+                    );
+                  })
+                )}
+              </div>
             </div>
           </div>
         </div>

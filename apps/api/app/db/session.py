@@ -11,8 +11,8 @@ from sqlalchemy.orm import sessionmaker
 from .models import Base
 
 
-DEFAULT_SQLITE_PATH = Path(gettempdir()) / "wta-api" / "wta.db"
-DEFAULT_DATABASE_URL = f"sqlite:///{DEFAULT_SQLITE_PATH.as_posix()}"
+DEFAULT_SQLITE_PATH = Path(__file__).parent.parent.parent / "data" / "wta.db"
+DEFAULT_DATABASE_URL = f"sqlite:///{DEFAULT_SQLITE_PATH.absolute().as_posix()}"
 
 
 def normalize_database_url(database_url: str | None = None) -> str:

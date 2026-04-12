@@ -25,12 +25,15 @@ from .models import (
     ScoreApproveRequest,
     ScoreSubmitRequest,
     SignupRequest,
+    TournamentJoinRequest,
     TournamentJoinResponse,
     TournamentResponse,
+    TournamentCreateRequest,
     TournamentsResponse,
     WalletDeductRequest,
     WalletResponse,
     WalletTopupRequest,
+    WalletTransferRequest,
 )
 from .service import WTAService
 from .payments.razorpay_service import create_order, verify_payment_signature, get_key_id
@@ -117,11 +120,39 @@ async def wallet_deduct(
     return WalletResponse(wallet=wallet_data)
 
 
+@app.post("/wallet/transfer", response_model=WalletResponse, responses={401: {"model": ErrorResponse}})
+async def wallet_transfer(
+    payload: WalletTransferRequest,
+    wta_access_token: str | None = Cookie(default=None),
+) -> WalletResponse:
+    user = service.require_user(wta_access_token)
+    wallet_data = service.transfer_credits(user, payload.recipientId, payload.amount)
+    return WalletResponse(wallet=wallet_data)
+
+
 # ── Tournaments ──
 
 @app.get("/tournaments", response_model=TournamentsResponse)
 async def tournaments() -> TournamentsResponse:
     return TournamentsResponse(tournaments=service.list_tournaments())
+
+
+@app.post("/tournaments/create", response_model=TournamentResponse, responses={401: {"model": ErrorResponse}})
+async def tournament_create(
+    payload: TournamentCreateRequest,
+    wta_access_token: str | None = Cookie(default=None),
+) -> TournamentResponse:
+    user = service.require_user(wta_access_token)
+    tournament_data = service.create_tournament(
+        host=user,
+        name=payload.name,
+        entry_fee=payload.entryFee,
+        max_players=payload.maxPlayers,
+        team_size=payload.teamSize,
+        tournament_type=payload.tournamentType,
+        bracket_type=payload.bracketType,
+    )
+    return TournamentResponse(tournament=tournament_data)
 
 
 @app.get("/tournaments/{tournament_id}", response_model=TournamentResponse, responses={404: {"model": ErrorResponse}})
@@ -136,10 +167,13 @@ async def tournament_detail(tournament_id: str) -> TournamentResponse:
 )
 async def tournament_join(
     tournament_id: str,
+    payload: TournamentJoinRequest | None = None,
     wta_access_token: str | None = Cookie(default=None),
 ) -> TournamentJoinResponse:
     user = service.require_user(wta_access_token)
-    tournament, wallet_data = service.join_tournament(user, tournament_id)
+    team_id = payload.teamId if payload else None
+    team_code = payload.teamCode if payload else None
+    tournament, wallet_data = service.join_tournament(user, tournament_id, team_id=team_id, team_code=team_code)
     return TournamentJoinResponse(tournament=tournament, wallet=wallet_data)
 
 
