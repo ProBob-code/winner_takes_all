@@ -47,7 +47,11 @@ service = WTAService(SQLAlchemyRepository())
 # CORS for Razorpay checkout callbacks and frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origins=[
+        "http://localhost:3000", 
+        "http://127.0.0.1:3000",
+        "http://192.168.1.4:3000"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -99,7 +103,7 @@ async def refresh(
 @app.get("/user/profile", response_model=AuthResponse, responses={401: {"model": ErrorResponse}})
 async def profile(wta_access_token: str | None = Cookie(default=None)) -> AuthResponse:
     user = service.require_user(wta_access_token)
-    return AuthResponse(user=service.serialize_user(user))
+    return AuthResponse(user=service.serialize_user(user, include_stats=True))
 
 
 # ── Wallet ──
@@ -151,6 +155,7 @@ async def tournament_create(
         team_size=payload.teamSize,
         tournament_type=payload.tournamentType,
         bracket_type=payload.bracketType,
+        password=payload.password,
     )
     return TournamentResponse(tournament=tournament_data)
 
@@ -158,6 +163,16 @@ async def tournament_create(
 @app.get("/tournaments/{tournament_id}", response_model=TournamentResponse, responses={404: {"model": ErrorResponse}})
 async def tournament_detail(tournament_id: str) -> TournamentResponse:
     return TournamentResponse(tournament=service.get_tournament(tournament_id))
+
+
+@app.delete("/tournaments/{tournament_id}", response_model=dict, responses={401: {"model": ErrorResponse}, 403: {"model": ErrorResponse}, 404: {"model": ErrorResponse}})
+async def tournament_delete(
+    tournament_id: str,
+    wta_access_token: str | None = Cookie(default=None),
+) -> dict:
+    user = service.require_user(wta_access_token)
+    service.delete_tournament(user, tournament_id)
+    return {"ok": True, "message": "Tournament deleted and participants refunded"}
 
 
 @app.post(
@@ -173,7 +188,8 @@ async def tournament_join(
     user = service.require_user(wta_access_token)
     team_id = payload.teamId if payload else None
     team_code = payload.teamCode if payload else None
-    tournament, wallet_data = service.join_tournament(user, tournament_id, team_id=team_id, team_code=team_code)
+    password = payload.password if payload else None
+    tournament, wallet_data = service.join_tournament(user, tournament_id, team_id=team_id, team_code=team_code, password=password)
     return TournamentJoinResponse(tournament=tournament, wallet=wallet_data)
 
 
@@ -252,6 +268,7 @@ async def payment_create_order(
         currency="INR",
         provider_order_id=razorpay_order["id"],
         idempotency_key=idempotency_key,
+        is_test=get_key_id().startswith("rzp_test_"),
     )
 
     return PaymentOrderResponse(
@@ -305,6 +322,7 @@ async def payment_verify(
         reference_id=payment.id,
         transaction_type="deposit",
         payment_id=payment.id,
+        is_test=payment.is_test,
     )
 
     return JSONResponse(content={"ok": True, "message": "Payment verified and wallet credited"})

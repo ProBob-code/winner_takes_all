@@ -33,12 +33,21 @@ class Money(BaseModel):
     currency: Currency = "INR"
 
 
+class UserStats(BaseModel):
+    tournamentWins: int = 0
+    matchWins: int = 0
+    winRate: float = 0.0
+    totalMatches: int = 0
+    points: int = 0
+
 class UserProfile(BaseModel):
     id: str
     name: str
     email: str
     walletBalance: str
     role: UserRole
+    stats: UserStats | None = None
+    joinedTournaments: list[TournamentSummary] = []
 
 
 class SignupRequest(BaseModel):
@@ -79,6 +88,7 @@ class WalletTransaction(BaseModel):
     createdAt: datetime
     referenceType: str
     referenceId: str
+    isTest: bool = False
 
 
 class WalletSnapshot(BaseModel):
@@ -93,6 +103,7 @@ class TournamentSummary(BaseModel):
     maxPlayers: int
     joinedPlayers: int
     status: TournamentStatus
+    isPrivate: bool = False
 
 
 class TeamDetail(BaseModel):
@@ -123,7 +134,7 @@ class TournamentDetail(TournamentSummary):
     winnerId: str | None = None
     startedAt: datetime | None = None
     completedAt: datetime | None = None
-    hostId: str | None = None
+    tournamentHostId: str | None = None
     teamSize: int = 1
     tournamentType: str = "online"
     teams: list[TeamDetail] = []
@@ -133,15 +144,17 @@ class TournamentDetail(TournamentSummary):
 class TournamentJoinRequest(BaseModel):
     teamId: str | None = None
     teamCode: str | None = None
+    password: str | None = None
 
 
 class TournamentCreateRequest(BaseModel):
-    name: str = Field(min_length=3, max_length=120)
+    name: str = Field(min_length=2, max_length=120)
     entryFee: int = Field(ge=0)
     maxPlayers: int = Field(ge=2, le=64)
     teamSize: int = Field(default=1) # 1 or 2
     tournamentType: str = Field(default="online") # online, offline, hybrid
     bracketType: str = Field(default="single_elimination")
+    password: str | None = None
 
 
 class MatchPlayer(BaseModel):

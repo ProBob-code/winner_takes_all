@@ -62,13 +62,34 @@ class WTAService:
 
     # ── Serialization helpers ──
 
-    def serialize_user(self, user: UserRecord) -> UserProfile:
+    def serialize_user(self, user: UserRecord, include_stats: bool = False) -> UserProfile:
+        stats = None
+        joined_tournaments = []
+        if include_stats:
+            raw_stats = self.store.get_user_match_stats(user.id)
+            total = raw_stats["wins"] + raw_stats["losses"]
+            win_rate = (raw_stats["wins"] / total * 100) if total > 0 else 0.0
+            
+            from .models import UserStats
+            stats = UserStats(
+                tournamentWins=raw_stats.get("tournament_wins", 0),
+                matchWins=raw_stats["wins"],
+                winRate=round(win_rate, 1),
+                totalMatches=total,
+                points=raw_stats["points"]
+            )
+            
+            tournaments = self.store.list_tournaments_by_user(user.id)
+            joined_tournaments = [self.serialize_tournament_summary(t) for t in tournaments]
+
         return UserProfile(
             id=user.id,
             name=user.name,
             email=user.email,
             walletBalance=f"{user.wallet_balance_cents / 100:.2f}",
             role=user.role,
+            stats=stats,
+            joinedTournaments=joined_tournaments
         )
 
     def serialize_wallet(self, user: UserRecord) -> WalletSnapshot:
@@ -87,6 +108,7 @@ class WTAService:
                     createdAt=entry.created_at,
                     referenceType=entry.reference_type,
                     referenceId=entry.reference_id,
+                    isTest=entry.is_test,
                 )
                 for entry in entries
             ],
@@ -103,9 +125,13 @@ class WTAService:
         )
 
     def serialize_tournament_detail(self, tournament: TournamentRecord) -> TournamentDetail:
-        summary = self.serialize_tournament_summary(tournament)
-        return TournamentDetail(
-            **summary.model_dump(),
+        detail = TournamentDetail(
+            id=tournament.id,
+            name=tournament.name,
+            entryFee=cents_to_money(tournament.entry_fee_cents),
+            maxPlayers=tournament.max_players,
+            joinedPlayers=len(tournament.participants),
+            status=tournament.status,
             prizePool=cents_to_money(tournament.prize_pool_cents),
             bracketType=tournament.bracket_type,
             bracketState=tournament.bracket_state,
@@ -114,6 +140,11 @@ class WTAService:
             startedAt=tournament.started_at,
             completedAt=tournament.completed_at,
         )
+        detail.tournamentHostId = tournament.host_id
+        detail.teamSize = tournament.team_size
+        detail.tournamentType = tournament.tournament_type
+        detail.isPrivate = bool(tournament.password)
+        return detail
 
     def serialize_match(self, match: MatchRecord) -> MatchDetail:
         p1 = None
@@ -289,6 +320,7 @@ class WTAService:
         team_size: int,
         tournament_type: str,
         bracket_type: str,
+        password: str | None = None,
     ) -> TournamentDetail:
         # entry_fee in rupees, convert to cents
         entry_fee_cents = entry_fee * 100
@@ -301,8 +333,42 @@ class WTAService:
             team_size=team_size,
             tournament_type=tournament_type,
             bracket_type=bracket_type,
+            password=password,
         )
         return self.serialize_tournament_detail(tournament)
+
+    def delete_tournament(self, user: UserRecord, tournament_id: str) -> bool:
+        tournament = self.store.get_tournament(tournament_id)
+        if not tournament:
+            raise HTTPException(status_code=404, detail="Tournament not found")
+            
+        # Only the host or an admin can delete
+        if tournament.host_id != user.id and user.role != "admin":
+            raise HTTPException(status_code=403, detail="Permission denied")
+            
+        # Refund participants if not completed
+        if tournament.status != "completed" and tournament.entry_fee_cents > 0:
+            participants = self.store.get_participants(tournament_id)
+            for p in participants:
+                self.store.credit_wallet(
+                    user_id=p.user_id,
+                    amount_cents=tournament.entry_fee_cents,
+                    reference_type="tournament_refund",
+                    reference_id=tournament_id,
+                    transaction_type="refund",
+                )
+                
+                # Notify
+                self.store.create_notification(
+                    user_id=p.user_id,
+                    type="tournament_cancelled",
+                    title="Tournament Cancelled / Refunded 📢",
+                    message=f"'{tournament.name}' was deleted by the host. Your entry fee of ₹{tournament.entry_fee_cents/100:.2f} has been refunded.",
+                    tournament_id=tournament_id,
+                )
+
+        self.store.delete_tournament(tournament_id)
+        return True
 
     def get_tournament(self, tournament_id: str) -> TournamentDetail:
         tournament = self.store.get_tournament(tournament_id)
@@ -310,7 +376,7 @@ class WTAService:
             raise HTTPException(status_code=404, detail="Tournament not found")
         return self.serialize_tournament_detail(tournament)
 
-    def join_tournament(self, user: UserRecord, tournament_id: str, team_id: str | None = None, team_code: str | None = None) -> tuple[TournamentDetail, WalletSnapshot]:
+    def join_tournament(self, user: UserRecord, tournament_id: str, team_id: str | None = None, team_code: str | None = None, password: str | None = None) -> tuple[TournamentDetail, WalletSnapshot]:
         actual_team_id = team_id
         if team_code:
             team = self.store.get_team_by_code(team_code)
@@ -319,6 +385,14 @@ class WTAService:
             if team.tournament_id != tournament_id:
                 raise HTTPException(status_code=400, detail="Team does not belong to this tournament")
             actual_team_id = team.id
+
+        tournament_record = self.store.get_tournament(tournament_id)
+        if not tournament_record:
+            raise HTTPException(status_code=404, detail="Tournament not found")
+            
+        # Check tournament password if set
+        if tournament_record.password and tournament_record.password != password:
+            raise HTTPException(status_code=403, detail="Tournament is private. Invalid password.")
 
         try:
             updated_user, tournament = self.store.join_tournament(

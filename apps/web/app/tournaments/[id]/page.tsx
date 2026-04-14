@@ -3,6 +3,8 @@ import { readBackendJson } from "@/lib/backend";
 import { formatMoney } from "@/lib/format";
 import { BracketView } from "@/components/bracket-view";
 import { JoinTournamentButton } from "@/components/join-tournament-button";
+import { ShareTournament } from "@/components/share-tournament";
+import { DeleteTournamentDialog } from "@/components/delete-tournament-dialog";
 
 type TournamentDetailResponse = {
   ok: boolean;
@@ -17,6 +19,8 @@ type TournamentDetailResponse = {
     bracketType: string;
     platformFeePercent: number;
     winnerId?: string | null;
+    tournamentHostId?: string | null;
+    isPrivate: boolean;
   };
 };
 
@@ -62,30 +66,63 @@ export default async function TournamentDetailPage({
   const { id } = await params;
 
   try {
-    const [{ payload: tournamentData }, { payload: bracketData }, { payload: participantData }] =
-      await Promise.all([
-        readBackendJson<TournamentDetailResponse>(`/tournaments/${id}`),
-        readBackendJson<BracketResponse>(`/tournaments/${id}/bracket`),
-        readBackendJson<ParticipantsResponse>(`/tournaments/${id}/participants`),
-      ]);
+    const responses = await Promise.allSettled([
+      readBackendJson<TournamentDetailResponse>(`/tournaments/${id}`),
+      readBackendJson<BracketResponse>(`/tournaments/${id}/bracket`),
+      readBackendJson<ParticipantsResponse>(`/tournaments/${id}/participants`),
+      readBackendJson<any>("/user/profile"),
+    ]);
+
+    // Check if tournament fetch failed with 404
+    const tournamentRes = responses[0];
+    if (tournamentRes.status === "rejected") {
+      const errorMsg = tournamentRes.reason?.message || "";
+      if (errorMsg.includes("404")) {
+        return (
+          <main className="page">
+            <div className="shell">
+              <div className="panel page-card slide-in" style={{ textAlign: "center", padding: "4rem 2rem" }}>
+                <div style={{ fontSize: "4rem", marginBottom: "1.5rem" }}>🏟️</div>
+                <h2 style={{ fontSize: "2rem", marginBottom: "1rem" }}>Tournament Not Found</h2>
+                <p style={{ color: "var(--text-muted)", marginBottom: "2rem" }}>This lobby may have been deleted or moved.</p>
+                <Link href="/tournaments" className="button button-primary">Back to Tournaments</Link>
+              </div>
+            </div>
+          </main>
+        );
+      }
+      throw tournamentRes.reason;
+    }
+
+    const { payload: tournamentData } = tournamentRes.value;
+    const bracketData = responses[1].status === "fulfilled" ? responses[1].value.payload : { rounds: [] };
+    const participantData = responses[2].status === "fulfilled" ? responses[2].value.payload : { participants: [] };
+    const profileData = responses[3].status === "fulfilled" ? responses[3].value.payload : null;
 
     const tournament = tournamentData.tournament;
     if (!tournament) {
       return (
         <main className="page">
           <div className="shell">
-            <div className="panel page-card"><h2>Tournament not found</h2></div>
+            <div className="panel page-card slide-in" style={{ textAlign: "center", padding: "4rem 2rem" }}>
+              <div style={{ fontSize: "4rem", marginBottom: "1.5rem" }}>🏟️</div>
+              <h2 style={{ fontSize: "2rem", marginBottom: "1rem" }}>Tournament Not Found</h2>
+              <p style={{ color: "var(--text-muted)", marginBottom: "2rem" }}>This lobby is no longer available.</p>
+              <Link href="/tournaments" className="button button-primary">Back to Tournaments</Link>
+            </div>
           </div>
         </main>
       );
     }
+
+    const isHost = profileData.ok && profileData.user && profileData.user.id === tournament.tournamentHostId;
 
     const statusClass = `tournament-status status-${tournament.status}`;
     const isCompleted = tournament.status === "completed";
     const isOpen = tournament.status === "open";
     const participants = participantData.participants || [];
     const rounds = bracketData.rounds || [];
-    const winnerParticipant = participants.find(p => p.status === "winner");
+    const winnerParticipant = participants.find((p: any) => p.status === "winner");
 
     // Calculate prize info
     const prizePool = parseFloat(tournament.prizePool.amount);
@@ -99,7 +136,22 @@ export default async function TournamentDetailPage({
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "1rem" }}>
               <div>
                 <h2 style={{ fontSize: "1.5rem" }}>{tournament.name}</h2>
-                <span className={statusClass}>{tournament.status.replace("_", " ")}</span>
+                <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+                  <span className={statusClass}>{tournament.status.replace("_", " ")}</span>
+                  {tournament.isPrivate && (
+                    <span style={{ 
+                      background: "var(--red-subtle)", 
+                      color: "var(--red-light)", 
+                      fontSize: "0.75rem", 
+                      padding: "2px 8px", 
+                      borderRadius: "6px",
+                      fontWeight: "700",
+                      border: "1px solid rgba(239, 68, 68, 0.2)"
+                    }}>
+                      🔒 PRIVATE
+                    </span>
+                  )}
+                </div>
               </div>
               <div style={{ textAlign: "right" }}>
                 <div className="tournament-meta">
@@ -116,11 +168,15 @@ export default async function TournamentDetailPage({
               </div>
             </div>
 
-            {isOpen && (
               <div className="cta-row" style={{ marginTop: "1.5rem" }}>
-                <JoinTournamentButton tournamentId={id} />
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "1rem", alignItems: "center", flex: 1 }}>
+                  <JoinTournamentButton tournamentId={id} isPrivate={tournament.isPrivate} />
+                  <ShareTournament tournamentId={id} tournamentName={tournament.name} />
+                </div>
+                {isHost && (
+                  <DeleteTournamentDialog tournamentId={id} tournamentName={tournament.name} />
+                )}
               </div>
-            )}
           </div>
 
           {/* Winner Banner */}
@@ -145,10 +201,10 @@ export default async function TournamentDetailPage({
             <div className="panel page-card slide-in" style={{ marginBottom: "1.5rem" }}>
               <h2>📅 Match Schedule</h2>
               <div className="match-schedule">
-                {rounds.flatMap(round =>
+                {rounds.flatMap((round: any) =>
                   round.matches
-                    .filter(m => m.status !== "completed" && m.status !== "bye")
-                    .map(match => (
+                    .filter((m: any) => m.status !== "completed" && m.status !== "bye")
+                    .map((match: any) => (
                       <Link
                         key={match.id}
                         href={`/match/${match.id}`}
@@ -165,7 +221,7 @@ export default async function TournamentDetailPage({
                       </Link>
                     ))
                 )}
-                {rounds.every(r => r.matches.every(m => m.status === "completed" || m.status === "bye")) && (
+                {rounds.every((r: any) => r.matches.every((m: any) => m.status === "completed" || m.status === "bye")) && (
                   <p className="muted">All matches completed!</p>
                 )}
               </div>
@@ -188,11 +244,11 @@ export default async function TournamentDetailPage({
                 </thead>
                 <tbody>
                   {participants
-                    .sort((a, b) => {
+                    .sort((a: any, b: any) => {
                       const order: Record<string, number> = { winner: 0, active: 1, registered: 2, eliminated: 3 };
                       return (order[a.status] ?? 9) - (order[b.status] ?? 9) || b.totalScore - a.totalScore;
                     })
-                    .map((p, i) => (
+                    .map((p: any, i: number) => (
                     <tr key={p.userId}>
                       <td className={`leaderboard-rank ${i < 3 ? `rank-${i + 1}` : ""}`}>{i + 1}</td>
                       <td className="leaderboard-name">
@@ -221,7 +277,7 @@ export default async function TournamentDetailPage({
         <div className="shell">
           <div className="panel page-card">
             <h2>Tournament</h2>
-            <p className="muted">Could not load tournament details. Make sure the API is running on port 4000.</p>
+            <p className="muted">Could not load tournament details. Make sure the API server is running.</p>
           </div>
         </div>
       </main>

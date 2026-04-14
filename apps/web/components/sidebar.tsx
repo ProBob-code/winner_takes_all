@@ -1,10 +1,27 @@
 "use client";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 export function Sidebar({ user }: { user: any }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+      router.push("/");
+      router.refresh();
+    } catch (err) {
+      console.error("Logout failed:", err);
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
 
   const navItems = user ? [
     { label: "Dashboard", href: "/dashboard", icon: "📊" },
@@ -36,19 +53,27 @@ export function Sidebar({ user }: { user: any }) {
               className={`sidebar-link ${isActive ? "active" : ""}`}
             >
               <span className="sidebar-icon">{item.icon}</span>
-              <span className="sidebar-label">{item.label}</span>
+              {item.label}
             </Link>
           );
         })}
       </nav>
       
-      {/* Wallet Summary at bottom of sidebar for logged in users */}
+      {/* Wallet Summary & Logout at bottom of sidebar for logged in users */}
       {user && (
         <div className="sidebar-footer">
           <div className="sidebar-wallet">
             <span className="wallet-label">Balance</span>
             <span className="wallet-amount">₹{user.walletBalance}</span>
           </div>
+          <button 
+            className="sidebar-logout-btn" 
+            onClick={handleLogout}
+            disabled={isLoggingOut}
+          >
+            <span className="sidebar-icon">🚪</span>
+            {isLoggingOut ? "Logging out..." : "Logout"}
+          </button>
         </div>
       )}
     </aside>

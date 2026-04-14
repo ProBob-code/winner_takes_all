@@ -2,15 +2,15 @@ import HostTournamentForm from "@/components/host-form";
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { getApiBaseUrl } from "@/lib/backend";
 
 async function checkAuth() {
   const cookieStore = await cookies();
   const token = cookieStore.get("wta_access_token")?.value;
   if (!token) return false;
 
-  const apiUrl = process.env.WTA_API_URL || "http://127.0.0.1:4000";
   try {
-    const res = await fetch(`${apiUrl}/user/profile`, {
+    const res = await fetch(`${getApiBaseUrl()}/user/profile`, {
       headers: { Cookie: `wta_access_token=${token}` },
       cache: "no-store",
     });

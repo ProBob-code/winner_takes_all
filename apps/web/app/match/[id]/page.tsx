@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { readBackendJson } from "@/lib/backend";
 import { GameRoom } from "@/components/game-room";
+import { OfflineTracker } from "@/components/offline-tracker";
 
 type MatchResponse = {
   ok: boolean;
@@ -16,6 +17,15 @@ type MatchResponse = {
     status: string;
     scoreThreshold: number;
     scoresApproved: boolean;
+  };
+};
+
+type TournamentResponse = {
+  ok: boolean;
+  tournament?: {
+    id: string;
+    name: string;
+    tournamentType: string;
   };
 };
 
@@ -69,6 +79,10 @@ export default async function MatchPage({
       );
     }
 
+    // Fetch tournament details to check type
+    const { payload: tournamentData } = await readBackendJson<TournamentResponse>(`/tournaments/${match.tournamentId}`);
+    const isOffline = tournamentData.tournament?.tournamentType === "offline";
+
     // Completed match view
     if (match.status === "completed" || match.scoresApproved) {
       return (
@@ -114,31 +128,48 @@ export default async function MatchPage({
           <div style={{ marginBottom: "1rem", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <div>
               <h1 style={{ fontSize: "1.2rem", fontWeight: 700 }}>
-                🎱 Match — Round {match.round}
+                {isOffline ? "📊 Offline Match Tracking" : "🎱 Match — Round " + match.round}
               </h1>
               <p className="muted" style={{ fontSize: ".85rem" }}>
-                Score threshold: {match.scoreThreshold} pts
+                {isOffline ? "Tracking physical game score" : "Score threshold: " + match.scoreThreshold + " pts"}
               </p>
             </div>
             <a href={`/tournaments/${match.tournamentId}`} className="button-secondary button-sm">
               ← Tournament
             </a>
           </div>
-          <GameRoom
-            matchId={id}
-            accessToken={accessToken}
-            userName={user.name}
-          />
+          
+          {isOffline ? (
+            <OfflineTracker 
+              isTournamentMatch={true}
+              matchId={id}
+              player1Name={match.player1?.name || "Player 1"}
+              player2Name={match.player2?.name || "Player 2"}
+              player1Id={match.player1?.id}
+              player2Id={match.player2?.id}
+            />
+          ) : (
+            <GameRoom
+              matchId={id}
+              accessToken={accessToken}
+              userName={user.name}
+              player1Name={match.player1?.name}
+              player2Name={match.player2?.name}
+              player1Id={match.player1?.id}
+              player2Id={match.player2?.id}
+            />
+          )}
         </div>
       </main>
     );
-  } catch {
+  } catch (err) {
+    console.error("Match room error:", err);
     return (
       <main className="page">
         <div className="shell">
           <div className="panel page-card">
             <h2>Match Room</h2>
-            <p className="muted">Could not load match. Make sure the API is running on port 4000.</p>
+            <p className="muted">Could not load match. Make sure the API server is running.</p>
           </div>
         </div>
       </main>

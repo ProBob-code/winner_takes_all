@@ -10,6 +10,7 @@ export async function POST(
   }
 ) {
   const { id } = await context.params;
+  const body = await request.json().catch(() => ({}));
   const cookieStore = await cookies();
   const cookieHeader = cookieStore
     .getAll()
@@ -18,6 +19,10 @@ export async function POST(
 
   return proxyJson(`/tournaments/${id}/join`, {
     method: "POST",
-    headers: cookieHeader ? { cookie: cookieHeader } : undefined
+    headers: {
+      ...(cookieHeader ? { cookie: cookieHeader } : {}),
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(body)
   });
 }

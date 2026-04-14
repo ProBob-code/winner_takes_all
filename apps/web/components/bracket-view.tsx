@@ -32,11 +32,20 @@ type BracketViewProps = {
 export function BracketView({ rounds, tournamentStatus }: BracketViewProps) {
   if (!rounds || rounds.length === 0) {
     return (
-      <div className="waiting-room">
-        <div className="waiting-spinner" />
-        <div className="waiting-text">
-          Bracket will be generated when all players join
-          <span className="waiting-dots" />
+      <div className="holographic-bracket-loading">
+        <div className="cyber-grid" />
+        <div className="hologram-scan" />
+        <div className="flicker-overlay" />
+        
+        <div className="energy-core">
+          <div className="core-orbit" />
+          <div className="core-orbit" />
+          <div className="core-inner" />
+        </div>
+
+        <div className="loading-status">
+          <div className="status-main">Generating Bracket</div>
+          <div className="status-sub">Awaiting all players to synchronize...</div>
         </div>
       </div>
     );

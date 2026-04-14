@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { ShareTournament } from "./share-tournament";
 
 export default function HostTournamentForm() {
   const router = useRouter();
@@ -16,7 +17,10 @@ export default function HostTournamentForm() {
     teamSize: 1,
     tournamentType: "online",
     bracketType: "single_elimination",
+    password: "",
   });
+
+  const [isPrivate, setIsPrivate] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,7 +31,10 @@ export default function HostTournamentForm() {
       const res = await fetch("/api/tournaments/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          password: isPrivate ? formData.password : null,
+        }),
       });
 
       const data = await res.json();
@@ -38,7 +45,7 @@ export default function HostTournamentForm() {
       setSuccess(`Tournament created successfully! Tournament ID: ${data.tournament.id}`);
       setTimeout(() => {
         router.push(`/tournaments/${data.tournament.id}`);
-      }, 2000);
+      }, 5000);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -54,7 +61,16 @@ export default function HostTournamentForm() {
       </div>
 
       {error && <div className="panel p-4 slide-in" style={{ marginBottom: "1.5rem", borderColor: "var(--red-subtle)", background: "rgba(239, 68, 68, 0.1)" }}><p className="text-red" style={{ textAlign: "center" }}>{error}</p></div>}
-      {success && <div className="panel p-4 slide-in" style={{ marginBottom: "1.5rem", borderColor: "var(--green-subtle)", background: "rgba(16, 185, 129, 0.1)" }}><p className="text-green" style={{ textAlign: "center" }}>{success}</p></div>}
+      {success && (
+        <div className="panel p-4 slide-in" style={{ marginBottom: "1.5rem", borderColor: "var(--green-subtle)", background: "rgba(16, 185, 129, 0.1)" }}>
+          <p className="text-green" style={{ textAlign: "center", marginBottom: "1rem", fontWeight: 600 }}>{success}</p>
+          <div style={{ background: "rgba(0,0,0,0.2)", padding: "1rem", borderRadius: "1rem" }}>
+            <p className="muted" style={{ fontSize: "0.85rem", marginBottom: "0.5rem" }}>Invite others to join:</p>
+            <ShareTournament tournamentId={success.split("ID: ")[1]} tournamentName={formData.name} />
+          </div>
+          <p className="muted" style={{ textAlign: "center", marginTop: "1rem", fontSize: "0.8rem" }}>Redirecting to tournament page in 5 seconds...</p>
+        </div>
+      )}
 
       <div className="form-group" style={{ marginBottom: "1.5rem" }}>
         <label htmlFor="name" style={{ display: "block", marginBottom: "0.5rem", color: "var(--text-secondary)", fontWeight: 500 }}>Tournament Name</label>
@@ -151,6 +167,45 @@ export default function HostTournamentForm() {
           <option value="single_elimination">Single Elimination (Sudden Death)</option>
           <option value="double_elimination">Double Elimination</option>
         </select>
+      </div>
+
+      <div className="form-group" style={{ marginBottom: "2.5rem", padding: "1.5rem", borderRadius: "1rem", background: isPrivate ? "rgba(239, 68, 68, 0.05)" : "rgba(255,255,255,0.02)", border: "1px solid var(--glass-border-color)", transition: "all 0.3s ease" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "1rem", cursor: "pointer" }} onClick={() => setIsPrivate(!isPrivate)}>
+          <div style={{ 
+            width: "24px", 
+            height: "24px", 
+            borderRadius: "6px", 
+            border: "2px solid var(--accent)", 
+            display: "flex", 
+            alignItems: "center", 
+            justifyContent: "center",
+            background: isPrivate ? "var(--accent)" : "transparent",
+            transition: "all 0.2s"
+          }}>
+            {isPrivate && <span style={{ color: "white", fontSize: "14px" }}>✓</span>}
+          </div>
+          <div>
+            <strong style={{ display: "block", color: isPrivate ? "var(--red-light)" : "var(--text-primary)" }}>
+              {isPrivate ? "🔒 Private Tournament" : "🔓 Open Tournament"}
+            </strong>
+            <span className="muted text-xs">Only players with the password can join.</span>
+          </div>
+        </div>
+
+        {isPrivate && (
+          <div className="slide-in mt-4">
+            <label style={{ display: "block", marginBottom: "0.5rem", color: "var(--text-secondary)", fontSize: "0.85rem" }}>Set Tournament Password</label>
+            <input
+              type="text"
+              placeholder="Enter a secure password"
+              required={isPrivate}
+              value={formData.password}
+              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+              className="form-control"
+              style={{ width: "100%", padding: "0.75rem 1rem", borderRadius: "0.5rem", background: "rgba(0,0,0,0.2)", border: "1px solid var(--red-subtle)", color: "var(--text-primary)" }}
+            />
+          </div>
+        )}
       </div>
 
       <button type="submit" disabled={loading} className="button" style={{ width: "100%", padding: "1.25rem", fontSize: "1.1rem" }}>

@@ -1,6 +1,7 @@
 import { readBackendJson } from "@/lib/backend";
 import { formatMoney } from "@/lib/format";
 import { PaymentButton } from "@/components/payment-button";
+import { redirect } from "next/navigation";
 
 type WalletResponse = {
   ok: boolean;
@@ -12,6 +13,7 @@ type WalletResponse = {
       amount: { amount: string; currency: string };
       referenceType: string;
       createdAt: string;
+      isTest?: boolean;
     }>;
   };
 };
@@ -25,10 +27,30 @@ const TX_LABELS: Record<string, { label: string; icon: string; color: string }> 
 };
 
 export default async function WalletPage() {
+  let res;
   try {
-    const { payload, response } = await readBackendJson<WalletResponse>("/wallet");
+    res = await readBackendJson<WalletResponse>("/wallet");
+  } catch (err) {
+    console.error("Wallet error:", err);
+    return (
+      <main className="page">
+        <div className="shell">
+          <div className="panel page-card">
+            <h2>Wallet</h2>
+            <p className="muted">Something went wrong while loading your wallet. Make sure the API is running.</p>
+          </div>
+        </div>
+      </main>
+    );
+  }
 
-    if (!response.ok || !payload.wallet) {
+  const { payload, response, status } = res;
+
+  if (status === 401) {
+    redirect("/login");
+  }
+
+  if (!response.ok || !payload.wallet) {
       return (
         <main className="page">
           <div className="shell">
@@ -71,7 +93,7 @@ export default async function WalletPage() {
                     No recorded activities yet.
                   </div>
                 ) : (
-                  wallet.transactions.map(tx => {
+                  wallet.transactions.map((tx: any) => {
                     const meta = TX_LABELS[tx.type] || { label: tx.type, icon: "📋", color: "var(--text-primary)" };
                     const isCredit = tx.type === "deposit" || tx.type === "tournament_payout" || tx.type === "manual_adjustment" || tx.type === "refund";
                     return (
@@ -89,6 +111,9 @@ export default async function WalletPage() {
                             height: "48px", 
                             borderRadius: "12px", 
                             background: `${meta.color}11`, 
+                            backgroundClip: "text",
+                            WebkitBackgroundClip: "text",
+                            WebkitTextFillColor: "transparent",
                             display: "flex", 
                             justifyContent: "center", 
                             alignItems: "center",
@@ -99,8 +124,21 @@ export default async function WalletPage() {
                           </div>
                           <div>
                             <div style={{ fontWeight: 700, fontSize: "1rem" }}>{meta.label}</div>
-                            <div className="muted" style={{ fontSize: "0.75rem", marginTop: "0.1rem" }}>
+                            <div className="muted" style={{ fontSize: "0.75rem", marginTop: "0.1rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
                               {tx.referenceType} • {new Date(tx.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              {tx.isTest && (
+                                <span style={{ 
+                                  background: "rgba(239, 68, 68, 0.15)", 
+                                  color: "#f87171", 
+                                  padding: "1px 6px", 
+                                  borderRadius: "4px", 
+                                  fontSize: "0.6rem",
+                                  fontWeight: 800,
+                                  border: "1px solid rgba(239, 68, 68, 0.2)"
+                                }}>
+                                  TEST MODE
+                                </span>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -120,16 +158,4 @@ export default async function WalletPage() {
         </div>
       </main>
     );
-  } catch {
-    return (
-      <main className="page">
-        <div className="shell">
-          <div className="panel page-card">
-            <h2>Wallet</h2>
-            <p className="muted">Could not load wallet. Make sure the API is running.</p>
-          </div>
-        </div>
-      </main>
-    );
-  }
 }

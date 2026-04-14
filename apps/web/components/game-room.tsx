@@ -6,6 +6,10 @@ type GameRoomProps = {
   matchId: string;
   accessToken: string;
   userName: string;
+  player1Name?: string;
+  player2Name?: string;
+  player1Id?: string;
+  player2Id?: string;
 };
 
 type LifelineInfo = { type: string; label: string; icon: string; description: string };
@@ -18,13 +22,22 @@ const LIFELINE_META: Record<string, LifelineInfo> = {
   rerack_gambit: { type: "rerack_gambit", label: "Rerack Gambit", icon: "🔄", description: "Force rerack. 50% chance opponent gets break + 10 bonus pts" },
 };
 
-export function GameRoom({ matchId, accessToken, userName }: GameRoomProps) {
+export function GameRoom({ 
+  matchId, 
+  accessToken, 
+  userName,
+  player1Name,
+  player2Name,
+  player1Id,
+  player2Id
+}: GameRoomProps) {
   const wsRef = useRef<WebSocket | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [status, setStatus] = useState<"connecting" | "waiting" | "ready" | "playing" | "finished">("connecting");
   const [myScore, setMyScore] = useState(0);
   const [opponentScore, setOpponentScore] = useState(0);
-  const [opponentName, setOpponentName] = useState("Opponent");
+  const [opponentName, setOpponentName] = useState(player2Name || "Opponent");
+  const [displayName, setDisplayName] = useState(player1Name || userName);
   const [myLifelines, setMyLifelines] = useState<string[]>([]);
   const [usedLifelines, setUsedLifelines] = useState<string[]>([]);
   const [currentTurn, setCurrentTurn] = useState<string | null>(null);
@@ -34,7 +47,7 @@ export function GameRoom({ matchId, accessToken, userName }: GameRoomProps) {
 
   // Connect WebSocket
   useEffect(() => {
-    const wsUrl = `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${window.location.hostname}:4000/ws/match/${matchId}?token=${accessToken}`;
+    const wsUrl = `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${window.location.hostname}:8000/ws/match/${matchId}?token=${accessToken}`;
     const ws = new WebSocket(wsUrl);
     wsRef.current = ws;
 
@@ -51,6 +64,15 @@ export function GameRoom({ matchId, accessToken, userName }: GameRoomProps) {
 
     return () => { ws.close(); };
   }, [matchId, accessToken]);
+
+  // Sync names once myUserId is set
+  useEffect(() => {
+    if (myUserId && player1Id) {
+      const isP1 = myUserId === player1Id;
+      setDisplayName(isP1 ? (player1Name || userName) : (player2Name || userName));
+      setOpponentName(isP1 ? (player2Name || "Opponent") : (player1Name || "Opponent"));
+    }
+  }, [myUserId, player1Id, player1Name, player2Name, userName]);
 
   // Listen for iframe messages
   useEffect(() => {
@@ -91,6 +113,7 @@ export function GameRoom({ matchId, accessToken, userName }: GameRoomProps) {
         setStatus("ready");
         const isP1 = msg.player1.id === myUserId;
         setOpponentName(isP1 ? msg.player2.name : msg.player1.name);
+        setDisplayName(isP1 ? msg.player1.name : msg.player2.name);
         setMyLifelines(isP1 ? msg.player1.lifelines : msg.player2.lifelines);
         setCurrentTurn(msg.currentTurn);
         // Init game bridge
@@ -102,6 +125,13 @@ export function GameRoom({ matchId, accessToken, userName }: GameRoomProps) {
           playerNumber: isP1 ? 1 : 2,
           lifelines: isP1 ? msg.player1.lifelines : msg.player2.lifelines,
         }, "*");
+        
+        // AUTO START in tournament context (we are in a match room)
+        setTimeout(() => {
+          if (wsRef.current?.readyState === WebSocket.OPEN) {
+            wsRef.current.send(JSON.stringify({ type: "start_game" }));
+          }
+        }, 1000);
         break;
 
       case "game_started":
@@ -214,8 +244,10 @@ export function GameRoom({ matchId, accessToken, userName }: GameRoomProps) {
         {status === "ready" && (
           <div className="waiting-room" style={{ position: "absolute", inset: 0, zIndex: 10, background: "rgba(10,14,26,.95)" }}>
             <h2 style={{ fontSize: "1.5rem", marginBottom: "1rem" }}>🎱 Match Ready!</h2>
-            <p className="muted" style={{ marginBottom: "1rem" }}>You vs {opponentName}</p>
-            <button className="button" onClick={startGame}>Start Game</button>
+            <p className="muted" style={{ marginBottom: "1rem" }}>{displayName} vs {opponentName}</p>
+            <div className="waiting-spinner" style={{ marginBottom: "1rem" }} />
+            <p className="muted">Game starting automatically...</p>
+            <button className="button" onClick={startGame} style={{ marginTop: "1rem" }}>Click if not starting...</button>
           </div>
         )}
         <iframe
@@ -234,7 +266,7 @@ export function GameRoom({ matchId, accessToken, userName }: GameRoomProps) {
           </div>
           <div className="score-display">
             <div className="score-player">
-              <div className="score-player-name">{userName}</div>
+              <div className="score-player-name">{displayName}</div>
               <div className="score-player-value">{myScore}</div>
             </div>
             <div className="score-vs">VS</div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 type PaymentButtonProps = {
   onSuccess?: () => void;
@@ -9,6 +10,7 @@ type PaymentButtonProps = {
 const AMOUNTS = [100, 500, 1000, 2500, 5000];
 
 export function PaymentButton({ onSuccess }: PaymentButtonProps) {
+  const router = useRouter();
   const [showModal, setShowModal] = useState(false);
   const [selectedAmount, setSelectedAmount] = useState(500);
   const [loading, setLoading] = useState(false);
@@ -33,12 +35,12 @@ export function PaymentButton({ onSuccess }: PaymentButtonProps) {
       const orderData = await orderRes.json();
 
       // Load Razorpay checkout
-      const rzp = new (window as any).Razorpay({
+      const options = {
         key: orderData.keyId,
         amount: orderData.amount,
         currency: orderData.currency,
         name: "Winner Takes All",
-        description: "Wallet Top-up",
+        description: "Tournament Entry",
         order_id: orderData.razorpayOrderId,
         handler: async function (response: any) {
           // Verify payment
@@ -55,6 +57,7 @@ export function PaymentButton({ onSuccess }: PaymentButtonProps) {
 
             if (verifyRes.ok) {
               setShowModal(false);
+              router.refresh();
               onSuccess?.();
             } else {
               setError("Payment verification failed");
@@ -63,13 +66,41 @@ export function PaymentButton({ onSuccess }: PaymentButtonProps) {
             setError("Payment verification failed");
           }
         },
-        prefill: {},
-        theme: { color: "#6366f1" },
+        prefill: {
+          name: "Test User",
+          email: "test@example.com",
+          contact: "9999999999"
+        },
+        notes: {
+          source: "tournament_test"
+        },
+        theme: {
+          color: "#6366f1"
+        },
+        config: {
+          display: {
+            blocks: {
+              upi: {
+                name: "UPI / QR",
+                instruments: [
+                  {
+                    method: "upi",
+                  },
+                ],
+              },
+            },
+            sequence: ["block.upi"],
+            preferences: {
+              show_default_blocks: true,
+            },
+          },
+        },
         modal: {
           ondismiss: () => setLoading(false),
         },
-      });
+      };
 
+      const rzp = new (window as any).Razorpay(options);
       rzp.open();
     } catch (err: any) {
       setError(err.message || "Something went wrong");

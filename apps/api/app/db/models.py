@@ -73,6 +73,7 @@ class TournamentORM(Base):
     team_size: Mapped[int] = mapped_column(Integer, default=1)  # 1 for 1v1, 2 for 2v2
     host_id: Mapped[str | None] = mapped_column(ForeignKey("users.id"), nullable=True)
     tournament_type: Mapped[str] = mapped_column(String(20), default="online") # online, offline, hybrid
+    password: Mapped[str | None] = mapped_column(String(64), nullable=True)
     
     winner_id: Mapped[str | None] = mapped_column(ForeignKey("users.id"), nullable=True)
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
@@ -170,6 +171,7 @@ class PaymentORM(Base):
     provider_signature: Mapped[str | None] = mapped_column(String(255), nullable=True)
     idempotency_key: Mapped[str] = mapped_column(String(120), unique=True)
     status: Mapped[str] = mapped_column(String(20), default="pending")
+    is_test: Mapped[bool] = mapped_column(Boolean, default=False)
     metadata_json: Mapped[dict | None] = mapped_column("metadata", JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_timestamp)
     updated_at: Mapped[datetime] = mapped_column(
@@ -206,6 +208,7 @@ class WalletTransactionORM(Base):
     balance_after_cents: Mapped[int] = mapped_column(Integer)
     reference_type: Mapped[str] = mapped_column(String(40))
     reference_id: Mapped[str] = mapped_column(String(80))
+    is_test: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_timestamp)
 
     wallet: Mapped[WalletORM] = relationship(back_populates="transactions")

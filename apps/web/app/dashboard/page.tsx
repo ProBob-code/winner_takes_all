@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { LogoutButton } from "@/components/logout-button";
 import { readBackendJson } from "@/lib/backend";
 import { formatMoney } from "@/lib/format";
 import { GamingRadio } from "@/components/gaming-radio";
+import { redirect } from "next/navigation";
 
 type ProfileResponse = {
   ok: boolean;
@@ -11,6 +11,12 @@ type ProfileResponse = {
     name: string;
     email: string;
     walletBalance: string;
+    stats?: {
+      points: number;
+      tournamentWins: number;
+      winRate: number;
+    };
+    joinedTournaments?: any[];
   };
 };
 
@@ -34,14 +40,37 @@ type WalletResponse = {
 };
 
 export default async function DashboardPage() {
+  let profileRes, walletRes;
   try {
-    const [{ response: profileResponse, payload: profilePayload }, { payload: walletPayload }] =
-      await Promise.all([
-        readBackendJson<ProfileResponse>("/user/profile"),
-        readBackendJson<WalletResponse>("/wallet")
-      ]);
+    [profileRes, walletRes] = await Promise.all([
+      readBackendJson<ProfileResponse>("/user/profile"),
+      readBackendJson<WalletResponse>("/wallet")
+    ]);
+  } catch (err) {
+    console.error("Dashboard error:", err);
+    return (
+      <main className="page">
+        <div className="shell">
+          <section className="panel page-card">
+            <h2>Player dashboard</h2>
+            <p className="muted">
+              Something went wrong while loading your dashboard. 
+              {err instanceof Error ? ` Error: ${err.message}` : "Please make sure the API server is running."}
+            </p>
+          </section>
+        </div>
+      </main>
+    );
+  }
 
-    if (!profileResponse.ok || !profilePayload.user || !walletPayload.wallet) {
+  if (profileRes.status === 401 || walletRes.status === 401) {
+    redirect("/login");
+  }
+
+  const { response: profileResponse, payload: profilePayload } = profileRes;
+  const { payload: walletPayload } = walletRes;
+
+  if (!profileResponse.ok || !profilePayload.user || !walletPayload.wallet) {
       return (
         <main className="page">
           <div className="shell">
@@ -107,7 +136,7 @@ export default async function DashboardPage() {
                   <h3 style={{ fontSize: "1.5rem", display: "flex", alignItems: "center", gap: "0.75rem" }}>
                     <span style={{ animation: "pulse 2s infinite" }}>🎧</span> Gaming Lounge
                   </h3>
-                  <div className="profile-badge" style={{ fontSize: "0.75rem", background: "rgba(16, 185, 129, 0.1)", color: "var(--green)" }}>LIVE AMBIENT</div>
+                  <div className="level-badge" style={{ fontSize: "0.75rem", background: "rgba(16, 185, 129, 0.1)", color: "var(--green)" }}>LVL {Math.floor((user?.stats?.points || 0) / 100) + 1}</div>
                 </div>
 
                 <GamingRadio />
@@ -134,22 +163,49 @@ export default async function DashboardPage() {
                    <Link href="/tournaments" className="text-accent no-underline hover:glow" style={{ fontSize: "0.9rem" }}>View All Brackets</Link>
                  </div>
                  <div style={{ display: "flex", gap: "1.5rem" }}>
-                    <div className="tournament-app-card" style={{ flex: 1, padding: "1.5rem", background: "rgba(0,0,0,0.4)" }}>
-                       <div className="card-players">8-Ball Pool</div>
-                       <div className="card-title" style={{ fontSize: "1.2rem" }}>Championship Cup</div>
-                       <div className="card-bottom">
-                         <div className="text-green" style={{ fontSize: "0.9rem" }}>JOINING OPEN</div>
-                         <button className="btn-primary" style={{ padding: "0.4rem 1rem", fontSize: "0.8rem", borderRadius: "6px" }}>ENTER</button>
-                       </div>
+                    {user?.joinedTournaments && user.joinedTournaments.length > 0 ? (
+                    user.joinedTournaments.map((t: any) => (
+                      <div key={t.id} className="tournament-app-card" style={{ flex: 1, padding: "1.5rem", background: "rgba(0,0,0,0.4)" }}>
+                        <div className="card-players">Tournament</div>
+                        <div className="card-title" style={{ fontSize: "1.2rem" }}>{t.name}</div>
+                        <div className="card-footer" style={{ marginTop: "1rem" }}>
+                          <span className="footer-item">₹{t.entryFee.amount} Entry</span>
+                          <span className="footer-item" style={{ color: "var(--accent)" }}>{t.status.toUpperCase()}</span>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div style={{ 
+                      flex: 1, 
+                      padding: "2rem", 
+                      background: "rgba(0,0,0,0.2)", 
+                      borderRadius: "1rem", 
+                      textAlign: "center",
+                      border: "1px dashed rgba(255,255,255,0.1)"
+                    }}>
+                      <div style={{ fontSize: "2rem", marginBottom: "0.5rem" }}>🏆</div>
+                      <div style={{ fontWeight: 600 }}>No active tournaments</div>
+                      <div style={{ fontSize: "0.8rem", opacity: 0.6, marginTop: "0.5rem" }}>
+                        Join a tournament to see your upcoming matches here.
+                      </div>
+                      <button 
+                        onClick={() => window.location.href = "/tournaments"}
+                        style={{ 
+                          marginTop: "1rem", 
+                          background: "var(--accent)", 
+                          border: "none", 
+                          color: "white", 
+                          padding: "0.5rem 1rem", 
+                          borderRadius: "8px", 
+                          fontSize: "0.8rem", 
+                          fontWeight: 700,
+                          cursor: "pointer"
+                        }}
+                      >
+                        BROWSE TOURNAMENTS
+                      </button>
                     </div>
-                    <div className="tournament-app-card" style={{ flex: 1, padding: "1.5rem", background: "rgba(0,0,0,0.4)" }}>
-                       <div className="card-players">Poker High</div>
-                       <div className="card-title" style={{ fontSize: "1.2rem" }}>Deep Stack Elite</div>
-                       <div className="card-bottom">
-                         <div className="text-secondary" style={{ fontSize: "0.9rem" }}>STARTS IN 2H</div>
-                         <button className="button-secondary" style={{ padding: "0.4rem 1rem", fontSize: "0.8rem", borderRadius: "6px" }}>NOTIFY</button>
-                       </div>
-                    </div>
+                  )}
                  </div>
               </div>
             </div>
@@ -164,18 +220,18 @@ export default async function DashboardPage() {
                     <circle cx="60" cy="60" r="54" fill="none" stroke="var(--accent)" strokeWidth="12" strokeDasharray="339.29" strokeDashoffset="84.82" style={{ transition: "stroke-dashoffset 1s ease" }} />
                   </svg>
                   <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", textAlign: "center" }}>
-                    <div style={{ fontSize: "1.5rem", fontWeight: 800 }}>LVL 12</div>
+                    <div style={{ fontSize: "1.5rem", fontWeight: 800 }}>LVL {Math.floor((user?.stats?.points || 0) / 100) + 1}</div>
                     <div className="muted" style={{ fontSize: "0.6rem" }}>PRO PLAYER</div>
                   </div>
                 </div>
                 <div className="info-list" style={{ gap: "0.5rem" }}>
-                  <div className="info-row" style={{ padding: "0.75rem 1rem" }}>
+                  <div className="info-row" style={{ padding: "0.75rem 1rem", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
                     <span className="info-label">Tournament Wins</span>
-                    <span className="info-value text-green">24</span>
+                    <span className="info-value text-green">{user?.stats?.tournamentWins || 0}</span>
                   </div>
                   <div className="info-row" style={{ padding: "0.75rem 1rem" }}>
                     <span className="info-label">Win Rate</span>
-                    <span className="info-value">72%</span>
+                    <span className="info-value">{user?.stats?.winRate || 0}%</span>
                   </div>
                 </div>
               </div>
@@ -183,7 +239,7 @@ export default async function DashboardPage() {
               <div className="panel slide-in dashboard-card" style={{ animationDelay: "0.4s", padding: "2rem" }}>
                 <h3 style={{ marginBottom: "1rem" }}>Recent Earnings</h3>
                 <div className="list">
-                  {walletPayload.wallet.transactions.slice(0, 4).map((tx) => (
+                  {walletPayload.wallet.transactions.slice(0, 4).map((tx: any) => (
                     <div key={tx.id} style={{ padding: "0.75rem 0", display: "flex", justifyContent: "space-between", borderBottom: "1px solid rgba(255,255,255,0.03)" }}>
                       <div>
                         <div style={{ fontSize: "0.9rem" }}>{tx.type.replace('_', ' ')}</div>
@@ -225,19 +281,4 @@ export default async function DashboardPage() {
         `}} />
       </main>
     );
-  } catch {
-    return (
-      <main className="page">
-        <div className="shell">
-          <section className="panel page-card">
-            <h2>Player dashboard</h2>
-            <p className="muted">
-              The dashboard could not reach the FastAPI backend. Start the API on port
-              4000 and refresh this page.
-            </p>
-          </section>
-        </div>
-      </main>
-    );
-  }
 }

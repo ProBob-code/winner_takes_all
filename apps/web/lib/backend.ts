@@ -1,9 +1,9 @@
 import { cookies } from "next/headers";
 
-const DEFAULT_API_BASE_URL = "http://127.0.0.1:4000";
+const DEFAULT_API_BASE_URL = "http://127.0.0.1:8000";
 
 export function getApiBaseUrl() {
-  return process.env.WTA_API_URL ?? DEFAULT_API_BASE_URL;
+  return process.env.WTA_API_URL || DEFAULT_API_BASE_URL;
 }
 
 function serializeCookieHeader(entries: Array<{ name: string; value: string }>) {
@@ -32,16 +32,49 @@ export async function backendFetch(path: string, init: RequestInit = {}) {
 
 export async function readBackendJson<T>(path: string, init: RequestInit = {}) {
   const response = await backendFetch(path, init);
+  
+  if (!response.ok) {
+    if (response.status === 401) {
+      return {
+        response,
+        payload: { ok: false, message: "Authentication required" } as any,
+        status: 401
+      };
+    }
+    const text = await response.text();
+    console.error(`Backend API error [${response.status}]: ${text}`);
+    throw new Error(`API ${response.status}: ${text.slice(0, 100)}`);
+  }
+
+  const contentType = response.headers.get("content-type");
+  if (!contentType || !contentType.includes("application/json")) {
+    const text = await response.text();
+    console.error(`Expected JSON but got ${contentType}: ${text}`);
+    throw new Error(`Invalid response format: ${text.slice(0, 100)}`);
+  }
+
   const payload = (await response.json()) as T;
 
   return {
     response,
-    payload
+    payload,
+    status: response.status
   };
 }
 
 export async function nextBackendProxy(request: Request, path: string) {
-  const body = request.method !== "GET" && request.method !== "HEAD" ? await request.json() : undefined;
+  let body: any = undefined;
+  
+  if (request.method !== "GET" && request.method !== "HEAD") {
+    const contentLength = request.headers.get("content-length");
+    if (contentLength && parseInt(contentLength) > 0) {
+      try {
+        body = await request.json();
+      } catch (e) {
+        console.error("Failed to parse request body as JSON:", e);
+      }
+    }
+  }
 
   const response = await backendFetch(path, {
     method: request.method,
@@ -51,6 +84,28 @@ export async function nextBackendProxy(request: Request, path: string) {
     }
   });
 
-  const data = await response.json();
-  return Response.json(data, { status: response.status });
+  // Handle various response types gracefully
+  const contentType = response.headers.get("content-type");
+  if (contentType && contentType.includes("application/json")) {
+    const data = await response.json();
+    return Response.json(data, { status: response.status });
+  } else {
+    const text = await response.text();
+    return new Response(text, { 
+      status: response.status,
+      headers: { "Content-Type": contentType || "text/plain" }
+    });
+  }
+}
+
+export async function getCurrentUserProfile() {
+  try {
+    const { payload } = await readBackendJson<any>("/user/profile");
+    if (payload && payload.ok) {
+      return payload.user;
+    }
+    return null;
+  } catch (err) {
+    return null;
+  }
 }

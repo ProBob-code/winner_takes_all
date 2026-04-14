@@ -75,7 +75,7 @@ def test_signup_creates_session_and_profile_can_be_fetched(client: TestClient) -
     assert profile.status_code == 200
     payload = profile.json()
     assert payload["user"]["email"] == "player@example.com"
-    assert payload["user"]["walletBalance"] == "2500.00"  # ₹2,500 signup bonus
+    assert payload["user"]["walletBalance"] == "3000.00"  # ₹3,000 signup bonus
 
 
 def test_protected_routes_reject_unauthenticated_requests(client: TestClient) -> None:
@@ -92,7 +92,7 @@ def test_wallet_shows_inr_balance(client: TestClient) -> None:
     assert res.status_code == 200
     wallet = res.json()["wallet"]
     assert wallet["balance"]["currency"] == "INR"
-    assert wallet["balance"]["amount"] == "2500.00"
+    assert wallet["balance"]["amount"] == "3000.00"
 
 
 # ── Tournament Join ──
@@ -103,7 +103,7 @@ def test_wallet_and_tournament_join_flow_update_balance(client: TestClient) -> N
     join = client.post(f"/tournaments/{paid['id']}/join")
     assert join.status_code == 200
     payload = join.json()
-    assert payload["wallet"]["balance"]["amount"] == "1500.00"  # 2500 - 1000 entry
+    assert payload["wallet"]["balance"]["amount"] == "2000.00"  # 3000 - 1000 entry
     assert payload["tournament"]["joinedPlayers"] == 1
 
 

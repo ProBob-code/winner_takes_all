@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { readBackendJson } from "@/lib/backend";
+import { readBackendJson, getCurrentUserProfile } from "@/lib/backend";
 
 type TournamentsResponse = {
   ok: boolean;
@@ -10,10 +10,14 @@ type TournamentsResponse = {
     maxPlayers: number;
     joinedPlayers: number;
     status: string;
+    isPrivate: boolean;
   }>;
 };
 
 export default async function TournamentsPage() {
+  const user = await getCurrentUserProfile();
+  const isLoggedIn = !!user;
+
   try {
     const { payload } = await readBackendJson<TournamentsResponse>("/tournaments");
     const tournaments = payload.tournaments || [];
@@ -27,11 +31,33 @@ export default async function TournamentsPage() {
               <p className="muted">Join active lobbies and claim the prize pool.</p>
             </div>
             <div className="header-actions">
-              <Link href="/tournaments/create" className="button button-gold floating-action-mobile">
+              <Link href={isLoggedIn ? "/tournaments/create" : "/login"} className="button button-gold">
                 + Host Tournament
               </Link>
             </div>
           </div>
+
+          {!isLoggedIn && (
+            <div className="guest-banner slide-in mb-6" style={{
+              background: "var(--accent-subtle)",
+              border: "1px solid var(--border-glow)",
+              borderRadius: "16px",
+              padding: "1rem 1.5rem",
+              display: "flex",
+              alignItems: "center",
+              gap: "1rem",
+              color: "var(--text-primary)"
+            }}>
+              <span style={{ fontSize: "1.5rem" }}>🔒</span>
+              <div>
+                <strong style={{ display: "block" }}>Login Required</strong>
+                <span className="muted text-sm">Please log in to view details or join tournaments.</span>
+              </div>
+              <Link href="/login" className="button button-sm ml-auto" style={{ background: "var(--accent)", color: "white" }}>
+                Log In
+              </Link>
+            </div>
+          )}
 
           <div className="tournament-grid mt-6">
             {tournaments.map(t => {
@@ -39,9 +65,29 @@ export default async function TournamentsPage() {
               const isFree = parseFloat(t.entryFee.amount) === 0;
 
               return (
-                <Link key={t.id} href={`/tournaments/${t.id}`} className="tournament-app-card slide-in">
+                <Link 
+                  key={t.id} 
+                  href={isLoggedIn ? `/tournaments/${t.id}` : "/login"} 
+                  className={`tournament-app-card slide-in ${!isLoggedIn ? 'guest-mode' : ''}`}
+                >
                   <div className="card-top">
-                    <span className={statusClass}>{t.status.replace("_", " ")}</span>
+                    <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+                      <span className={statusClass}>{t.status.replace("_", " ")}</span>
+                      {t.isPrivate && (
+                        <span style={{ 
+                          background: "var(--red-subtle)", 
+                          color: "var(--red-light)", 
+                          fontSize: "0.65rem", 
+                          padding: "2px 6px", 
+                          borderRadius: "4px",
+                          fontWeight: "800",
+                          textTransform: "uppercase",
+                          letterSpacing: "0.05em"
+                        }}>
+                          🔒 Private
+                        </span>
+                      )}
+                    </div>
                     <span className="card-players">
                       <span className="icon">👥</span> {t.joinedPlayers}/{t.maxPlayers}
                     </span>
@@ -55,7 +101,7 @@ export default async function TournamentsPage() {
                       </strong>
                     </div>
                     <div className="card-action">
-                      <span className="join-arrow">→</span>
+                      <span className="join-arrow">{isLoggedIn ? "→" : "🔒"}</span>
                     </div>
                   </div>
                 </Link>

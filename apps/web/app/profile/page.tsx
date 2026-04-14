@@ -1,5 +1,5 @@
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { readBackendJson } from "@/lib/backend";
 import { TransferForm } from "@/components/transfer-form";
 
 type ProfileResponse = {
@@ -12,21 +12,16 @@ type ProfileResponse = {
   };
 };
 
-async function getProfileData() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("wta_access_token")?.value;
-  if (!token) return null;
+import { backendFetch } from "@/lib/backend";
 
-  const apiUrl = process.env.WTA_API_URL || "http://127.0.0.1:4000";
+async function getProfileData() {
   try {
-    const res = await fetch(`${apiUrl}/user/profile`, {
-      headers: { Cookie: `wta_access_token=${token}` },
-      cache: "no-store",
-    });
-    if (!res.ok) return null;
-    const data = await res.json() as ProfileResponse;
-    return data.user || null;
-  } catch {
+    const { response, payload, status } = await readBackendJson<ProfileResponse>("/user/profile");
+    if (status === 401) return null;
+    if (!response.ok) return null;
+    return payload.user || null;
+  } catch (err) {
+    console.error("Profile getProfileData error:", err);
     return null;
   }
 }
@@ -42,25 +37,30 @@ export default async function ProfilePage() {
     <main className="page profile-page" style={{ padding: "1rem 2rem" }}>
       <div className="shell">
         {/* Extreme Premium User Banner */}
-        <div className="profile-banner slide-in">
-          <div className="profile-avatar">
+        <div className="profile-banner slide-in" style={{
+          background: "linear-gradient(145deg, rgba(30,30,40,0.9), rgba(15,15,20,0.95))",
+          border: "1px solid rgba(255, 255, 255, 0.08)",
+          boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255,255,255,0.1)",
+          backdropFilter: "blur(20px)"
+        }}>
+          <div className="profile-avatar" style={{ transform: "scale(1.1)", border: "3px solid var(--glass-bg)", boxShadow: "0 0 20px var(--gold-light)" }}>
             {user.name ? user.name[0].toUpperCase() : "U"}
           </div>
-          <div className="profile-hero-info">
-            <h2 className="glow-text profile-name">{user.name || "Guest Player"}</h2>
-            <div className="profile-badge">
+          <div className="profile-hero-info" style={{ paddingLeft: "1rem" }}>
+            <h2 className="glow-text" style={{ fontSize: "2.8rem", letterSpacing: "-1px" }}>{user.name || "Guest Player"}</h2>
+            <div className="profile-badge" style={{ background: "rgba(139, 92, 246, 0.15)", border: "1px solid rgba(139, 92, 246, 0.3)", color: "var(--accent-light)", marginTop: "0.25rem", padding: "0.3rem 0.8rem", fontSize: "0.9rem" }}>
               <span style={{opacity: 0.7}}>ID:</span> {user.id}
             </div>
           </div>
-          <div className="profile-balance-highlight">
-            <span className="muted text-sm balance-label">Wallet Balance</span>
-            <div className="balance-amount">
+          <div className="profile-balance-highlight" style={{ paddingLeft: "3rem", borderLeftColor: "rgba(255, 255, 255, 0.1)" }}>
+            <span className="muted text-sm" style={{ letterSpacing: "2px", textTransform: "uppercase" }}>Wallet Balance</span>
+            <div className="balance-amount" style={{ textShadow: "0 0 15px rgba(245, 158, 11, 0.5)", fontSize: "3rem" }}>
               ₹{user.walletBalance}
             </div>
           </div>
         </div>
 
-        <div className="dashboard-grid">
+        <div className="dashboard-grid" style={{ gridTemplateColumns: "1fr 1fr", gap: "2rem" }}>
           {/* Transfer Card */}
           <div className="panel slide-in dashboard-card p-6" style={{ animationDelay: "0.1s", background: "var(--bg-surface)", border: "1px solid var(--glass-border-color)", padding: "2.5rem" }}>
             <div className="card-header" style={{ marginBottom: "2rem" }}>

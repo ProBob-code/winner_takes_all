@@ -66,9 +66,10 @@ class WalletEntryRecord:
     user_id: str
     type: str
     amount_cents: int
-    created_at: datetime
     reference_type: str
     reference_id: str
+    created_at: datetime
+    is_test: bool = False
 
 
 @dataclass
@@ -89,6 +90,7 @@ class TournamentRecord:
     winner_id: str | None = None
     started_at: datetime | None = None
     completed_at: datetime | None = None
+    password: str | None = None
 
 
 @dataclass
@@ -131,6 +133,7 @@ class PaymentRecord:
     idempotency_key: str
     status: str
     created_at: datetime
+    is_test: bool = False
 
 
 @dataclass
@@ -353,6 +356,7 @@ class SQLAlchemyRepository:
             created_at=ensure_utc(entry.created_at),
             reference_type=entry.reference_type,
             reference_id=entry.reference_id,
+            is_test=entry.is_test,
         )
 
     def list_wallet_entries(self, user_id: str) -> list[WalletEntryRecord]:
@@ -408,6 +412,7 @@ class SQLAlchemyRepository:
         reference_id: str,
         transaction_type: str = "deposit",
         payment_id: str | None = None,
+        is_test: bool = False,
     ) -> UserRecord:
         with self.session_factory.begin() as session:
             user = session.execute(
@@ -430,6 +435,7 @@ class SQLAlchemyRepository:
                     reference_type=reference_type,
                     reference_id=reference_id,
                     payment_id=payment_id,
+                    is_test=is_test,
                 )
             )
             session.flush()
@@ -530,6 +536,17 @@ class SQLAlchemyRepository:
 
     # ── Tournament operations ──
 
+    def list_tournaments_by_user(self, user_id: str) -> list[TournamentRecord]:
+        with self.session_factory() as session:
+            tournaments = session.execute(
+                select(TournamentORM)
+                .join(ParticipantORM, ParticipantORM.tournament_id == TournamentORM.id)
+                .where(ParticipantORM.user_id == user_id)
+                .options(selectinload(TournamentORM.participants))
+                .order_by(TournamentORM.created_at.desc())
+            ).scalars().all()
+            return [self._to_tournament_record(t) for t in tournaments if t is not None]
+
     def _to_tournament_record(self, tournament: TournamentORM | None) -> TournamentRecord | None:
         if tournament is None:
             return None
@@ -551,6 +568,7 @@ class SQLAlchemyRepository:
             winner_id=tournament.winner_id,
             started_at=ensure_utc(tournament.started_at) if tournament.started_at else None,
             completed_at=ensure_utc(tournament.completed_at) if tournament.completed_at else None,
+            password=tournament.password,
         )
 
     def list_tournaments(self) -> list[TournamentRecord]:
@@ -631,6 +649,12 @@ class SQLAlchemyRepository:
                 update(TournamentORM).where(TournamentORM.id == tournament_id).values(**vals)
             )
 
+    def delete_tournament(self, tournament_id: str) -> None:
+        with self.session_factory.begin() as session:
+            session.execute(
+                delete(TournamentORM).where(TournamentORM.id == tournament_id)
+            )
+
     def create_tournament(
         self,
         *,
@@ -641,6 +665,7 @@ class SQLAlchemyRepository:
         team_size: int = 1,
         tournament_type: str = "online",
         bracket_type: str = "single_elimination",
+        password: str | None = None,
     ) -> TournamentRecord:
         tournament = TournamentORM(
             id=create_id("tournament"),
@@ -651,6 +676,7 @@ class SQLAlchemyRepository:
             team_size=team_size,
             tournament_type=tournament_type,
             bracket_type=bracket_type,
+            password=password,
             status="open",
         )
         with self.session_factory.begin() as session:
@@ -919,6 +945,7 @@ class SQLAlchemyRepository:
             provider_payment_id=payment.provider_payment_id,
             idempotency_key=payment.idempotency_key,
             status=payment.status,
+            is_test=payment.is_test,
             created_at=ensure_utc(payment.created_at),
         )
 
@@ -930,6 +957,7 @@ class SQLAlchemyRepository:
         currency: str = "INR",
         provider_order_id: str | None = None,
         idempotency_key: str,
+        is_test: bool = False,
     ) -> PaymentRecord:
         payment = PaymentORM(
             id=create_id("payment"),
@@ -939,6 +967,7 @@ class SQLAlchemyRepository:
             provider="razorpay",
             provider_order_id=provider_order_id,
             idempotency_key=idempotency_key,
+            is_test=is_test,
             status="pending",
         )
         with self.session_factory.begin() as session:
@@ -1075,10 +1104,17 @@ class SQLAlchemyRepository:
                 )
             ) or 0
 
+            # Count tournament wins
+            tournament_wins = session.scalar(
+                select(func.count(TournamentORM.id))
+                .where(TournamentORM.winner_id == user_id, TournamentORM.status == "completed")
+            ) or 0
+
             return {
+                "tournament_wins": tournament_wins,
                 "wins": wins,
                 "losses": losses,
                 "total_score": score_as_p1 + score_as_p2,
-                "points": wins * 3,
+                "points": wins * 3 + (tournament_wins * 10),
                 "earnings_cents": earnings,
             }
