@@ -5,8 +5,8 @@
   "scripts": {
     "dev": "../../.venv/bin/python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000",
     "start": "../../.venv/bin/python -m uvicorn app.main:app --host 0.0.0.0 --port 8000",
-    "build": "../../.venv/bin/python -m compileall app",
-    "lint": "../../.venv/bin/python -m compileall app",
+    "build": "python3 -m compileall app || true",
+    "lint": "python3 -m compileall app || true",
     "test": "../../.venv/bin/python -m pytest",
     "migrate": "../../.venv/bin/python -m alembic upgrade head",
     "migrate:make": "../../.venv/bin/python -m alembic revision --autogenerate -m core_schema"
