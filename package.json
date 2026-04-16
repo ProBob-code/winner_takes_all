@@ -16,7 +16,7 @@
     "dev:site": "npm run dev -w website",
     "build": "npm run build --workspaces --if-present",
     "build:site": "npm run build -w website",
-    "deploy": "npx wrangler pages deploy apps/website/dist",
+    "deploy": "cd apps/website && npx wrangler deploy",
     "lint": "npm run lint --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present"
   },
