@@ -37,16 +37,19 @@ export default async function LeaderboardPage() {
                 <div className="podium-medal">🥈</div>
                 <div className="podium-name">{top3[1].displayName}</div>
                 <div className="podium-score">{top3[1].points} pts</div>
+                <div className="podium-pillar"></div>
               </div>
               <div className="podium-place podium-1st">
                 <div className="podium-medal">🥇</div>
                 <div className="podium-name">{top3[0].displayName}</div>
                 <div className="podium-score">{top3[0].points} pts</div>
+                <div className="podium-pillar"></div>
               </div>
               <div className="podium-place podium-3rd">
                 <div className="podium-medal">🥉</div>
                 <div className="podium-name">{top3[2].displayName}</div>
                 <div className="podium-score">{top3[2].points} pts</div>
+                <div className="podium-pillar"></div>
               </div>
             </div>
           )}
@@ -72,16 +75,18 @@ export default async function LeaderboardPage() {
                     </td>
                   </tr>
                 ) : (
-                  entries.map((entry, i) => (
+                  entries.map((entry: any, i: number) => (
                     <tr key={entry.userId}>
-                      <td className={`leaderboard-rank ${i < 3 ? `rank-${i + 1}` : ""}`}>
-                        {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : i + 1}
+                      <td className="leaderboard-rank" data-label="Rank">
+                        {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : <span className="rank-text">#{i + 1}</span>}
                       </td>
-                      <td className="leaderboard-name">{entry.displayName}</td>
-                      <td style={{ fontWeight: 700 }}>{entry.points}</td>
-                      <td>{entry.totalScore}</td>
-                      <td>{entry.wins}W / {entry.losses}L</td>
-                      <td className="earnings-value">₹{entry.earnings.amount}</td>
+                      <td className="leaderboard-name" data-label="Player">
+                        {entry.displayName}
+                      </td>
+                      <td style={{ fontWeight: 700 }} data-label="Points">{entry.points}</td>
+                      <td data-label="Score">{entry.totalScore}</td>
+                      <td data-label="W/L">{entry.wins}W / {entry.losses}L</td>
+                      <td className="earnings-value" data-label="Earnings">₹{entry.earnings.amount}</td>
                     </tr>
                   ))
                 )}

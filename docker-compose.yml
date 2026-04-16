@@ -7,11 +7,12 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - WTA_API_URL=http://192.168.1.4:8000
+      - WTA_API_URL=http://127.0.0.1:8000
       - DATABASE_URL=sqlite:////app/data/wta.db
       - RAZORPAY_KEY_ID=${RAZORPAY_KEY_ID}
       - RAZORPAY_KEY_SECRET=${RAZORPAY_KEY_SECRET}
     volumes:
+      - ./apps/api/app:/app/app
       - ./apps/api/data:/app/data
 
   web:
@@ -21,6 +22,18 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - NEXT_PUBLIC_API_URL=http://192.168.1.4:8000
+      - WTA_API_URL=http://api:8000
+    volumes:
+      - ./apps/web:/app/apps/web
+      - ./packages:/app/packages
     depends_on:
       - api
+
+  website:
+    build:
+      context: .
+      dockerfile: apps/website/Dockerfile
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./apps/website:/app/apps/website

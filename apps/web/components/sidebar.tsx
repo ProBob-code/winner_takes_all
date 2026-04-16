@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { SidebarEffects } from "./sidebar-effects";
 
 export function Sidebar({ user }: { user: any }) {
   const pathname = usePathname();
@@ -14,7 +15,7 @@ export function Sidebar({ user }: { user: any }) {
     setIsLoggingOut(true);
     try {
       await fetch("/api/auth/logout", { method: "POST" });
-      router.push("/");
+      router.push((process.env.NEXT_PUBLIC_LANDING_URL as any) || "/");
       router.refresh();
     } catch (err) {
       console.error("Logout failed:", err);
@@ -38,7 +39,8 @@ export function Sidebar({ user }: { user: any }) {
 
   return (
     <aside className="sidebar">
-      <Link href="/" className="sidebar-brand">
+      <SidebarEffects />
+      <Link href={(process.env.NEXT_PUBLIC_LANDING_URL as any) || "/"} className="sidebar-brand">
         <span className="logo-icon">👑</span>
         <span className="brand-text">Winner Takes All</span>
       </Link>

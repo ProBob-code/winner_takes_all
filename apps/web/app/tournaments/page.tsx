@@ -60,7 +60,7 @@ export default async function TournamentsPage() {
           )}
 
           <div className="tournament-grid mt-6">
-            {tournaments.map(t => {
+            {tournaments.map((t: any) => {
               const statusClass = `tournament-status status-${t.status}`;
               const isFree = parseFloat(t.entryFee.amount) === 0;
 

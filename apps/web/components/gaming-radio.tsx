@@ -86,7 +86,7 @@ export function GamingRadio() {
 
   return (
     <div className="gaming-radio" style={{
-      background: "rgba(0,0,0,0.6)",
+      background: "var(--bg-surface)",
       borderRadius: "1.5rem",
       padding: "1.5rem",
       border: `1px solid ${station.color}44`,
@@ -138,7 +138,7 @@ export function GamingRadio() {
             width: "58px", 
             height: "58px", 
             borderRadius: "50%", 
-            background: "#0d0d12",
+            background: "var(--bg-secondary)",
             display: "flex",
             justifyContent: "center",
             alignItems: "center",

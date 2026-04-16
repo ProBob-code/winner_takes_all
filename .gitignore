@@ -19,3 +19,9 @@ __pycache__
 pytest-cache-files-*
 apps/api/data/
 *.tsbuildinfo
+
+# Tunnel logs and temporary files
+*_tunnel.log
+*_tunnel.txt
+lt_*.txt
+web_startup_logs.txt

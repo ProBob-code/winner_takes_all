@@ -129,7 +129,6 @@ export default async function DashboardPage() {
               {/* Chill Zone Card with Music */}
               <div className="panel slide-in dashboard-card interactive-hover" style={{ 
                 animationDelay: "0.1s", 
-                background: "linear-gradient(145deg, rgba(20,20,30,0.8), rgba(10,10,15,0.9))",
                 padding: "2.5rem"
               }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem" }}>
@@ -188,22 +187,19 @@ export default async function DashboardPage() {
                       <div style={{ fontSize: "0.8rem", opacity: 0.6, marginTop: "0.5rem" }}>
                         Join a tournament to see your upcoming matches here.
                       </div>
-                      <button 
-                        onClick={() => window.location.href = "/tournaments"}
+                      <Link 
+                        href="/tournaments"
+                        className="button"
                         style={{ 
                           marginTop: "1rem", 
-                          background: "var(--accent)", 
-                          border: "none", 
-                          color: "white", 
-                          padding: "0.5rem 1rem", 
-                          borderRadius: "8px", 
+                          display: "inline-block",
                           fontSize: "0.8rem", 
                           fontWeight: 700,
-                          cursor: "pointer"
+                          textDecoration: "none"
                         }}
                       >
                         BROWSE TOURNAMENTS
-                      </button>
+                      </Link>
                     </div>
                   )}
                  </div>

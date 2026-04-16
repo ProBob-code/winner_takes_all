@@ -69,7 +69,7 @@ export default async function AdminPage() {
           {(payload.pendingApprovals?.length || 0) > 0 && (
             <div className="panel page-card slide-in" style={{ marginBottom: "1.5rem" }}>
               <h2>⏳ Pending Score Approvals</h2>
-              {payload.pendingApprovals.map(match => (
+              {payload.pendingApprovals.map((match: any) => (
                 <ApprovalCard key={match.id} match={match} />
               ))}
             </div>
@@ -79,7 +79,7 @@ export default async function AdminPage() {
           <div className="panel page-card slide-in">
             <h2>Tournaments</h2>
             <div className="list">
-              {(payload.tournaments || []).map(t => (
+              {(payload.tournaments || []).map((t: any) => (
                 <Link key={t.id} href={`/tournaments/${t.id}`} style={{ textDecoration: "none", color: "inherit" }}>
                   <div className="list-item">
                     <div>

@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { proxyJson } from "@/lib/proxy";
 
 export async function POST(
-  _: Request,
+  request: Request,
   context: {
     params: Promise<{
       id: string;
@@ -14,7 +14,7 @@ export async function POST(
   const cookieStore = await cookies();
   const cookieHeader = cookieStore
     .getAll()
-    .map((entry) => `${entry.name}=${entry.value}`)
+    .map((entry: any) => `${entry.name}=${entry.value}`)
     .join("; ");
 
   return proxyJson(`/tournaments/${id}/join`, {

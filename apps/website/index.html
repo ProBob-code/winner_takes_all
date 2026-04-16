@@ -42,10 +42,131 @@
             height: 100%;
             z-index: -1;
             background: 
-                radial-gradient(circle at 15% 50%, rgba(139, 92, 246, 0.1), transparent 25%),
-                radial-gradient(circle at 85% 30%, rgba(6, 182, 212, 0.1), transparent 25%);
+                radial-gradient(circle at 15% 50%, rgba(139, 92, 246, 0.15), transparent 40%),
+                radial-gradient(circle at 85% 30%, rgba(6, 182, 212, 0.15), transparent 40%),
+                radial-gradient(circle at 50% 50%, rgba(8, 5, 25, 1), #030014);
             filter: blur(80px);
-            animation: bgShift 15s infinite alternate ease-in-out;
+            animation: bgShift 20s infinite alternate ease-in-out;
+            opacity: 0.6;
+            z-index: -2;
+        }
+
+        /* ── Stars ── */
+        .stars-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+            background: #030014;
+        }
+
+        .star-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            width: 200%;
+            height: 200%;
+            background: transparent;
+        }
+
+        .stars-1 {
+            width: 1px;
+            height: 1px;
+            box-shadow: 156px 421px #FFF, 1205px 123px #FFF, 456px 892px #FFF, 1782px 345px #FFF, 567px 1234px #FFF, 890px 456px #FFF, 1234px 789px #FFF, 234px 567px #FFF, 876px 123px #FFF, 1456px 901px #FFF, 345px 1678px #FFF, 1902px 234px #FFF, 678px 890px #FFF, 1123px 456px #FFF, 1567px 789px #FFF, 234px 1234px #FFF;
+            animation: starMove 100s linear infinite;
+        }
+
+        .stars-2 {
+            width: 2px;
+            height: 2px;
+            box-shadow: 345px 123px #FFF, 901px 876px #FFF, 1234px 234px #FFF, 678px 1567px #FFF, 123px 456px #FFF, 789px 1234px #FFF, 456px 678px #FFF, 1678px 890px #FFF, 234px 1123px #FFF, 890px 1567px #FFF, 1234px 234px #FFF, 567px 789px #FFF;
+            opacity: 0.5;
+            animation: starMove 150s linear infinite;
+        }
+
+        @keyframes starMove {
+            from { transform: translateY(0); }
+            to { transform: translateY(-1000px); }
+        }
+
+        /* ── Shooting Stars ── */
+        .shooting-stars {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .shooting-star {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            height: 2px;
+            background: linear-gradient(-45deg, #5f91ff, rgba(0, 0, 255, 0));
+            border-radius: 999px;
+            filter: drop-shadow(0 0 6px #699bff);
+            animation: tail 3000ms ease-in-out infinite, shooting 3000ms ease-in-out infinite;
+        }
+
+        @keyframes tail {
+            0% { width: 0; }
+            30% { width: 100px; }
+            100% { width: 0; }
+        }
+
+        @keyframes shooting {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(300px); }
+        }
+
+        .shooting-star::before, .shooting-star::after {
+            content: '';
+            position: absolute;
+            top: calc(50% - 1px);
+            right: 0;
+            height: 2px;
+            background: linear-gradient(-45deg, rgba(0, 0, 255, 0), #5f91ff, rgba(0, 0, 255, 0));
+            border-radius: 100%;
+            animation: shining 3000ms ease-in-out infinite;
+        }
+
+        @keyframes shining {
+            0% { width: 0; }
+            50% { width: 30px; }
+            100% { width: 0; }
+        }
+
+        .shooting-star::after {
+            transform: translateX(50%) rotateZ(-45deg);
+        }
+
+        .shooting-star::before {
+            transform: translateX(50%) rotateZ(45deg);
+        }
+
+        .shooting-star:nth-child(1) { top: 0; left: 0; animation-delay: 0ms; }
+        .shooting-star:nth-child(2) { top: 10%; left: 20%; animation-delay: 500ms; }
+        .shooting-star:nth-child(3) { top: 20%; left: 40%; animation-delay: 1000ms; }
+        .shooting-star:nth-child(4) { top: 30%; left: 60%; animation-delay: 1500ms; }
+        .shooting-star:nth-child(5) { top: 40%; left: 80%; animation-delay: 2000ms; }
+
+        /* ── Sprinkle Canvas ── */
+        #sprinkles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
         }
 
         @keyframes bgShift {
@@ -307,10 +428,12 @@
             font-family: var(--font-display);
             font-size: 8rem;
             font-weight: 900;
-            opacity: 0.1;
+            opacity: 0.8;
             line-height: 1;
-            -webkit-text-stroke: 1px white;
+            -webkit-text-stroke: 2px rgba(255,255,255,0.9);
             color: transparent;
+            text-shadow: 0 0 40px var(--accent-primary), 0 0 80px rgba(139, 92, 246, 0.4);
+            filter: drop-shadow(0 0 20px var(--accent-primary));
         }
 
         .step-content h3 {
@@ -405,6 +528,18 @@
     </style>
 </head>
 <body>
+    <div class="stars-container">
+        <div class="star-layer stars-1"></div>
+        <div class="star-layer stars-2"></div>
+        <div class="shooting-stars">
+            <div class="shooting-star"></div>
+            <div class="shooting-star"></div>
+            <div class="shooting-star"></div>
+            <div class="shooting-star"></div>
+            <div class="shooting-star"></div>
+        </div>
+    </div>
+    <canvas id="sprinkles"></canvas>
     <div class="bg-glow"></div>
     <div id="glow" class="mouse-glow"></div>
 
@@ -413,8 +548,8 @@
             <span class="logo-symbol">👑</span> WINNER TAKES ALL
         </a>
         <div class="nav-actions" style="display: flex; gap: 1.5rem; align-items: center;">
-            <a href="http://localhost:3000/login" class="nav-login" style="color: var(--text-muted); font-weight: 600; text-decoration: none;">Log In</a>
-            <a href="http://localhost:3000/signup" class="btn btn-primary nav-signup" style="padding: 0.8rem 1.6rem; font-size: 0.9rem; border-radius: 12px;">Get Started</a>
+            <a href="https://portion-wisconsin-permanent-one.trycloudflare.com/login" class="nav-login" style="color: var(--text-muted); font-weight: 600; text-decoration: none;">Log In</a>
+            <a href="https://portion-wisconsin-permanent-one.trycloudflare.com/signup" class="btn btn-primary nav-signup" style="padding: 0.8rem 1.6rem; font-size: 0.9rem; border-radius: 12px;">Get Started</a>
         </div>
     </nav>
 
@@ -428,7 +563,7 @@
             </h1>
             <p class="hero-sub">The premier destination for professional-grade digital tournaments. Risk everything, beat the field, and secure the ultimate prize in the world's most intense arena.</p>
             <div class="cta-group">
-                <a href="http://localhost:3000/tournaments" class="btn btn-primary">
+                <a href="https://portion-wisconsin-permanent-one.trycloudflare.com/tournaments" class="btn btn-primary">
                     ENTER THE ARENA <span>→</span>
                 </a>
                 <a href="#how-it-works" class="btn btn-secondary">
@@ -552,7 +687,7 @@
         <section class="section reveal" style="text-align: center;">
             <div class="card-3d" style="max-width: 800px; margin: 0 auto; background: var(--gradient-glow); border-color: var(--accent-primary);">
                 <h2 style="font-family: var(--font-display); font-size: clamp(2rem, 5vw, 4rem); margin-bottom: 2rem;">READY TO CLAIM THE THRONE?</h2>
-                <a href="http://localhost:3000/signup" class="btn btn-primary btn-hero">JOIN THE ELITE</a>
+                <a href="https://portion-wisconsin-permanent-one.trycloudflare.com/signup" class="btn btn-primary btn-hero">JOIN THE ELITE</a>
             </div>
         </section>
 
@@ -568,11 +703,71 @@
     </div>
 
     <script>
+        // Sprinkle Particles System
+        const canvas = document.getElementById('sprinkles');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+        
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        class Particle {
+            constructor() {
+                this.reset();
+            }
+            reset() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.size = Math.random() * 2;
+                this.speedX = (Math.random() - 0.5) * 0.5;
+                this.speedY = (Math.random() - 0.5) * 0.5;
+                this.life = Math.random() * 0.5 + 0.5;
+                this.opacity = Math.random();
+            }
+            update() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+                if (this.x < 0 || this.x > canvas.width || this.y < 0 || this.y > canvas.height) {
+                    this.reset();
+                }
+            }
+            draw() {
+                ctx.fillStyle = `rgba(255, 255, 255, ${this.opacity * 0.5})`;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        for (let i = 0; i < 150; i++) {
+            particles.push(new Particle());
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+            requestAnimationFrame(animate);
+        }
+        animate();
+
         const glow = document.getElementById('glow');
         document.addEventListener('mousemove', (e) => {
             glow.style.opacity = '1';
             glow.style.left = e.clientX + 'px';
             glow.style.top = e.clientY + 'px';
+
+            // Parallax stars
+            const moveX = (e.clientX - window.innerWidth / 2) * 0.01;
+            const moveY = (e.clientY - window.innerHeight / 2) * 0.01;
+            document.querySelector('.stars-1').style.transform = `translate(${moveX}px, ${moveY}px)`;
+            document.querySelector('.stars-2').style.transform = `translate(${moveX * 1.5}px, ${moveY * 1.5}px)`;
         });
 
         // Intersection Observer for Scroll Reveals
