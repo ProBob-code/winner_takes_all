@@ -16,7 +16,7 @@
     "dev:site": "npm run dev -w website",
     "build": "npm run build --workspaces --if-present",
     "build:site": "npm run build -w website",
-    "build:web": "cd apps/web && npx @cloudflare/next-on-pages",
+    "build:web": "cd apps/web && npx next build && npx @cloudflare/next-on-pages --skip-build",
     "build:combined": "npm run build:site && npm run build:web && cp -r apps/website/dist/* apps/web/.vercel/output/static/",
     "deploy": "cd apps/website && npx wrangler deploy",
     "deploy:web": "cd apps/web && npx wrangler deploy",
