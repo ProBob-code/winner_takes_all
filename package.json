@@ -16,7 +16,9 @@
     "dev:site": "npm run dev -w website",
     "build": "npm run build --workspaces --if-present",
     "build:site": "npm run build -w website",
+    "build:web": "cd apps/web && npx @cloudflare/next-on-pages",
     "deploy": "cd apps/website && npx wrangler deploy",
+    "deploy:web": "cd apps/web && npx wrangler deploy",
     "lint": "npm run lint --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present"
   },

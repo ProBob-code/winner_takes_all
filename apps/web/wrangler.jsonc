@@ -1,0 +1,15 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "winner-takes-all-web",
+  "main": ".vercel/output/static/_worker.js",
+  "compatibility_date": "2024-11-01",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "assets": {
+    "directory": ".vercel/output/static"
+  },
+  "observability": {
+    "enabled": true
+  }
+}

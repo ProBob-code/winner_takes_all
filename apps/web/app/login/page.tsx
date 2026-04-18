@@ -1,3 +1,4 @@
+export const runtime = "edge";
 import { AuthForm } from "@/components/auth-form";
 import Link from "next/link";
 
