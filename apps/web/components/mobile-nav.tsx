@@ -22,7 +22,7 @@ export function MobileNav({ user }: { user: any }) {
   return (
     <nav className="mobile-nav">
       {navItems.map((item) => {
-        const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+        const isActive = pathname ? (pathname === item.href || pathname.startsWith(item.href + "/")) : false;
         return (
           <Link 
             key={item.href} 

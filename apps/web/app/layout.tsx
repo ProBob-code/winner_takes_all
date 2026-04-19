@@ -11,6 +11,8 @@ import { backendFetch } from "@/lib/backend";
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit" });
 
+export const runtime = "edge";
+
 export const metadata: Metadata = {
   title: "WTA | Premium Tournament Platform",
   description: "Compete in high-stakes multi-game tournaments. Professional grade.",
