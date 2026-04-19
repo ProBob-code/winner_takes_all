@@ -1,3 +1,4 @@
 {
-  "installCommand": "echo 'Skipping install'"
+  "installCommand": "echo 'Skipping install'",
+  "buildCommand": "npm run build"
 }
