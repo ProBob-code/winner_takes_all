@@ -1,3 +1,4 @@
+export const runtime = "edge";
 import { readBackendJson } from "@/lib/backend";
 
 type LeaderboardResponse = {

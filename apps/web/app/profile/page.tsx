@@ -1,3 +1,4 @@
+export const runtime = "edge";
 import { redirect } from "next/navigation";
 import { readBackendJson } from "@/lib/backend";
 import { TransferForm } from "@/components/transfer-form";

@@ -1,3 +1,4 @@
+export const runtime = "edge";
 import { nextBackendProxy } from "@/lib/backend";
 import { NextRequest } from "next/server";
 

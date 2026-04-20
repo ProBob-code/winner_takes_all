@@ -1,3 +1,4 @@
+export const runtime = "edge";
 import { readBackendJson } from "@/lib/backend";
 import { formatMoney } from "@/lib/format";
 import { PaymentButton } from "@/components/payment-button";

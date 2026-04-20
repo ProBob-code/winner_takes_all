@@ -1,3 +1,4 @@
+export const runtime = "edge";
 import { readBackendJson } from "@/lib/backend";
 import Link from "next/link";
 

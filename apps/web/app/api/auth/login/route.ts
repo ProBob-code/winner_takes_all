@@ -1,3 +1,4 @@
+export const runtime = "edge";
 import { proxyJson } from "@/lib/proxy";
 
 export async function POST(request: Request) {
