@@ -1,9 +1,20 @@
 import { cookies } from "next/headers";
 
-const DEFAULT_API_BASE_URL = "http://127.0.0.1:8000";
+import { getRequestContext } from "@cloudflare/next-on-pages";
+
+const DEFAULT_API_BASE_URL = "https://api.your-production-server.com"; // Prevent Cloudflare crashing on 127.0.0.1 fetch
 
 export function getApiBaseUrl() {
-  return process.env.WTA_API_URL || DEFAULT_API_BASE_URL;
+  let url = process.env.WTA_API_URL;
+  try {
+    const ctx = getRequestContext();
+    if (ctx?.env?.WTA_API_URL) {
+      url = ctx.env.WTA_API_URL as string;
+    }
+  } catch (err) {
+    // ignore
+  }
+  return url || DEFAULT_API_BASE_URL;
 }
 
 function serializeCookieHeader(entries: Array<{ name: string; value: string }>) {
