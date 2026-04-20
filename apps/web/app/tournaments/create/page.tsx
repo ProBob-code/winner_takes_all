@@ -1,4 +1,3 @@
-export const runtime = "edge";
 import HostTournamentForm from "@/components/host-form";
 import Link from "next/link";
 import { cookies } from "next/headers";

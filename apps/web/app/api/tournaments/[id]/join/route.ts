@@ -1,4 +1,3 @@
-export const runtime = "edge";
 import { cookies } from "next/headers";
 import { proxyJson } from "@/lib/proxy";
 

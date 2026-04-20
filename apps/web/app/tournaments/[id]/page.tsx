@@ -1,4 +1,3 @@
-export const runtime = "edge";
 import Link from "next/link";
 import { readBackendJson } from "@/lib/backend";
 import { formatMoney } from "@/lib/format";

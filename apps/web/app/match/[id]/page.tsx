@@ -1,4 +1,3 @@
-export const runtime = "edge";
 import { cookies } from "next/headers";
 import { readBackendJson } from "@/lib/backend";
 import { GameRoom } from "@/components/game-room";

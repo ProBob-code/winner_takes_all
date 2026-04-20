@@ -1,4 +1,3 @@
-export const runtime = "edge";
 import { backendFetch } from "@/lib/backend";
 import { NextRequest, NextResponse } from "next/server";
 
