@@ -1,6 +1,6 @@
 import NextError from 'next/error';
 
-export const runtime = 'edge';
+export const runtime = 'experimental-edge';
 
 export default function CustomError({ statusCode }: { statusCode: number }) {
   return <NextError statusCode={statusCode} />;
