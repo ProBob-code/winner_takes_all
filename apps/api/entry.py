@@ -33,9 +33,10 @@ class Default(WorkerEntrypoint):
                 return await stub.fetch(request)
 
         # 2. Setup D1 for standard REST requests
-        if hasattr(self.env, "DB"):
+        binding = getattr(self.env, "db", None) or getattr(self.env, "DB", None)
+        if binding:
             # Initialize D1 session factory
-            session_factory = build_d1_session_factory(self.env.DB)
+            session_factory = build_d1_session_factory(binding)
             repo = SQLAlchemyRepository(session_factory=session_factory)
             # Inject into service
             service.store = repo

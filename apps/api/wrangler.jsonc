@@ -12,7 +12,7 @@
   },
   "d1_databases": [
     {
-      "binding": "DB",
+      "binding": "db",
       "database_name": "winner-takes-all-db",
       "database_id": "4cba52ba-c7bf-45ae-811f-c6d37efe6e98"
     }
