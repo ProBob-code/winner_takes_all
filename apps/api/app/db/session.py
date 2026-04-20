@@ -8,6 +8,11 @@ from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import sessionmaker
 
+try:
+    from sqlalchemy_cloudflare_d1 import create_engine_from_binding
+except ImportError:
+    create_engine_from_binding = None
+
 from .models import Base
 
 
@@ -23,6 +28,12 @@ def normalize_database_url(database_url: str | None = None) -> str:
 
     if url.startswith("postgresql://") and "+psycopg" not in url:
         return url.replace("postgresql://", "postgresql+psycopg://", 1)
+
+    if url.startswith("d1://") or url.startswith("cloudflare_d1://"):
+        # Ensure it uses the cloudflare_d1 protocol for the dialect
+        if url.startswith("d1://"):
+            return url.replace("d1://", "cloudflare_d1://", 1)
+        return url
 
     return url
 
@@ -42,6 +53,13 @@ def build_engine(database_url: str | None = None) -> Engine:
 
 def build_session_factory(database_url: str | None = None) -> sessionmaker:
     engine = build_engine(database_url)
+    return sessionmaker(bind=engine, autoflush=False, expire_on_commit=False, future=True)
+
+
+def build_d1_session_factory(d1_binding) -> sessionmaker:
+    if not create_engine_from_binding:
+        raise ImportError("sqlalchemy-cloudflare-d1 must be installed to use D1 bindings")
+    engine = create_engine_from_binding(d1_binding)
     return sessionmaker(bind=engine, autoflush=False, expire_on_commit=False, future=True)
 
 
