@@ -14,7 +14,7 @@
     {
       "binding": "DB",
       "database_name": "winner-takes-all-db",
-      "database_id": "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+      "database_id": "4cba52ba-c7bf-45ae-811f-c6d37efe6e98"
     }
   ],
   "durable_objects": {
