@@ -548,8 +548,8 @@
             <span class="logo-symbol">👑</span> WINNER TAKES ALL
         </a>
         <div class="nav-actions" style="display: flex; gap: 1.5rem; align-items: center;">
-            <a href="/login" class="nav-login" style="color: var(--text-muted); font-weight: 600; text-decoration: none;">Log In</a>
-            <a href="/signup" class="btn btn-primary nav-signup" style="padding: 0.8rem 1.6rem; font-size: 0.9rem; border-radius: 12px;">Get Started</a>
+            <a href="#" onclick="window.location.href = window.WEB_APP_URL + '/login'" class="nav-login" style="color: var(--text-muted); font-weight: 600; text-decoration: none;">Log In</a>
+            <a href="#" onclick="window.location.href = window.WEB_APP_URL + '/signup'" class="btn btn-primary nav-signup" style="padding: 0.8rem 1.6rem; font-size: 0.9rem; border-radius: 12px;">Get Started</a>
         </div>
     </nav>
 
@@ -563,7 +563,7 @@
             </h1>
             <p class="hero-sub">The premier destination for professional-grade digital tournaments. Risk everything, beat the field, and secure the ultimate prize in the world's most intense arena.</p>
             <div class="cta-group">
-                <a href="/tournaments" class="btn btn-primary">
+                <a href="#" onclick="window.location.href = window.WEB_APP_URL + '/tournaments'" class="btn btn-primary">
                     ENTER THE ARENA <span>→</span>
                 </a>
                 <a href="#how-it-works" class="btn btn-secondary">
@@ -687,7 +687,7 @@
         <section class="section reveal" style="text-align: center;">
             <div class="card-3d" style="max-width: 800px; margin: 0 auto; background: var(--gradient-glow); border-color: var(--accent-primary);">
                 <h2 style="font-family: var(--font-display); font-size: clamp(2rem, 5vw, 4rem); margin-bottom: 2rem;">READY TO CLAIM THE THRONE?</h2>
-                <a href="/signup" class="btn btn-primary btn-hero">JOIN THE ELITE</a>
+                <a href="#" onclick="window.location.href = window.WEB_APP_URL + '/signup'" class="btn btn-primary btn-hero">JOIN THE ELITE</a>
             </div>
         </section>
 
@@ -703,6 +703,10 @@
     </div>
 
     <script>
+        // CONFIGURATION: Set the URL of your Next.js Web App here. 
+        // Example: https://winner-takes-all-web.pages.dev
+        window.WEB_APP_URL = "https://your-nextjs-web-app.pages.dev";
+
         // Sprinkle Particles System
         const canvas = document.getElementById('sprinkles');
         const ctx = canvas.getContext('2d');

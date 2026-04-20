@@ -11,5 +11,8 @@
   },
   "observability": {
     "enabled": true
+  },
+  "vars": {
+    "WTA_API_URL": "https://api.your-production-server.com"
   }
 }
