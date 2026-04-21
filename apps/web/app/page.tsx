@@ -1,6 +1,6 @@
 export const runtime = "edge";
-import { redirect } from "next/navigation";
+import { LandingPage } from "@/components/landing-page";
 
 export default function HomePage() {
-  redirect("/tournaments");
+  return <LandingPage />;
 }

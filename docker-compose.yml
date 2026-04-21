@@ -29,11 +29,4 @@ services:
     depends_on:
       - api
 
-  website:
-    build:
-      context: .
-      dockerfile: apps/website/Dockerfile
-    ports:
-      - "3001:3001"
-    volumes:
-      - ./apps/website:/app/apps/website
+
