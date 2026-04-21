@@ -13,6 +13,6 @@
     "enabled": true
   },
   "vars": {
-    "WTA_API_URL": "https://api.your-production-server.com"
+    "WTA_API_URL": "https://winnertakesall.probob-in-git.workers.dev"
   }
 }

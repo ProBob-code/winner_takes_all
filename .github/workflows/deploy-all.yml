@@ -1,0 +1,71 @@
+name: Deploy Winner Takes All
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy-api:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install API Deps
+        working-directory: apps/api
+        run: npm install
+      - name: Deploy API (Cloudflare Worker)
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: 'apps/api'
+          command: deploy
+
+  deploy-website:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install and Build Website
+        working-directory: apps/website
+        run: |
+          npm install
+          npm run build
+      - name: Deploy Marketing Site (Cloudflare Pages)
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: 'winner-takes-all-site'
+          directory: 'apps/website/dist'
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+
+  deploy-web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install dependencies
+        working-directory: apps/web
+        run: npm install
+      - name: Build Next.js Web App
+        working-directory: apps/web
+        run: npx @cloudflare/next-on-pages@1
+      - name: Deploy Next.js App (Cloudflare Pages)
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: 'winner-takes-all-web'
+          directory: 'apps/web/.vercel/output/static'
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
