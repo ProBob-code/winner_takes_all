@@ -21,7 +21,7 @@ export async function proxyJson(path: string, init: RequestInit = {}) {
   let response;
   let body;
   try {
-    response = await fetch(`${getApiBaseUrl()}${path}`, {
+    response = await fetch(`${getApiBaseUrl()}/api${path}`, {
       ...init,
       headers: new Headers(init.headers),
       cache: "no-store"

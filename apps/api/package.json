@@ -1,14 +1,18 @@
 {
   "name": "api",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "scripts": {
-    "dev": "../../.venv/bin/python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000",
-    "start": "../../.venv/bin/python -m uvicorn app.main:app --host 0.0.0.0 --port 8000",
-    "build": "python3 -m compileall app || true",
-    "lint": "python3 -m compileall app || true",
-    "test": "../../.venv/bin/python -m pytest",
-    "migrate": "../../.venv/bin/python -m alembic upgrade head",
-    "migrate:make": "../../.venv/bin/python -m alembic revision --autogenerate -m core_schema"
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "db:migrate": "wrangler d1 execute winner-takes-all-db --file=./schema.sql"
+  },
+  "dependencies": {
+    "hono": "^4.6.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20241022.0",
+    "typescript": "^5.6.0",
+    "wrangler": "^3.80.0"
   }
 }
