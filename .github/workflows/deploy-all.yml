@@ -25,7 +25,7 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: 'apps/api'
           preCommands: |
-            wrangler d1 execute winner-takes-all-db --file=./schema.sql --remote
+            wrangler d1 execute winner-takes-all-db --file=./schema.sql --remote --yes
           command: deploy
 
   deploy-web:
