@@ -224,15 +224,7 @@ export function LandingPage() {
       <div className="bg-glow"></div>
       <div ref={glowRef} className="mouse-glow" style={{ position: "fixed", width: "600px", height: "600px", background: "radial-gradient(circle, rgba(139, 92, 246, 0.08), transparent 70%)", borderRadius: "50%", pointerEvents: "none", zIndex: 999, transform: "translate(-50%, -50%)", opacity: 0 }}></div>
 
-      <nav style={{ position: "fixed", top: 0, width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", padding: "1.5rem 6%", zIndex: 1000, background: "rgba(8, 5, 18, 0.7)", backdropFilter: "blur(20px)", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
-        <Link href="/" className="logo" style={{ fontWeight: 800, fontSize: "1.5rem", color: "white", textDecoration: "none", display: "flex", gap: "10px" }}>
-          <span style={{ color: "#f59e0b" }}>👑</span> WINNER TAKES ALL
-        </Link>
-        <div style={{ display: "flex", gap: "1.5rem", alignItems: "center" }}>
-          <Link href="/login" style={{ color: "#94a3b8", fontWeight: 600, textDecoration: "none" }}>Log In</Link>
-          <Link href="/signup" style={{ background: "linear-gradient(135deg, #8b5cf6, #06b6d4)", color: "white", padding: "0.8rem 1.6rem", borderRadius: "12px", textDecoration: "none", fontWeight: 800 }}>Get Started</Link>
-        </div>
-      </nav>
+      <div ref={glowRef} className="mouse-glow" style={{ position: "fixed", width: "600px", height: "600px", background: "radial-gradient(circle, rgba(139, 92, 246, 0.08), transparent 70%)", borderRadius: "50%", pointerEvents: "none", zIndex: 999, transform: "translate(-50%, -50%)", opacity: 0 }}></div>
 
       <main style={{ padding: "120px 6% 60px", textAlign: "center" }}>
         <section className="hero" style={{ minHeight: "80vh", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" }}>

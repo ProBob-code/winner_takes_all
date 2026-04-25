@@ -84,15 +84,20 @@ export function Sidebar({ user: initialUser }: { user: any }) {
                 border: 'none', 
                 color: 'var(--text-secondary)', 
                 cursor: 'pointer',
-                fontSize: '1.2rem',
+                width: '32px',
+                height: '32px',
                 marginLeft: isCollapsed ? '0' : 'auto',
                 display: 'flex',
-                padding: '8px',
                 flexDirection: 'column',
                 gap: '4px',
                 alignItems: 'center',
-                justifyContent: 'center'
+                justifyContent: 'center',
+                padding: '4px',
+                borderRadius: '6px',
+                transition: 'background 0.2s'
             }}
+            onMouseOver={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
+            onMouseOut={(e) => (e.currentTarget.style.background = 'none')}
           >
             <div style={{ width: '18px', height: '2px', background: 'currentColor', borderRadius: '2px' }}></div>
             <div style={{ width: '18px', height: '2px', background: 'currentColor', borderRadius: '2px' }}></div>
