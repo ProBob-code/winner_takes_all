@@ -1,24 +1,23 @@
 1:"$Sreact.fragment"
-3:I[6453,["274","static/chunks/274-3dba5f4318b58688.js","974","static/chunks/app/page-3e40a9b270ca0f37.js"],"LandingPage"]
-4:I[9746,[],"OutletBoundary"]
-6:I[87,[],"AsyncMetadataOutlet"]
-8:I[9746,[],"ViewportBoundary"]
-a:I[9746,[],"MetadataBoundary"]
-b:"$Sreact.suspense"
-d:I[711,["219","static/chunks/app/global-error-376f1b6892b5f7a5.js"],"default"]
+2:I[1545,["274","static/chunks/274-3dba5f4318b58688.js","177","static/chunks/app/layout-5368c1c0745a0fc9.js"],"Sidebar"]
+3:I[6274,["274","static/chunks/274-3dba5f4318b58688.js","177","static/chunks/app/layout-5368c1c0745a0fc9.js"],""]
+4:I[2706,["274","static/chunks/274-3dba5f4318b58688.js","177","static/chunks/app/layout-5368c1c0745a0fc9.js"],"ThemeToggle"]
+5:I[2843,[],""]
+6:I[7915,["39","static/chunks/app/error-ae21bc5ab0dda3a7.js"],"default"]
+7:I[7527,[],""]
+8:I[5575,["274","static/chunks/274-3dba5f4318b58688.js","177","static/chunks/app/layout-5368c1c0745a0fc9.js"],"MobileNav"]
+9:I[6453,["274","static/chunks/274-3dba5f4318b58688.js","974","static/chunks/app/page-3158df2d0ef3b6be.js"],"LandingPage"]
+a:I[9746,[],"OutletBoundary"]
+c:I[87,[],"AsyncMetadataOutlet"]
+e:I[9746,[],"ViewportBoundary"]
+10:I[9746,[],"MetadataBoundary"]
+11:"$Sreact.suspense"
+13:I[711,["219","static/chunks/app/global-error-376f1b6892b5f7a5.js"],"default"]
 :HL["/_next/static/media/7b0b24f36b1a6d0b-s.p.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
 :HL["/_next/static/media/e4af272ccee01ff0-s.p.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
-:HL["/_next/static/css/8694512d33832e75.css","style"]
-0:{"P":null,"b":"G8ok_nGBHgmNR8HaOvItZ","p":"","c":["",""],"i":false,"f":[[["",{"children":["__PAGE__",{}]},"$undefined","$undefined",true],["",["$","$1","c",{"children":[[["$","link","0",{"rel":"stylesheet","href":"/_next/static/css/8694512d33832e75.css","precedence":"next","crossOrigin":"$undefined","nonce":"$undefined"}]],"$L2"]}],{"children":["__PAGE__",["$","$1","c",{"children":[["$","$L3",null,{}],null,["$","$L4",null,{"children":["$L5",["$","$L6",null,{"promise":"$@7"}]]}]]}],{},null,false]},null,false],["$","$1","h",{"children":[null,[["$","$L8",null,{"children":"$L9"}],["$","meta",null,{"name":"next-size-adjust","content":""}]],["$","$La",null,{"children":["$","div",null,{"hidden":true,"children":["$","$b",null,{"fallback":null,"children":"$Lc"}]}]}]]}],false]],"m":"$undefined","G":["$d",[]],"s":false,"S":true}
-e:I[1545,["274","static/chunks/274-3dba5f4318b58688.js","177","static/chunks/app/layout-93150582048c71d0.js"],"Sidebar"]
-f:I[6274,["274","static/chunks/274-3dba5f4318b58688.js","177","static/chunks/app/layout-93150582048c71d0.js"],""]
-10:I[2706,["274","static/chunks/274-3dba5f4318b58688.js","177","static/chunks/app/layout-93150582048c71d0.js"],"ThemeToggle"]
-11:I[2843,[],""]
-12:I[7915,["39","static/chunks/app/error-ae21bc5ab0dda3a7.js"],"default"]
-13:I[7527,[],""]
-14:I[5575,["274","static/chunks/274-3dba5f4318b58688.js","177","static/chunks/app/layout-93150582048c71d0.js"],"MobileNav"]
-2:["$","html",null,{"lang":"en","className":"__variable_f367f3 __variable_ed3508","children":["$","body",null,{"className":"__className_f367f3","children":["$","div",null,{"className":"app-container","children":[["$","$Le",null,{"user":null}],["$","div",null,{"className":"main-content","children":[["$","header",null,{"className":"topbar","children":[["$","$Lf",null,{"href":"/dashboard","className":"topbar-brand","children":[["$","span",null,{"className":"logo-icon","children":"👑"}],["$","span",null,{"className":"brand-text","children":"Winner Takes All"}],["$","span",null,{"className":"brand-text-mobile","children":"WTA"}]]}],["$","div",null,{"className":"topbar-search"}],["$","nav",null,{"className":"topbar-nav","children":[["$","$L10",null,{}],[["$","$Lf",null,{"href":"/login","className":"topbar-link","children":"Login"}],["$","$Lf",null,{"href":"/signup","className":"button button-sm","children":"Sign Up"}]]]}]]}],["$","$L11",null,{"parallelRouterKey":"children","error":"$12","errorStyles":[],"errorScripts":[],"template":["$","$L13",null,{}],"templateStyles":"$undefined","templateScripts":"$undefined","notFound":[["$","main",null,{"className":"flex flex-col items-center justify-center min-h-[60vh] text-center px-4","children":[["$","h1",null,{"className":"text-4xl font-bold mb-4","children":"404 - Page Not Found"}],["$","p",null,{"className":"text-muted-foreground mb-8","children":"Oops! The page you're looking for doesn't exist or has been moved."}],["$","$Lf",null,{"href":"/dashboard","className":"button","children":"Go to Dashboard"}]]}],[]],"forbidden":"$undefined","unauthorized":"$undefined"}]]}],["$","$L14",null,{"user":null}]]}]}]}]
-9:[["$","meta","0",{"charSet":"utf-8"}],["$","meta","1",{"name":"viewport","content":"width=device-width, initial-scale=1"}]]
-5:null
-7:{"metadata":[["$","title","0",{"children":"WTA | Premium Tournament Platform"}],["$","meta","1",{"name":"description","content":"Compete in high-stakes multi-game tournaments. Professional grade."}]],"error":null,"digest":"$undefined"}
-c:"$7:metadata"
+:HL["/_next/static/css/2b7b3d6b75e29037.css","style"]
+0:{"P":null,"b":"Z5VyckeQ0YPlz3kuRJ_vf","p":"","c":["",""],"i":false,"f":[[["",{"children":["__PAGE__",{}]},"$undefined","$undefined",true],["",["$","$1","c",{"children":[[["$","link","0",{"rel":"stylesheet","href":"/_next/static/css/2b7b3d6b75e29037.css","precedence":"next","crossOrigin":"$undefined","nonce":"$undefined"}]],["$","html",null,{"lang":"en","className":"__variable_f367f3 __variable_ed3508","children":["$","body",null,{"className":"__className_f367f3","children":["$","div",null,{"className":"app-container","children":[["$","$L2",null,{"user":null}],["$","div",null,{"className":"main-content","children":[["$","header",null,{"className":"topbar","children":[["$","$L3",null,{"href":"/dashboard","className":"topbar-brand","children":[["$","span",null,{"className":"logo-icon","children":"👑"}],["$","span",null,{"className":"brand-text","children":"Winner Takes All"}],["$","span",null,{"className":"brand-text-mobile","children":"WTA"}]]}],["$","div",null,{"className":"topbar-search"}],["$","nav",null,{"className":"topbar-nav","children":[["$","$L4",null,{}],["$","$L3",null,{"href":"/login","className":"topbar-link","children":"Login"}],["$","$L3",null,{"href":"/signup","className":"button button-sm","children":"Sign Up"}]]}]]}],["$","$L5",null,{"parallelRouterKey":"children","error":"$6","errorStyles":[],"errorScripts":[],"template":["$","$L7",null,{}],"templateStyles":"$undefined","templateScripts":"$undefined","notFound":[["$","main",null,{"className":"flex flex-col items-center justify-center min-h-[60vh] text-center px-4","children":[["$","h1",null,{"className":"text-4xl font-bold mb-4","children":"404 - Page Not Found"}],["$","p",null,{"className":"text-muted-foreground mb-8","children":"Oops! The page you're looking for doesn't exist or has been moved."}],["$","$L3",null,{"href":"/dashboard","className":"button","children":"Go to Dashboard"}]]}],[]],"forbidden":"$undefined","unauthorized":"$undefined"}]]}],["$","$L8",null,{"user":null}]]}]}]}]]}],{"children":["__PAGE__",["$","$1","c",{"children":[["$","$L9",null,{}],null,["$","$La",null,{"children":["$Lb",["$","$Lc",null,{"promise":"$@d"}]]}]]}],{},null,false]},null,false],["$","$1","h",{"children":[null,[["$","$Le",null,{"children":"$Lf"}],["$","meta",null,{"name":"next-size-adjust","content":""}]],["$","$L10",null,{"children":["$","div",null,{"hidden":true,"children":["$","$11",null,{"fallback":null,"children":"$L12"}]}]}]]}],false]],"m":"$undefined","G":["$13",[]],"s":false,"S":true}
+f:[["$","meta","0",{"charSet":"utf-8"}],["$","meta","1",{"name":"viewport","content":"width=device-width, initial-scale=1"}]]
+b:null
+d:{"metadata":[["$","title","0",{"children":"WTA | Premium Tournament Platform"}],["$","meta","1",{"name":"description","content":"Compete in high-stakes multi-game tournaments. Professional grade."}]],"error":null,"digest":"$undefined"}
+12:"$d:metadata"

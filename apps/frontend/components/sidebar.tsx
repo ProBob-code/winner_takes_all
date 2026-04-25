@@ -1,15 +1,27 @@
 "use client";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { SidebarEffects } from "./sidebar-effects";
 
-export function Sidebar({ user }: { user: any }) {
+export function Sidebar({ user: initialUser }: { user: any }) {
   const pathname = usePathname();
   const router = useRouter();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [user, setUser] = useState(initialUser);
+
+  useEffect(() => {
+    if (!user) {
+        fetch("/api/user/profile")
+          .then(res => res.json())
+          .then(data => {
+            if (data.user) setUser(data.user);
+          })
+          .catch(err => console.error("Sidebar user fetch error:", err));
+    }
+  }, []);
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
@@ -21,6 +33,23 @@ export function Sidebar({ user }: { user: any }) {
       console.error("Logout failed:", err);
     } finally {
       setIsLoggingOut(false);
+    }
+  };
+
+  const [isCollapsed, setIsCollapsed] = useState(pathname === "/");
+
+  // Auto-collapse on homepage when path changes
+  useEffect(() => {
+    if (pathname === "/") {
+      setIsCollapsed(true);
+    } else {
+      setIsCollapsed(false);
+    }
+  }, [pathname]);
+
+  const toggleSidebar = () => {
+    if (pathname === "/") {
+      setIsCollapsed(!isCollapsed);
     }
   };
 
@@ -38,12 +67,34 @@ export function Sidebar({ user }: { user: any }) {
   ];
 
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar ${isCollapsed ? "collapsed" : ""}`}>
       <SidebarEffects />
-      <Link href={(process.env.NEXT_PUBLIC_LANDING_URL as any) || "/"} className="sidebar-brand">
-        <span className="logo-icon">👑</span>
-        <span className="brand-text">Winner Takes All</span>
-      </Link>
+      
+      <div className="sidebar-brand">
+        <Link href={(process.env.NEXT_PUBLIC_LANDING_URL as any) || "/"} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', textDecoration: 'none', color: 'inherit' }}>
+          <span className="logo-icon">👑</span>
+          {!isCollapsed && <span className="brand-text">Winner Takes All</span>}
+        </Link>
+        {pathname === "/" && (
+          <button 
+            onClick={toggleSidebar}
+            className="sidebar-toggle-btn"
+            style={{ 
+                background: 'none', 
+                border: 'none', 
+                color: 'var(--text-secondary)', 
+                cursor: 'pointer',
+                fontSize: '1.4rem',
+                marginLeft: isCollapsed ? '0' : 'auto',
+                display: 'flex',
+                padding: '4px',
+                lineHeight: 1
+            }}
+          >
+            ☰
+          </button>
+        )}
+      </div>
       
       <nav className="sidebar-nav">
         {navItems.map((item) => {
@@ -53,16 +104,17 @@ export function Sidebar({ user }: { user: any }) {
               key={item.href} 
               href={item.href as any} 
               className={`sidebar-link ${isActive ? "active" : ""}`}
+              title={isCollapsed ? item.label : ""}
             >
               <span className="sidebar-icon">{item.icon}</span>
-              {item.label}
+              {!isCollapsed && <span className="brand-text">{item.label}</span>}
             </Link>
           );
         })}
       </nav>
       
       {/* Wallet Summary & Logout at bottom of sidebar for logged in users */}
-      {user && (
+      {user && !isCollapsed && (
         <div className="sidebar-footer">
           <div className="sidebar-wallet">
             <span className="wallet-label">Balance</span>

@@ -129,6 +129,23 @@ export function LandingPage() {
       card.addEventListener("mouseleave", handleCardLeave);
     });
 
+    const generateStars = (count: number, width: number, height: number) => {
+      let value = "";
+      for (let i = 0; i < count; i++) {
+        const x = Math.floor(Math.random() * width);
+        const y = Math.floor(Math.random() * height);
+        const opacity = Math.random() * 0.8 + 0.2;
+        const size = Math.random() * 2 + 1;
+        value += `${x}px ${y}px ${size}px rgba(255, 255, 255, ${opacity})${i === count - 1 ? "" : ", "}`;
+      }
+      return value;
+    };
+
+    const stars1 = document.querySelector(".stars-1") as HTMLElement;
+    const stars2 = document.querySelector(".stars-2") as HTMLElement;
+    if (stars1) stars1.style.boxShadow = generateStars(400, window.innerWidth * 2, 2000);
+    if (stars2) stars2.style.boxShadow = generateStars(200, window.innerWidth * 2, 2000);
+
     return () => {
       window.removeEventListener("resize", resize);
       document.removeEventListener("mousemove", handleMouseMove);
@@ -137,7 +154,7 @@ export function LandingPage() {
   }, []);
 
   return (
-    <div className="landing-wrapper" style={{ backgroundColor: "#080512", color: "#f8fafc", minHeight: "100vh", position: "relative", overflowX: "hidden" }}>
+    <div className="landing-wrapper" style={{ color: "#f8fafc", minHeight: "100vh", position: "relative", overflowX: "hidden" }}>
       <style jsx global>{`
         :root {
           --bg-deep: #080512;
@@ -248,6 +265,27 @@ export function LandingPage() {
                     <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>💳</div>
                     <h3>Swift Payouts</h3>
                     <p style={{ color: "#94a3b8" }}>Instant processing directly to your secure wallet.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="how-it-works" className="section reveal" style={{ marginTop: "150px", padding: "80px 0" }}>
+            <h2 style={{ fontSize: "3rem", fontWeight: 800, marginBottom: "4rem" }}>ROAD TO VICTORY</h2>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "3rem", position: "relative" }}>
+                <div className="step-card" style={{ textAlign: "left", padding: "2.5rem", background: "rgba(255,255,255,0.02)", borderRadius: "24px", border: "1px solid rgba(255,255,255,0.05)" }}>
+                    <div style={{ fontSize: "4rem", fontWeight: 900, color: "rgba(139, 92, 246, 0.2)", marginBottom: "-1rem" }}>01</div>
+                    <h3 style={{ fontSize: "1.8rem", marginBottom: "1rem" }}>Enlist</h3>
+                    <p style={{ color: "#94a3b8", lineHeight: 1.6 }}>Create your pro account and fund your wallet with secure, instant deposits. You're now ready to join the arena.</p>
+                </div>
+                <div className="step-card" style={{ textAlign: "left", padding: "2.5rem", background: "rgba(255,255,255,0.02)", borderRadius: "24px", border: "1px solid rgba(255,255,255,0.05)" }}>
+                    <div style={{ fontSize: "4rem", fontWeight: 900, color: "rgba(6, 182, 212, 0.2)", marginBottom: "-1rem" }}>02</div>
+                    <h3 style={{ fontSize: "1.8rem", marginBottom: "1rem" }}>Engage</h3>
+                    <p style={{ color: "#94a3b8", lineHeight: 1.6 }}>Browse high-stakes lobbies and join a tournament that matches your skill. The prize pool is waiting for its master.</p>
+                </div>
+                <div className="step-card" style={{ textAlign: "left", padding: "2.5rem", background: "rgba(255,255,255,0.02)", borderRadius: "24px", border: "1px solid rgba(255,255,255,0.05)" }}>
+                    <div style={{ fontSize: "4rem", fontWeight: 900, color: "rgba(139, 92, 246, 0.2)", marginBottom: "-1rem" }}>03</div>
+                    <h3 style={{ fontSize: "1.8rem", marginBottom: "1rem" }}>Exult</h3>
+                    <p style={{ color: "#94a3b8", lineHeight: 1.6 }}>Outplay, outlast, and outmaneuver the competition. Claim your victory and withdraw your earnings instantly.</p>
                 </div>
             </div>
         </section>

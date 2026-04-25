@@ -17,30 +17,16 @@ export const metadata: Metadata = {
   description: "Compete in high-stakes multi-game tournaments. Professional grade.",
 };
 
-async function getUser() {
-  try {
-    const res = await backendFetch("/user/profile");
-    if (!res.ok) return null;
-    const data = await res.json();
-    return data.user || null;
-  } catch (err) {
-    console.error("Layout getUser error:", err);
-    return null;
-  }
-}
-
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const user = await getUser();
-
   return (
     <html lang="en" className={`${inter.variable} ${outfit.variable}`}>
       <body className={inter.className}>
         <div className="app-container">
-          <Sidebar user={user} />
+          <Sidebar user={null} />
           
           <div className="main-content">
             <header className="topbar">
@@ -52,24 +38,15 @@ export default async function RootLayout({
               <div className="topbar-search"></div>
               <nav className="topbar-nav">
                 <ThemeToggle />
-                {user ? (
-                  <>
-                    <NotificationBell />
-                    <div className="user-initial">{user.name?.[0]?.toUpperCase() || "U"}</div>
-                  </>
-                ) : (
-                  <>
-                    <Link href="/login" className="topbar-link">Login</Link>
-                    <Link href="/signup" className="button button-sm">Sign Up</Link>
-                  </>
-                )}
+                <Link href="/login" className="topbar-link">Login</Link>
+                <Link href="/signup" className="button button-sm">Sign Up</Link>
               </nav>
             </header>
             
             {children}
           </div>
 
-          <MobileNav user={user} />
+          <MobileNav user={null} />
         </div>
       </body>
     </html>
