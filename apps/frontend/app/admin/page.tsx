@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { readBackendJson } from "@/lib/backend";
 import Link from "next/link";
+import { getApiUrl } from "@/lib/api-config";
 
 type AdminResponse = {
   ok: boolean;
@@ -34,6 +35,7 @@ export default function AdminPage() {
 
   useEffect(() => {
     async function load() {
+      if (typeof window === "undefined") return;
       try {
         const { payload } = await readBackendJson<AdminResponse>("/admin/overview");
         setData(payload);
@@ -137,7 +139,11 @@ function ApprovalCard({ match }: { match: any }) {
     e.preventDefault();
     setSubmitting(true);
     try {
-      const res = await fetch(`/api/matches/${match.id}/approve-scores`, { method: "POST" });
+      const apiUrl = getApiUrl();
+      const res = await fetch(`${apiUrl}/api/matches/${match.id}/approve-scores`, { 
+        method: "POST",
+        credentials: "include"
+      });
       if (res.ok) window.location.reload();
       else alert("Failed to approve scores");
     } catch {

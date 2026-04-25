@@ -16,6 +16,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const fetchData = async () => {
+      if (typeof window === "undefined") return;
       try {
         setLoading(true);
         const apiUrl = getApiUrl();

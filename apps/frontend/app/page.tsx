@@ -11,6 +11,7 @@ export default function HomePage() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
     const apiUrl = getApiUrl();
     fetch(`${apiUrl}/api/user/profile`, { credentials: "include" })
       .then(res => res.json())

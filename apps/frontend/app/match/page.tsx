@@ -42,6 +42,7 @@ export default function MatchPage() {
 
   useEffect(() => {
     async function load() {
+      if (typeof window === "undefined") return;
       try {
         // Extract ID from pathname (e.g., /match/123 -> 123)
         const pathParts = window.location.pathname.split("/");
@@ -107,6 +108,7 @@ export default function MatchPage() {
 
   useEffect(() => {
     async function fetchTournament() {
+      if (typeof window === "undefined") return;
       if (match.tournamentId) {
         const { payload: tournamentData } = await readBackendJson<TournamentResponse>(`/tournaments/${match.tournamentId}`);
         setIsOffline(tournamentData.tournament?.tournamentType === "offline");

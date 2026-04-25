@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import HostTournamentForm from "@/components/host-form";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { getApiBaseUrl } from "@/lib/backend";
+import { getApiUrl } from "@/lib/api-config";
 
 
 export default function CreateTournamentPage() {
@@ -11,8 +11,10 @@ export default function CreateTournamentPage() {
 
   useEffect(() => {
     async function check() {
+      if (typeof window === "undefined") return;
       try {
-        const res = await fetch("/api/user/profile");
+        const apiUrl = getApiUrl();
+        const res = await fetch(`${apiUrl}/api/user/profile`, { credentials: "include" });
         setIsAuthenticated(res.ok);
         if (!res.ok) window.location.href = "/login";
       } catch {

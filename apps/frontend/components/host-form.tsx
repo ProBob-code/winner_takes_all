@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ShareTournament } from "./share-tournament";
+import { getApiUrl } from "@/lib/api-config";
 
 export default function HostTournamentForm() {
   const router = useRouter();
@@ -28,9 +29,11 @@ export default function HostTournamentForm() {
     setError(null);
 
     try {
-      const res = await fetch("/api/tournaments/create", {
+      const apiUrl = getApiUrl();
+      const res = await fetch(`${apiUrl}/api/tournaments/create`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           ...formData,
           password: isPrivate ? formData.password : null,

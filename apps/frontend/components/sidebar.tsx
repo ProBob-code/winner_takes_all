@@ -26,11 +26,12 @@ export function Sidebar({ user: initialUser }: { user: any }) {
   }, []);
 
   const handleLogout = async () => {
+    if (typeof window === "undefined") return;
     setIsLoggingOut(true);
     try {
-      await fetch("/api/auth/logout", { method: "POST" });
-      router.push((process.env.NEXT_PUBLIC_LANDING_URL as any) || "/");
-      router.refresh();
+      const apiUrl = getApiUrl();
+      await fetch(`${apiUrl}/api/auth/logout`, { method: "POST", credentials: "include" });
+      window.location.href = (process.env.NEXT_PUBLIC_LANDING_URL as any) || "/";
     } catch (err) {
       console.error("Logout failed:", err);
     } finally {
@@ -78,29 +79,38 @@ export function Sidebar({ user: initialUser }: { user: any }) {
         <button 
           onClick={toggleSidebar}
           className="sidebar-toggle-btn"
+          title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
           style={{ 
-              background: 'none', 
-              border: 'none', 
-              color: 'var(--text-secondary)', 
+              background: 'rgba(255, 255, 255, 0.05)', 
+              border: '1px solid rgba(255, 255, 255, 0.1)', 
+              color: 'var(--text-primary)', 
               cursor: 'pointer',
-              width: '32px',
-              height: '32px',
-              marginLeft: isCollapsed ? '0' : 'auto',
+              width: '40px',
+              height: '40px',
+              marginLeft: isCollapsed ? '0' : '1rem',
               display: 'flex',
               flexDirection: 'column',
               gap: '4px',
               alignItems: 'center',
               justifyContent: 'center',
-              padding: '4px',
-              borderRadius: '6px',
-              transition: 'background 0.2s'
+              padding: '0',
+              borderRadius: '8px',
+              transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+              flexShrink: 0,
+              zIndex: 10
           }}
-          onMouseOver={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
-          onMouseOut={(e) => (e.currentTarget.style.background = 'none')}
+          onMouseOver={(e) => {
+            e.currentTarget.style.background = 'rgba(139, 92, 246, 0.2)';
+            e.currentTarget.style.borderColor = 'rgba(139, 92, 246, 0.4)';
+          }}
+          onMouseOut={(e) => {
+            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+            e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+          }}
         >
-          <div style={{ width: '18px', height: '2px', background: 'currentColor', borderRadius: '2px' }}></div>
-          <div style={{ width: '18px', height: '2px', background: 'currentColor', borderRadius: '2px' }}></div>
-          <div style={{ width: '18px', height: '2px', background: 'currentColor', borderRadius: '2px' }}></div>
+          <div style={{ width: '20px', height: '2px', background: 'currentColor', borderRadius: '2px' }}></div>
+          <div style={{ width: '20px', height: '2px', background: 'currentColor', borderRadius: '2px' }}></div>
+          <div style={{ width: '20px', height: '2px', background: 'currentColor', borderRadius: '2px' }}></div>
         </button>
       </div>
       

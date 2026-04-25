@@ -67,14 +67,15 @@ export default function TournamentDetailPage() {
 
   useEffect(() => {
     async function load() {
+      if (typeof window === "undefined") return;
       try {
+        setLoading(true);
         // Extract ID from pathname (e.g., /tournaments/123 -> 123)
         const pathParts = window.location.pathname.split("/");
         const id = pathParts[pathParts.length - 1];
 
         if (!id || id === "view" || id === "tournaments") {
           setError("No tournament ID provided");
-          setLoading(false);
           return;
         }
 

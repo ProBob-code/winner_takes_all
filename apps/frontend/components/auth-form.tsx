@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import type { FormEvent } from "react";
 import { useState, useTransition } from "react";
+import { getApiUrl } from "@/lib/api-config";
 
 type AuthFormProps = {
   mode: "login" | "signup";
@@ -37,12 +38,14 @@ export function AuthForm({ mode }: AuthFormProps) {
       password: String(formData.get("password") ?? "")
     };
 
-    const response = await fetch(content[mode].endpoint, {
+    const apiUrl = getApiUrl();
+    const response = await fetch(`${apiUrl}${content[mode].endpoint}`, {
       method: "POST",
       headers: {
         "content-type": "application/json"
       },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
+      credentials: "include"
     });
 
     const body = (await response.json()) as {

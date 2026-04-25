@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { formatMoney } from "@/lib/format";
 import { PaymentButton } from "@/components/payment-button";
 import { useRouter } from "next/navigation";
+import { getApiUrl } from "@/lib/api-config";
 
 const TX_LABELS: Record<string, { label: string; icon: string; color: string }> = {
   deposit: { label: "Wallet Top-up", icon: "💳", color: "var(--green-light)" },
@@ -21,9 +22,11 @@ export default function WalletPage() {
 
   useEffect(() => {
     const fetchWallet = async () => {
+      if (typeof window === "undefined") return;
       try {
         setLoading(true);
-        const res = await fetch("/api/wallet");
+        const apiUrl = getApiUrl();
+        const res = await fetch(`${apiUrl}/api/wallet`, { credentials: "include" });
         if (res.status === 401) {
           router.push("/login");
           return;

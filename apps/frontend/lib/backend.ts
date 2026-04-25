@@ -1,5 +1,7 @@
+import { getApiUrl } from "./api-config";
+
 export function getApiBaseUrl() {
-  return "";
+  return getApiUrl();
 }
 
 export async function getRequestCookieHeader() {
@@ -7,6 +9,14 @@ export async function getRequestCookieHeader() {
 }
 
 export async function backendFetch(path: string, init: RequestInit = {}) {
+  // Build-safety: don't fetch during static generation
+  if (typeof window === "undefined") {
+    return new Response(JSON.stringify({ ok: false, error: "SSR fetch disabled" }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" }
+    });
+  }
+
   const headers = new Headers(init.headers);
   const cookieHeader = await getRequestCookieHeader();
 
@@ -14,11 +24,15 @@ export async function backendFetch(path: string, init: RequestInit = {}) {
     headers.set("cookie", cookieHeader);
   }
 
+  const baseUrl = getApiBaseUrl();
   const apiPath = path.startsWith("/api") ? path : `/api${path}`;
-  return fetch(apiPath, {
+  const fullUrl = `${baseUrl}${apiPath}`;
+
+  return fetch(fullUrl, {
     ...init,
     headers,
-    cache: "no-store"
+    // Removed cache: "no-store" to avoid dynamic rendering errors in static export
+    // Next.js static export handles this correctly via "use client" logic
   });
 }
 

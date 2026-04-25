@@ -27,6 +27,7 @@ export default function TournamentsPage() {
 
   useEffect(() => {
     const fetchData = async () => {
+      if (typeof window === "undefined") return;
       try {
         setLoading(true);
         const apiUrl = getApiUrl();

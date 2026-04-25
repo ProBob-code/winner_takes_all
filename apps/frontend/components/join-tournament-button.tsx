@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition, useEffect } from "react";
 import { createPortal } from "react-dom";
+import { getApiUrl } from "@/lib/api-config";
 
 type JoinTournamentButtonProps = {
   tournamentId: string;
@@ -32,11 +33,13 @@ export function JoinTournamentButton({
 
     setMessage(null);
 
-    const response = await fetch(`/api/tournaments/${tournamentId}/join`, {
+    const apiUrl = getApiUrl();
+    const response = await fetch(`${apiUrl}/api/tournaments/${tournamentId}/join`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
       },
+      credentials: "include",
       body: JSON.stringify({ password })
     });
 
