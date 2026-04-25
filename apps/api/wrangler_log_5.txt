@@ -1,0 +1,22 @@
+
+ ⛅️ wrangler 4.85.0
+───────────────────
+
+Cloudflare collects anonymous telemetry about your usage of Wrangler. Learn more at https://github.com/cloudflare/workers-sdk/tree/main/packages/wrangler/telemetry.md
+Your Worker has access to the following bindings:
+Binding                               Resource         Mode
+env.DB (winner-takes-all-db)          D1 Database      local
+env.ASSETS                            Assets           local
+
+⎔ Starting local server...
+[wrangler:info] Ready on http://localhost:8787
+[wrangler:info] HEAD /signup 200 OK (38ms)
+[wrangler:info] GET /signup 200 OK (6ms)
+[wrangler:info] HEAD /match/123 307 Temporary Redirect (7ms)
+[wrangler:info] HEAD /match 200 OK (5ms)
+[wrangler:info] GET /match/123 307 Temporary Redirect (8ms)
+[wrangler:info] GET /match 200 OK (6ms)
+[wrangler:info] HEAD /tournaments/123 307 Temporary Redirect (5ms)
+[wrangler:info] HEAD /tournaments/view 200 OK (4ms)
+[wrangler:info] GET /tournaments/123 307 Temporary Redirect (6ms)
+[wrangler:info] GET /tournaments/view 200 OK (4ms)
