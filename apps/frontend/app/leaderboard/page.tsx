@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { getApiUrl } from "@/lib/api-config";
 
 type LeaderboardResponse = {
   ok: boolean;
@@ -25,7 +26,8 @@ export default function LeaderboardPage() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const res = await fetch("/api/leaderboard/global");
+        const apiUrl = getApiUrl();
+        const res = await fetch(`${apiUrl}/api/leaderboard/global`, { credentials: "include" });
         const data = await res.json();
         setEntries(data.entries || []);
       } catch (err: any) {

@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { SidebarEffects } from "./sidebar-effects";
+import { getApiUrl } from "@/lib/api-config";
 
 export function Sidebar({ user: initialUser }: { user: any }) {
   const pathname = usePathname();
@@ -14,7 +15,8 @@ export function Sidebar({ user: initialUser }: { user: any }) {
 
   useEffect(() => {
     if (!user) {
-        fetch("/api/user/profile")
+        const apiUrl = getApiUrl();
+        fetch(`${apiUrl}/api/user/profile`, { credentials: "include" })
           .then(res => res.json())
           .then(data => {
             if (data.user) setUser(data.user);
@@ -48,9 +50,7 @@ export function Sidebar({ user: initialUser }: { user: any }) {
   }, [pathname]);
 
   const toggleSidebar = () => {
-    if (pathname === "/") {
-      setIsCollapsed(!isCollapsed);
-    }
+    setIsCollapsed(!isCollapsed);
   };
 
   const navItems = user ? [
@@ -75,35 +75,33 @@ export function Sidebar({ user: initialUser }: { user: any }) {
           <span className="logo-icon">👑</span>
           {!isCollapsed && <span className="brand-text">Winner Takes All</span>}
         </Link>
-        {pathname === "/" && (
-          <button 
-            onClick={toggleSidebar}
-            className="sidebar-toggle-btn"
-            style={{ 
-                background: 'none', 
-                border: 'none', 
-                color: 'var(--text-secondary)', 
-                cursor: 'pointer',
-                width: '32px',
-                height: '32px',
-                marginLeft: isCollapsed ? '0' : 'auto',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '4px',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: '4px',
-                borderRadius: '6px',
-                transition: 'background 0.2s'
-            }}
-            onMouseOver={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
-            onMouseOut={(e) => (e.currentTarget.style.background = 'none')}
-          >
-            <div style={{ width: '18px', height: '2px', background: 'currentColor', borderRadius: '2px' }}></div>
-            <div style={{ width: '18px', height: '2px', background: 'currentColor', borderRadius: '2px' }}></div>
-            <div style={{ width: '18px', height: '2px', background: 'currentColor', borderRadius: '2px' }}></div>
-          </button>
-        )}
+        <button 
+          onClick={toggleSidebar}
+          className="sidebar-toggle-btn"
+          style={{ 
+              background: 'none', 
+              border: 'none', 
+              color: 'var(--text-secondary)', 
+              cursor: 'pointer',
+              width: '32px',
+              height: '32px',
+              marginLeft: isCollapsed ? '0' : 'auto',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '4px',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '4px',
+              borderRadius: '6px',
+              transition: 'background 0.2s'
+          }}
+          onMouseOver={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
+          onMouseOut={(e) => (e.currentTarget.style.background = 'none')}
+        >
+          <div style={{ width: '18px', height: '2px', background: 'currentColor', borderRadius: '2px' }}></div>
+          <div style={{ width: '18px', height: '2px', background: 'currentColor', borderRadius: '2px' }}></div>
+          <div style={{ width: '18px', height: '2px', background: 'currentColor', borderRadius: '2px' }}></div>
+        </button>
       </div>
       
       <nav className="sidebar-nav">

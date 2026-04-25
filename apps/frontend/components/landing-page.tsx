@@ -17,8 +17,14 @@ export function LandingPage() {
 
     function resize() {
       if (!canvas) return;
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
+      const parent = canvas.parentElement;
+      if (parent) {
+        canvas.width = parent.clientWidth;
+        canvas.height = parent.clientHeight;
+      } else {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      }
     }
     window.addEventListener("resize", resize);
     resize();
@@ -154,7 +160,7 @@ export function LandingPage() {
   }, []);
 
   return (
-    <div className="landing-wrapper" style={{ color: "#f8fafc", minHeight: "100vh", position: "relative", overflowX: "hidden" }}>
+    <div className="landing-wrapper" style={{ color: "#f8fafc", minHeight: "100vh", position: "relative", overflowX: "hidden", background: "#030014" }}>
       <style jsx global>{`
         :root {
           --bg-deep: #080512;
@@ -167,20 +173,21 @@ export function LandingPage() {
           --text-muted: #94a3b8;
         }
 
-        .bg-glow {
-          position: fixed;
+        .landing-bg-glow {
+          position: absolute;
           top: 0; left: 0; width: 100%; height: 100%;
           background: radial-gradient(circle at 15% 50%, rgba(139, 92, 246, 0.15), transparent 40%),
                       radial-gradient(circle at 85% 30%, rgba(6, 182, 212, 0.15), transparent 40%),
                       radial-gradient(circle at 50% 50%, rgba(8, 5, 25, 1), #030014);
           filter: blur(80px);
           opacity: 0.6;
-          z-index: -2;
+          z-index: 0;
+          pointer-events: none;
         }
 
-        .stars-container {
-          position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-          z-index: -1; overflow: hidden; background: #030014;
+        .landing-stars-container {
+          position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+          z-index: 1; overflow: hidden;
         }
 
         .star-layer { position: absolute; top: 0; left: 0; width: 200%; height: 200%; }
@@ -216,17 +223,15 @@ export function LandingPage() {
         }
       `}</style>
 
-      <div className="stars-container">
+      <div className="landing-stars-container">
         <div className="star-layer stars-1"></div>
         <div className="star-layer stars-2"></div>
       </div>
-      <canvas ref={canvasRef} id="sprinkles" style={{ position: "fixed", top: 0, left: 0, zIndex: -1 }}></canvas>
-      <div className="bg-glow"></div>
+      <canvas ref={canvasRef} id="sprinkles" style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", zIndex: 1, pointerEvents: "none" }}></canvas>
+      <div className="landing-bg-glow"></div>
       <div ref={glowRef} className="mouse-glow" style={{ position: "fixed", width: "600px", height: "600px", background: "radial-gradient(circle, rgba(139, 92, 246, 0.08), transparent 70%)", borderRadius: "50%", pointerEvents: "none", zIndex: 999, transform: "translate(-50%, -50%)", opacity: 0 }}></div>
 
-      <div ref={glowRef} className="mouse-glow" style={{ position: "fixed", width: "600px", height: "600px", background: "radial-gradient(circle, rgba(139, 92, 246, 0.08), transparent 70%)", borderRadius: "50%", pointerEvents: "none", zIndex: 999, transform: "translate(-50%, -50%)", opacity: 0 }}></div>
-
-      <main style={{ padding: "120px 6% 60px", textAlign: "center" }}>
+      <main style={{ padding: "120px 6% 60px", textAlign: "center", position: "relative", zIndex: 2 }}>
         <section className="hero" style={{ minHeight: "80vh", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" }}>
           <div style={{ background: "rgba(139, 92, 246, 0.1)", border: "1px solid rgba(139, 92, 246, 0.2)", padding: "8px 16px", borderRadius: "9999px", fontSize: "0.85rem", fontWeight: 700, color: "#8b5cf6", marginBottom: "2rem" }}>High-Stakes Gaming Arena</div>
           <h1 style={{ fontSize: "clamp(3rem, 8vw, 6rem)", fontWeight: 900, lineHeight: 0.9, letterSpacing: "-2px", marginBottom: "2.5rem" }}>

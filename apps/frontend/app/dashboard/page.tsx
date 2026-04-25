@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { formatMoney } from "@/lib/format";
 import { GamingRadio } from "@/components/gaming-radio";
 import { useRouter } from "next/navigation";
+import { getApiUrl } from "@/lib/api-config";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -17,9 +18,10 @@ export default function DashboardPage() {
     const fetchData = async () => {
       try {
         setLoading(true);
+        const apiUrl = getApiUrl();
         const [profileRes, walletRes] = await Promise.all([
-          fetch("/api/user/profile"),
-          fetch("/api/wallet")
+          fetch(`${apiUrl}/api/user/profile`, { credentials: "include" }),
+          fetch(`${apiUrl}/api/wallet`, { credentials: "include" })
         ]);
 
         if (profileRes.status === 401 || walletRes.status === 401) {

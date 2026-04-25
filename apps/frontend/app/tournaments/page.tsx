@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { getApiUrl } from "@/lib/api-config";
 
 type TournamentsResponse = {
   ok: boolean;
@@ -28,13 +29,16 @@ export default function TournamentsPage() {
     const fetchData = async () => {
       try {
         setLoading(true);
+        const apiUrl = getApiUrl();
         // Fetch user profile
-        const userRes = await fetch("/api/user/profile");
-        const userData = await userRes.json();
-        if (userData.user) setUser(userData.user);
+        try {
+          const userRes = await fetch(`${apiUrl}/api/user/profile`, { credentials: "include" });
+          const userData = await userRes.json();
+          if (userData.user) setUser(userData.user);
+        } catch { /* not logged in */ }
 
         // Fetch tournaments
-        const tourRes = await fetch("/api/tournaments");
+        const tourRes = await fetch(`${apiUrl}/api/tournaments`, { credentials: "include" });
         const tourData = await tourRes.json();
         setTournaments(tourData.tournaments || []);
       } catch (err: any) {
