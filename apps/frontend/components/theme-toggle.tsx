@@ -10,10 +10,10 @@ export function ThemeToggle() {
     setMounted(true);
     const savedTheme = localStorage.getItem("wta-theme") as "dark" | "light" | null;
     
-    // Check system preference if no saved theme
-    if (!savedTheme && window.matchMedia("(prefers-color-scheme: light)").matches) {
-       setTheme("light");
-       document.documentElement.classList.add("light-mode");
+    // Force dark mode if no saved theme
+    if (!savedTheme) {
+       setTheme("dark");
+       document.documentElement.classList.remove("light-mode");
        return;
     }
 
