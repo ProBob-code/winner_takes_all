@@ -248,7 +248,32 @@ export function LandingPage() {
           </div>
         </section>
 
-        <section className="section reveal" style={{ marginTop: "100px" }}>
+        <section id="how-it-works" className="section reveal" style={{ marginTop: "120px" }}>
+            <h2 style={{ fontSize: "3rem", fontWeight: 800, marginBottom: "1rem" }}>ROAD TO VICTORY</h2>
+            <p className="muted" style={{ marginBottom: "4rem" }}>Three steps to dominate the digital arena.</p>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "2.5rem", position: "relative" }}>
+                <div className="card-3d" style={{ padding: "4rem 3rem", position: "relative", overflow: "hidden" }}>
+                    <div style={{ position: "absolute", top: "-20px", right: "-10px", fontSize: "8rem", fontWeight: 900, opacity: 0.05, color: "white" }}>01</div>
+                    <div style={{ background: "linear-gradient(135deg, #8b5cf6, #06b6d4)", width: "60px", height: "60px", borderRadius: "16px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.5rem", marginBottom: "2rem", boxShadow: "0 0 20px rgba(139, 92, 246, 0.4)" }}>⚔️</div>
+                    <h3 style={{ fontSize: "1.5rem", marginBottom: "1rem" }}>Choose Your Battle</h3>
+                    <p style={{ color: "#94a3b8", lineHeight: 1.6 }}>Browse high-stakes tournaments across multiple genres. From tactical strategy to lightning-fast reflexes.</p>
+                </div>
+                <div className="card-3d" style={{ padding: "4rem 3rem", position: "relative", overflow: "hidden" }}>
+                    <div style={{ position: "absolute", top: "-20px", right: "-10px", fontSize: "8rem", fontWeight: 900, opacity: 0.05, color: "white" }}>02</div>
+                    <div style={{ background: "linear-gradient(135deg, #f59e0b, #ef4444)", width: "60px", height: "60px", borderRadius: "16px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.5rem", marginBottom: "2rem", boxShadow: "0 0 20px rgba(245, 158, 11, 0.4)" }}>🔥</div>
+                    <h3 style={{ fontSize: "1.5rem", marginBottom: "1rem" }}>Stake & Compete</h3>
+                    <p style={{ color: "#94a3b8", lineHeight: 1.6 }}>Enter the lobby, lock in your entry, and prepare for the ultimate showdown against elite competition.</p>
+                </div>
+                <div className="card-3d" style={{ padding: "4rem 3rem", position: "relative", overflow: "hidden" }}>
+                    <div style={{ position: "absolute", top: "-20px", right: "-10px", fontSize: "8rem", fontWeight: 900, opacity: 0.05, color: "white" }}>03</div>
+                    <div style={{ background: "linear-gradient(135deg, #10b981, #3b82f6)", width: "60px", height: "60px", borderRadius: "16px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.5rem", marginBottom: "2rem", boxShadow: "0 0 20px rgba(16, 185, 129, 0.4)" }}>🏆</div>
+                    <h3 style={{ fontSize: "1.5rem", marginBottom: "1rem" }}>Claim the Crown</h3>
+                    <p style={{ color: "#94a3b8", lineHeight: 1.6 }}>Victory means everything. Instant payouts directly to your wallet. No delays, just pure triumph.</p>
+                </div>
+            </div>
+        </section>
+
+        <section className="section reveal" style={{ marginTop: "120px" }}>
             <h2 style={{ fontSize: "3rem", fontWeight: 800, marginBottom: "4rem" }}>THE COMPETITIVE EDGE</h2>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "2rem" }}>
                 <div className="card-3d" style={{ padding: "3rem" }}>
@@ -265,27 +290,6 @@ export function LandingPage() {
                     <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>💳</div>
                     <h3>Swift Payouts</h3>
                     <p style={{ color: "#94a3b8" }}>Instant processing directly to your secure wallet.</p>
-                </div>
-            </div>
-        </section>
-
-        <section id="how-it-works" className="section reveal" style={{ marginTop: "150px", padding: "80px 0" }}>
-            <h2 style={{ fontSize: "3rem", fontWeight: 800, marginBottom: "4rem" }}>ROAD TO VICTORY</h2>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "3rem", position: "relative" }}>
-                <div className="step-card" style={{ textAlign: "left", padding: "2.5rem", background: "rgba(255,255,255,0.02)", borderRadius: "24px", border: "1px solid rgba(255,255,255,0.05)" }}>
-                    <div style={{ fontSize: "4rem", fontWeight: 900, color: "rgba(139, 92, 246, 0.2)", marginBottom: "-1rem" }}>01</div>
-                    <h3 style={{ fontSize: "1.8rem", marginBottom: "1rem" }}>Enlist</h3>
-                    <p style={{ color: "#94a3b8", lineHeight: 1.6 }}>Create your pro account and fund your wallet with secure, instant deposits. You're now ready to join the arena.</p>
-                </div>
-                <div className="step-card" style={{ textAlign: "left", padding: "2.5rem", background: "rgba(255,255,255,0.02)", borderRadius: "24px", border: "1px solid rgba(255,255,255,0.05)" }}>
-                    <div style={{ fontSize: "4rem", fontWeight: 900, color: "rgba(6, 182, 212, 0.2)", marginBottom: "-1rem" }}>02</div>
-                    <h3 style={{ fontSize: "1.8rem", marginBottom: "1rem" }}>Engage</h3>
-                    <p style={{ color: "#94a3b8", lineHeight: 1.6 }}>Browse high-stakes lobbies and join a tournament that matches your skill. The prize pool is waiting for its master.</p>
-                </div>
-                <div className="step-card" style={{ textAlign: "left", padding: "2.5rem", background: "rgba(255,255,255,0.02)", borderRadius: "24px", border: "1px solid rgba(255,255,255,0.05)" }}>
-                    <div style={{ fontSize: "4rem", fontWeight: 900, color: "rgba(139, 92, 246, 0.2)", marginBottom: "-1rem" }}>03</div>
-                    <h3 style={{ fontSize: "1.8rem", marginBottom: "1rem" }}>Exult</h3>
-                    <p style={{ color: "#94a3b8", lineHeight: 1.6 }}>Outplay, outlast, and outmaneuver the competition. Claim your victory and withdraw your earnings instantly.</p>
                 </div>
             </div>
         </section>

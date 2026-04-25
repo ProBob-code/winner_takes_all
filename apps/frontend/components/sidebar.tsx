@@ -84,14 +84,19 @@ export function Sidebar({ user: initialUser }: { user: any }) {
                 border: 'none', 
                 color: 'var(--text-secondary)', 
                 cursor: 'pointer',
-                fontSize: '1.4rem',
+                fontSize: '1.2rem',
                 marginLeft: isCollapsed ? '0' : 'auto',
                 display: 'flex',
-                padding: '4px',
-                lineHeight: 1
+                padding: '8px',
+                flexDirection: 'column',
+                gap: '4px',
+                alignItems: 'center',
+                justifyContent: 'center'
             }}
           >
-            ☰
+            <div style={{ width: '18px', height: '2px', background: 'currentColor', borderRadius: '2px' }}></div>
+            <div style={{ width: '18px', height: '2px', background: 'currentColor', borderRadius: '2px' }}></div>
+            <div style={{ width: '18px', height: '2px', background: 'currentColor', borderRadius: '2px' }}></div>
           </button>
         )}
       </div>

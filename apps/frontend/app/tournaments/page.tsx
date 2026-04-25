@@ -1,6 +1,7 @@
 "use client";
-import { useEffect, useState } from "react";
+
 import Link from "next/link";
+import { useEffect, useState } from "react";
 
 type TournamentsResponse = {
   ok: boolean;
@@ -16,24 +17,29 @@ type TournamentsResponse = {
 };
 
 export default function TournamentsPage() {
-  const [user, setUser] = useState<any>(null);
   const [tournaments, setTournaments] = useState<any[]>([]);
+  const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const isLoggedIn = !!user;
 
   useEffect(() => {
     const fetchData = async () => {
       try {
+        setLoading(true);
+        // Fetch user profile
         const userRes = await fetch("/api/user/profile");
         const userData = await userRes.json();
-        setUser(userData.user || null);
+        if (userData.user) setUser(userData.user);
 
+        // Fetch tournaments
         const tourRes = await fetch("/api/tournaments");
         const tourData = await tourRes.json();
         setTournaments(tourData.tournaments || []);
       } catch (err: any) {
-        console.error("Tournament page fetch error:", err);
-        setError(err.message || "Unknown error");
+        console.error("Tournament fetch error:", err);
+        setError(err.message || "Failed to connect to API");
       } finally {
         setLoading(false);
       }
@@ -41,17 +47,13 @@ export default function TournamentsPage() {
     fetchData();
   }, []);
 
-  const isLoggedIn = !!user;
-
   if (loading) {
     return (
       <main className="page">
         <div className="shell">
-          <div className="app-header">
-            <div className="header-info">
-              <h1>Tournaments</h1>
-              <p className="muted">Loading active lobbies...</p>
-            </div>
+          <div className="empty-state slide-in">
+            <div className="empty-icon loading-spin">🎮</div>
+            <h3>Loading tournaments...</h3>
           </div>
         </div>
       </main>
@@ -69,7 +71,7 @@ export default function TournamentsPage() {
           </div>
           <div className="panel p-6 mt-6" style={{ borderColor: "var(--red-subtle)", background: "rgba(239, 68, 68, 0.05)" }}>
             <h3 className="text-red">Connection Error</h3>
-            <p className="muted mt-2">Could not load tournaments. Error: {error}</p>
+            <p className="muted mt-2">Could not load tournaments. The API might be offline. Error: {error}</p>
           </div>
         </div>
       </main>

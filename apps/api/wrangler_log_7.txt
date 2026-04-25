@@ -104,3 +104,4 @@ env.ASSETS                            Assets           local
 [wrangler:info] GET /api/test 200 OK (11ms)
 [wrangler:info] GET / 404 Not Found (37ms)
 [wrangler:info] GET /dashboard 404 Not Found (29ms)
+[wrangler:info] GET / 404 Not Found (28ms)
