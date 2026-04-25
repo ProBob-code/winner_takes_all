@@ -1,0 +1,16 @@
+
+> frontend@0.1.0 build /home/probob_27/Desktop/projects/winner_takes_all/apps/frontend
+> next build
+
+   ▲ Next.js 15.5.15
+   - Environments: .env.local
+
+   Creating an optimized production build ...
+
+> Build error occurred
+[Error: Page "/match/[id]/page" cannot use both "use client" and export function "generateStaticParams()".] {
+  type: 'Error'
+}
+/home/probob_27/Desktop/projects/winner_takes_all/apps/frontend:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  frontend@0.1.0 build: `next build`
+Exit status 1

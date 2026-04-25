@@ -1,0 +1,12 @@
+name = "winnertakesall"
+main = "src/index.js"
+compatibility_date = "2024-09-01"
+
+[assets]
+directory = "../frontend/out"
+binding = "ASSETS"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "winner-takes-all-db"
+database_id = "4cba52ba-c7bf-45ae-811f-c6d37efe6e98"
