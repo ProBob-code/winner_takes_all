@@ -1,0 +1,6 @@
+name = "winner-takes-all"
+main = ".open-next/worker.js"
+compatibility_date = "2024-04-05"
+
+[assets]
+directory = ".open-next/assets"
