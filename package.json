@@ -10,18 +10,21 @@
     "node": ">=20"
   },
   "scripts": {
-    "dev": "concurrently -n api,frontend,site -c blue,green,magenta \"npm run dev:api\" \"npm run dev:frontend\" \"npm run dev:site\"",
-    "dev:frontend": "npm run dev -w frontend",
-    "dev:api": "npm run dev -w api",
-    "dev:site": "npm run dev -w website",
-    "build": "npm run build --workspaces --if-present",
-    "build:site": "npm run build -w website",
-    "build:frontend": "npm run build -w frontend",
-    "lint": "npm run lint --workspaces --if-present",
-    "typecheck": "npm run typecheck --workspaces --if-present"
+    "dev": "concurrently -n api,frontend,site -c blue,green,magenta \"pnpm dev:api\" \"pnpm dev:frontend\" \"pnpm dev:site\"",
+    "dev:frontend": "pnpm --filter frontend dev",
+    "dev:api": "pnpm --filter api dev",
+    "dev:site": "pnpm --filter website dev",
+    "build": "pnpm -r build",
+    "build:site": "pnpm --filter website build",
+    "build:frontend": "pnpm --filter frontend build",
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck"
   },
   "devDependencies": {
     "@opennextjs/cloudflare": "^1.19.4",
-    "concurrently": "^9.1.2"
+    "@types/node": "^22.19.17",
+    "concurrently": "^9.1.2",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.5"
   }
 }
