@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import { useEffect, useState } from "react";
 import { formatMoney } from "@/lib/format";
 import { PaymentButton } from "@/components/payment-button";
@@ -25,8 +27,11 @@ export default function WalletPage() {
       if (typeof window === "undefined") return;
       try {
         setLoading(true);
-        const apiUrl = getApiUrl();
-        const res = await fetch(`${apiUrl}/api/wallet`, { credentials: "include" });
+        const finalApiUrl = process.env.NEXT_PUBLIC_API_URL || getApiUrl();
+        const res = await fetch(`${finalApiUrl}/api/wallet`, { 
+          cache: "no-store",
+          credentials: "include" 
+        });
         if (res.status === 401) {
           router.push("/login");
           return;

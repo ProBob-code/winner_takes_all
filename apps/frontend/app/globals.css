@@ -210,14 +210,43 @@ a:hover {
   height: 100%;
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
-  position: relative; /* added for absolute positioning of effects */
-  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
   flex-shrink: 0;
 }
 
 .sidebar.collapsed {
   width: 72px;
+}
+
+@media (max-width: 1024px) {
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 2000;
+    transform: translateX(-100%);
+    width: 280px !important;
+  }
+  
+  .sidebar.mobile-open {
+    transform: translateX(0);
+  }
+
+  .desktop-only {
+    display: none !important;
+  }
+
+  .mobile-hamburger-btn {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .main-content {
+    width: 100% !important;
+  }
 }
 
 .sidebar.collapsed .brand-text,
@@ -2655,6 +2684,7 @@ select.form-control option {
   font-weight: 900;
   background: linear-gradient(90deg, #fff, var(--accent-light), #fff);
   background-size: 200% auto;
+  background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   animation: shine 3s linear infinite;

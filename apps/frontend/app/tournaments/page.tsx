@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { getApiUrl } from "@/lib/api-config";
@@ -39,7 +41,11 @@ export default function TournamentsPage() {
         } catch { /* not logged in */ }
 
         // Fetch tournaments
-        const tourRes = await fetch(`${apiUrl}/api/tournaments`, { credentials: "include" });
+        const finalApiUrl = process.env.NEXT_PUBLIC_API_URL || apiUrl;
+        const tourRes = await fetch(`${finalApiUrl}/api/tournaments`, { 
+          cache: "no-store",
+          credentials: "include" 
+        });
         const tourData = await tourRes.json();
         setTournaments(tourData.tournaments || []);
       } catch (err: any) {

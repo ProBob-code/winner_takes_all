@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import { useEffect, useState } from "react";
 import { getApiUrl } from "@/lib/api-config";
 
@@ -27,8 +29,11 @@ export default function LeaderboardPage() {
       if (typeof window === "undefined") return;
       try {
         setLoading(true);
-        const apiUrl = getApiUrl();
-        const res = await fetch(`${apiUrl}/api/leaderboard/global`, { credentials: "include" });
+        const finalApiUrl = process.env.NEXT_PUBLIC_API_URL || getApiUrl();
+        const res = await fetch(`${finalApiUrl}/api/leaderboard/global`, { 
+          cache: "no-store",
+          credentials: "include" 
+        });
         const data = await res.json();
         setEntries(data.entries || []);
       } catch (err: any) {

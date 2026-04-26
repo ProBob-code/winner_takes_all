@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { formatMoney } from "@/lib/format";
@@ -19,10 +21,10 @@ export default function DashboardPage() {
       if (typeof window === "undefined") return;
       try {
         setLoading(true);
-        const apiUrl = getApiUrl();
+        const finalApiUrl = process.env.NEXT_PUBLIC_API_URL || getApiUrl();
         const [profileRes, walletRes] = await Promise.all([
-          fetch(`${apiUrl}/api/user/profile`, { credentials: "include" }),
-          fetch(`${apiUrl}/api/wallet`, { credentials: "include" })
+          fetch(`${finalApiUrl}/api/user/profile`, { cache: "no-store", credentials: "include" }),
+          fetch(`${finalApiUrl}/api/wallet`, { cache: "no-store", credentials: "include" })
         ]);
 
         if (profileRes.status === 401 || walletRes.status === 401) {
