@@ -21,6 +21,7 @@
     "typecheck": "npm run typecheck --workspaces --if-present"
   },
   "devDependencies": {
+    "@opennextjs/cloudflare": "^1.19.4",
     "concurrently": "^9.1.2"
   }
 }
