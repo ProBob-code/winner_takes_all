@@ -1,0 +1,116 @@
+
+Cloudflare collects anonymous telemetry about your usage of Wrangler. Learn more at https://github.com/cloudflare/workers-sdk/tree/main/packages/wrangler/telemetry.md
+
+ ⛅️ wrangler 3.114.17 (update available 4.85.0)
+-----------------------------------------------
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mThe version of Wrangler you are using is now out-of-date.[0m
+
+  Please update to the latest version to prevent critical errors.
+  Run `npm install --save-dev wrangler@4` to update to the latest version.
+  After installation, run Wrangler with `npx wrangler`.
+
+
+Your Worker and resources are simulated locally via Miniflare. For more information, see: https://developers.cloudflare.com/workers/testing/local-development.
+
+Your worker has access to the following bindings:
+- D1 Databases:
+  - DB: winner-takes-all-db (4cba52ba-c7bf-45ae-811f-c6d37efe6e98) [simulated locally]
+⎔ Starting local server...
+[wrangler:inf] Ready on http://localhost:8787
+[wrangler:inf] HEAD /api/test 200 OK (10ms)
+[wrangler:inf] GET /api/test 200 OK (11ms)
+[wrangler:err] SyntaxError: Unexpected end of JSON input
+    at JSON.parse (<anonymous>)
+    at parseJSONFromBytes (/home/probob_27/Desktop/projects/winner_takes_all/node_modules/.pnpm/undici@5.29.0/node_modules/undici/lib/fetch/body.js:590:15)
+    at successSteps (/home/probob_27/Desktop/projects/winner_takes_all/node_modules/.pnpm/undici@5.29.0/node_modules/undici/lib/fetch/body.js:530:23)
+    at fullyReadBody (/home/probob_27/Desktop/projects/winner_takes_all/node_modules/.pnpm/undici@5.29.0/node_modules/undici/lib/fetch/util.js:959:5)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async specConsumeBody (/home/probob_27/Desktop/projects/winner_takes_all/node_modules/.pnpm/undici@5.29.0/node_modules/undici/lib/fetch/body.js:545:3)
+    at async handlePrettyErrorRequest (/home/probob_27/Desktop/projects/winner_takes_all/node_modules/.pnpm/miniflare@3.20250718.3/node_modules/miniflare/dist/src/index.js:12958:40)
+    at async #handleLoopback (/home/probob_27/Desktop/projects/winner_takes_all/node_modules/.pnpm/miniflare@3.20250718.3/node_modules/miniflare/dist/src/index.js:16624:20)
+[wrangler:inf] HEAD /signup 500 Internal Server Error (156ms)
+[wrangler:err] TypeError: Cannot read properties of undefined (reading 'fetch')
+    at Object.fetch (file:///home/probob_27/Desktop/projects/winner_takes_all/apps/api/src/index.js:23:37)
+    at fetchDispatcher (file:///home/probob_27/Desktop/projects/winner_takes_all/apps/api/.wrangler/tmp/bundle-iiYz2k/middleware-loader.entry.ts:54:17)
+    at __facade_invokeChain__ (file:///home/probob_27/Desktop/projects/winner_takes_all/node_modules/.pnpm/wrangler@3.114.17_@cloudflare+workers-types@4.20260424.1/node_modules/wrangler/templates/middleware/common.ts:53:9)
+    at Object.next (file:///home/probob_27/Desktop/projects/winner_takes_all/node_modules/.pnpm/wrangler@3.114.17_@cloudflare+workers-types@4.20260424.1/node_modules/wrangler/templates/middleware/common.ts:50:11)
+    at jsonError (file:///home/probob_27/Desktop/projects/winner_takes_all/node_modules/.pnpm/wrangler@3.114.17_@cloudflare+workers-types@4.20260424.1/node_modules/wrangler/templates/middleware/middleware-miniflare3-json-error.ts:22:30)
+    at __facade_invokeChain__ (file:///home/probob_27/Desktop/projects/winner_takes_all/node_modules/.pnpm/wrangler@3.114.17_@cloudflare+workers-types@4.20260424.1/node_modules/wrangler/templates/middleware/common.ts:53:9)
+    at Object.next (file:///home/probob_27/Desktop/projects/winner_takes_all/node_modules/.pnpm/wrangler@3.114.17_@cloudflare+workers-types@4.20260424.1/node_modules/wrangler/templates/middleware/common.ts:50:11)
+    at drainBody (file:///home/probob_27/Desktop/projects/winner_takes_all/node_modules/.pnpm/wrangler@3.114.17_@cloudflare+workers-types@4.20260424.1/node_modules/wrangler/templates/middleware/middleware-ensure-req-body-drained.ts:5:30)
+    at __facade_invokeChain__ (file:///home/probob_27/Desktop/projects/winner_takes_all/node_modules/.pnpm/wrangler@3.114.17_@cloudflare+workers-types@4.20260424.1/node_modules/wrangler/templates/middleware/common.ts:53:9)
+    at __facade_invoke__ (file:///home/probob_27/Desktop/projects/winner_takes_all/node_modules/.pnpm/wrangler@3.114.17_@cloudflare+workers-types@4.20260424.1/node_modules/wrangler/templates/middleware/common.ts:63:9)
+[wrangler:inf] GET /signup 500 Internal Server Error (75ms)
+[wrangler:err] SyntaxError: Unexpected end of JSON input
+    at JSON.parse (<anonymous>)
+    at parseJSONFromBytes (/home/probob_27/Desktop/projects/winner_takes_all/node_modules/.pnpm/undici@5.29.0/node_modules/undici/lib/fetch/body.js:590:15)
+    at successSteps (/home/probob_27/Desktop/projects/winner_takes_all/node_modules/.pnpm/undici@5.29.0/node_modules/undici/lib/fetch/body.js:530:23)
+    at fullyReadBody (/home/probob_27/Desktop/projects/winner_takes_all/node_modules/.pnpm/undici@5.29.0/node_modules/undici/lib/fetch/util.js:959:5)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async specConsumeBody (/home/probob_27/Desktop/projects/winner_takes_all/node_modules/.pnpm/undici@5.29.0/node_modules/undici/lib/fetch/body.js:545:3)
+    at async handlePrettyErrorRequest (/home/probob_27/Desktop/projects/winner_takes_all/node_modules/.pnpm/miniflare@3.20250718.3/node_modules/miniflare/dist/src/index.js:12958:40)
+    at async #handleLoopback (/home/probob_27/Desktop/projects/winner_takes_all/node_modules/.pnpm/miniflare@3.20250718.3/node_modules/miniflare/dist/src/index.js:16624:20)
+[wrangler:inf] HEAD /match/123 500 Internal Server Error (15ms)
+[wrangler:err] TypeError: Cannot read properties of undefined (reading 'fetch')
+    at Object.fetch (file:///home/probob_27/Desktop/projects/winner_takes_all/apps/api/src/index.js:13:27)
+    at fetchDispatcher (file:///home/probob_27/Desktop/projects/winner_takes_all/apps/api/.wrangler/tmp/bundle-iiYz2k/middleware-loader.entry.ts:54:17)
+    at __facade_invokeChain__ (file:///home/probob_27/Desktop/projects/winner_takes_all/node_modules/.pnpm/wrangler@3.114.17_@cloudflare+workers-types@4.20260424.1/node_modules/wrangler/templates/middleware/common.ts:53:9)
+    at Object.next (file:///home/probob_27/Desktop/projects/winner_takes_all/node_modules/.pnpm/wrangler@3.114.17_@cloudflare+workers-types@4.20260424.1/node_modules/wrangler/templates/middleware/common.ts:50:11)
+    at jsonError (file:///home/probob_27/Desktop/projects/winner_takes_all/node_modules/.pnpm/wrangler@3.114.17_@cloudflare+workers-types@4.20260424.1/node_modules/wrangler/templates/middleware/middleware-miniflare3-json-error.ts:22:30)
+    at __facade_invokeChain__ (file:///home/probob_27/Desktop/projects/winner_takes_all/node_modules/.pnpm/wrangler@3.114.17_@cloudflare+workers-types@4.20260424.1/node_modules/wrangler/templates/middleware/common.ts:53:9)
+    at Object.next (file:///home/probob_27/Desktop/projects/winner_takes_all/node_modules/.pnpm/wrangler@3.114.17_@cloudflare+workers-types@4.20260424.1/node_modules/wrangler/templates/middleware/common.ts:50:11)
+    at drainBody (file:///home/probob_27/Desktop/projects/winner_takes_all/node_modules/.pnpm/wrangler@3.114.17_@cloudflare+workers-types@4.20260424.1/node_modules/wrangler/templates/middleware/middleware-ensure-req-body-drained.ts:5:30)
+    at __facade_invokeChain__ (file:///home/probob_27/Desktop/projects/winner_takes_all/node_modules/.pnpm/wrangler@3.114.17_@cloudflare+workers-types@4.20260424.1/node_modules/wrangler/templates/middleware/common.ts:53:9)
+    at __facade_invoke__ (file:///home/probob_27/Desktop/projects/winner_takes_all/node_modules/.pnpm/wrangler@3.114.17_@cloudflare+workers-types@4.20260424.1/node_modules/wrangler/templates/middleware/common.ts:63:9)
+[wrangler:inf] GET /match/123 500 Internal Server Error (25ms)
+⎔ Reloading local server...
+[wrangler:err] SyntaxError: Unexpected end of JSON input
+    at JSON.parse (<anonymous>)
+    at parseJSONFromBytes (/home/probob_27/Desktop/projects/winner_takes_all/node_modules/.pnpm/undici@5.29.0/node_modules/undici/lib/fetch/body.js:590:15)
+    at successSteps (/home/probob_27/Desktop/projects/winner_takes_all/node_modules/.pnpm/undici@5.29.0/node_modules/undici/lib/fetch/body.js:530:23)
+    at fullyReadBody (/home/probob_27/Desktop/projects/winner_takes_all/node_modules/.pnpm/undici@5.29.0/node_modules/undici/lib/fetch/util.js:959:5)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async specConsumeBody (/home/probob_27/Desktop/projects/winner_takes_all/node_modules/.pnpm/undici@5.29.0/node_modules/undici/lib/fetch/body.js:545:3)
+    at async handlePrettyErrorRequest (/home/probob_27/Desktop/projects/winner_takes_all/node_modules/.pnpm/miniflare@3.20250718.3/node_modules/miniflare/dist/src/index.js:12958:40)
+    at async #handleLoopback (/home/probob_27/Desktop/projects/winner_takes_all/node_modules/.pnpm/miniflare@3.20250718.3/node_modules/miniflare/dist/src/index.js:16624:20)
+[wrangler:inf] HEAD /signup 500 Internal Server Error (6ms)
+[wrangler:err] TypeError: Cannot read properties of undefined (reading 'fetch')
+    at Object.fetch (file:///home/probob_27/Desktop/projects/winner_takes_all/apps/api/src/index.js:27:37)
+    at fetchDispatcher (file:///home/probob_27/Desktop/projects/winner_takes_all/apps/api/.wrangler/tmp/bundle-iiYz2k/middleware-loader.entry.ts:54:17)
+    at __facade_invokeChain__ (file:///home/probob_27/Desktop/projects/winner_takes_all/node_modules/.pnpm/wrangler@3.114.17_@cloudflare+workers-types@4.20260424.1/node_modules/wrangler/templates/middleware/common.ts:53:9)
+    at Object.next (file:///home/probob_27/Desktop/projects/winner_takes_all/node_modules/.pnpm/wrangler@3.114.17_@cloudflare+workers-types@4.20260424.1/node_modules/wrangler/templates/middleware/common.ts:50:11)
+    at jsonError (file:///home/probob_27/Desktop/projects/winner_takes_all/node_modules/.pnpm/wrangler@3.114.17_@cloudflare+workers-types@4.20260424.1/node_modules/wrangler/templates/middleware/middleware-miniflare3-json-error.ts:22:30)
+    at __facade_invokeChain__ (file:///home/probob_27/Desktop/projects/winner_takes_all/node_modules/.pnpm/wrangler@3.114.17_@cloudflare+workers-types@4.20260424.1/node_modules/wrangler/templates/middleware/common.ts:53:9)
+    at Object.next (file:///home/probob_27/Desktop/projects/winner_takes_all/node_modules/.pnpm/wrangler@3.114.17_@cloudflare+workers-types@4.20260424.1/node_modules/wrangler/templates/middleware/common.ts:50:11)
+    at drainBody (file:///home/probob_27/Desktop/projects/winner_takes_all/node_modules/.pnpm/wrangler@3.114.17_@cloudflare+workers-types@4.20260424.1/node_modules/wrangler/templates/middleware/middleware-ensure-req-body-drained.ts:5:30)
+    at __facade_invokeChain__ (file:///home/probob_27/Desktop/projects/winner_takes_all/node_modules/.pnpm/wrangler@3.114.17_@cloudflare+workers-types@4.20260424.1/node_modules/wrangler/templates/middleware/common.ts:53:9)
+    at __facade_invoke__ (file:///home/probob_27/Desktop/projects/winner_takes_all/node_modules/.pnpm/wrangler@3.114.17_@cloudflare+workers-types@4.20260424.1/node_modules/wrangler/templates/middleware/common.ts:63:9)
+[wrangler:inf] GET /signup 500 Internal Server Error (9ms)
+[wrangler:err] SyntaxError: Unexpected end of JSON input
+    at JSON.parse (<anonymous>)
+    at parseJSONFromBytes (/home/probob_27/Desktop/projects/winner_takes_all/node_modules/.pnpm/undici@5.29.0/node_modules/undici/lib/fetch/body.js:590:15)
+    at successSteps (/home/probob_27/Desktop/projects/winner_takes_all/node_modules/.pnpm/undici@5.29.0/node_modules/undici/lib/fetch/body.js:530:23)
+    at fullyReadBody (/home/probob_27/Desktop/projects/winner_takes_all/node_modules/.pnpm/undici@5.29.0/node_modules/undici/lib/fetch/util.js:959:5)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async specConsumeBody (/home/probob_27/Desktop/projects/winner_takes_all/node_modules/.pnpm/undici@5.29.0/node_modules/undici/lib/fetch/body.js:545:3)
+    at async handlePrettyErrorRequest (/home/probob_27/Desktop/projects/winner_takes_all/node_modules/.pnpm/miniflare@3.20250718.3/node_modules/miniflare/dist/src/index.js:12958:40)
+    at async #handleLoopback (/home/probob_27/Desktop/projects/winner_takes_all/node_modules/.pnpm/miniflare@3.20250718.3/node_modules/miniflare/dist/src/index.js:16624:20)
+[wrangler:inf] HEAD /match/123 500 Internal Server Error (217ms)
+[wrangler:err] TypeError: Cannot read properties of undefined (reading 'fetch')
+    at Object.fetch (file:///home/probob_27/Desktop/projects/winner_takes_all/apps/api/src/index.js:15:27)
+    at fetchDispatcher (file:///home/probob_27/Desktop/projects/winner_takes_all/apps/api/.wrangler/tmp/bundle-iiYz2k/middleware-loader.entry.ts:54:17)
+    at __facade_invokeChain__ (file:///home/probob_27/Desktop/projects/winner_takes_all/node_modules/.pnpm/wrangler@3.114.17_@cloudflare+workers-types@4.20260424.1/node_modules/wrangler/templates/middleware/common.ts:53:9)
+    at Object.next (file:///home/probob_27/Desktop/projects/winner_takes_all/node_modules/.pnpm/wrangler@3.114.17_@cloudflare+workers-types@4.20260424.1/node_modules/wrangler/templates/middleware/common.ts:50:11)
+    at jsonError (file:///home/probob_27/Desktop/projects/winner_takes_all/node_modules/.pnpm/wrangler@3.114.17_@cloudflare+workers-types@4.20260424.1/node_modules/wrangler/templates/middleware/middleware-miniflare3-json-error.ts:22:30)
+    at __facade_invokeChain__ (file:///home/probob_27/Desktop/projects/winner_takes_all/node_modules/.pnpm/wrangler@3.114.17_@cloudflare+workers-types@4.20260424.1/node_modules/wrangler/templates/middleware/common.ts:53:9)
+    at Object.next (file:///home/probob_27/Desktop/projects/winner_takes_all/node_modules/.pnpm/wrangler@3.114.17_@cloudflare+workers-types@4.20260424.1/node_modules/wrangler/templates/middleware/common.ts:50:11)
+    at drainBody (file:///home/probob_27/Desktop/projects/winner_takes_all/node_modules/.pnpm/wrangler@3.114.17_@cloudflare+workers-types@4.20260424.1/node_modules/wrangler/templates/middleware/middleware-ensure-req-body-drained.ts:5:30)
+    at __facade_invokeChain__ (file:///home/probob_27/Desktop/projects/winner_takes_all/node_modules/.pnpm/wrangler@3.114.17_@cloudflare+workers-types@4.20260424.1/node_modules/wrangler/templates/middleware/common.ts:53:9)
+    at __facade_invoke__ (file:///home/probob_27/Desktop/projects/winner_takes_all/node_modules/.pnpm/wrangler@3.114.17_@cloudflare+workers-types@4.20260424.1/node_modules/wrangler/templates/middleware/common.ts:63:9)
+[wrangler:inf] GET /match/123 500 Internal Server Error (17ms)
+wrangler.toml changed...
+Your worker has access to the following bindings:
+- D1 Databases:
+  - DB: winner-takes-all-db (4cba52ba-c7bf-45ae-811f-c6d37efe6e98) [simulated locally]
+⎔ Reloading local server...

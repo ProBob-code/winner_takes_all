@@ -1,3 +1,4 @@
+# node_modules
 node_modules
 .next
 dist
@@ -10,9 +11,9 @@ build
 .vercel
 .DS_Store
 coverage
-pnpm-lock.yaml
-package-lock.json
-yarn.lock
+# pnpm-lock.yaml removed from ignore
+# package-lock.json removed from ignore
+# yarn.lock removed from ignore
 __pycache__
 .pytest_cache
 .venv

@@ -10,17 +10,22 @@
     "node": ">=20"
   },
   "scripts": {
-    "dev": "concurrently -n api,web,site -c blue,green,magenta \"npm run dev:api\" \"npm run dev:web\" \"npm run dev:site\"",
-    "dev:web": "npm run dev -w web",
-    "dev:api": "npm run dev -w api",
-    "dev:site": "npm run dev -w website",
-    "build": "npm run build --workspaces --if-present",
-    "build:site": "npm run build -w website",
-    "build:web": "npm run build -w web",
-    "lint": "npm run lint --workspaces --if-present",
-    "typecheck": "npm run typecheck --workspaces --if-present"
+    "dev": "concurrently -n api,frontend,site -c blue,green,magenta \"pnpm dev:api\" \"pnpm dev:frontend\" \"pnpm dev:site\"",
+    "dev:frontend": "pnpm --filter frontend dev",
+    "dev:api": "pnpm --filter api dev",
+    "dev:site": "pnpm --filter website dev",
+    "build": "pnpm -r build",
+    "build:cloudflare": "pnpm build && SKIP_WRANGLER_CONFIG_CHECK=true npx @opennextjs/cloudflare build --dangerouslyUseUnsupportedNextVersion && mv apps/frontend/.open-next/worker.js apps/frontend/.open-next/_worker.js && cp apps/frontend/_routes.json apps/frontend/.open-next/_routes.json",
+    "build:site": "pnpm --filter website build",
+    "build:frontend": "pnpm --filter frontend build",
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck"
   },
   "devDependencies": {
-    "concurrently": "^9.1.2"
+    "@opennextjs/cloudflare": "^1.19.4",
+    "@types/node": "^22.19.17",
+    "concurrently": "^9.1.2",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.5"
   }
 }
