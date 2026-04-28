@@ -133,6 +133,34 @@ body {
   position: relative;
 }
 
+/* ── Custom Scrollbars ── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(187, 134, 252, 0.2);
+  border-radius: 20px;
+  border: 1px solid transparent;
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
+  background-clip: border-box;
+}
+
+/* For Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(187, 134, 252, 0.3) transparent;
+}
+
 body::before, body::after {
   content: "";
   position: fixed;
@@ -246,6 +274,21 @@ a:hover {
 
   .main-content {
     width: 100% !important;
+    overflow-x: hidden;
+  }
+
+  .page {
+    padding: 1.5rem 1rem !important;
+  }
+
+  .page-header h1 {
+    font-size: 1.75rem !important;
+  }
+
+  .page-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 1.5rem !important;
   }
 }
 
@@ -2724,4 +2767,23 @@ select.form-control option {
   background-size: 100% 4px;
   pointer-events: none;
   z-index: 20;
+}
+
+/* Modal Improvements */
+.payment-overlay {
+  padding-top: 10vh !important; /* Give space on top */
+  align-items: flex-start !important;
+  background: rgba(3, 0, 20, 0.85) !important;
+  backdrop-filter: blur(12px) !important;
+}
+
+.payment-modal-v2 {
+  margin-bottom: 5vh;
+}
+
+@media (max-width: 600px) {
+  .payment-modal-v2 {
+    padding: 1.5rem !important;
+    max-width: 95% !important;
+  }
 }

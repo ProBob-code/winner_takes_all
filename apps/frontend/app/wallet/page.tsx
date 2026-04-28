@@ -51,7 +51,7 @@ export default function WalletPage() {
   const stats = useMemo(() => {
     if (!wallet?.transactions) return { deposits: 0, winnings: 0, entries: 0 };
     return wallet.transactions.reduce((acc: any, tx: any) => {
-      const amt = parseFloat(tx.amount);
+      const amt = typeof tx.amount === 'number' ? tx.amount : parseFloat(tx.amount || 0);
       if (tx.type === "deposit") acc.deposits += amt;
       if (tx.type === "tournament_payout") acc.winnings += amt;
       if (tx.type === "entry_fee_debit") acc.entries += amt;

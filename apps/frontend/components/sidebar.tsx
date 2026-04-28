@@ -158,30 +158,6 @@ export function Sidebar({ user: initialUser }: { user: any }) {
             );
           })}
         </nav>
-
-         {user && (!isCollapsed || isOpen) && (
-          <div className="sidebar-footer">
-            <button
-              className="sidebar-logout-btn"
-              onClick={() => setShowLogoutConfirm(true)}
-              disabled={isLoggingOut}
-            >
-              <span className="sidebar-icon">🚪</span>
-              {isLoggingOut ? "Logging out..." : "Logout"}
-            </button>
-          </div>
-        )}
-
-        <ConfirmModal
-          isOpen={showLogoutConfirm}
-          title="Sign Out"
-          message="Ready to call it a day? Your progress and wallet balance are safely stored."
-          confirmText="Yes, Logout"
-          cancelText="Cancel"
-          isDanger={true}
-          onConfirm={handleLogout}
-          onCancel={() => setShowLogoutConfirm(false)}
-        />
       </aside>
 
       {/* Mobile Toggle Button (Floating or Topbar) */}
