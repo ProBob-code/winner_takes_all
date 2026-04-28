@@ -37,7 +37,7 @@ export function PaymentButton({ onSuccess }: PaymentButtonProps) {
 
     try {
       const apiUrl = getApiUrl();
-      
+
       // Create order
       const orderRes = await fetch(`${apiUrl}/api/payments/create-order`, {
         method: "POST",
@@ -63,7 +63,7 @@ export function PaymentButton({ onSuccess }: PaymentButtonProps) {
         key: orderData.keyId,
         amount: orderData.amount,
         currency: orderData.currency,
-        name: \"Winner.Takes.All\",
+        name: "Winner.Takes.All",
         description: "Wallet Refill",
         order_id: orderData.razorpayOrderId,
         handler: async function (response: any) {
@@ -121,12 +121,12 @@ export function PaymentButton({ onSuccess }: PaymentButtonProps) {
 
   return (
     <>
-      <button 
-        onClick={() => setShowModal(true)} 
-        className="button btn-glow interactive-scale" 
-        style={{ 
-          width: "100%", 
-          padding: "1.25rem", 
+      <button
+        onClick={() => setShowModal(true)}
+        className="button btn-glow interactive-scale"
+        style={{
+          width: "100%",
+          padding: "1.25rem",
           fontSize: "1.1rem",
           background: "var(--gradient-primary)",
           boxShadow: "0 10px 20px rgba(139, 92, 246, 0.3)"
@@ -136,10 +136,10 @@ export function PaymentButton({ onSuccess }: PaymentButtonProps) {
       </button>
 
       {showModal && createPortal(
-        <div 
-          className="payment-overlay" 
-          onClick={() => setShowModal(false)} 
-          style={{ 
+        <div
+          className="payment-overlay"
+          onClick={() => setShowModal(false)}
+          style={{
             zIndex: 100000,
             position: "fixed",
             top: 0, left: 0, right: 0, bottom: 0,
@@ -151,12 +151,12 @@ export function PaymentButton({ onSuccess }: PaymentButtonProps) {
             padding: "1rem"
           }}
         >
-          <div 
-            className="payment-modal-v2 scale-in" 
-            onClick={e => e.stopPropagation()} 
-            style={{ 
-              position: "relative", 
-              overflow: "hidden", 
+          <div
+            className="payment-modal-v2 scale-in"
+            onClick={e => e.stopPropagation()}
+            style={{
+              position: "relative",
+              overflow: "hidden",
               width: "100%",
               maxWidth: "700px",
               background: "var(--bg-topbar)",
@@ -181,7 +181,7 @@ export function PaymentButton({ onSuccess }: PaymentButtonProps) {
                   <div style={{ fontSize: "0.8rem", fontWeight: 700, color: "var(--text-muted)", marginBottom: "1rem", textTransform: "uppercase", letterSpacing: "1px" }}>Select Amount</div>
                   <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
                     {AMOUNTS.map(amt => (
-                      <div 
+                      <div
                         key={amt}
                         onClick={() => setSelectedAmount(amt)}
                         className={`amount-option ${selectedAmount === amt ? 'selected' : ''}`}
@@ -207,7 +207,7 @@ export function PaymentButton({ onSuccess }: PaymentButtonProps) {
                 {/* Column 2: Details */}
                 <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
                   <div style={{ fontSize: "0.8rem", fontWeight: 700, color: "var(--text-muted)", marginBottom: "-0.5rem", textTransform: "uppercase", letterSpacing: "1px" }}>Order Details</div>
-                  
+
                   <div style={{ padding: "1.25rem", background: "rgba(0,0,0,0.2)", borderRadius: "16px", border: "1px solid var(--glass-border-color)" }}>
                     <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginBottom: "0.25rem" }}>ORDER TOTAL</div>
                     <div style={{ fontSize: "1.5rem", fontWeight: 800 }}>₹{selectedAmount.toFixed(2)}</div>
@@ -221,61 +221,61 @@ export function PaymentButton({ onSuccess }: PaymentButtonProps) {
 
                 {/* Column 3: Summary & Action */}
                 <div style={{ display: "flex", flexDirection: "column" }}>
-                   <div style={{ flex: 1 }}>
-                     <div style={{ fontSize: "0.8rem", fontWeight: 700, color: "var(--text-muted)", marginBottom: "1rem", textTransform: "uppercase", letterSpacing: "1px" }}>Summary</div>
-                     <div style={{ padding: "1.5rem", background: "var(--bg-inset)", borderRadius: "16px", border: "1px solid var(--glass-border-color)" }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.75rem", fontSize: "0.9rem" }}>
-                          <span style={{ color: "var(--text-secondary)" }}>Base Amount</span>
-                          <span>₹{selectedAmount}</span>
-                        </div>
-                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "1rem", fontSize: "0.9rem" }}>
-                          <span style={{ color: "var(--text-secondary)" }}>Platform Fee</span>
-                          <span style={{ color: "var(--green)" }}>FREE</span>
-                        </div>
-                        <div style={{ height: "1px", background: "var(--glass-bg-hover)", margin: "0.5rem 0 1rem" }}></div>
-                        <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 800 }}>
-                          <span>Final Total</span>
-                          <span style={{ color: "var(--accent-light)" }}>₹{selectedAmount}</span>
-                        </div>
-                     </div>
-                   </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: "0.8rem", fontWeight: 700, color: "var(--text-muted)", marginBottom: "1rem", textTransform: "uppercase", letterSpacing: "1px" }}>Summary</div>
+                    <div style={{ padding: "1.5rem", background: "var(--bg-inset)", borderRadius: "16px", border: "1px solid var(--glass-border-color)" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.75rem", fontSize: "0.9rem" }}>
+                        <span style={{ color: "var(--text-secondary)" }}>Base Amount</span>
+                        <span>₹{selectedAmount}</span>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "1rem", fontSize: "0.9rem" }}>
+                        <span style={{ color: "var(--text-secondary)" }}>Platform Fee</span>
+                        <span style={{ color: "var(--green)" }}>FREE</span>
+                      </div>
+                      <div style={{ height: "1px", background: "var(--glass-bg-hover)", margin: "0.5rem 0 1rem" }}></div>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 800 }}>
+                        <span>Final Total</span>
+                        <span style={{ color: "var(--accent-light)" }}>₹{selectedAmount}</span>
+                      </div>
+                    </div>
+                  </div>
 
-                   <div style={{ marginTop: "2rem" }}>
-                     {error && (
-                       <div style={{ 
-                         padding: "1rem", 
-                         background: "rgba(255, 77, 77, 0.1)", 
-                         border: "1px solid rgba(255, 77, 77, 0.2)", 
-                         borderRadius: "12px", 
-                         color: "#ff8080", 
-                         fontSize: "0.85rem",
-                         marginBottom: "1rem",
-                         textAlign: "center"
-                       }}>
-                         {error}
-                       </div>
-                     )}
+                  <div style={{ marginTop: "2rem" }}>
+                    {error && (
+                      <div style={{
+                        padding: "1rem",
+                        background: "rgba(255, 77, 77, 0.1)",
+                        border: "1px solid rgba(255, 77, 77, 0.2)",
+                        borderRadius: "12px",
+                        color: "#ff8080",
+                        fontSize: "0.85rem",
+                        marginBottom: "1rem",
+                        textAlign: "center"
+                      }}>
+                        {error}
+                      </div>
+                    )}
 
-                     <button 
-                       onClick={handlePayment}
-                       disabled={loading}
-                       className="button"
-                       style={{ 
-                         width: "100%", 
-                         padding: "1.25rem", 
-                         fontSize: "1.1rem",
-                         background: "var(--gradient-primary)",
-                         boxShadow: "0 15px 30px rgba(187, 134, 252, 0.3)"
-                       }}
-                     >
-                       {loading ? "Processing..." : "Checkout Now"}
-                     </button>
-                     
-                     <div style={{ textAlign: "center", marginTop: "1rem", display: "flex", alignItems: "center", justifyContent: "center", gap: "1rem", opacity: 0.5 }}>
-                        <div style={{ fontSize: "0.7rem", display: "flex", alignItems: "center", gap: "0.3rem" }}>🔒 SECURE</div>
-                        <div style={{ fontSize: "0.7rem", display: "flex", alignItems: "center", gap: "0.3rem" }}>⚡ RAZORPAY</div>
-                     </div>
-                   </div>
+                    <button
+                      onClick={handlePayment}
+                      disabled={loading}
+                      className="button"
+                      style={{
+                        width: "100%",
+                        padding: "1.25rem",
+                        fontSize: "1.1rem",
+                        background: "var(--gradient-primary)",
+                        boxShadow: "0 15px 30px rgba(187, 134, 252, 0.3)"
+                      }}
+                    >
+                      {loading ? "Processing..." : "Checkout Now"}
+                    </button>
+
+                    <div style={{ textAlign: "center", marginTop: "1rem", display: "flex", alignItems: "center", justifyContent: "center", gap: "1rem", opacity: 0.5 }}>
+                      <div style={{ fontSize: "0.7rem", display: "flex", alignItems: "center", gap: "0.3rem" }}>🔒 SECURE</div>
+                      <div style={{ fontSize: "0.7rem", display: "flex", alignItems: "center", gap: "0.3rem" }}>⚡ RAZORPAY</div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

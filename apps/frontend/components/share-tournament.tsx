@@ -33,7 +33,7 @@ export function ShareTournament({ tournamentId, tournamentName, className }: Sha
       try {
         await navigator.share({
           title: tournamentName || "Join my Tournament",
-          text: `Join my tournament \"${tournamentName || \"Tournament\"}\" on Winner.Takes.All!`,
+          text: `Join my tournament "${tournamentName || "Tournament"}" on Winner.Takes.All!`,
           url: shareUrl,
         });
       } catch (err) {
