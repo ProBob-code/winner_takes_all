@@ -5,6 +5,8 @@
     "/_next/static/*",
     "/_next/image*",
     "/favicon.ico",
-    "/assets/*"
+    "/assets/*",
+    "/8ball/*",
+    "/sounds/*"
   ]
 }

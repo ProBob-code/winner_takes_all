@@ -16,6 +16,12 @@ import { centsToMoney, moneyToCents } from "./lib/money";
 
 const app = new Hono<{ Bindings: Env; Variables: { store: D1Store; user?: any } }>();
 
+// Inject D1Store
+app.use("/api/*", async (c, next) => {
+  c.set("store", new D1Store(c.env.DB));
+  await next();
+});
+
 // Enable CORS
 app.use(
   "/api/*",
