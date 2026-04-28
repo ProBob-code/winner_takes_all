@@ -131,7 +131,20 @@ app.post("/api/auth/refresh", async (c) => {
 app.get("/api/user/profile", async (c) => {
   const user = requireUser(c);
   if (!user) return c.json({ ok: false, message: "Authentication required" }, 401);
-  return c.json({ ok: true, user: serializeUser(user) });
+  
+  const store = c.get("store");
+  const stats = await store.getUserMatchStats(user.id);
+  const totalMatches = stats.wins + stats.losses;
+  const winRate = totalMatches > 0 ? Math.round((stats.wins / totalMatches) * 100) : 0;
+  
+  const serialized: any = serializeUser(user);
+  serialized.stats = {
+    ...stats,
+    winRate,
+    tournamentWins: stats.tournament_wins
+  };
+
+  return c.json({ ok: true, user: serialized });
 });
 
 // --- Tournaments ---

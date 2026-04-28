@@ -1,37 +1,53 @@
-import { redirect } from "next/navigation";
-import { readBackendJson } from "@/lib/backend";
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { getApiUrl } from "@/lib/api-config";
 import { TransferForm } from "@/components/transfer-form";
 
-type ProfileResponse = {
-  ok: boolean;
-  user?: {
-    id: string;
-    name: string;
-    email: string;
-    walletBalance: string;
-  };
-};
+export default function ProfilePage() {
+  const router = useRouter();
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-import { backendFetch } from "@/lib/backend";
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const apiUrl = getApiUrl();
+        const res = await fetch(`${apiUrl}/api/user/profile`, { credentials: "include", cache: "no-store" });
+        if (res.status === 401) {
+          router.push("/login");
+          return;
+        }
+        const data = await res.json();
+        if (data.user) {
+          setUser(data.user);
+        } else {
+          router.push("/login");
+        }
+      } catch (err) {
+        console.error("Profile fetch error:", err);
+        router.push("/login");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProfile();
+  }, [router]);
 
-async function getProfileData() {
-  try {
-    const { response, payload, status } = await readBackendJson<ProfileResponse>("/user/profile");
-    if (status === 401) return null;
-    if (!response.ok) return null;
-    return payload.user || null;
-  } catch (err) {
-    console.error("Profile getProfileData error:", err);
-    return null;
+  if (loading) {
+    return (
+      <main className="page profile-page" style={{ padding: "1rem 2rem" }}>
+        <div className="shell">
+          <section className="panel page-card text-center">
+            <h2>Loading Profile...</h2>
+          </section>
+        </div>
+      </main>
+    );
   }
-}
 
-export default async function ProfilePage() {
-  const user = await getProfileData();
-
-  if (!user) {
-    redirect("/login");
-  }
+  if (!user) return null;
 
   return (
     <main className="page profile-page" style={{ padding: "1rem 2rem" }}>
@@ -55,7 +71,7 @@ export default async function ProfilePage() {
           <div className="profile-balance-highlight" style={{ paddingLeft: "3rem", borderLeftColor: "rgba(255, 255, 255, 0.1)" }}>
             <span className="muted text-sm" style={{ letterSpacing: "2px", textTransform: "uppercase" }}>Wallet Balance</span>
             <div className="balance-amount" style={{ textShadow: "0 0 15px rgba(245, 158, 11, 0.5)", fontSize: "3rem" }}>
-              ₹{user.walletBalance}
+              ₹{user.walletBalance || (user.wallet_balance_cents ? (user.wallet_balance_cents / 100).toFixed(2) : "0.00")}
             </div>
           </div>
         </div>

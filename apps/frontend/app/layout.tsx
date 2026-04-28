@@ -33,6 +33,17 @@ export default function RootLayout({
             <Topbar />
             
             {children}
+            <footer style={{
+              padding: "2rem",
+              textAlign: "center",
+              borderTop: "1px solid var(--glass-bg-hover)",
+              marginTop: "auto",
+              color: "var(--text-muted)",
+              fontSize: "0.85rem"
+            }}>
+              &copy; {new Date().getFullYear()} Winner Takes All. All rights reserved. <br/>
+              <span style={{ fontSize: "0.75rem", opacity: 0.7 }}>Premium Competitive Gaming Platform</span>
+            </footer>
           </div>
 
           <MobileNav user={null} />

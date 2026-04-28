@@ -29,9 +29,26 @@ export function Topbar() {
       <nav className="topbar-nav">
         <ThemeToggle />
         {user ? (
-          <Link href="/profile" className="topbar-link">
-             <div className="user-initial">{user.name ? user.name[0].toUpperCase() : 'U'}</div>
-          </Link>
+          <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+            <Link href="/dashboard" className="topbar-link" style={{ fontWeight: 600, color: "var(--text-primary)" }}>
+               {user.name}
+            </Link>
+            <button 
+              onClick={async () => {
+                try {
+                  const apiUrl = getApiUrl();
+                  await fetch(`${apiUrl}/api/auth/logout`, { method: "POST", credentials: "include" });
+                  window.location.href = "/";
+                } catch (err) {
+                  console.error(err);
+                }
+              }}
+              className="button button-sm" 
+              style={{ background: "rgba(255, 77, 77, 0.1)", color: "#ff8080", border: "1px solid rgba(255, 77, 77, 0.2)" }}
+            >
+              Logout
+            </button>
+          </div>
         ) : (
           <>
             <Link href="/login" className="topbar-link">Login</Link>

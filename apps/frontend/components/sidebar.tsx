@@ -140,6 +140,12 @@ export function Sidebar({ user: initialUser }: { user: any }) {
         </div>
 
         <nav className="sidebar-nav">
+          {user && (!isCollapsed || isOpen) && (
+            <div className="sidebar-wallet" style={{ marginBottom: "1rem", marginTop: "-0.5rem" }}>
+              <span className="wallet-label">Balance</span>
+              <span className="wallet-amount">₹{user.walletBalance}</span>
+            </div>
+          )}
           {navItems.map((item) => {
             const isActive = pathname ? (pathname === item.href || pathname.startsWith(item.href + "/")) : false;
             return (
@@ -159,10 +165,6 @@ export function Sidebar({ user: initialUser }: { user: any }) {
 
         {user && (!isCollapsed || isOpen) && (
           <div className="sidebar-footer">
-            <div className="sidebar-wallet">
-              <span className="wallet-label">Balance</span>
-              <span className="wallet-amount">₹{user.walletBalance}</span>
-            </div>
             <button
               className="sidebar-logout-btn"
               onClick={handleLogout}
