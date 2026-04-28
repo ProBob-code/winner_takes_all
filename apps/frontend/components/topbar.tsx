@@ -4,9 +4,12 @@ import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useState, useEffect } from "react";
 import { getApiUrl } from "@/lib/api-config";
+import { ConfirmModal } from "@/components/confirm-modal";
 
 export function Topbar() {
   const [user, setUser] = useState<any>(null);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   useEffect(() => {
     const apiUrl = getApiUrl();
@@ -17,6 +20,18 @@ export function Topbar() {
       })
       .catch(err => console.error("Topbar user fetch error:", err));
   }, []);
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      const apiUrl = getApiUrl();
+      await fetch(`${apiUrl}/api/auth/logout`, { method: "POST", credentials: "include" });
+      window.location.href = "/login";
+    } catch (err) {
+      console.error(err);
+      setIsLoggingOut(false);
+    }
+  };
 
   return (
     <header className="topbar">
@@ -30,25 +45,40 @@ export function Topbar() {
         <ThemeToggle />
         {user ? (
           <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+            <div style={{ 
+              display: "flex", 
+              alignItems: "center", 
+              background: "rgba(255, 183, 0, 0.1)", 
+              padding: "0.4rem 0.8rem", 
+              borderRadius: "10px", 
+              border: "1px solid rgba(255, 183, 0, 0.2)",
+              gap: "0.5rem"
+            }}>
+              <span style={{ fontSize: "0.8rem", fontWeight: 700, color: "var(--gold-light)", opacity: 0.8 }}>₹</span>
+              <span style={{ fontWeight: 800, color: "var(--gold-light)", fontSize: "0.95rem" }}>{user.walletBalance || "0.00"}</span>
+            </div>
             <Link href="/dashboard" className="topbar-link" style={{ fontWeight: 600, color: "var(--text-primary)" }}>
                {user.name}
             </Link>
-            <button 
-              onClick={async () => {
-                if (!window.confirm("Are you sure you want to log out?")) return;
-                try {
-                  const apiUrl = getApiUrl();
-                  await fetch(`${apiUrl}/api/auth/logout`, { method: "POST", credentials: "include" });
-                  window.location.href = "/login";
-                } catch (err) {
-                  console.error(err);
-                }
-              }}
+             <button 
+              onClick={() => setShowLogoutConfirm(true)}
               className="button button-sm" 
               style={{ background: "rgba(255, 77, 77, 0.1)", color: "#ff8080", border: "1px solid rgba(255, 77, 77, 0.2)" }}
+              disabled={isLoggingOut}
             >
-              Logout
+              {isLoggingOut ? "..." : "Logout"}
             </button>
+
+            <ConfirmModal
+              isOpen={showLogoutConfirm}
+              title="Confirm Logout"
+              message="Are you sure you want to exit your session? You will need to login again to access your wallet and tournaments."
+              confirmText="Yes, Logout"
+              cancelText="Stay"
+              isDanger={true}
+              onConfirm={handleLogout}
+              onCancel={() => setShowLogoutConfirm(false)}
+            />
           </div>
         ) : (
           <>

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { getApiUrl } from "@/lib/api-config";
 
 type PaymentButtonProps = {
   onSuccess?: () => void;
@@ -21,11 +22,15 @@ export function PaymentButton({ onSuccess }: PaymentButtonProps) {
     setError("");
 
     try {
+      const apiUrl = getApiUrl();
+      console.log("Creating payment order at:", `${apiUrl}/api/payments/create-order`);
+      
       // Create order
-      const orderRes = await fetch("/api/payments/create-order", {
+      const orderRes = await fetch(`${apiUrl}/api/payments/create-order`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ amount: selectedAmount }),
+        credentials: "include"
       });
 
       if (!orderRes.ok) {
@@ -45,7 +50,8 @@ export function PaymentButton({ onSuccess }: PaymentButtonProps) {
         handler: async function (response: any) {
           // Verify payment
           try {
-            const verifyRes = await fetch("/api/payments/verify", {
+            const apiUrl = getApiUrl();
+            const verifyRes = await fetch(`${apiUrl}/api/payments/verify`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
@@ -53,6 +59,7 @@ export function PaymentButton({ onSuccess }: PaymentButtonProps) {
                 razorpayPaymentId: response.razorpay_payment_id,
                 razorpaySignature: response.razorpay_signature,
               }),
+              credentials: "include"
             });
 
             if (verifyRes.ok) {

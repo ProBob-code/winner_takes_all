@@ -6,11 +6,13 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { SidebarEffects } from "./sidebar-effects";
 import { getApiUrl } from "@/lib/api-config";
+import { ConfirmModal } from "./confirm-modal";
 
 export function Sidebar({ user: initialUser }: { user: any }) {
   const pathname = usePathname();
   const router = useRouter();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [user, setUser] = useState(initialUser);
 
   useEffect(() => {
@@ -27,7 +29,6 @@ export function Sidebar({ user: initialUser }: { user: any }) {
 
   const handleLogout = async () => {
     if (typeof window === "undefined") return;
-    if (!window.confirm("Are you sure you want to log out?")) return;
     setIsLoggingOut(true);
     try {
       const apiUrl = getApiUrl();
@@ -140,13 +141,7 @@ export function Sidebar({ user: initialUser }: { user: any }) {
           </button>
         </div>
 
-        <nav className="sidebar-nav">
-          {user && (!isCollapsed || isOpen) && (
-            <div className="sidebar-wallet" style={{ marginBottom: "1rem", marginTop: "-0.5rem" }}>
-              <span className="wallet-label">Balance</span>
-              <span className="wallet-amount">₹{user.walletBalance}</span>
-            </div>
-          )}
+        <nav className="sidebar-nav" style={{ overflowY: "auto", maxHeight: "calc(100vh - 160px)" }}>
           {navItems.map((item) => {
             const isActive = pathname ? (pathname === item.href || pathname.startsWith(item.href + "/")) : false;
             return (
@@ -164,11 +159,11 @@ export function Sidebar({ user: initialUser }: { user: any }) {
           })}
         </nav>
 
-        {user && (!isCollapsed || isOpen) && (
+         {user && (!isCollapsed || isOpen) && (
           <div className="sidebar-footer">
             <button
               className="sidebar-logout-btn"
-              onClick={handleLogout}
+              onClick={() => setShowLogoutConfirm(true)}
               disabled={isLoggingOut}
             >
               <span className="sidebar-icon">🚪</span>
@@ -176,6 +171,17 @@ export function Sidebar({ user: initialUser }: { user: any }) {
             </button>
           </div>
         )}
+
+        <ConfirmModal
+          isOpen={showLogoutConfirm}
+          title="Sign Out"
+          message="Ready to call it a day? Your progress and wallet balance are safely stored."
+          confirmText="Yes, Logout"
+          cancelText="Cancel"
+          isDanger={true}
+          onConfirm={handleLogout}
+          onCancel={() => setShowLogoutConfirm(false)}
+        />
       </aside>
 
       {/* Mobile Toggle Button (Floating or Topbar) */}
