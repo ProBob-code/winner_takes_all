@@ -1,16 +1,16 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-import type { Env } from "../types";
-import { D1Store } from "../lib/d1-store";
+import type { Env } from "./types";
+import { D1Store } from "./lib/d1-store";
 import {
   createSessionTokens,
   getRefreshSession,
   deleteRefreshSession,
   buildSessionCookies,
-} from "../lib/kv-sessions";
-import { hashPassword, verifyPassword } from "../lib/crypto";
-import { authMiddleware, requireUser, serializeUser } from "../middleware/auth";
-import { centsToMoney, moneyToCents } from "../lib/money";
+} from "./lib/kv-sessions";
+import { hashPassword, verifyPassword } from "./lib/crypto";
+import { authMiddleware, requireUser, serializeUser } from "./middleware/auth";
+import { centsToMoney, moneyToCents } from "./lib/money";
 
 // Re-export Durable Object
 export { GameRoom } from "./durable-objects/game-room";
