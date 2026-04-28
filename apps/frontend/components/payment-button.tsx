@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { getApiUrl } from "@/lib/api-config";
 
@@ -223,68 +224,16 @@ export function PaymentButton({ onSuccess }: PaymentButtonProps) {
                     <span style={{ fontWeight: 800, fontSize: "1rem" }}>₹{amt}</span>
                   </div>
                 ))}
-              </div>
+            {/* Modal Header */}
+            <div style={{ padding: "1.5rem 2rem", borderBottom: "1px solid var(--glass-bg-hover)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <h3 style={{ fontSize: "1.25rem", fontWeight: 800 }}>Refill Your Wallet</h3>
+              <button onClick={() => setShowModal(false)} style={{ background: "none", border: "none", color: "var(--text-muted)", fontSize: "1.5rem", cursor: "pointer" }}>&times;</button>
+            </div>
 
-              <div style={{ 
-                background: "rgba(187, 134, 252, 0.05)", 
-                padding: "1.25rem", 
-                borderRadius: "16px",
-                border: "1px dashed rgba(187, 134, 252, 0.2)",
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: "1.5rem"
-              }}>
+            <div style={{ padding: "2rem", overflowY: "auto", flex: 1 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1.2fr", gap: "2rem" }}>
+                {/* Column 1: Selection */}
                 <div>
-                  <div style={{ fontSize: "0.7rem", fontWeight: 700, color: "var(--accent-light)", textTransform: "uppercase", letterSpacing: "1px" }}>Order Total</div>
-                  <div style={{ fontSize: "1.25rem", fontWeight: 900 }}>₹{selectedAmount}.00</div>
-                </div>
-                <div style={{ textAlign: "right" }}>
-                  <div style={{ fontSize: "0.7rem", fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase" }}>Credits to be added</div>
-                  <div style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--green-light)" }}>+{selectedAmount}</div>
-                </div>
-              </div>
-
-              {error && (
-                <div style={{ 
-                  color: "#ff4d4d", 
-                  fontSize: "0.85rem", 
-                  marginBottom: "1.5rem", 
-                  background: "rgba(255, 77, 77, 0.1)",
-                  padding: "0.75rem",
-                  borderRadius: "12px",
-                  border: "1px solid rgba(255, 77, 77, 0.2)",
-                  textAlign: "center"
-                }}>
-                  {error}
-                </div>
-              )}
-
-              <button 
-                className="button" 
-                style={{ 
-                  width: "100%", 
-                  padding: "1.1rem", 
-                  fontSize: "1rem",
-                  borderRadius: "16px",
-                  fontWeight: 900,
-                  boxShadow: "0 8px 24px rgba(187, 134, 252, 0.3)",
-                  marginBottom: "1rem"
-                }} 
-                onClick={handlePayment} 
-                disabled={loading}
-              >
-                {loading ? "Processing..." : `Checkout Now`}
-              </button>
-              
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "1rem", opacity: 0.4 }}>
-                 <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
-                   <span style={{ fontSize: "0.8rem" }}>🔒</span>
-                   <span style={{ fontSize: "0.6rem", fontWeight: 700 }}>SECURE</span>
-                 </div>
-                 <div style={{ width: "1px", height: "12px", background: "rgba(255,255,255,0.2)" }}></div>
-                 <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
-                   <img src="https://razorpay.com/assets/razorpay-glyph.svg" width="14" alt="Razorpay" />
                    <span style={{ fontSize: "0.6rem", fontWeight: 700 }}>RAZORPAY</span>
                  </div>
               </div>

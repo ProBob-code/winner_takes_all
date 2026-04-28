@@ -1,6 +1,7 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 
 interface ConfirmModalProps {
   isOpen: boolean;
@@ -23,15 +24,29 @@ export function ConfirmModal({
   cancelText = "Cancel",
   isDanger = false
 }: ConfirmModalProps) {
-  if (!isOpen) return null;
+  const [mounted, setMounted] = useState(false);
 
-  return (
+  useEffect(() => {
+    setMounted(true);
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [isOpen]);
+
+  if (!isOpen || !mounted) return null;
+
+  const modalContent = (
     <div 
       className="payment-overlay" 
       onClick={onCancel} 
       style={{ 
         backdropFilter: "blur(12px)", 
-        zIndex: 10000,
+        zIndex: 100000,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -61,7 +76,6 @@ export function ConfirmModal({
           boxShadow: "var(--shadow-lg), var(--shadow-glow)"
         }}
       >
-        {/* Subtle Gradient Glow */}
         <div style={{ position: "absolute", top: "-50px", left: "-50px", width: "200px", height: "200px", background: isDanger ? "var(--red)" : "var(--accent)", filter: "blur(80px)", opacity: 0.15, zIndex: 0 }}></div>
         
         <div style={{ position: "relative", zIndex: 1 }}>
@@ -98,4 +112,6 @@ export function ConfirmModal({
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 }

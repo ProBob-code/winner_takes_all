@@ -8,6 +8,10 @@ binding = "DB"
 database_name = "winner-takes-all-db"
 database_id = "789d6ae3-5715-499c-b6b5-b069ec5eee51"
 
+[vars]
+RAZORPAY_KEY_ID = "rzp_test_Sj0whY7o95b7NX"
+RAZORPAY_KEY_SECRET = "srSMpOk0gOHK370sjEpisyt1"
+
 [[kv_namespaces]]
 binding = "SESSIONS"
 id = "788ab68ad9454e4ea7f2519b32792722"
