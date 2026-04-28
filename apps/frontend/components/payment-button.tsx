@@ -150,7 +150,7 @@ export function PaymentButton({ onSuccess }: PaymentButtonProps) {
 
       {showModal && (
         <div className="payment-overlay" onClick={() => setShowModal(false)} style={{ 
-          zIndex: 2500,
+          zIndex: 10000,
         }}>
           <div className="payment-modal-v2 scale-in" onClick={e => e.stopPropagation()} style={{ 
             position: "relative", 

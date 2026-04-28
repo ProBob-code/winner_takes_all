@@ -31,7 +31,7 @@ export function ConfirmModal({
       onClick={onCancel} 
       style={{ 
         backdropFilter: "blur(12px)", 
-        zIndex: 2100,
+        zIndex: 10000,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -41,6 +41,7 @@ export function ConfirmModal({
         left: 0,
         right: 0,
         bottom: 0,
+        background: "rgba(3, 0, 20, 0.85)",
         animation: "fadeIn 0.3s ease"
       }}
     >
