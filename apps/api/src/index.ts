@@ -10,7 +10,7 @@ import {
   buildLogoutCookies,
 } from "./lib/kv-sessions";
 import { hashPassword, verifyPassword, createId } from "./lib/crypto";
-import { createRazorpayOrder, verifyPaymentSignature } from "./lib/razorpay";
+import { createRazorpayOrder, verifyPaymentSignature, verifyWebhookSignature } from "./lib/razorpay";
 import { authMiddleware, requireUser, serializeUser } from "./middleware/auth";
 import { centsToMoney, moneyToCents } from "./lib/money";
 
@@ -229,6 +229,38 @@ app.post("/api/payments/verify", async (c) => {
   // Mark success and add funds to wallet
   await store.updatePayment(payment.id, { status: "success", provider_payment_id: body.razorpayPaymentId });
   await store.creditWallet(user.id, payment.amount_cents, "wallet_topup", payment.id);
+
+  return c.json({ ok: true });
+});
+
+app.post("/api/payments/webhook", async (c) => {
+  const signature = c.req.header("X-Razorpay-Signature");
+  if (!signature) return c.json({ ok: false, message: "Missing signature" }, 400);
+
+  const rawBody = await c.req.arrayBuffer();
+  const webhookSecret = c.env.RAZORPAY_WEBHOOK_SECRET || "";
+  
+  const isValid = await verifyWebhookSignature(webhookSecret, rawBody, signature);
+  if (!isValid) return c.json({ ok: false, message: "Invalid signature" }, 400);
+
+  const body = JSON.parse(new TextDecoder().decode(rawBody));
+  console.log("Razorpay Webhook Event:", body.event);
+
+  if (body.event === "payment.captured") {
+    const payload = body.payload.payment.entity;
+    const orderId = payload.order_id;
+    const paymentId = payload.id;
+
+    const store = c.get("store");
+    const payment = await store.getPaymentByOrderId(orderId);
+    
+    if (payment && payment.status === "pending") {
+      // Mark success and add funds to wallet
+      await store.updatePayment(payment.id, { status: "success", provider_payment_id: paymentId });
+      await store.creditWallet(payment.user_id, payment.amount_cents, "wallet_topup", payment.id);
+      console.log(`Successfully processed payment via webhook for user ${payment.user_id}`);
+    }
+  }
 
   return c.json({ ok: true });
 });
