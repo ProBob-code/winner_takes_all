@@ -33,7 +33,7 @@ export default function RootLayout({
       <head>
         <title>W.T.A | Winner.Takes.All</title>
         <meta name="description" content="Compete in high-stakes multi-game tournaments. Professional grade." />
-        <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2280%22>👑</text></svg>" />
+        <link rel="icon" href="data:image/svg+xml,<svg width='32' height='32' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'><path d='M2 19L5 7L10 12L12 5L14 12L19 7L22 19H2Z' fill='%23FFD700'/></svg>" />
         <script src="https://checkout.razorpay.com/v1/checkout.js" async></script>
       </head>
       <body className={inter.className} style={{ background: "var(--bg-deep)", color: "var(--text-primary)" }}>

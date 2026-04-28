@@ -32,13 +32,7 @@ export function Topbar({ user: initialUser }: { user?: any }) {
       <Link href="/" className="topbar-brand">
         <span className="logo-icon">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M5 16L3 5L8.5 10L12 4L15.5 10L21 5L19 16H5ZM19 19C19 19.5523 18.5523 20 18 20H6C5.44772 20 5 19.5523 5 19V18H19V19Z" fill="url(#crownGradientTopbar)"/>
-            <defs>
-              <linearGradient id="crownGradientTopbar" x1="3" y1="4" x2="21" y2="20" gradientUnits="userSpaceOnUse">
-                <stop stopColor="#FFD700"/>
-                <stop offset="1" stopColor="#FFA500"/>
-              </linearGradient>
-            </defs>
+            <path d="M5 16L3 5L8.5 10L12 4L15.5 10L21 5L19 16H5ZM19 19C19 19.5523 18.5523 20 18 20H6C5.44772 20 5 19.5523 5 19V18H19V19Z" fill="#FFD700"/>
           </svg>
         </span>
         <span className="brand-text" style={{ letterSpacing: "0.5px", fontWeight: 800 }}>Winner.Takes.All</span>

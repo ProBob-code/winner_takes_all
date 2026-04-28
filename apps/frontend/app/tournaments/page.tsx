@@ -5,6 +5,7 @@ export const dynamic = "force-dynamic";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { getApiUrl } from "@/lib/api-config";
+import { QuickTournament } from "@/components/quick-tournament";
 
 type TournamentsResponse = {
   ok: boolean;
@@ -58,6 +59,8 @@ export default function TournamentsPage() {
     fetchData();
   }, []);
 
+  const [activeTab, setActiveTab] = useState<'arena' | 'quick'>('arena');
+
   if (loading) {
     return (
       <main className="page">
@@ -95,96 +98,117 @@ export default function TournamentsPage() {
         <div className="app-header slide-in">
           <div className="header-info">
             <h1>Tournaments</h1>
-            <p className="muted">Join active lobbies and claim the prize pool.</p>
+            <p className="muted">Compete in high-stakes arenas or host a quick local showdown.</p>
           </div>
-          <div className="header-actions">
-            <Link href={isLoggedIn ? "/tournaments/create" : "/login"} className="button button-gold">
-              + Host Tournament
-            </Link>
-          </div>
-        </div>
-
-        {!isLoggedIn && (
-          <div className="guest-banner slide-in mb-6" style={{
-            background: "var(--accent-subtle)",
-            border: "1px solid var(--border-glow)",
-            borderRadius: "16px",
-            padding: "1rem 1.5rem",
-            display: "flex",
-            alignItems: "center",
-            gap: "1rem",
-            color: "var(--text-primary)"
-          }}>
-            <span style={{ fontSize: "1.5rem" }}>🔒</span>
-            <div>
-              <strong style={{ display: "block" }}>Login Required</strong>
-              <span className="muted text-sm">Please log in to view details or join tournaments.</span>
-            </div>
-            <Link href="/login" className="button button-sm ml-auto" style={{ background: "var(--accent)", color: "white" }}>
-              Log In
-            </Link>
-          </div>
-        )}
-
-        <div className="tournament-grid mt-6">
-          {tournaments.map((t: any) => {
-            const statusClass = `tournament-status status-${t.status}`;
-            const isFree = parseFloat(t.entryFee.amount) === 0;
-
-            return (
-              <Link 
-                key={t.id} 
-                href={isLoggedIn ? `/tournaments/${t.id}` : "/login"} 
-                className={`tournament-app-card slide-in ${!isLoggedIn ? 'guest-mode' : ''}`}
+          <div className="header-actions" style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
+            <div className="tab-switcher" style={{ background: "rgba(255,255,255,0.03)", padding: "4px", borderRadius: "12px", border: "1px solid var(--glass-border)" }}>
+              <button 
+                className={`tab-btn ${activeTab === 'arena' ? 'active' : ''}`}
+                onClick={() => setActiveTab('arena')}
+                style={{ padding: "0.5rem 1rem", fontSize: "0.75rem" }}
               >
-                <div className="card-top">
-                  <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-                    <span className={statusClass}>{t.status.replace("_", " ")}</span>
-                    {t.isPrivate && (
-                      <span style={{ 
-                        background: "var(--red-subtle)", 
-                        color: "var(--red-light)", 
-                        fontSize: "0.65rem", 
-                        padding: "2px 6px", 
-                        borderRadius: "4px",
-                        fontWeight: "800",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.05em"
-                      }}>
-                        🔒 Private
-                      </span>
-                    )}
-                  </div>
-                  <span className="card-players">
-                    <span className="icon">👥</span> {t.joinedPlayers}/{t.maxPlayers}
-                  </span>
-                </div>
-                <h3 className="card-title glow-text">{t.name}</h3>
-                <div className="card-bottom">
-                  <div className="card-fee">
-                    <span className="muted text-xs">ENTRY FEE</span>
-                    <strong className={isFree ? "text-green" : "text-accent"}>
-                      {isFree ? "FREE" : `₹${t.entryFee.amount}`}
-                    </strong>
-                  </div>
-                  <div className="card-action">
-                    <span className="join-arrow">{isLoggedIn ? "→" : "🔒"}</span>
-                  </div>
-                </div>
+                ARENA
+              </button>
+              <button 
+                className={`tab-btn ${activeTab === 'quick' ? 'active' : ''}`}
+                onClick={() => setActiveTab('quick')}
+                style={{ padding: "0.5rem 1rem", fontSize: "0.75rem" }}
+              >
+                QUICK
+              </button>
+            </div>
+            {activeTab === 'arena' && (
+              <Link href={isLoggedIn ? "/tournaments/create" : "/login"} className="button button-gold">
+                + Host
               </Link>
-            );
-          })}
+            )}
+          </div>
         </div>
 
-        {tournaments.length === 0 && (
-          <div className="empty-state slide-in">
-            <div className="empty-icon">🎮</div>
-            <h3>No tournaments found</h3>
-            <p className="muted" style={{ maxWidth: 400, margin: "auto" }}>No active tournaments are running right now. Why not host your own and invite friends?</p>
-            <Link href="/tournaments/create" className="button button-secondary" style={{ marginTop: "1.5rem" }}>
-              Host First Tournament
-            </Link>
-          </div>
+        {activeTab === 'arena' ? (
+          <>
+            {!isLoggedIn && (
+              <div className="guest-banner slide-in mb-6" style={{
+                background: "var(--accent-subtle)",
+                border: "1px solid var(--border-glow)",
+                borderRadius: "16px",
+                padding: "1rem 1.5rem",
+                display: "flex",
+                alignItems: "center",
+                gap: "1rem",
+                color: "var(--text-primary)"
+              }}>
+                <span style={{ fontSize: "1.5rem" }}>🔒</span>
+                <div>
+                  <strong style={{ display: "block" }}>Login Required</strong>
+                  <span className="muted text-sm">Join the arena to play for real credits.</span>
+                </div>
+                <Link href="/login" className="button button-sm ml-auto" style={{ background: "var(--accent)", color: "white" }}>
+                  Log In
+                </Link>
+              </div>
+            )}
+
+            <div className="tournament-grid">
+              {tournaments.map((t: any) => {
+                const statusClass = `tournament-status status-${t.status}`;
+                const isFree = parseFloat(t.entryFee.amount) === 0;
+
+                return (
+                  <Link 
+                    key={t.id} 
+                    href={isLoggedIn ? `/tournaments/${t.id}` : "/login"} 
+                    className={`tournament-app-card slide-in ${!isLoggedIn ? 'guest-mode' : ''}`}
+                  >
+                    <div className="card-top">
+                      <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+                        <span className={statusClass}>{t.status.replace("_", " ")}</span>
+                        {t.isPrivate && (
+                          <span style={{ 
+                            background: "var(--red-subtle)", 
+                            color: "var(--red-light)", 
+                            fontSize: "0.65rem", 
+                            padding: "2px 6px", 
+                            borderRadius: "4px",
+                            fontWeight: "800",
+                            textTransform: "uppercase",
+                            letterSpacing: "0.05em"
+                          }}>
+                            🔒 Private
+                          </span>
+                        )}
+                      </div>
+                      <span className="card-players">
+                        <span className="icon">👥</span> {t.joinedPlayers}/{t.maxPlayers}
+                      </span>
+                    </div>
+                    <h3 className="card-title glow-text">{t.name}</h3>
+                    <div className="card-bottom">
+                      <div className="card-fee">
+                        <span className="muted text-xs">ENTRY FEE</span>
+                        <strong className={isFree ? "text-green" : "text-accent"}>
+                          {isFree ? "FREE" : `₹${t.entryFee.amount}`}
+                        </strong>
+                      </div>
+                      <div className="card-action">
+                        <span className="join-arrow">{isLoggedIn ? "→" : "🔒"}</span>
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+
+            {tournaments.length === 0 && (
+              <div className="empty-state slide-in">
+                <div className="empty-icon">🎮</div>
+                <h3>No tournaments found</h3>
+                <p className="muted" style={{ maxWidth: 400, margin: "auto" }}>No active tournaments are running right now. Why not host your own and invite friends?</p>
+              </div>
+            )}
+          </>
+        ) : (
+          <QuickTournament />
         )}
       </div>
     </main>

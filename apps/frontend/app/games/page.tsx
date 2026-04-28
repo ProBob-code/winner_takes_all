@@ -49,6 +49,18 @@ export default function GamesPage() {
                 </div>
               </div>
             </a>
+            
+            <div className="tournament-card slide-in" style={{ opacity: 0.6, cursor: "not-allowed" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                <div className="tournament-name">🕶️ Mafia</div>
+                <span className="tournament-status">COMING SOON</span>
+              </div>
+              <div className="tournament-meta">
+                <div className="tournament-meta-item">
+                  <span>Social deduction game coming soon to the arena.</span>
+                </div>
+              </div>
+            </div>
           </div>
         ) : (
           <div className="offline-content slide-in">
