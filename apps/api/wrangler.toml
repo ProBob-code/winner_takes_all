@@ -6,11 +6,11 @@ compatibility_flags = ["nodejs_compat"]
 [[d1_databases]]
 binding = "DB"
 database_name = "winner-takes-all-db"
-database_id = "4cba52ba-c7bf-45ae-811f-c6d37efe6e98"
+database_id = "789d6ae3-5715-499c-b6b5-b069ec5eee51"
 
 [[kv_namespaces]]
 binding = "SESSIONS"
-id = "wta-sessions"
+id = "788ab68ad9454e4ea7f2519b32792722"
 
 [durable_objects]
 bindings = [
