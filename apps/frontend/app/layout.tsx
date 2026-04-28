@@ -31,8 +31,9 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} ${outfit.variable}`}>
       <head>
-        <title>WTA | Premium Tournament Platform</title>
+        <title>W.T.A | Winner.Takes.All</title>
         <meta name="description" content="Compete in high-stakes multi-game tournaments. Professional grade." />
+        <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2280%22>👑</text></svg>" />
         <script src="https://checkout.razorpay.com/v1/checkout.js" async></script>
       </head>
       <body className={inter.className} style={{ background: "var(--bg-deep)", color: "var(--text-primary)" }}>
@@ -55,7 +56,7 @@ export default function RootLayout({
               fontSize: "0.85rem",
               background: "rgba(0,0,0,0.2)"
             }}>
-              &copy; {new Date().getFullYear()} Winner Takes All. All rights reserved. <br/>
+              &copy; {new Date().getFullYear()} Winner.Takes.All. All rights reserved. <br/>
               <span style={{ fontSize: "0.75rem", opacity: 0.7 }}>Premium Competitive Gaming Platform</span>
             </footer>
           </div>

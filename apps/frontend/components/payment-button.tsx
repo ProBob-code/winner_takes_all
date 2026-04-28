@@ -63,7 +63,7 @@ export function PaymentButton({ onSuccess }: PaymentButtonProps) {
         key: orderData.keyId,
         amount: orderData.amount,
         currency: orderData.currency,
-        name: "Winner Takes All",
+        name: \"Winner.Takes.All\",
         description: "Wallet Refill",
         order_id: orderData.razorpayOrderId,
         handler: async function (response: any) {

@@ -105,8 +105,18 @@ export function Sidebar({ user: initialUser }: { user: any }) {
           <Link href={(process.env.NEXT_PUBLIC_LANDING_URL as any) || "/"} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', textDecoration: 'none', color: 'inherit' }}>
             {(!isCollapsed || isOpen) && (
               <>
-                <span className="logo-icon">👑</span>
-                <span className="brand-text">W.T.A</span>
+                <span className="logo-icon">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M5 16L3 5L8.5 10L12 4L15.5 10L21 5L19 16H5ZM19 19C19 19.5523 18.5523 20 18 20H6C5.44772 20 5 19.5523 5 19V18H19V19Z" fill="url(#crownGradientSidebar)"/>
+                    <defs>
+                      <linearGradient id="crownGradientSidebar" x1="3" y1="4" x2="21" y2="20" gradientUnits="userSpaceOnUse">
+                        <stop stopColor="#FFD700"/>
+                        <stop offset="1" stopColor="#FFA500"/>
+                      </linearGradient>
+                    </defs>
+                  </svg>
+                </span>
+                <span className="brand-text" style={{ letterSpacing: "1px", fontWeight: 800 }}>Winner.Takes.All</span>
               </>
             )}
           </Link>

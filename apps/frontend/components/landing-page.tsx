@@ -293,7 +293,7 @@ export function LandingPage() {
       </main>
 
       <footer style={{ padding: "60px 6%", textAlign: "center", borderTop: "1px solid rgba(255,255,255,0.08)" }}>
-        <p style={{ color: "rgba(255,255,255,0.2)" }}>&copy; 2026 WINNER TAKES ALL PLATFORM.</p>
+        <p style={{ color: "rgba(255,255,255,0.2)" }}>&copy; 2026 WINNER.TAKES.ALL PLATFORM.</p>
       </footer>
     </div>
   );
