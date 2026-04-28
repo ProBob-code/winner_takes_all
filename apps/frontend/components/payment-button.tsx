@@ -141,134 +141,142 @@ export function PaymentButton({ onSuccess }: PaymentButtonProps) {
       {showModal && (
         <div className="payment-overlay" onClick={() => setShowModal(false)} style={{ 
           zIndex: 2500,
-          display: "flex",
-          justifyContent: "center",
-          padding: "1.5rem"
         }}>
           <div className="payment-modal-v2 scale-in" onClick={e => e.stopPropagation()} style={{ 
             position: "relative", 
-            overflow: "hidden", 
             width: "100%",
-            maxWidth: "500px",
-            padding: "2.5rem",
+            maxWidth: "480px",
+            padding: "2rem",
             background: "var(--bg-topbar)",
             border: "1px solid var(--glass-border-color-hover)",
-            borderRadius: "32px",
-            boxShadow: "var(--shadow-lg), var(--shadow-glow)"
+            borderRadius: "28px",
+            boxShadow: "var(--shadow-lg), var(--shadow-glow)",
           }}>
-            {/* Subtle Gradient Glow */}
-            <div style={{ position: "absolute", top: "-50px", left: "-50px", width: "300px", height: "300px", background: "var(--accent)", filter: "blur(120px)", opacity: 0.1, zIndex: 0 }}></div>
+            {/* Background Glow */}
+            <div style={{ position: "absolute", top: "-100px", right: "-100px", width: "250px", height: "250px", background: "var(--accent)", filter: "blur(100px)", opacity: 0.1, zIndex: 0 }}></div>
             
             <div style={{ position: "relative", zIndex: 1 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem" }}>
-                <div>
-                  <h3 style={{ fontSize: "1.75rem", fontWeight: 900, color: "var(--text-primary)" }}>Refill Credits</h3>
-                  <p className="muted" style={{ fontSize: "0.85rem" }}>Select an amount to top up your wallet</p>
-                </div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
+                <h3 style={{ fontSize: "1.5rem", fontWeight: 900 }}>Refill Credits</h3>
                 <button 
                   onClick={() => setShowModal(false)}
-                  style={{ background: "rgba(255,255,255,0.05)", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: "1.2rem", width: "36px", height: "36px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}
+                  style={{ background: "rgba(255,255,255,0.05)", border: "none", color: "var(--text-muted)", cursor: "pointer", width: "32px", height: "32px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}
                 >
                   ×
                 </button>
               </div>
+              <p className="muted" style={{ fontSize: "0.85rem", marginBottom: "1.5rem" }}>Boost your balance to join high-stakes tournaments</p>
               
               <div className="amount-selector" style={{ 
                 display: "grid", 
-                gridTemplateColumns: "repeat(2, 1fr)",
+                gridTemplateColumns: "repeat(3, 1fr)",
                 gap: "1rem", 
-                marginBottom: "2.5rem"
+                marginBottom: "1.5rem"
               }}>
                 {AMOUNTS.map(amt => (
                   <div
                     key={amt}
                     style={{ 
-                      padding: "1.5rem 1rem", 
+                      padding: "1rem 0.5rem", 
                       cursor: "pointer",
                       display: "flex",
                       flexDirection: "column",
                       alignItems: "center",
-                      gap: "0.5rem",
-                      borderRadius: "20px",
+                      gap: "0.4rem",
+                      borderRadius: "16px",
                       position: "relative",
-                      transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-                      background: selectedAmount === amt ? "rgba(187, 134, 252, 0.15)" : "rgba(255, 255, 255, 0.02)",
-                      border: `1px solid ${selectedAmount === amt ? "var(--accent)" : "rgba(255, 255, 255, 0.1)"}`,
-                      boxShadow: selectedAmount === amt ? "0 8px 24px rgba(187, 134, 252, 0.2)" : "none"
+                      transition: "all 0.2s ease",
+                      background: selectedAmount === amt ? "rgba(187, 134, 252, 0.1)" : "rgba(255, 255, 255, 0.02)",
+                      border: `1px solid ${selectedAmount === amt ? "var(--accent)" : "rgba(255, 255, 255, 0.08)"}`,
+                      transform: selectedAmount === amt ? "scale(1.05)" : "scale(1)"
                     }}
                     onClick={() => setSelectedAmount(amt)}
                   >
                     {amt === 1000 && (
-                      <span style={{ 
+                      <div style={{ 
                         position: "absolute", 
-                        top: "-10px", 
-                        right: "10px", 
-                        background: "var(--gradient-gold)", 
+                        top: "-8px", 
+                        background: "var(--gold)", 
                         color: "#000", 
-                        fontSize: "0.6rem", 
+                        fontSize: "0.5rem", 
                         fontWeight: 900, 
-                        padding: "2px 8px", 
-                        borderRadius: "10px",
-                        boxShadow: "0 4px 10px rgba(255, 183, 0, 0.3)"
+                        padding: "1px 6px", 
+                        borderRadius: "6px",
+                        boxShadow: "0 2px 8px rgba(255, 183, 0, 0.3)"
                       }}>
                         BEST VALUE
-                      </span>
+                      </div>
                     )}
-                    <span style={{ fontSize: "1.5rem" }}>
+                    <span style={{ fontSize: "1.25rem" }}>
                       {amt < 500 ? "🥉" : amt < 2500 ? "🥈" : "🥇"}
                     </span>
-                    <span style={{ fontWeight: 800, fontSize: "1.25rem", color: "var(--text-primary)" }}>₹{amt}</span>
-                    <span style={{ fontSize: "0.65rem", opacity: 0.6, fontWeight: 700, letterSpacing: "1px" }}>CREDITS</span>
+                    <span style={{ fontWeight: 800, fontSize: "1rem" }}>₹{amt}</span>
                   </div>
                 ))}
+              </div>
+
+              <div style={{ 
+                background: "rgba(187, 134, 252, 0.05)", 
+                padding: "1.25rem", 
+                borderRadius: "16px",
+                border: "1px dashed rgba(187, 134, 252, 0.2)",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "1.5rem"
+              }}>
+                <div>
+                  <div style={{ fontSize: "0.7rem", fontWeight: 700, color: "var(--accent-light)", textTransform: "uppercase", letterSpacing: "1px" }}>Order Total</div>
+                  <div style={{ fontSize: "1.25rem", fontWeight: 900 }}>₹{selectedAmount}.00</div>
+                </div>
+                <div style={{ textAlign: "right" }}>
+                  <div style={{ fontSize: "0.7rem", fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase" }}>Credits to be added</div>
+                  <div style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--green-light)" }}>+{selectedAmount}</div>
+                </div>
               </div>
 
               {error && (
                 <div style={{ 
                   color: "#ff4d4d", 
-                  fontSize: "0.9rem", 
+                  fontSize: "0.85rem", 
                   marginBottom: "1.5rem", 
-                  background: "rgba(255, 77, 77, 0.08)",
-                  padding: "1rem",
-                  borderRadius: "16px",
+                  background: "rgba(255, 77, 77, 0.1)",
+                  padding: "0.75rem",
+                  borderRadius: "12px",
                   border: "1px solid rgba(255, 77, 77, 0.2)",
-                  textAlign: "center",
-                  fontWeight: 600
+                  textAlign: "center"
                 }}>
                   {error}
                 </div>
               )}
 
-              <div style={{ 
-                marginTop: "1rem",
-                display: "flex",
-                flexDirection: "column",
-                gap: "1rem"
-              }}>
-                <button 
-                  className="button" 
-                  style={{ 
-                    width: "100%", 
-                    padding: "1.25rem", 
-                    fontSize: "1.1rem",
-                    borderRadius: "18px",
-                    fontWeight: 800,
-                    boxShadow: "0 10px 30px rgba(187, 134, 252, 0.3)"
-                  }} 
-                  onClick={handlePayment} 
-                  disabled={loading}
-                >
-                  {loading ? "Processing..." : `Confirm & Pay ₹${selectedAmount}`}
-                </button>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", opacity: 0.6 }}>
-                  <span style={{ fontSize: "0.8rem" }}>🔒</span>
-                  <span style={{ fontSize: "0.75rem", fontWeight: 600 }}>Secure 256-bit SSL encrypted payment</span>
-                </div>
-              </div>
+              <button 
+                className="button" 
+                style={{ 
+                  width: "100%", 
+                  padding: "1.1rem", 
+                  fontSize: "1rem",
+                  borderRadius: "16px",
+                  fontWeight: 900,
+                  boxShadow: "0 8px 24px rgba(187, 134, 252, 0.3)",
+                  marginBottom: "1rem"
+                }} 
+                onClick={handlePayment} 
+                disabled={loading}
+              >
+                {loading ? "Processing..." : `Checkout Now`}
+              </button>
               
-              <div style={{ marginTop: "2.5rem", borderTop: "1px solid rgba(255,255,255,0.05)", paddingTop: "1.5rem", display: "flex", alignItems: "center", justifyContent: "center", gap: "0.75rem", opacity: 0.4 }}>
-                 <img src="https://razorpay.com/assets/razorpay-glyph.svg" width="20" alt="Razorpay" />
-                 <span style={{ fontSize: "0.7rem", fontWeight: 700, letterSpacing: "1px" }}>POWERED BY RAZORPAY</span>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "1rem", opacity: 0.4 }}>
+                 <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                   <span style={{ fontSize: "0.8rem" }}>🔒</span>
+                   <span style={{ fontSize: "0.6rem", fontWeight: 700 }}>SECURE</span>
+                 </div>
+                 <div style={{ width: "1px", height: "12px", background: "rgba(255,255,255,0.2)" }}></div>
+                 <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                   <img src="https://razorpay.com/assets/razorpay-glyph.svg" width="14" alt="Razorpay" />
+                   <span style={{ fontSize: "0.6rem", fontWeight: 700 }}>RAZORPAY</span>
+                 </div>
               </div>
             </div>
           </div>

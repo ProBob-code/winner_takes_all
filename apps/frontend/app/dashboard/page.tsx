@@ -88,28 +88,23 @@ export default function DashboardPage() {
     <main className="page dashboard-page" style={{ padding: "1rem 2rem" }}>
       <div className="shell">
         {/* Welcome Interactive Banner */}
-        <div className="profile-banner slide-in" style={{
-          background: "linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(6, 182, 212, 0.05))",
-          border: "1px solid rgba(139, 92, 246, 0.2)",
-          position: "relative",
-          overflow: "hidden"
-        }}>
-           <div style={{ position: "absolute", top: "-50px", right: "-50px", width: "200px", height: "200px", background: "var(--accent)", filter: "blur(100px)", opacity: 0.1 }}></div>
+        <div className="profile-banner slide-in">
+           <div className="banner-glow"></div>
            <div className="profile-hero-info">
-             <h1 className="glow-text" style={{ fontSize: "3rem", marginBottom: "0.5rem" }}>Welcome back, {user.name.split(' ')[0]}!</h1>
-             <p className="muted" style={{ fontSize: "1.1rem" }}>The arena is active. You have {wallet.transactions.length} recent activities to review.</p>
+             <h1 className="glow-text">Welcome back, {user.name.split(' ')[0]}!</h1>
+             <p className="muted">The arena is active. You have {wallet.transactions.length} recent activities to review.</p>
            </div>
-           <div className="profile-balance-highlight" style={{ borderLeft: "none" }}>
+           <div className="profile-balance-highlight">
               <Link href="/wallet" style={{ textDecoration: "none" }}>
-                <div className="balance-amount interactive-scale" style={{ fontSize: "3.5rem" }}>
+                <div className="balance-amount interactive-scale">
                   {formatMoney(balance)}
                 </div>
               </Link>
-              <span className="muted" style={{ display: "block", fontSize: "0.8rem", letterSpacing: "2px" }}>AVAILABLE CREDITS</span>
+              <span className="muted highlight-label">AVAILABLE CREDITS</span>
            </div>
         </div>
 
-        <div className="dashboard-grid" style={{ gridTemplateColumns: "1.6fr 1fr", gap: "2rem" }}>
+        <div className="dashboard-grid">
           
           {/* Left Stack: Interactive Zone */}
           <div className="stack" style={{ gap: "2rem" }}>

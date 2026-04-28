@@ -44,26 +44,26 @@ export function Topbar() {
       <nav className="topbar-nav">
         <ThemeToggle />
         {user ? (
-          <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
             <div style={{ 
               display: "flex", 
               alignItems: "center", 
               background: "rgba(255, 183, 0, 0.1)", 
-              padding: "0.4rem 0.8rem", 
-              borderRadius: "10px", 
+              padding: "0.3rem 0.6rem", 
+              borderRadius: "8px", 
               border: "1px solid rgba(255, 183, 0, 0.2)",
-              gap: "0.5rem"
+              gap: "0.4rem"
             }}>
-              <span style={{ fontSize: "0.8rem", fontWeight: 700, color: "var(--gold-light)", opacity: 0.8 }}>₹</span>
-              <span style={{ fontWeight: 800, color: "var(--gold-light)", fontSize: "0.95rem" }}>{user.walletBalance || "0.00"}</span>
+              <span style={{ fontSize: "0.7rem", fontWeight: 700, color: "var(--gold-light)", opacity: 0.8 }}>₹</span>
+              <span style={{ fontWeight: 800, color: "var(--gold-light)", fontSize: "0.85rem" }}>{user.walletBalance || "0.00"}</span>
             </div>
-            <Link href="/dashboard" className="topbar-link" style={{ fontWeight: 600, color: "var(--text-primary)" }}>
+            <Link href="/dashboard" className="topbar-link desktop-only" style={{ fontWeight: 600, color: "var(--text-primary)", fontSize: "0.9rem" }}>
                {user.name}
             </Link>
-             <button 
+            <button 
               onClick={() => setShowLogoutConfirm(true)}
               className="button button-sm" 
-              style={{ background: "rgba(255, 77, 77, 0.1)", color: "#ff8080", border: "1px solid rgba(255, 77, 77, 0.2)" }}
+              style={{ background: "rgba(255, 77, 77, 0.1)", color: "#ff8080", border: "1px solid rgba(255, 77, 77, 0.2)", padding: "0.4rem 0.8rem", height: "auto" }}
               disabled={isLoggingOut}
             >
               {isLoggingOut ? "..." : "Logout"}

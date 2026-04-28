@@ -277,18 +277,131 @@ a:hover {
     overflow-x: hidden;
   }
 
-  .page {
-    padding: 1.5rem 1rem !important;
+  .topbar {
+    padding: 0 1rem !important;
+    height: 64px !important;
   }
 
-  .page-header h1 {
-    font-size: 1.75rem !important;
+  .topbar-brand .brand-text {
+    display: none;
+  }
+
+  .topbar-brand .brand-text-mobile {
+    display: block !important;
+  }
+
+  .page {
+    padding: 1rem !important;
+  }
+
+  .shell {
+    padding: 0 0.5rem !important;
   }
 
   .page-grid {
-    display: flex !important;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+}
+
+/* ── Dashboard & Shared Components ── */
+.profile-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 3rem;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(6, 182, 212, 0.05));
+  border: 1px solid var(--border-color);
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 2rem;
+}
+
+.banner-glow {
+  position: absolute;
+  top: -50px;
+  right: -50px;
+  width: 200px;
+  height: 200px;
+  background: var(--accent);
+  filter: blur(100px);
+  opacity: 0.1;
+  pointer-events: none;
+}
+
+.profile-hero-info h1 {
+  font-size: 3rem;
+  font-weight: 900;
+  margin-bottom: 0.5rem;
+}
+
+.profile-hero-info p {
+  font-size: 1.1rem;
+}
+
+.profile-balance-highlight {
+  text-align: right;
+}
+
+.balance-amount {
+  font-size: 3.5rem;
+  font-weight: 900;
+  color: var(--text-primary);
+}
+
+.highlight-label {
+  display: block;
+  font-size: 0.8rem;
+  letter-spacing: 2px;
+  font-weight: 700;
+  opacity: 0.6;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: 2rem;
+}
+
+.dashboard-card {
+  padding: 2.5rem;
+}
+
+/* ── Responsive Dashboard & Pages ── */
+@media (max-width: 1024px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .profile-banner {
     flex-direction: column !important;
-    gap: 1.5rem !important;
+    text-align: center;
+    padding: 2rem 1.5rem !important;
+    gap: 1.5rem;
+  }
+
+  .profile-hero-info h1 {
+    font-size: 2rem !important;
+  }
+
+  .profile-balance-highlight .balance-amount {
+    font-size: 2.5rem !important;
+  }
+
+  .dashboard-card {
+    padding: 1.5rem !important;
+  }
+
+  .dashboard-card h3 {
+    font-size: 1.25rem !important;
   }
 }
 
@@ -2771,14 +2884,17 @@ select.form-control option {
 
 /* Modal Improvements */
 .payment-overlay {
-  padding-top: 10vh !important; /* Give space on top */
-  align-items: flex-start !important;
+  padding: 2rem 1rem !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
   background: rgba(3, 0, 20, 0.85) !important;
   backdrop-filter: blur(12px) !important;
+  overflow-y: auto !important; /* Enable scrolling for tall modals */
 }
 
 .payment-modal-v2 {
-  margin-bottom: 5vh;
+  margin: auto;
 }
 
 @media (max-width: 600px) {
