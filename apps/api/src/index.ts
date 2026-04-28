@@ -7,8 +7,10 @@ import {
   getRefreshSession,
   deleteRefreshSession,
   buildSessionCookies,
+  buildLogoutCookies,
 } from "./lib/kv-sessions";
-import { hashPassword, verifyPassword } from "./lib/crypto";
+import { hashPassword, verifyPassword, createId } from "./lib/crypto";
+import { createRazorpayOrder, verifyPaymentSignature } from "./lib/razorpay";
 import { authMiddleware, requireUser, serializeUser } from "./middleware/auth";
 import { centsToMoney, moneyToCents } from "./lib/money";
 
@@ -128,6 +130,14 @@ app.post("/api/auth/refresh", async (c) => {
   return c.json({ ok: true, user: serializeUser(user) });
 });
 
+app.post("/api/auth/logout", async (c) => {
+  const [access, refresh] = buildLogoutCookies();
+  c.header("Set-Cookie", access, { append: true });
+  c.header("Set-Cookie", refresh, { append: true });
+  return c.json({ ok: true, message: "Logged out successfully" });
+});
+
+
 app.get("/api/user/profile", async (c) => {
   const user = requireUser(c);
   if (!user) return c.json({ ok: false, message: "Authentication required" }, 401);
@@ -145,6 +155,76 @@ app.get("/api/user/profile", async (c) => {
   };
 
   return c.json({ ok: true, user: serialized });
+});
+
+// --- Payments ---
+app.post("/api/payments/create-order", async (c) => {
+  const user = requireUser(c);
+  if (!user) return c.json({ ok: false, message: "Authentication required" }, 401);
+  const body = await c.req.json();
+  if (!body.amount) return c.json({ ok: false, message: "Amount required" }, 400);
+
+  const amountCents = body.amount * 100;
+  
+  try {
+    const order = await createRazorpayOrder(
+      c.env.RAZORPAY_KEY_ID, 
+      c.env.RAZORPAY_KEY_SECRET, 
+      amountCents, 
+      "INR", 
+      { userId: user.id }
+    );
+    
+    const store = c.get("store");
+    await store.createPayment({
+      userId: user.id,
+      amountCents,
+      providerOrderId: order.id,
+      idempotencyKey: createId("idempotency"),
+    });
+
+    return c.json({
+      ok: true,
+      razorpayOrderId: order.id,
+      amount: amountCents,
+      currency: "INR",
+      keyId: c.env.RAZORPAY_KEY_ID
+    });
+  } catch (err: any) {
+    console.error("Razorpay error:", err);
+    return c.json({ ok: false, message: "Failed to connect to payment gateway" }, 500);
+  }
+});
+
+app.post("/api/payments/verify", async (c) => {
+  const user = requireUser(c);
+  if (!user) return c.json({ ok: false, message: "Authentication required" }, 401);
+  const body = await c.req.json();
+  
+  if (!body.razorpayOrderId || !body.razorpayPaymentId || !body.razorpaySignature) {
+    return c.json({ ok: false, message: "Missing payment parameters" }, 400);
+  }
+
+  const isValid = await verifyPaymentSignature(
+    c.env.RAZORPAY_KEY_SECRET, 
+    body.razorpayOrderId, 
+    body.razorpayPaymentId, 
+    body.razorpaySignature
+  );
+  
+  if (!isValid) return c.json({ ok: false, message: "Invalid payment signature" }, 400);
+
+  const store = c.get("store");
+  const payment = await store.getPaymentByOrderId(body.razorpayOrderId);
+  
+  if (!payment) return c.json({ ok: false, message: "Payment not found" }, 404);
+  if (payment.status !== "pending") return c.json({ ok: false, message: "Payment already processed" }, 400);
+
+  // Mark success and add funds to wallet
+  await store.updatePayment(payment.id, { status: "success", provider_payment_id: body.razorpayPaymentId });
+  await store.creditWallet(user.id, payment.amount_cents, "wallet_topup", payment.id);
+
+  return c.json({ ok: true });
 });
 
 // --- Tournaments ---

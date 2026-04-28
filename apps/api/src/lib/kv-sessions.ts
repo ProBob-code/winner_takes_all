@@ -121,3 +121,27 @@ export function parseCookies(
       return acc;
     }, {});
 }
+/** Build Set-Cookie headers to clear session cookies. */
+export function buildLogoutCookies(): [string, string] {
+  const access = [
+    "wta_access_token=deleted",
+    "Path=/",
+    "HttpOnly",
+    "SameSite=None",
+    "Secure",
+    "Max-Age=0",
+    "Expires=Thu, 01 Jan 1970 00:00:00 GMT",
+  ].join("; ");
+
+  const refresh = [
+    "wta_refresh_token=deleted",
+    "Path=/",
+    "HttpOnly",
+    "SameSite=None",
+    "Secure",
+    "Max-Age=0",
+    "Expires=Thu, 01 Jan 1970 00:00:00 GMT",
+  ].join("; ");
+
+  return [access, refresh];
+}

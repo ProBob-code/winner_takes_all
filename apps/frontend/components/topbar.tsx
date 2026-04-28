@@ -35,10 +35,11 @@ export function Topbar() {
             </Link>
             <button 
               onClick={async () => {
+                if (!window.confirm("Are you sure you want to log out?")) return;
                 try {
                   const apiUrl = getApiUrl();
                   await fetch(`${apiUrl}/api/auth/logout`, { method: "POST", credentials: "include" });
-                  window.location.href = "/";
+                  window.location.href = "/login";
                 } catch (err) {
                   console.error(err);
                 }

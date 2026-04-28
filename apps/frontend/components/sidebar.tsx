@@ -27,11 +27,12 @@ export function Sidebar({ user: initialUser }: { user: any }) {
 
   const handleLogout = async () => {
     if (typeof window === "undefined") return;
+    if (!window.confirm("Are you sure you want to log out?")) return;
     setIsLoggingOut(true);
     try {
       const apiUrl = getApiUrl();
       await fetch(`${apiUrl}/api/auth/logout`, { method: "POST", credentials: "include" });
-      window.location.href = (process.env.NEXT_PUBLIC_LANDING_URL as any) || "/";
+      window.location.href = "/login";
     } catch (err) {
       console.error("Logout failed:", err);
     } finally {
