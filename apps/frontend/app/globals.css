@@ -2534,55 +2534,60 @@ select.form-control option {
 }
 
 
-/* ── Mobile Navigation ── */
+/* ── Mobile Navigation (Premium Dock) ── */
 .mobile-nav {
   display: none;
   position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: var(--bg-dropdown);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-top: 1px solid var(--glass-border-color);
-  justify-content: space-around;
+  bottom: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 2rem);
+  max-width: 440px;
+  background: rgba(5, 1, 26, 0.9);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 24px;
+  justify-content: space-between;
   align-items: center;
-  padding: 0.5rem 0.25rem;
+  padding: 0.6rem 1rem;
   z-index: 2000;
-  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 15px 45px rgba(0, 0, 0, 0.7), inset 0 0 10px rgba(187, 134, 252, 0.05);
 }
 
 .mobile-nav-link {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.25rem;
+  gap: 0.35rem;
   color: var(--text-secondary);
   text-decoration: none;
-  font-size: 0.65rem;
+  font-size: 0.6rem;
   font-family: var(--font-outfit);
-  font-weight: 500;
-  transition: all 0.3s ease;
-  min-width: 50px;
+  font-weight: 600;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  flex: 1;
 }
 
 .mobile-nav-link .mobile-nav-icon {
-  font-size: 1.25rem;
-  transition: transform 0.3s ease;
+  font-size: 1.5rem;
+  opacity: 0.6;
+  transition: all 0.3s ease;
 }
 
 .mobile-nav-link.active {
-  color: var(--accent-light);
+  color: var(--accent);
 }
 
 .mobile-nav-link.active .mobile-nav-icon {
-  transform: translateY(-2px);
-  filter: drop-shadow(0 0 8px var(--accent-subtle));
+  transform: translateY(-4px) scale(1.1);
+  opacity: 1;
+  filter: drop-shadow(0 0 12px var(--accent));
 }
 
 .mobile-nav-link.active .mobile-nav-label {
   color: var(--text-primary);
-  font-weight: 700;
+  font-weight: 800;
 }
 
 /* ── Mobile Responsiveness ── */
@@ -2601,8 +2606,32 @@ select.form-control option {
   }
 
   .topbar {
-    padding: 0 1rem;
-    height: 60px;
+    padding: 0 0.75rem !important;
+    height: 72px !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  }
+
+  .topbar-nav {
+    gap: 0.4rem !important;
+  }
+
+  .topbar-link {
+    font-size: 0.8rem !important;
+    font-weight: 700 !important;
+  }
+
+  .topbar-link.desktop-only {
+    display: none !important;
+  }
+
+  .button.button-sm {
+    padding: 0.45rem 0.85rem !important;
+    font-size: 0.75rem !important;
+    height: auto !important;
+  }
+
+  .app-container {
+    overflow-x: hidden;
   }
 
   .topbar-brand {
@@ -2646,6 +2675,17 @@ select.form-control option {
 
   .dashboard-card {
     padding: 1.5rem !important;
+  }
+
+  /* Auth Page Fixes */
+  .page {
+    justify-content: flex-start !important;
+    padding-top: 2rem !important;
+  }
+
+  .panel {
+    padding: 2rem 1.5rem !important;
+    border-radius: 20px !important;
   }
 
   .wallet-hero {

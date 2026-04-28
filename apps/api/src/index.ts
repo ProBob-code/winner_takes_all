@@ -164,7 +164,13 @@ app.post("/api/payments/create-order", async (c) => {
   const body = await c.req.json();
   if (!body.amount) return c.json({ ok: false, message: "Amount required" }, 400);
 
-  const amountCents = body.amount * 100;
+  const amountCents = Math.round(Number(body.amount) * 100);
+  if (isNaN(amountCents) || amountCents <= 0) return c.json({ ok: false, message: "Invalid amount" }, 400);
+  
+  if (!c.env.RAZORPAY_KEY_ID || !c.env.RAZORPAY_KEY_SECRET) {
+    console.error("Missing RAZORPAY_KEY_ID or RAZORPAY_KEY_SECRET in worker environment");
+    return c.json({ ok: false, message: "Payment gateway is not configured on the server" }, 500);
+  }
   
   try {
     const order = await createRazorpayOrder(
@@ -191,8 +197,8 @@ app.post("/api/payments/create-order", async (c) => {
       keyId: c.env.RAZORPAY_KEY_ID
     });
   } catch (err: any) {
-    console.error("Razorpay error:", err);
-    return c.json({ ok: false, message: "Failed to connect to payment gateway" }, 500);
+    console.error("Razorpay order creation error:", err.message);
+    return c.json({ ok: false, message: `Payment gateway error: ${err.message}` }, 500);
   }
 });
 

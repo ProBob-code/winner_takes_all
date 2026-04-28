@@ -29,15 +29,21 @@ export function PaymentButton({ onSuccess }: PaymentButtonProps) {
       const orderRes = await fetch(`${apiUrl}/api/payments/create-order`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: selectedAmount }),
+        body: JSON.stringify({ amount: Number(selectedAmount) }),
         credentials: "include"
       });
 
-      if (!orderRes.ok) {
-        throw new Error("Failed to create payment order");
+      let orderData: any = {};
+      try {
+        orderData = await orderRes.json();
+      } catch (e) {
+        const text = await orderRes.text();
+        throw new Error(`Server returned invalid JSON (${orderRes.status}). ${text.slice(0, 50)}...`);
       }
 
-      const orderData = await orderRes.json();
+      if (!orderRes.ok) {
+        throw new Error(orderData.message || `Error ${orderRes.status}: Failed to create payment order`);
+      }
 
       // Load Razorpay checkout
       const options = {
@@ -106,6 +112,10 @@ export function PaymentButton({ onSuccess }: PaymentButtonProps) {
           ondismiss: () => setLoading(false),
         },
       };
+
+      if (!(window as any).Razorpay) {
+        throw new Error("Payment gateway is still loading. Please wait a moment and try again.");
+      }
 
       const rzp = new (window as any).Razorpay(options);
       rzp.open();
