@@ -88,7 +88,8 @@ export function buildSessionCookies(
     `wta_access_token=${encodeURIComponent(tokens.accessToken)}`,
     "Path=/",
     "HttpOnly",
-    "SameSite=Lax",
+    "SameSite=None",
+    "Secure",
     `Max-Age=${ACCESS_TTL}`,
   ].join("; ");
 
@@ -96,7 +97,8 @@ export function buildSessionCookies(
     `wta_refresh_token=${encodeURIComponent(tokens.refreshToken)}`,
     "Path=/",
     "HttpOnly",
-    "SameSite=Lax",
+    "SameSite=None",
+    "Secure",
     `Max-Age=${REFRESH_TTL}`,
   ].join("; ");
 

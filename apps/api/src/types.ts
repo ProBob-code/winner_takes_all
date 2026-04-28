@@ -11,7 +11,7 @@ export interface Env {
   GAME_ROOMS: DurableObjectNamespace;
 
   // Vars
-  RAZORPAY_KEY_ID: string;
-  RAZORPAY_KEY_SECRET: string;
+  RAZORPAY_KEY_ID?: string;
+  RAZORPAY_KEY_SECRET?: string;
   RAZORPAY_WEBHOOK_SECRET?: string;
 }

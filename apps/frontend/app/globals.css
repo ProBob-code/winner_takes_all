@@ -844,11 +844,7 @@ a:hover {
 }
 
 /* ── Desktop UI Refinements ── */
-@media (min-width: 769px) {
-  .topbar-brand {
-    display: none;
-  }
-}
+/* topbar-brand is always visible now */
 
 .topbar-link {
   color: var(--text-secondary);
