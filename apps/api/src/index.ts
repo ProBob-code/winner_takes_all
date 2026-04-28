@@ -12,8 +12,7 @@ import { hashPassword, verifyPassword } from "./lib/crypto";
 import { authMiddleware, requireUser, serializeUser } from "./middleware/auth";
 import { centsToMoney, moneyToCents } from "./lib/money";
 
-// Re-export Durable Object
-export { GameRoom } from "./durable-objects/game-room";
+
 
 const app = new Hono<{ Bindings: Env; Variables: { store: D1Store; user?: any } }>();
 

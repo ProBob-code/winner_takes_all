@@ -7,8 +7,7 @@ export interface Env {
   // KV Namespace for sessions
   SESSIONS: KVNamespace;
 
-  // Durable Object for game rooms
-  GAME_ROOMS: DurableObjectNamespace;
+
 
   // Vars
   RAZORPAY_KEY_ID?: string;

@@ -11,12 +11,3 @@ database_id = "789d6ae3-5715-499c-b6b5-b069ec5eee51"
 [[kv_namespaces]]
 binding = "SESSIONS"
 id = "788ab68ad9454e4ea7f2519b32792722"
-
-[durable_objects]
-bindings = [
-  { name = "GAME_ROOMS", class_name = "GameRoom" }
-]
-
-[[migrations]]
-tag = "v1"
-new_classes = ["GameRoom"]
