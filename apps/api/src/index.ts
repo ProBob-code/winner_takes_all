@@ -55,7 +55,7 @@ app.post("/api/auth/signup", async (c) => {
   }
 
   const hashed = await hashPassword(body.password);
-  const user = await store.createUserWithBonus(body.name, body.email, hashed, 2500); // $25 bonus
+  const user = await store.createUserWithBonus(body.name, body.email, hashed, 100000); // 1000 Rs bonus
 
   const tokens = await createSessionTokens(c.env.SESSIONS, user.id);
   const [access, refresh] = buildSessionCookies(tokens);

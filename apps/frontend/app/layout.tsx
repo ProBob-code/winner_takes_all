@@ -2,8 +2,8 @@ export const dynamic = "force-dynamic";
 import "./globals.css";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { Sidebar } from "@/components/sidebar";
+import { Topbar } from "@/components/topbar";
 import { MobileNav } from "@/components/mobile-nav";
 import { NotificationBell } from "@/components/notification-bell";
 import { Inter, Outfit } from "next/font/google";
@@ -30,19 +30,7 @@ export default function RootLayout({
           <Sidebar user={null} />
           
           <div className="main-content">
-            <header className="topbar">
-              <Link href="/dashboard" className="topbar-brand">
-                <span className="logo-icon">👑</span>
-                <span className="brand-text">Winner Takes All</span>
-                <span className="brand-text-mobile">WTA</span>
-              </Link>
-              <div className="topbar-search"></div>
-              <nav className="topbar-nav">
-                <ThemeToggle />
-                <Link href="/login" className="topbar-link">Login</Link>
-                <Link href="/signup" className="button button-sm">Sign Up</Link>
-              </nav>
-            </header>
+            <Topbar />
             
             {children}
           </div>

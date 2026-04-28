@@ -59,8 +59,7 @@ export function AuthForm({ mode }: AuthFormProps) {
     }
 
     startTransition(() => {
-      router.push("/dashboard");
-      router.refresh();
+      window.location.href = "/dashboard";
     });
   }
 
