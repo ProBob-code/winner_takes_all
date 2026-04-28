@@ -81,13 +81,14 @@ export function PaymentButton({ onSuccess }: PaymentButtonProps) {
 
             if (verifyRes.ok) {
               setShowModal(false);
-              router.refresh();
-              onSuccess?.();
+              // Force a hard refresh to update all server components (balance, history)
+              window.location.reload();
             } else {
-              setError("Payment verification failed");
+              const data = await verifyRes.json();
+              setError(data.message || "Payment verification failed. Please check your balance in a few moments.");
             }
-          } catch {
-            setError("Payment verification failed");
+          } catch (err: any) {
+            setError(err.message || "Verification connection error. Please refresh the page.");
           }
         },
         prefill: {

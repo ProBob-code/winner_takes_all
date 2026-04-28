@@ -51,7 +51,20 @@ export default function GamesPage() {
             </a>
           </div>
         ) : (
-          <OfflineTracker />
+          <div className="offline-content slide-in">
+            <h2 style={{ 
+              fontSize: "1.75rem", 
+              fontWeight: 800, 
+              marginBottom: "1.5rem", 
+              color: "var(--text-primary)",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.75rem"
+            }}>
+              🎱 8-Ball Pool Tracker
+            </h2>
+            <OfflineTracker />
+          </div>
         )}
       </div>
 

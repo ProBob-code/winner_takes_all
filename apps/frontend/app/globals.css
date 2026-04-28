@@ -79,44 +79,6 @@
   --shadow-neon: 0 0 20px rgba(187, 134, 252, 0.4);
 }
 
-.light-mode {
-  --glass-bg: rgba(255, 255, 255, 0.5);
-  --glass-bg-hover: rgba(255, 255, 255, 0.8);
-  --glass-bg-active: rgba(255, 255, 255, 0.95);
-  --glass-border-color: rgba(139, 92, 246, 0.1);
-  --glass-border-color-hover: rgba(139, 92, 246, 0.3);
-  --shadow-text: 0 0 15px rgba(31, 38, 135, 0.1);
-
-  /* Ultimate "Iridescent Pearl" Palette */
-  --bg-primary: #fbfaff; /* Pure Pearl */
-  --bg-secondary: #f4f6ff;
-  --bg-card: rgba(255, 255, 255, 0.6);
-  --bg-card-hover: rgba(255, 255, 255, 0.9);
-  --bg-surface: rgba(255, 255, 255, 0.4);
-  --bg-topbar: rgba(255, 255, 255, 0.7);
-  --bg-dropdown: #ffffff;
-  --bg-inset: #f0f2f9;
-
-  --border-color: rgba(31, 38, 135, 0.08);
-  --border-glow: rgba(139, 92, 246, 0.15);
-  --glass-border: 1px solid rgba(255, 255, 255, 0.8);
-  --glass-blur: blur(32px);
-  --inner-glow: inset 0 0 15px rgba(255, 255, 255, 0.5);
-
-  --text-primary: #1a1a2e; /* Midnight Blue */
-  --text-secondary: #4a4a68;
-  --text-muted: #7e7e9a;
-
-  /* Floating Pearl Shadows */
-  --shadow-sm: 0 4px 12px rgba(31, 38, 135, 0.04);
-  --shadow-md: 0 12px 32px rgba(31, 38, 135, 0.08);
-  --shadow-lg: 0 24px 64px rgba(31, 38, 135, 0.12);
-
-  --gradient-glow: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(6, 182, 212, 0.1) 100%);
-  
-  --bg-inset: rgba(224, 231, 255, 0.5);
-}
-
 html {
   /* Fonts will be injected via next/font in layout */
   scroll-behavior: smooth;

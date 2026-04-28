@@ -6,20 +6,14 @@ import { useState, useEffect } from "react";
 import { getApiUrl } from "@/lib/api-config";
 import { ConfirmModal } from "@/components/confirm-modal";
 
-export function Topbar() {
-  const [user, setUser] = useState<any>(null);
+export function Topbar({ user: initialUser }: { user?: any }) {
+  const [user, setUser] = useState<any>(initialUser);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   useEffect(() => {
-    const apiUrl = getApiUrl();
-    fetch(`${apiUrl}/api/user/profile`, { credentials: "include" })
-      .then(res => res.json())
-      .then(data => {
-        if (data.user) setUser(data.user);
-      })
-      .catch(err => console.error("Topbar user fetch error:", err));
-  }, []);
+    if (initialUser) setUser(initialUser);
+  }, [initialUser]);
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
@@ -35,7 +29,7 @@ export function Topbar() {
 
   return (
     <header className="topbar">
-      <Link href="/dashboard" className="topbar-brand">
+      <Link href="/" className="topbar-brand">
         <span className="logo-icon">👑</span>
         <span className="brand-text">Winner Takes All</span>
         <span className="brand-text-mobile">WTA</span>

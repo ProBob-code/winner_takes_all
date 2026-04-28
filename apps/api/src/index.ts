@@ -224,6 +224,10 @@ app.post("/api/payments/verify", async (c) => {
   const payment = await store.getPaymentByOrderId(body.razorpayOrderId);
   
   if (!payment) return c.json({ ok: false, message: "Payment not found" }, 404);
+  
+  // If webhook already processed it, return success to the frontend
+  if (payment.status === "success") return c.json({ ok: true, already_processed: true });
+  
   if (payment.status !== "pending") return c.json({ ok: false, message: "Payment already processed" }, 400);
 
   // Mark success and add funds to wallet
