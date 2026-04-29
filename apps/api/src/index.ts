@@ -386,6 +386,40 @@ app.get("/api/wallet", async (c) => {
   });
 });
 
+app.post("/api/wallet/transfer", async (c) => {
+  const user = requireUser(c);
+  if (!user) return c.json({ ok: false, message: "Authentication required" }, 401);
+
+  const body = await c.req.json();
+  const { recipientId, amount } = body;
+
+  if (!recipientId || !amount) {
+    return c.json({ ok: false, message: "Recipient and amount are required" }, 400);
+  }
+
+  const amountCents = Math.round(Number(amount) * 100);
+  if (isNaN(amountCents) || amountCents <= 0) {
+    return c.json({ ok: false, message: "Invalid amount" }, 400);
+  }
+
+  if (recipientId === user.id) {
+    return c.json({ ok: false, message: "You cannot transfer credits to yourself" }, 400);
+  }
+
+  const store = c.get("store");
+  try {
+    const updatedUser = await store.transferCredits(user.id, recipientId, amountCents);
+    return c.json({
+      ok: true,
+      message: "Transfer successful",
+      newBalance: centsToMoney(updatedUser.wallet_balance_cents)
+    });
+  } catch (err: any) {
+    return c.json({ ok: false, message: err.message }, 400);
+  }
+});
+
+
 // --- Leaderboard ---
 app.get("/api/leaderboard/global", async (c) => {
   const store = c.get("store");
