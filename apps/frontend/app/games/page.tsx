@@ -125,6 +125,21 @@ export default function GamesPage() {
           padding: 3rem;
           backdrop-filter: var(--glass-blur);
         }
+        @media (max-width: 768px) {
+          .stadium-hub {
+            padding: 1.5rem;
+            border-radius: 24px;
+          }
+          .display-text-sm {
+            font-size: 1.5rem;
+          }
+          .app-header {
+            margin-bottom: 2rem;
+            text-align: center;
+            justify-content: center;
+          }
+        }
+
         .hub-header {
           margin-bottom: 2.5rem;
           text-align: center;
