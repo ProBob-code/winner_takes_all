@@ -137,8 +137,8 @@ export default function GamesPage() {
 
         .premium-card {
           position: relative;
-          background: rgba(255, 255, 255, 0.02);
-          border: 1px solid rgba(255, 255, 255, 0.05);
+          background: var(--bg-surface);
+          border: 1px solid var(--border-color);
           border-radius: 24px;
           overflow: hidden;
           transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
@@ -147,9 +147,8 @@ export default function GamesPage() {
         }
         .premium-card:hover {
           transform: translateY(-10px) scale(1.02);
-          border-color: var(--gold-subtle);
-          background: rgba(255, 255, 255, 0.04);
-          box-shadow: 0 20px 40px rgba(0,0,0,0.4), 0 0 20px rgba(255, 183, 0, 0.1);
+          border-color: var(--gold);
+          box-shadow: var(--shadow-lg);
         }
         .premium-card.locked { opacity: 0.6; cursor: not-allowed; }
         .card-content { padding: 1.5rem; position: relative; z-index: 2; }
@@ -161,28 +160,37 @@ export default function GamesPage() {
           letter-spacing: 1px;
           padding: 4px 10px;
           border-radius: 20px;
-          background: rgba(255,255,255,0.05);
+          background: var(--bg-surface-elevated);
+          color: var(--text-secondary);
+          border: 1px solid var(--border-color);
         }
         .status-badge.OPEN { background: rgba(16, 185, 129, 0.1); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.2); }
 
-        .tournament-title { font-size: 1.25rem; font-weight: 800; margin-bottom: 0.5rem; background: linear-gradient(to right, #fff, #94a3b8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .tournament-title { 
+          font-size: 1.25rem; 
+          font-weight: 800; 
+          margin-bottom: 0.5rem; 
+          color: var(--text-primary);
+        }
         .tournament-type { font-size: 0.65rem; font-weight: 700; color: var(--text-muted); letter-spacing: 1px; }
 
         .card-footer { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 2rem; }
         .entry-info .label { display: block; font-size: 0.6rem; font-weight: 900; color: var(--text-muted); margin-bottom: 2px; }
-        .entry-info .value { font-size: 1.1rem; font-weight: 900; }
+        .entry-info .value { font-size: 1.1rem; font-weight: 900; color: var(--text-primary); }
         .entry-info .value.free { color: #10b981; }
 
         .action-circle {
           width: 40px;
           height: 40px;
           border-radius: 50%;
-          background: rgba(255,255,255,0.05);
+          background: var(--bg-surface-elevated);
           display: flex;
           align-items: center;
           justify-content: center;
           font-size: 1.2rem;
+          color: var(--text-primary);
           transition: all 0.3s ease;
+          border: 1px solid var(--border-color);
         }
         .premium-card:hover .action-circle {
           background: var(--gold);
