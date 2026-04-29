@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { getApiUrl } from "@/lib/api-config";
 
 export function TransferForm() {
   const router = useRouter();
@@ -21,11 +22,14 @@ export function TransferForm() {
     };
 
     try {
-      const res = await fetch("/api/wallet/transfer", {
+      const apiUrl = getApiUrl();
+      const res = await fetch(`${apiUrl}/api/wallet/transfer`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
+        credentials: "include"
       });
+
 
       const data = await res.json();
 
