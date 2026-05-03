@@ -1,386 +1,243 @@
 /**
- * Dynamic Tournament Engine — Pure Logic Module
- *
- * No HTTP, no D1 imports. Takes data in, returns actions out.
- * All database operations are performed by the caller (API route handler).
+ * Dynamic Tournament Engine Core Logic
+ * Handles match generation, scoring, ranking, and timer calculations.
  */
 
-import type { EngineTeamRecord, EngineMatchRecord, EngineMatchupRecord } from "./engine-store";
+export type TournamentPhase = 'SETUP' | 'GROUP' | 'KNOCKOUT' | 'COMPLETED';
+export type MatchStatus = 'CREATED' | 'LIVE' | 'COMPLETED';
+export type MatchPhase = 'GROUP' | 'SEMI' | 'FINAL';
 
-// ── Types ──
-
-export interface GeneratedRound {
-  matches: Array<[string, string]>; // [teamAId, teamBId]
-  bye: { teamId: string; teamName: string } | null;
-  done: boolean; // true if all teams have played max matches
+export interface EngineTeam {
+  id: string;
+  name: string;
+  matches_played: number;
+  group_points: number; // wins count
+  total_score: number;  // tie-breaker
+  bye_assigned: boolean;
 }
 
-export interface ScoreResult {
-  scoreTeamA: number;
-  scoreTeamB: number;
-  ended: boolean;
-  winner: string | null;
-  endedBy: string | null; // 'SCORE' | 'SUDDEN_DEATH'
+export interface EngineMatch {
+  id: string;
+  phase: MatchPhase;
+  team_a_id: string;
+  team_b_id: string;
+  status: MatchStatus;
+  sudden_death: boolean;
+  start_time: number | null; // unix timestamp
+  duration: number;          // seconds
+  score_team_a: number;
+  score_team_b: number;
+  winner_id: string | null;
+  explanation: string;
 }
 
-export interface TimerState {
-  remaining: number; // seconds
-  expired: boolean;
-  danger: boolean; // < 60 seconds
-}
-
-export interface ExpiryResult {
-  winner: string | null;
-  endedBy: string | null; // 'TIME' or null (if tie → sudden death)
-  suddenDeath: boolean;
-}
-
-export interface KnockoutBracket {
-  semis: Array<[string, string]>; // [teamAId, teamBId]
-  finals: Array<[string, string]>;
-}
-
-export interface RankedTeam extends EngineTeamRecord {
-  rank: number;
-}
-
-// ── Phase 2: Match Generator (Core) ──
-
-/**
- * Check if two teams have already played each other.
- */
-function hasPlayed(matchups: EngineMatchupRecord[], team1Id: string, team2Id: string): boolean {
-  const [a, b] = [team1Id, team2Id].sort();
-  return matchups.some(m => m.team1_id === a && m.team2_id === b);
+export interface MatchupRecord {
+  team1_id: string;
+  team2_id: string;
 }
 
 /**
- * Generate the next round of matches dynamically.
- * Rules:
- *  - Each team plays exactly `maxPerTeam` matches
- *  - No repeat opponents
- *  - BYE for odd teams: +1 matches_played, +1 group_points, NO score
- *  - No team gets more than 1 BYE
+ * PHASE 2 — Match Generator
  */
 export function generateNextMatches(
-  teams: EngineTeamRecord[],
-  matchups: EngineMatchupRecord[],
-  maxPerTeam: number = 2
-): GeneratedRound {
-  // Step 1: Filter eligible teams
-  const eligible = teams.filter(t => t.matches_played < maxPerTeam);
-
-  if (eligible.length === 0) {
-    return { matches: [], bye: null, done: true };
+  teams: EngineTeam[],
+  pastMatchups: MatchupRecord[],
+  currentPhase: MatchPhase = 'GROUP'
+): { matches: Partial<EngineMatch>[], byeTeamId?: string } {
+  
+  if (currentPhase !== 'GROUP') {
+    // Knockout pairings are handled differently (Phases 7/8)
+    return { matches: [] };
   }
 
-  // If only 1 eligible team left, give them a BYE if they haven't had one
-  if (eligible.length === 1) {
-    const team = eligible[0];
-    if (!team.bye_assigned) {
-      return {
-        matches: [],
-        bye: { teamId: team.id, teamName: team.name },
-        done: false,
-      };
-    }
-    // Already has BYE, nothing more to generate
-    return { matches: [], bye: null, done: true };
-  }
+  const eligible = teams.filter(t => t.matches_played < 2);
+  const matches: Partial<EngineMatch>[] = [];
+  let byeTeamId: string | undefined;
 
-  let bye: { teamId: string; teamName: string } | null = null;
-
-  // Step 2: Handle odd team count
+  // Step 2: Handle odd teams (BYE)
   if (eligible.length % 2 === 1) {
-    // Pick team that hasn't had a BYE yet, with lowest matches_played
-    const candidates = eligible
+    // Pick team without bye and lowest matches_played
+    const byeTeam = eligible
       .filter(t => !t.bye_assigned)
-      .sort((a, b) => a.matches_played - b.matches_played);
+      .sort((a, b) => a.matches_played - b.matches_played)[0];
 
-    if (candidates.length > 0) {
-      const byeTeam = candidates[0];
-      bye = { teamId: byeTeam.id, teamName: byeTeam.name };
+    if (byeTeam) {
+      byeTeamId = byeTeam.id;
       // Remove from eligible for pairing
       const idx = eligible.findIndex(t => t.id === byeTeam.id);
       eligible.splice(idx, 1);
     }
   }
 
-  // Step 3: Pair teams — no repeat opponents
-  const pairs: Array<[string, string]> = [];
-  const used = new Set<string>();
-
+  // Step 3: Pair teams (no repeats)
+  const pairedIds = new Set<string>();
+  
   for (let i = 0; i < eligible.length; i++) {
     const t1 = eligible[i];
-    if (used.has(t1.id)) continue;
+    if (pairedIds.has(t1.id)) continue;
 
-    for (let j = i + 1; j < eligible.length; j++) {
-      const t2 = eligible[j];
-      if (used.has(t2.id)) continue;
-      if (hasPlayed(matchups, t1.id, t2.id)) continue;
+    // Find opponent
+    const t2 = eligible.find(potential => {
+      if (potential.id === t1.id || pairedIds.has(potential.id)) return false;
+      
+      // Check if they played before
+      const hasPlayed = pastMatchups.some(m => 
+        (m.team1_id === t1.id && m.team2_id === potential.id) ||
+        (m.team1_id === potential.id && m.team2_id === t1.id)
+      );
+      
+      return !hasPlayed;
+    });
 
-      pairs.push([t1.id, t2.id]);
-      used.add(t1.id);
-      used.add(t2.id);
-      break;
+    if (t2) {
+      pairedIds.add(t1.id);
+      pairedIds.add(t2.id);
+      
+      matches.push({
+        phase: 'GROUP',
+        team_a_id: t1.id,
+        team_b_id: t2.id,
+        status: 'CREATED',
+        explanation: `Match assigned to ensure each team plays 2 matches. No repeated opponents.`
+      });
     }
   }
 
-  return { matches: pairs, bye, done: false };
+  return { matches, byeTeamId };
 }
 
-// ── Phase 3: Scoring Engine (Race to 100) ──
-
 /**
- * Process a scoring event.
- * - In sudden death: first score wins immediately (ignore 100 cap)
- * - Otherwise: race to 100, cap at 100
+ * PHASE 4 — Scoring Engine
  */
-export function processScoreEvent(
-  match: EngineMatchRecord,
-  teamSide: "A" | "B",
+export function processScoreUpdate(
+  match: EngineMatch,
+  scoringTeamId: string,
   points: number
-): ScoreResult {
-  // Sudden death: first scoring event wins
-  if (match.sudden_death) {
-    const newA = teamSide === "A" ? match.score_team_a + points : match.score_team_a;
-    const newB = teamSide === "B" ? match.score_team_b + points : match.score_team_b;
-    return {
-      scoreTeamA: newA,
-      scoreTeamB: newB,
-      ended: true,
-      winner: teamSide === "A" ? match.team_a_id : match.team_b_id,
-      endedBy: "SUDDEN_DEATH",
-    };
+): { updatedMatch: EngineMatch, matchEnded: boolean } {
+  
+  const updatedMatch = { ...match };
+  
+  if (updatedMatch.status !== 'LIVE' && updatedMatch.status !== 'CREATED') {
+    return { updatedMatch, matchEnded: false };
   }
 
-  let newScoreA = match.score_team_a;
-  let newScoreB = match.score_team_b;
-
-  if (teamSide === "A") newScoreA += points;
-  else newScoreB += points;
-
-  // Race to 100 — check both sides (mistake could push opponent over)
-  if (newScoreA >= 100) {
-    return {
-      scoreTeamA: 100,
-      scoreTeamB: newScoreB,
-      ended: true,
-      winner: match.team_a_id,
-      endedBy: "SCORE",
-    };
-  }
-  if (newScoreB >= 100) {
-    return {
-      scoreTeamA: newScoreA,
-      scoreTeamB: 100,
-      ended: true,
-      winner: match.team_b_id,
-      endedBy: "SCORE",
-    };
+  // Handle sudden death
+  if (updatedMatch.sudden_death) {
+    updatedMatch.winner_id = scoringTeamId;
+    updatedMatch.status = 'COMPLETED';
+    return { updatedMatch, matchEnded: true };
   }
 
-  return {
-    scoreTeamA: newScoreA,
-    scoreTeamB: newScoreB,
-    ended: false,
-    winner: null,
-    endedBy: null,
-  };
-}
-
-/**
- * Get the points value for a scoring event type.
- */
-export function getScorePoints(type: "ball" | "black" | "mistake"): number {
-  switch (type) {
-    case "ball": return 10;
-    case "black": return 30;
-    case "mistake": return 10;
-    default: return 0;
-  }
-}
-
-/**
- * Determine which side receives points for a scoring event.
- * - ball/black: the scoring team gets points
- * - mistake: the OPPONENT gets points
- */
-export function getScoreSide(
-  eventTeam: "A" | "B",
-  eventType: "ball" | "black" | "mistake"
-): "A" | "B" {
-  if (eventType === "mistake") {
-    return eventTeam === "A" ? "B" : "A";
-  }
-  return eventTeam;
-}
-
-// ── Phase 4: Timer Engine ──
-
-/**
- * Compute current timer state from stored start_time + duration.
- * Timer does NOT depend on frontend — pure server-side computation.
- */
-export function computeTimerState(startTime: number, duration: number): TimerState {
-  const now = Math.floor(Date.now() / 1000);
-  const remaining = (startTime + duration) - now;
-
-  return {
-    remaining: Math.max(0, remaining),
-    expired: remaining <= 0,
-    danger: remaining > 0 && remaining <= 60,
-  };
-}
-
-/**
- * Resolve a timer expiry:
- * - Higher score wins → ended_by = 'TIME'
- * - Tie → sudden death mode (match status changes, no winner yet)
- */
-export function resolveTimerExpiry(match: EngineMatchRecord): ExpiryResult {
-  if (match.score_team_a > match.score_team_b) {
-    return { winner: match.team_a_id, endedBy: "TIME", suddenDeath: false };
-  }
-  if (match.score_team_b > match.score_team_a) {
-    return { winner: match.team_b_id, endedBy: "TIME", suddenDeath: false };
-  }
-  // Tie → sudden death
-  return { winner: null, endedBy: null, suddenDeath: true };
-}
-
-// ── Phase 7: Team Ranking ──
-
-/**
- * Get head-to-head result between two teams.
- * Returns 1 if teamA won, -1 if teamB won, 0 if no match or draw.
- */
-function getHeadToHead(
-  teamAId: string,
-  teamBId: string,
-  matches: EngineMatchRecord[]
-): number {
-  for (const m of matches) {
-    if (m.status !== "COMPLETED") continue;
-    const isMatch =
-      (m.team_a_id === teamAId && m.team_b_id === teamBId) ||
-      (m.team_a_id === teamBId && m.team_b_id === teamAId);
-    if (isMatch && m.winner_id) {
-      if (m.winner_id === teamAId) return -1; // a wins → a sorts first
-      if (m.winner_id === teamBId) return 1;  // b wins → b sorts first
+  // Update score
+  if (updatedMatch.team_a_id === scoringTeamId) {
+    updatedMatch.score_team_a += points;
+    if (updatedMatch.score_team_a >= 100) {
+      updatedMatch.score_team_a = 100;
+      updatedMatch.winner_id = scoringTeamId;
+      updatedMatch.status = 'COMPLETED';
+      return { updatedMatch, matchEnded: true };
+    }
+  } else {
+    updatedMatch.score_team_b += points;
+    if (updatedMatch.score_team_b >= 100) {
+      updatedMatch.score_team_b = 100;
+      updatedMatch.winner_id = scoringTeamId;
+      updatedMatch.status = 'COMPLETED';
+      return { updatedMatch, matchEnded: true };
     }
   }
-  return 0;
+
+  return { updatedMatch, matchEnded: false };
 }
 
 /**
- * Rank teams for group standings / knockout seeding.
- * Priority: group_points → total_score → head-to-head
+ * PHASE 5 — Timer Engine
  */
-export function rankTeams(
-  teams: EngineTeamRecord[],
-  matches: EngineMatchRecord[]
-): RankedTeam[] {
-  const sorted = [...teams].sort((a, b) => {
-    // 1. group_points (wins count) — descending
-    if (b.group_points !== a.group_points) return b.group_points - a.group_points;
-    // 2. total_score (tie-breaker) — descending
-    if (b.total_score !== a.total_score) return b.total_score - a.total_score;
-    // 3. head-to-head
-    return getHeadToHead(a.id, b.id, matches);
+export function checkTimer(
+  match: EngineMatch,
+  currentTime: number // unix seconds
+): { updatedMatch: EngineMatch, matchEnded: boolean, suddenDeathStarted: boolean } {
+  
+  if (match.status !== 'LIVE' || !match.start_time) {
+    return { updatedMatch: match, matchEnded: false, suddenDeathStarted: false };
+  }
+
+  const remaining = (match.start_time + match.duration) - currentTime;
+  
+  if (remaining <= 0) {
+    const updatedMatch = { ...match };
+    
+    if (updatedMatch.score_team_a === updatedMatch.score_team_b) {
+      updatedMatch.sudden_death = true;
+      return { updatedMatch, matchEnded: false, suddenDeathStarted: true };
+    } else {
+      updatedMatch.status = 'COMPLETED';
+      updatedMatch.winner_id = updatedMatch.score_team_a > updatedMatch.score_team_b 
+        ? updatedMatch.team_a_id 
+        : updatedMatch.team_b_id;
+      return { updatedMatch, matchEnded: true, suddenDeathStarted: false };
+    }
+  }
+
+  return { updatedMatch: match, matchEnded: false, suddenDeathStarted: false };
+}
+
+/**
+ * PHASE 7 — Ranking
+ */
+export function rankTeams(teams: EngineTeam[]): EngineTeam[] {
+  return [...teams].sort((a, b) => {
+    // 1. Group points (wins)
+    if (b.group_points !== a.group_points) {
+      return b.group_points - a.group_points;
+    }
+    // 2. Total score (tie-breaker)
+    if (b.total_score !== a.total_score) {
+      return b.total_score - a.total_score;
+    }
+    // Note: head-to-head would require matchup data, simplified for now
+    return 0;
   });
-
-  return sorted.map((t, i) => ({ ...t, rank: i + 1 }));
 }
 
-// ── Phase 8: Knockout Generator ──
-
 /**
- * Generate knockout bracket from ranked teams.
- * - 2 teams → direct Final
- * - 3 teams → Top 2 → Final (3rd eliminated)
- * - 4+ teams → Top 4 → Semi-finals → Final
+ * PHASE 8 — Knockout Generator
  */
-export function generateKnockoutBracket(rankedTeams: RankedTeam[]): KnockoutBracket {
+export function generateKnockout(rankedTeams: EngineTeam[]): Partial<EngineMatch>[] {
   const count = rankedTeams.length;
+  const matches: Partial<EngineMatch>[] = [];
 
-  if (count < 2) {
-    throw new Error("Need at least 2 teams for knockout");
+  if (count >= 4) {
+    // Semi-finals: 1 vs 4, 2 vs 3
+    matches.push({
+      phase: 'SEMI',
+      team_a_id: rankedTeams[0].id,
+      team_b_id: rankedTeams[3].id,
+      explanation: 'Semi-final: Rank 1 vs Rank 4'
+    });
+    matches.push({
+      phase: 'SEMI',
+      team_a_id: rankedTeams[1].id,
+      team_b_id: rankedTeams[2].id,
+      explanation: 'Semi-final: Rank 2 vs Rank 3'
+    });
+  } else if (count === 3) {
+    // Top 2 to final
+    matches.push({
+      phase: 'FINAL',
+      team_a_id: rankedTeams[0].id,
+      team_b_id: rankedTeams[1].id,
+      explanation: 'Final: Top 2 teams from group phase'
+    });
+  } else if (count === 2) {
+    // Direct final
+    matches.push({
+      phase: 'FINAL',
+      team_a_id: rankedTeams[0].id,
+      team_b_id: rankedTeams[1].id,
+      explanation: 'Final match'
+    });
   }
 
-  if (count === 2) {
-    return {
-      semis: [],
-      finals: [[rankedTeams[0].id, rankedTeams[1].id]],
-    };
-  }
-
-  if (count === 3) {
-    // Top 2 go to final, 3rd eliminated
-    return {
-      semis: [],
-      finals: [[rankedTeams[0].id, rankedTeams[1].id]],
-    };
-  }
-
-  // 4+ teams: Top 4 → Semis (1v4, 2v3) → Final
-  const top4 = rankedTeams.slice(0, 4);
-  return {
-    semis: [
-      [top4[0].id, top4[3].id], // 1st vs 4th
-      [top4[1].id, top4[2].id], // 2nd vs 3rd
-    ],
-    finals: [], // Created after both semis complete
-  };
-}
-
-// ── Phase 6: Team Addition Validation ──
-
-/**
- * Check if a team can be added to the tournament.
- */
-export function canAddTeam(
-  phase: string,
-  hasLiveMatch: boolean
-): { allowed: boolean; reason?: string } {
-  if (phase !== "GROUP" && phase !== "SETUP") {
-    return { allowed: false, reason: "Can only add teams during SETUP or GROUP phase" };
-  }
-  if (hasLiveMatch) {
-    return { allowed: false, reason: "Cannot add teams while a match is live" };
-  }
-  return { allowed: true };
-}
-
-// ── Phase 9: Host Explanation Generator ──
-
-/**
- * Generate a human-readable explanation for a match.
- */
-export function generateExplanation(
-  phase: string,
-  context: {
-    maxPerTeam: number;
-    byeTeamName?: string;
-    teamAName: string;
-    teamBName: string;
-  }
-): string {
-  const lines: string[] = [];
-
-  if (phase === "GROUP") {
-    lines.push(`This match ensures each team plays exactly ${context.maxPerTeam} group matches.`);
-    lines.push("No repeated opponents.");
-    if (context.byeTeamName) {
-      lines.push(`${context.byeTeamName} received a BYE due to odd team count.`);
-    }
-  } else if (phase === "SEMI") {
-    lines.push(`Semi-final: ${context.teamAName} vs ${context.teamBName}.`);
-    lines.push("Winner advances to the Final.");
-  } else if (phase === "FINAL") {
-    lines.push(`🏆 FINAL: ${context.teamAName} vs ${context.teamBName}.`);
-    lines.push("Winner takes the championship!");
-  }
-
-  return lines.join(" ");
+  return matches;
 }

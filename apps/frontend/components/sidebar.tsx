@@ -60,14 +60,13 @@ export function Sidebar({ user: initialUser }: { user: any }) {
     { label: "Dashboard", href: "/dashboard", icon: "📊" },
     { label: "Games", href: "/games", icon: "🕹️" },
     { label: "Tournaments", href: "/tournaments", icon: "🎮" },
-    { label: "Engine", href: "/tournaments/engine", icon: "🏟️" },
+    { label: "Stadium Engine", href: "/tournaments/engine", icon: "🏟️" },
     { label: "Leaderboard", href: "/leaderboard", icon: "🏆" },
     { label: "Profile", href: "/profile", icon: "👤" },
     { label: "Wallet", href: "/wallet", icon: "💳" }
   ] : [
     { label: "Games", href: "/games", icon: "🕹️" },
     { label: "Tournaments", href: "/tournaments", icon: "🎮" },
-    { label: "Engine", href: "/tournaments/engine", icon: "🏟️" },
     { label: "Leaderboard", href: "/leaderboard", icon: "🏆" }
   ];
 

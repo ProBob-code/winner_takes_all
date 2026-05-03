@@ -2,19 +2,6 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import type { Env } from "./types";
 import { D1Store } from "./lib/d1-store";
-import { EngineStore } from "./lib/engine-store";
-import {
-  generateNextMatches,
-  processScoreEvent,
-  getScorePoints,
-  getScoreSide,
-  computeTimerState,
-  resolveTimerExpiry,
-  rankTeams,
-  generateKnockoutBracket,
-  canAddTeam,
-  generateExplanation,
-} from "./lib/tournament-engine";
 import {
   createSessionTokens,
   getRefreshSession,
@@ -29,11 +16,15 @@ import { centsToMoney, moneyToCents } from "./lib/money";
 
 
 
-const app = new Hono<{ Bindings: Env; Variables: { store: D1Store; user?: any } }>();
+import { EngineStore } from "./lib/engine-store";
+import * as Engine from "./lib/tournament-engine";
 
-// Inject D1Store
+const app = new Hono<{ Bindings: Env; Variables: { store: D1Store; engineStore: EngineStore; user?: any } }>();
+
+// Inject Stores
 app.use("/api/*", async (c, next) => {
   c.set("store", new D1Store(c.env.DB));
+  c.set("engineStore", new EngineStore(c.env.DB));
   await next();
 });
 
@@ -476,505 +467,157 @@ app.get("/api/admin/overview", async (c) => {
   });
 });
 
-// ═══════════════════════════════════════════════════════════════
-// ── Dynamic Tournament Engine Routes (/api/engine/*) ──
-// ═══════════════════════════════════════════════════════════════
+// --- Tournament Engine Routes ---
 
-// --- Add team (SETUP or GROUP phase) ---
-app.post("/api/engine/tournaments/:id/teams", async (c) => {
-  const engineStore = new EngineStore(c.env.DB);
+app.get("/api/engine/tournaments/:id/state", async (c) => {
+  const engineStore = c.get("engineStore");
+  const tournamentId = c.req.param("id");
+  
+  const [teams, matches, tournament] = await Promise.all([
+    engineStore.getTeams(tournamentId),
+    engineStore.getMatches(tournamentId),
+    c.get("store").getTournament(tournamentId)
+  ]);
+
+  if (!tournament) return c.json({ ok: false, message: "Tournament not found" }, 404);
+
+  return c.json({
+    ok: true,
+    phase: tournament.status as Engine.TournamentPhase,
+    teams,
+    matches
+  });
+});
+
+app.post("/api/engine/tournaments/:id/add-team", async (c) => {
+  const engineStore = c.get("engineStore");
   const tournamentId = c.req.param("id");
   const body = await c.req.json();
-
-  if (!body.name || typeof body.name !== "string" || body.name.trim().length === 0) {
-    return c.json({ ok: false, message: "Team name is required" }, 400);
+  
+  const tournament = await c.get("store").getTournament(tournamentId);
+  if (!tournament) return c.json({ ok: false, message: "Tournament not found" }, 404);
+  
+  if (tournament.status !== 'GROUP' && tournament.status !== 'open') {
+    return c.json({ ok: false, message: "Can only add teams during GROUP or SETUP phase" }, 400);
   }
 
-  const phase = await engineStore.getTournamentPhase(tournamentId);
-  if (!phase) return c.json({ ok: false, message: "Tournament not found" }, 404);
-
-  const liveMatch = await engineStore.getLiveMatch(tournamentId);
-  const check = canAddTeam(phase, !!liveMatch);
-  if (!check.allowed) {
-    return c.json({ ok: false, message: check.reason }, 400);
+  const matches = await engineStore.getMatches(tournamentId);
+  if (matches.some(m => m.status === 'LIVE')) {
+    return c.json({ ok: false, message: "Cannot add teams while a match is LIVE" }, 400);
   }
 
-  const team = await engineStore.createEngineTeam(tournamentId, body.name.trim());
+  const team = await engineStore.createTeam(tournamentId, body.name || `Team ${Math.floor(Math.random()*1000)}`);
   return c.json({ ok: true, team });
 });
 
-// --- Start tournament (SETUP → GROUP) ---
 app.post("/api/engine/tournaments/:id/start", async (c) => {
-  const engineStore = new EngineStore(c.env.DB);
+  const engineStore = c.get("engineStore");
   const tournamentId = c.req.param("id");
-
-  const phase = await engineStore.getTournamentPhase(tournamentId);
-  if (!phase) return c.json({ ok: false, message: "Tournament not found" }, 404);
-
-  // Allow starting from SETUP or 'open' (the default status from create)
-  if (phase !== "SETUP" && phase !== "open") {
-    return c.json({ ok: false, message: `Cannot start tournament in ${phase} phase` }, 400);
-  }
-
-  const teams = await engineStore.getEngineTeams(tournamentId);
-  if (teams.length < 2) {
-    return c.json({ ok: false, message: "Need at least 2 teams to start" }, 400);
-  }
-
-  // Transition to GROUP
-  await engineStore.setTournamentPhase(tournamentId, "GROUP");
-
-  // Generate first round of matches
-  const matchups = await engineStore.getMatchups(tournamentId);
-  const round = generateNextMatches(teams, matchups, 2);
-  let matchOrder = 0;
-  const body = await c.req.json().catch(() => ({}));
-  const duration = body.duration || 600;
-
-  // Handle BYE
-  if (round.bye) {
-    await engineStore.incrementTeamStats(round.bye.teamId, 1, 1, 0);
-    await engineStore.updateEngineTeam(round.bye.teamId, { bye_assigned: 1 });
-  }
-
-  // Create matches
-  const createdMatches = [];
-  for (const [teamAId, teamBId] of round.matches) {
-    matchOrder++;
-    const teamA = teams.find(t => t.id === teamAId)!;
-    const teamB = teams.find(t => t.id === teamBId)!;
-
-    const explanation = generateExplanation("GROUP", {
-      maxPerTeam: 2,
-      byeTeamName: round.bye?.teamName,
-      teamAName: teamA.name,
-      teamBName: teamB.name,
-    });
-
-    const match = await engineStore.createEngineMatch({
-      tournamentId, phase: "GROUP",
-      teamAId, teamBId,
-      duration, matchOrder, explanation,
-    });
-    await engineStore.createMatchup(tournamentId, teamAId, teamBId, match.id);
-    createdMatches.push(match);
-  }
-
-  const updatedTeams = await engineStore.getEngineTeams(tournamentId);
-  return c.json({
-    ok: true,
-    phase: "GROUP",
-    teams: updatedTeams,
-    matches: createdMatches,
-    bye: round.bye,
-  });
+  
+  await engineStore.updateTournamentPhase(tournamentId, 'GROUP');
+  return c.json({ ok: true });
 });
 
-// --- Get full engine state ---
-app.get("/api/engine/tournaments/:id/state", async (c) => {
-  const engineStore = new EngineStore(c.env.DB);
-  const tournamentId = c.req.param("id");
-
-  const phase = await engineStore.getTournamentPhase(tournamentId);
-  if (!phase) return c.json({ ok: false, message: "Tournament not found" }, 404);
-
-  const teams = await engineStore.getEngineTeams(tournamentId);
-  const matches = await engineStore.getEngineMatches(tournamentId);
-  const liveMatch = await engineStore.getLiveMatch(tournamentId);
-  const nextMatch = liveMatch ? null : await engineStore.getNextCreatedMatch(tournamentId);
-
-  // Compute timer for live match
-  let timerState = null;
-  if (liveMatch && liveMatch.start_time) {
-    timerState = computeTimerState(liveMatch.start_time, liveMatch.duration);
-  }
-
-  // Get team names map for match display
-  const teamMap: Record<string, string> = {};
-  for (const t of teams) teamMap[t.id] = t.name;
-
-  // Enrich matches with team names
-  const enrichedMatches = matches.map(m => ({
-    ...m,
-    teamAName: teamMap[m.team_a_id] || "Unknown",
-    teamBName: teamMap[m.team_b_id] || "Unknown",
-    winnerName: m.winner_id ? (teamMap[m.winner_id] || "Unknown") : null,
-  }));
-
-  return c.json({
-    ok: true,
-    phase,
-    teams,
-    matches: enrichedMatches,
-    liveMatch: liveMatch ? {
-      ...liveMatch,
-      teamAName: teamMap[liveMatch.team_a_id] || "Unknown",
-      teamBName: teamMap[liveMatch.team_b_id] || "Unknown",
-      timer: timerState,
-    } : null,
-    nextMatch: nextMatch ? {
-      ...nextMatch,
-      teamAName: teamMap[nextMatch.team_a_id] || "Unknown",
-      teamBName: teamMap[nextMatch.team_b_id] || "Unknown",
-    } : null,
-  });
-});
-
-// --- Generate next matches ---
 app.post("/api/engine/tournaments/:id/generate", async (c) => {
-  const engineStore = new EngineStore(c.env.DB);
+  const engineStore = c.get("engineStore");
   const tournamentId = c.req.param("id");
+  
+  const [teams, matchups, matches] = await Promise.all([
+    engineStore.getTeams(tournamentId),
+    engineStore.getMatchups(tournamentId),
+    engineStore.getMatches(tournamentId)
+  ]);
 
-  const phase = await engineStore.getTournamentPhase(tournamentId);
-  if (phase !== "GROUP") {
-    return c.json({ ok: false, message: "Can only generate matches during GROUP phase" }, 400);
+  if (matches.some(m => m.status === 'LIVE')) {
+    return c.json({ ok: false, message: "Cannot generate matches while a match is LIVE" }, 400);
   }
 
-  const liveMatch = await engineStore.getLiveMatch(tournamentId);
-  if (liveMatch) {
-    return c.json({ ok: false, message: "Cannot generate while a match is live" }, 400);
+  const { matches: nextMatches, byeTeamId } = Engine.generateNextMatches(teams, matchups);
+  
+  for (const mData of nextMatches) {
+    const match = await engineStore.createMatch(tournamentId, mData);
+    await engineStore.createMatchup(tournamentId, match.team_a_id, match.team_b_id, match.id);
   }
 
-  const teams = await engineStore.getEngineTeams(tournamentId);
-  const matchups = await engineStore.getMatchups(tournamentId);
-  const round = generateNextMatches(teams, matchups, 2);
-
-  if (round.done) {
-    return c.json({ ok: true, done: true, message: "All group matches complete", matches: [] });
+  if (byeTeamId) {
+    const team = teams.find(t => t.id === byeTeamId);
+    if (team) {
+      await engineStore.updateTeam(byeTeamId, {
+        matches_played: team.matches_played + 1,
+        group_points: team.group_points + 1,
+        bye_assigned: true
+      });
+    }
   }
 
-  let matchOrder = await engineStore.getMaxMatchOrder(tournamentId);
-  const body = await c.req.json().catch(() => ({}));
-  const duration = body.duration || 600;
-
-  // Handle BYE
-  if (round.bye) {
-    await engineStore.incrementTeamStats(round.bye.teamId, 1, 1, 0);
-    await engineStore.updateEngineTeam(round.bye.teamId, { bye_assigned: 1 });
-  }
-
-  const createdMatches = [];
-  for (const [teamAId, teamBId] of round.matches) {
-    matchOrder++;
-    const teamA = teams.find(t => t.id === teamAId)!;
-    const teamB = teams.find(t => t.id === teamBId)!;
-
-    const explanation = generateExplanation("GROUP", {
-      maxPerTeam: 2,
-      byeTeamName: round.bye?.teamName,
-      teamAName: teamA.name,
-      teamBName: teamB.name,
-    });
-
-    const match = await engineStore.createEngineMatch({
-      tournamentId, phase: "GROUP",
-      teamAId, teamBId,
-      duration, matchOrder, explanation,
-    });
-    await engineStore.createMatchup(tournamentId, teamAId, teamBId, match.id);
-    createdMatches.push(match);
-  }
-
-  return c.json({
-    ok: true,
-    done: false,
-    matches: createdMatches,
-    bye: round.bye,
-  });
+  return c.json({ ok: true, matchesCreated: nextMatches.length, byeAssigned: !!byeTeamId });
 });
 
-// --- Start a match (CREATED → LIVE) ---
 app.post("/api/engine/matches/:id/start", async (c) => {
-  const engineStore = new EngineStore(c.env.DB);
+  const engineStore = c.get("engineStore");
   const matchId = c.req.param("id");
-  const match = await engineStore.getEngineMatch(matchId);
-
+  
+  const match = await engineStore.getMatch(matchId);
   if (!match) return c.json({ ok: false, message: "Match not found" }, 404);
-  if (match.status !== "CREATED") {
-    return c.json({ ok: false, message: `Match is ${match.status}, not CREATED` }, 400);
+
+  const allMatches = await engineStore.getMatches(match.tournamentId);
+  if (allMatches.some(m => m.status === 'LIVE')) {
+    return c.json({ ok: false, message: "Another match is already LIVE" }, 400);
   }
 
-  // Check no other live match exists
-  const liveMatch = await engineStore.getLiveMatch(match.tournament_id);
-  if (liveMatch) {
-    return c.json({ ok: false, message: "Another match is already live" }, 400);
-  }
-
-  const startTime = Math.floor(Date.now() / 1000);
-  await engineStore.updateEngineMatch(matchId, {
-    status: "LIVE",
-    start_time: startTime,
+  await engineStore.updateMatch(matchId, {
+    status: 'LIVE',
+    start_time: Math.floor(Date.now() / 1000)
   });
 
-  const updated = await engineStore.getEngineMatch(matchId);
-  return c.json({ ok: true, match: updated });
+  return c.json({ ok: true });
 });
 
-// --- Score event ---
 app.post("/api/engine/matches/:id/score", async (c) => {
-  const engineStore = new EngineStore(c.env.DB);
+  const engineStore = c.get("engineStore");
   const matchId = c.req.param("id");
-  const match = await engineStore.getEngineMatch(matchId);
-
-  if (!match) return c.json({ ok: false, message: "Match not found" }, 404);
-  if (match.status !== "LIVE" && match.status !== "SUDDEN_DEATH") {
-    return c.json({ ok: false, message: "Match is not live" }, 400);
-  }
-
   const body = await c.req.json();
-  const { team, type } = body as { team: "A" | "B"; type: "ball" | "black" | "mistake" };
+  const { teamId, points } = body;
 
-  if (!team || !type) {
-    return c.json({ ok: false, message: "team (A/B) and type (ball/black/mistake) required" }, 400);
-  }
-
-  const points = getScorePoints(type);
-  const scoreSide = getScoreSide(team, type);
-  const result = processScoreEvent(match, scoreSide, points);
-
-  const updates: Record<string, any> = {
-    score_team_a: result.scoreTeamA,
-    score_team_b: result.scoreTeamB,
-  };
-
-  if (result.ended) {
-    updates.status = "COMPLETED";
-    updates.winner_id = result.winner;
-    updates.ended_by = result.endedBy;
-  }
-
-  await engineStore.updateEngineMatch(matchId, updates);
-
-  // Auto-progression on match end
-  if (result.ended) {
-    await handleMatchCompletion(engineStore, match, result);
-  }
-
-  return c.json({ ok: true, ...result });
-});
-
-// --- Force end match ---
-app.post("/api/engine/matches/:id/end", async (c) => {
-  const engineStore = new EngineStore(c.env.DB);
-  const matchId = c.req.param("id");
-  const match = await engineStore.getEngineMatch(matchId);
-
+  let match = await engineStore.getMatch(matchId);
   if (!match) return c.json({ ok: false, message: "Match not found" }, 404);
-  if (match.status === "COMPLETED") {
-    return c.json({ ok: false, message: "Match already completed" }, 400);
-  }
 
-  // Determine winner by current scores
-  let winnerId: string | null = null;
-  if (match.score_team_a > match.score_team_b) winnerId = match.team_a_id;
-  else if (match.score_team_b > match.score_team_a) winnerId = match.team_b_id;
-  // If tied and force-ending, pick team A as default (host override)
-  else winnerId = match.team_a_id;
+  // Check timer first
+  const { updatedMatch: timedMatch, matchEnded: timerEnded } = Engine.checkTimer(match, Math.floor(Date.now() / 1000));
+  match = timedMatch;
 
-  await engineStore.updateEngineMatch(matchId, {
-    status: "COMPLETED",
-    winner_id: winnerId,
-    ended_by: "TIME",
+  const { updatedMatch: finalMatch, matchEnded: scoreEnded } = Engine.processScoreUpdate(match, teamId, points);
+  
+  await engineStore.updateMatch(matchId, {
+    score_team_a: finalMatch.score_team_a,
+    score_team_b: finalMatch.score_team_b,
+    status: finalMatch.status,
+    winner_id: finalMatch.winner_id,
+    sudden_death: finalMatch.sudden_death
   });
 
-  const result = {
-    scoreTeamA: match.score_team_a,
-    scoreTeamB: match.score_team_b,
-    ended: true,
-    winner: winnerId,
-    endedBy: "TIME" as string | null,
-  };
+  if (timerEnded || scoreEnded) {
+    // Finalize team stats
+    const teams = await engineStore.getTeams(finalMatch.tournamentId);
+    const teamA = teams.find(t => t.id === finalMatch.team_a_id)!;
+    const teamB = teams.find(t => t.id === finalMatch.team_b_id)!;
 
-  await handleMatchCompletion(engineStore, match, result);
-
-  return c.json({ ok: true, ...result });
-});
-
-// --- Get timer state ---
-app.get("/api/engine/matches/:id/timer", async (c) => {
-  const engineStore = new EngineStore(c.env.DB);
-  const matchId = c.req.param("id");
-  const match = await engineStore.getEngineMatch(matchId);
-
-  if (!match) return c.json({ ok: false, message: "Match not found" }, 404);
-
-  if (!match.start_time) {
-    return c.json({ ok: true, remaining: match.duration, expired: false, danger: false, started: false });
-  }
-
-  const timer = computeTimerState(match.start_time, match.duration);
-  return c.json({ ok: true, ...timer, started: true, suddenDeath: !!match.sudden_death });
-});
-
-// --- Check timer expiry (server-side resolution) ---
-app.post("/api/engine/matches/:id/check-timer", async (c) => {
-  const engineStore = new EngineStore(c.env.DB);
-  const matchId = c.req.param("id");
-  const match = await engineStore.getEngineMatch(matchId);
-
-  if (!match) return c.json({ ok: false, message: "Match not found" }, 404);
-  if (match.status !== "LIVE") {
-    return c.json({ ok: true, action: "none", reason: "Match is not LIVE" });
-  }
-  if (!match.start_time) {
-    return c.json({ ok: true, action: "none", reason: "Match has no start time" });
-  }
-
-  const timer = computeTimerState(match.start_time, match.duration);
-  if (!timer.expired) {
-    return c.json({ ok: true, action: "none", remaining: timer.remaining });
-  }
-
-  // Timer expired — resolve
-  const expiry = resolveTimerExpiry(match);
-
-  if (expiry.suddenDeath) {
-    // Tie → enter sudden death
-    await engineStore.updateEngineMatch(matchId, {
-      status: "SUDDEN_DEATH",
-      sudden_death: 1,
+    await engineStore.updateTeam(teamA.id, {
+      matches_played: teamA.matches_played + 1,
+      total_score: teamA.total_score + finalMatch.score_team_a,
+      group_points: teamA.group_points + (finalMatch.winner_id === teamA.id ? 1 : 0)
     });
-    return c.json({ ok: true, action: "sudden_death" });
+    await engineStore.updateTeam(teamB.id, {
+      matches_played: teamB.matches_played + 1,
+      total_score: teamB.total_score + finalMatch.score_team_b,
+      group_points: teamB.group_points + (finalMatch.winner_id === teamB.id ? 1 : 0)
+    });
   }
 
-  // Winner determined by score
-  await engineStore.updateEngineMatch(matchId, {
-    status: "COMPLETED",
-    winner_id: expiry.winner,
-    ended_by: expiry.endedBy,
-  });
-
-  const result = {
-    scoreTeamA: match.score_team_a,
-    scoreTeamB: match.score_team_b,
-    ended: true,
-    winner: expiry.winner,
-    endedBy: expiry.endedBy,
-  };
-
-  await handleMatchCompletion(engineStore, match, result);
-
-  return c.json({ ok: true, action: "completed", ...result });
+  return c.json({ ok: true, match: finalMatch });
 });
 
-// --- Add team mid-tournament ---
-app.post("/api/engine/tournaments/:id/add-team", async (c) => {
-  const engineStore = new EngineStore(c.env.DB);
-  const tournamentId = c.req.param("id");
-  const body = await c.req.json();
-
-  if (!body.name || typeof body.name !== "string" || body.name.trim().length === 0) {
-    return c.json({ ok: false, message: "Team name is required" }, 400);
-  }
-
-  const phase = await engineStore.getTournamentPhase(tournamentId);
-  if (!phase) return c.json({ ok: false, message: "Tournament not found" }, 404);
-
-  const liveMatch = await engineStore.getLiveMatch(tournamentId);
-  const check = canAddTeam(phase, !!liveMatch);
-  if (!check.allowed) {
-    return c.json({ ok: false, message: check.reason }, 400);
-  }
-
-  const team = await engineStore.createEngineTeam(tournamentId, body.name.trim());
-  return c.json({ ok: true, team, message: "Team added. Generate new matches when ready." });
-});
-
-// ── Auto-progression handler ──
-async function handleMatchCompletion(
-  store: EngineStore,
-  match: { id: string; tournament_id: string; phase: string; team_a_id: string; team_b_id: string },
-  result: { scoreTeamA: number; scoreTeamB: number; winner: string | null; endedBy: string | null }
-) {
-  if (!result.winner) return;
-
-  const winnerId = result.winner;
-  const loserId = winnerId === match.team_a_id ? match.team_b_id : match.team_a_id;
-  const winnerScore = winnerId === match.team_a_id ? result.scoreTeamA : result.scoreTeamB;
-  const loserScore = winnerId === match.team_a_id ? result.scoreTeamB : result.scoreTeamA;
-
-  // Update team stats
-  await store.incrementTeamStats(winnerId, 1, 1, winnerScore);
-  await store.incrementTeamStats(loserId, 1, 0, loserScore);
-
-  const teams = await store.getEngineTeams(match.tournament_id);
-
-  if (match.phase === "GROUP") {
-    // Check if all teams completed their group matches
-    const allDone = teams.every(t => t.matches_played >= 2);
-
-    if (allDone) {
-      // Transition to KNOCKOUT
-      await store.setTournamentPhase(match.tournament_id, "KNOCKOUT");
-
-      // Rank teams and generate knockout bracket
-      const matches = await store.getEngineMatches(match.tournament_id);
-      const ranked = rankTeams(teams, matches);
-      const bracket = generateKnockoutBracket(ranked);
-      let matchOrder = await store.getMaxMatchOrder(match.tournament_id);
-
-      // Create semi-final matches
-      for (const [teamAId, teamBId] of bracket.semis) {
-        matchOrder++;
-        const teamA = teams.find(t => t.id === teamAId)!;
-        const teamB = teams.find(t => t.id === teamBId)!;
-        const explanation = generateExplanation("SEMI", {
-          maxPerTeam: 2, teamAName: teamA.name, teamBName: teamB.name,
-        });
-        await store.createEngineMatch({
-          tournamentId: match.tournament_id, phase: "SEMI",
-          teamAId, teamBId, duration: 600, matchOrder, explanation,
-        });
-      }
-
-      // Create final matches (if direct final, i.e., 2-3 teams)
-      for (const [teamAId, teamBId] of bracket.finals) {
-        matchOrder++;
-        const teamA = teams.find(t => t.id === teamAId)!;
-        const teamB = teams.find(t => t.id === teamBId)!;
-        const explanation = generateExplanation("FINAL", {
-          maxPerTeam: 2, teamAName: teamA.name, teamBName: teamB.name,
-        });
-        await store.createEngineMatch({
-          tournamentId: match.tournament_id, phase: "FINAL",
-          teamAId, teamBId, duration: 600, matchOrder, explanation,
-        });
-      }
-    }
-    // If not all done, host will manually generate next matches
-  } else if (match.phase === "SEMI") {
-    // Check if both semis are done
-    const semiMatches = await store.getEngineMatchesByPhase(match.tournament_id, "SEMI");
-    const allSemisDone = semiMatches.every(m => m.status === "COMPLETED");
-
-    if (allSemisDone) {
-      // Create the final match from semi winners
-      const semiWinners = semiMatches
-        .filter(m => m.winner_id)
-        .map(m => m.winner_id!);
-
-      if (semiWinners.length === 2) {
-        let matchOrder = await store.getMaxMatchOrder(match.tournament_id);
-        matchOrder++;
-        const teamA = teams.find(t => t.id === semiWinners[0])!;
-        const teamB = teams.find(t => t.id === semiWinners[1])!;
-        const explanation = generateExplanation("FINAL", {
-          maxPerTeam: 2, teamAName: teamA.name, teamBName: teamB.name,
-        });
-        await store.createEngineMatch({
-          tournamentId: match.tournament_id, phase: "FINAL",
-          teamAId: semiWinners[0], teamBId: semiWinners[1],
-          duration: 600, matchOrder, explanation,
-        });
-      }
-    }
-  } else if (match.phase === "FINAL") {
-    // Tournament complete!
-    await store.setTournamentPhase(match.tournament_id, "COMPLETED");
-  }
-}
-
-// Unmatched routes
+// --- Original Routes ---
 app.all("*", (c) => {
   return c.json({ ok: false, message: "Not Found" }, 404);
 });

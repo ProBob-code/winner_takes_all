@@ -1,14 +1,14 @@
 -- Dynamic Tournament Engine Schema
--- Run with: wrangler d1 execute winner-takes-all-db --file=./tournament_engine_schema.sql
+-- Additive tables for state-driven tournament flow
 
 CREATE TABLE IF NOT EXISTS engine_teams (
   id TEXT PRIMARY KEY,
   tournament_id TEXT NOT NULL,
   name TEXT NOT NULL,
-  matches_played INTEGER NOT NULL DEFAULT 0,
-  group_points INTEGER NOT NULL DEFAULT 0,
-  total_score INTEGER NOT NULL DEFAULT 0,
-  bye_assigned INTEGER NOT NULL DEFAULT 0,
+  matches_played INTEGER DEFAULT 0,
+  group_points INTEGER DEFAULT 0,    -- Count of wins
+  total_score INTEGER DEFAULT 0,     -- Tie-breaker (sum of match scores)
+  bye_assigned INTEGER DEFAULT 0,    -- 0 or 1
   created_at TEXT NOT NULL,
   FOREIGN KEY (tournament_id) REFERENCES tournaments(id)
 );
@@ -16,19 +16,18 @@ CREATE TABLE IF NOT EXISTS engine_teams (
 CREATE TABLE IF NOT EXISTS engine_matches (
   id TEXT PRIMARY KEY,
   tournament_id TEXT NOT NULL,
-  phase TEXT NOT NULL DEFAULT 'GROUP',
+  phase TEXT NOT NULL DEFAULT 'GROUP', -- GROUP | SEMI | FINAL
   team_a_id TEXT NOT NULL,
   team_b_id TEXT NOT NULL,
-  status TEXT NOT NULL DEFAULT 'CREATED',
-  start_time INTEGER,
-  duration INTEGER NOT NULL DEFAULT 600,
-  score_team_a INTEGER NOT NULL DEFAULT 0,
-  score_team_b INTEGER NOT NULL DEFAULT 0,
+  status TEXT NOT NULL DEFAULT 'CREATED', -- CREATED | LIVE | COMPLETED
+  sudden_death INTEGER DEFAULT 0,         -- 1 if in sudden death
+  start_time INTEGER,                      -- Unix timestamp
+  duration INTEGER DEFAULT 600,            -- seconds
+  score_team_a INTEGER DEFAULT 0,
+  score_team_b INTEGER DEFAULT 0,
   winner_id TEXT,
-  ended_by TEXT,
-  sudden_death INTEGER NOT NULL DEFAULT 0,
-  match_order INTEGER NOT NULL DEFAULT 0,
-  explanation TEXT,
+  ended_by TEXT,                           -- 'TIME' | 'SCORE'
+  explanation TEXT,                        -- Host guidance
   created_at TEXT NOT NULL,
   FOREIGN KEY (tournament_id) REFERENCES tournaments(id),
   FOREIGN KEY (team_a_id) REFERENCES engine_teams(id),
