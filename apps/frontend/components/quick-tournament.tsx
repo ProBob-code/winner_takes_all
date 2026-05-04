@@ -18,6 +18,7 @@ export function QuickTournament() {
   const [matchesPerTeam, setMatchesPerTeam] = useState(2);
   const [tournamentType, setTournamentType] = useState<'GROUP' | 'KNOCKOUT'>('GROUP');
   const [arenaName, setArenaName] = useState("Stadium Arena Showdown");
+  const [isPublishing, setIsPublishing] = useState(false);
 
   // Sync with LocalStorage
   useEffect(() => {
@@ -108,6 +109,23 @@ export function QuickTournament() {
     }
   };
 
+  const publishArena = async () => {
+    setIsPublishing(true);
+    const id = arenaId || Math.random().toString(36).substr(2, 8).toUpperCase();
+    try {
+      await backendFetch("/public-arenas", {
+        method: "POST",
+        body: JSON.stringify({ id, name: arenaName, state: { teams, matches, isStarted } })
+      });
+      setArenaId(id);
+      alert(`Arena Published! Share this link:\n${window.location.origin}/arena/${id}`);
+    } catch (e) {
+      alert("Failed to publish.");
+    } finally {
+      setIsPublishing(false);
+    }
+  };
+
   const startTournament = () => {
     const initial = generateMatchesPass(teams, []);
     setMatches(initial);
@@ -148,64 +166,104 @@ export function QuickTournament() {
     </div>
   );
 
-  if (!isStarted) {
     return (
       <div className="setup-view slide-in" style={{ paddingBottom: '5rem' }}>
-        <div className="standings-card" style={{ padding: '3rem', maxWidth: '800px', margin: '0 auto' }}>
-          <h2 className="glow-text" style={{ fontSize: '2.5rem', textAlign: 'center', marginBottom: '2rem' }}>Arena Setup</h2>
+        <div className="setup-card animate-in">
+          <div className="setup-header">
+            <h1 className="glow-text">Arena Engine</h1>
+            <p className="muted">Configure your high-stakes showdown parameters.</p>
+          </div>
           
-          <div className="setup-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '3rem' }}>
-            {/* Left: Settings */}
-            <div className="settings-panel">
-              <div className="form-group mb-8">
-                <label className="section-label">ARENA NAME</label>
-                <input className="premium-input" value={arenaName} onChange={e => setArenaName(e.target.value)} placeholder="e.g. Friday Showdown" />
+          <div className="setup-grid">
+            {/* Settings Section */}
+            <div className="setup-section">
+              <div className="form-group">
+                <label className="section-label-v2">ARENA IDENTITY</label>
+                <input 
+                  className="premium-input-v2" 
+                  value={arenaName} 
+                  onChange={e => setArenaName(e.target.value)} 
+                  placeholder="e.g. Midnight Championship" 
+                />
               </div>
 
-              <div className="form-group mb-8">
-                <label className="section-label">FORMAT</label>
-                <div className="tab-switcher-v2" style={{ padding: '4px' }}>
-                  <button className={`tab-btn ${tournamentType === 'GROUP' ? 'active' : ''}`} onClick={() => setTournamentType('GROUP')} style={{ flex: 1 }}>GROUP STAGE</button>
-                  <button className={`tab-btn ${tournamentType === 'KNOCKOUT' ? 'active' : ''}`} onClick={() => setTournamentType('KNOCKOUT')} style={{ flex: 1 }}>KNOCKOUT</button>
+              <div className="form-group mt-10">
+                <label className="section-label-v2">TOURNAMENT FORMAT</label>
+                <div className="segmented-control">
+                  <button 
+                    className={`segment-btn ${tournamentType === 'GROUP' ? 'active' : ''}`} 
+                    onClick={() => setTournamentType('GROUP')}
+                  >
+                    GROUP STAGE
+                  </button>
+                  <button 
+                    className={`segment-btn ${tournamentType === 'KNOCKOUT' ? 'active' : ''}`} 
+                    onClick={() => setTournamentType('KNOCKOUT')}
+                  >
+                    KNOCKOUT
+                  </button>
                 </div>
               </div>
 
               {tournamentType === 'GROUP' && (
-                <div className="form-group">
-                  <label className="section-label">MATCHES PER TEAM</label>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', background: 'rgba(255,255,255,0.05)', padding: '0.5rem 1rem', borderRadius: '15px', justifyContent: 'center' }}>
-                    <button className="q-btn" onClick={() => setMatchesPerTeam(Math.max(1, matchesPerTeam - 1))}>-</button>
-                    <span style={{ fontSize: '1.5rem', fontWeight: 900, minWidth: '40px', textAlign: 'center' }}>{matchesPerTeam}</span>
-                    <button className="q-btn" onClick={() => setMatchesPerTeam(matchesPerTeam + 1)}>+</button>
+                <div className="form-group mt-10">
+                  <label className="section-label-v2">MATCH QUOTA <span className="dim">(Per Team)</span></label>
+                  <div className="quota-stepper">
+                    <button className="step-btn" onClick={() => setMatchesPerTeam(Math.max(1, matchesPerTeam - 1))}>−</button>
+                    <div className="quota-display">
+                      <span className="quota-val">{matchesPerTeam}</span>
+                      <span className="quota-unit">MATCHES</span>
+                    </div>
+                    <button className="step-btn" onClick={() => setMatchesPerTeam(matchesPerTeam + 1)}>+</button>
                   </div>
                 </div>
               )}
             </div>
 
-            {/* Right: Teams */}
-            <div className="teams-panel">
-              <label className="section-label">ROSTER</label>
-              <div className="team-input-row mb-4">
-                <input placeholder="Add name..." value={newTeamName} onChange={e => setNewTeamName(e.target.value)} onKeyPress={e => e.key === 'Enter' && addTeam()} />
-                <button className="button button-primary" onClick={addTeam}>ADD</button>
+            {/* Roster Section */}
+            <div className="setup-section roster-panel">
+              <label className="section-label-v2">PARTICIPANT ROSTER</label>
+              <div className="roster-input-wrapper">
+                <input 
+                  className="premium-input-v2"
+                  placeholder="Enter Team/Player name..." 
+                  value={newTeamName} 
+                  onChange={e => setNewTeamName(e.target.value)} 
+                  onKeyPress={e => e.key === 'Enter' && addTeam()} 
+                />
+                <button className="add-roster-btn" onClick={addTeam}>ADD</button>
               </div>
-              <div className="team-list-scroll" style={{ maxHeight: '200px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                {teams.map(t => (
-                  <div key={t.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.03)', padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                    <span style={{ fontWeight: 700 }}>{t.name}</span>
-                    <button onClick={() => setTeams(teams.filter(x => x.id !== t.id))} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 900 }}>×</button>
+              
+              <div className="roster-list-container">
+                {teams.length > 0 ? (
+                  <div className="roster-scroll">
+                    {teams.map((t, idx) => (
+                      <div key={t.id} className="roster-item slide-in" style={{ animationDelay: `${idx * 0.05}s` }}>
+                        <div className="roster-idx">{String(idx + 1).padStart(2, '0')}</div>
+                        <div className="roster-name">{t.name}</div>
+                        <button className="remove-btn" onClick={() => setTeams(teams.filter(x => x.id !== t.id))}>REMOVE</button>
+                      </div>
+                    ))}
                   </div>
-                ))}
-                {teams.length === 0 && <p className="muted" style={{ textAlign: 'center', padding: '2rem' }}>No players added yet.</p>}
+                ) : (
+                  <div className="empty-roster">
+                    <div className="empty-roster-icon">⚔️</div>
+                    <p>No warriors added yet</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
 
-          <div style={{ marginTop: '4rem' }}>
-            <button className="button button-gold btn-glow" style={{ width: '100%', padding: '1.5rem', fontSize: '1.1rem' }} onClick={startTournament} disabled={teams.length < 2}>
-              LAUNCH ARENA ENGINE
+          <div className="setup-footer">
+            <button 
+              className={`launch-btn ${teams.length >= 2 ? 'ready' : 'disabled'}`}
+              onClick={startTournament} 
+              disabled={teams.length < 2}
+            >
+              <span className="launch-text">{teams.length >= 2 ? 'INITIALIZE STADIUM ENGINE' : 'ADD MINIMUM 2 TEAMS'}</span>
+              <div className="launch-glow"></div>
             </button>
-            <p className="muted" style={{ textAlign: 'center', marginTop: '1rem', fontSize: '0.8rem' }}>Requires minimum 2 teams to start.</p>
           </div>
         </div>
       </div>
@@ -223,6 +281,9 @@ export function QuickTournament() {
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           <button className={`button button-sm ${activeSubTab === 'arena' ? 'button-primary' : 'button-secondary'}`} onClick={() => setActiveSubTab('arena')}>ARENA</button>
           <button className={`button button-sm ${activeSubTab === 'standings' ? 'button-primary' : 'button-secondary'}`} onClick={() => setActiveSubTab('standings')}>STANDINGS</button>
+          <button className={`button button-sm ${arenaId ? 'button-gold' : 'button-secondary'}`} onClick={publishArena} disabled={isPublishing}>
+            {isPublishing ? 'PUBLISHING...' : arenaId ? '✅ SHARED' : '🔗 SHARE'}
+          </button>
           <button className="button button-sm" style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444' }} onClick={reset}>RESET</button>
         </div>
       </div>

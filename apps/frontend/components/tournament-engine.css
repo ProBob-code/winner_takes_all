@@ -207,3 +207,242 @@
 
 .f-score { font-size: 3rem; font-weight: 900; }
 .f-name { font-size: 0.8rem; opacity: 0.5; }
+
+/* Arena Setup Revamp (Liquid Midnight) */
+.setup-card {
+  background: rgba(13, 17, 23, 0.6);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 32px;
+  padding: 3rem;
+  max-width: 1000px;
+  margin: 0 auto;
+  box-shadow: 0 40px 100px rgba(0,0,0,0.5);
+}
+
+.setup-header {
+  text-align: center;
+  margin-bottom: 4rem;
+}
+
+.setup-header h1 {
+  font-size: 3.5rem;
+  font-weight: 900;
+  margin-bottom: 0.5rem;
+  letter-spacing: -2px;
+}
+
+.setup-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 4rem;
+}
+
+.section-label-v2 {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 900;
+  letter-spacing: 2px;
+  color: var(--text-muted);
+  margin-bottom: 1rem;
+  text-transform: uppercase;
+}
+
+.section-label-v2 .dim { opacity: 0.4; font-weight: 400; }
+
+.premium-input-v2 {
+  width: 100%;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 16px;
+  padding: 1.25rem 1.5rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: white;
+  transition: all 0.3s ease;
+}
+
+.premium-input-v2:focus {
+  background: rgba(255,255,255,0.05);
+  border-color: var(--gold);
+  box-shadow: 0 0 20px rgba(245, 158, 11, 0.1);
+  outline: none;
+}
+
+.segmented-control {
+  display: flex;
+  background: rgba(255,255,255,0.03);
+  padding: 6px;
+  border-radius: 20px;
+  border: 1px solid rgba(255,255,255,0.05);
+}
+
+.segment-btn {
+  flex: 1;
+  padding: 1rem;
+  border-radius: 15px;
+  font-size: 0.8rem;
+  font-weight: 900;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.segment-btn.active {
+  background: var(--gradient-primary);
+  color: white;
+  box-shadow: 0 10px 20px rgba(139, 92, 246, 0.2);
+}
+
+.quota-stepper {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  background: rgba(255,255,255,0.03);
+  padding: 0.5rem;
+  border-radius: 20px;
+  border: 1px solid rgba(255,255,255,0.05);
+  justify-content: space-between;
+}
+
+.quota-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.quota-val { font-size: 2rem; font-weight: 900; line-height: 1; color: var(--gold); }
+.quota-unit { font-size: 0.6rem; font-weight: 800; opacity: 0.4; }
+
+.step-btn {
+  width: 50px;
+  height: 50px;
+  border-radius: 15px;
+  background: rgba(255,255,255,0.05);
+  font-size: 1.5rem;
+  font-weight: 300;
+  transition: all 0.2s ease;
+  border: none;
+  color: white;
+  cursor: pointer;
+}
+
+.step-btn:hover { background: rgba(255,255,255,0.1); color: var(--gold); }
+
+.roster-panel {
+  background: rgba(255,255,255,0.02);
+  border-radius: 24px;
+  padding: 2rem;
+  border: 1px solid rgba(255,255,255,0.03);
+}
+
+.roster-input-wrapper {
+  position: relative;
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+}
+
+.add-roster-btn {
+  background: var(--gold);
+  color: black;
+  font-weight: 900;
+  padding: 0 1.5rem;
+  border-radius: 16px;
+  transition: all 0.3s ease;
+  border: none;
+  cursor: pointer;
+}
+
+.add-roster-btn:hover { transform: scale(1.05); box-shadow: 0 0 20px rgba(245, 158, 11, 0.3); }
+
+.roster-list-container {
+  height: 300px;
+  background: rgba(0,0,0,0.2);
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.02);
+}
+
+.roster-scroll {
+  height: 100%;
+  overflow-y: auto;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.roster-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: rgba(255,255,255,0.03);
+  padding: 0.75rem 1.25rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.05);
+}
+
+.roster-idx { font-size: 0.75rem; font-weight: 900; opacity: 0.2; }
+.roster-name { flex: 1; font-weight: 700; font-size: 1rem; }
+.remove-btn { font-size: 0.65rem; font-weight: 900; color: #ef4444; opacity: 0.5; transition: 0.2s; background: none; border: none; cursor: pointer; }
+.remove-btn:hover { opacity: 1; }
+
+.empty-roster {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.2;
+}
+
+.empty-roster-icon { font-size: 3rem; margin-bottom: 1rem; }
+
+.setup-footer {
+  margin-top: 4rem;
+  text-align: center;
+}
+
+.launch-btn {
+  position: relative;
+  width: 100%;
+  padding: 1.75rem;
+  border-radius: 24px;
+  font-size: 1.2rem;
+  font-weight: 900;
+  letter-spacing: 1px;
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+  border: none;
+  cursor: pointer;
+}
+
+.launch-btn.ready {
+  background: var(--gold);
+  color: black;
+  box-shadow: 0 20px 40px rgba(245, 158, 11, 0.2);
+}
+
+.launch-btn.ready:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 30px 60px rgba(245, 158, 11, 0.4);
+}
+
+.launch-btn.disabled {
+  background: rgba(255,255,255,0.05);
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
+.launch-glow {
+  position: absolute;
+  top: 0; left: -100%;
+  width: 100%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  transition: 0.5s;
+}
+
+.launch-btn.ready:hover .launch-glow {
+  left: 100%;
+  transition: 0.8s;
+}
