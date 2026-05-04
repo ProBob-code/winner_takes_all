@@ -75,37 +75,54 @@ export function QuickTournament() {
     let currentMatches = [...existingMatches];
     
     if (tournamentType === 'GROUP') {
-      // SWISS-LITE / ROUND-ROBIN LITE: Match teams with fewest matches played first
-      const sortedTeams = [...allTeams].sort((a,b) => a.matches_played - b.matches_played);
-      
-      const paired = new Set<string>();
-      for (let i = 0; i < sortedTeams.length; i++) {
-        const t1 = sortedTeams[i];
-        if (paired.has(t1.id) || t1.matches_played >= matchesPerTeam) continue;
-
-        // Find best opponent: Hasn't played t1 yet, and has fewest matches played
-        const t2 = sortedTeams.find(potential => {
-          if (potential.id === t1.id || paired.has(potential.id) || potential.matches_played >= matchesPerTeam) return false;
-          // Check if they already played
-          const alreadyPlayed = currentMatches.some(m => 
-            (m.team_a_id === t1.id && m.team_b_id === potential.id) || 
-            (m.team_a_id === potential.id && m.team_b_id === t1.id)
-          );
-          return !alreadyPlayed;
+      let quotaReached = false;
+      while (!quotaReached) {
+        const sortedTeams = [...allTeams].sort((a,b) => {
+          const m1 = currentMatches.filter(m => m.team_a_id === a.id || m.team_b_id === a.id).length;
+          const m2 = currentMatches.filter(m => m.team_a_id === b.id || m.team_b_id === b.id).length;
+          return m1 - m2;
         });
 
-        if (t2) {
-          paired.add(t1.id); paired.add(t2.id);
-          newMatches.push({
-            id: `m-${Date.now()}-${i}`, team_a_id: t1.id, team_b_id: t2.id,
-            score_team_a: 0, score_team_b: 0, balls_potted_a: 0, balls_potted_b: 0,
-            black_potted_a: false, black_potted_b: false, status: 'CREATED',
-            winner_id: null, active_team_id: null, duration: 600, start_time: null,
-            order: currentMatches.length + newMatches.length,
-            team_a_house: 'SOLID', team_b_house: 'STRIPES',
-            fouls_a: 0, fouls_b: 0
+        let passCreated = false;
+        const pairedInThisPass = new Set<string>();
+
+        for (let i = 0; i < sortedTeams.length; i++) {
+          const t1 = sortedTeams[i];
+          const t1MatchCount = currentMatches.filter(m => m.team_a_id === t1.id || m.team_b_id === t1.id).length;
+          
+          if (pairedInThisPass.has(t1.id) || t1MatchCount >= matchesPerTeam) continue;
+
+          // Find best opponent
+          const t2 = sortedTeams.find(potential => {
+            if (potential.id === t1.id || pairedInThisPass.has(potential.id)) return false;
+            const t2MatchCount = currentMatches.filter(m => m.team_a_id === potential.id || m.team_b_id === potential.id).length;
+            if (t2MatchCount >= matchesPerTeam) return false;
+
+            // Check if they already played
+            const alreadyPlayed = currentMatches.some(m => 
+              (m.team_a_id === t1.id && m.team_b_id === potential.id) || 
+              (m.team_a_id === potential.id && m.team_b_id === t1.id)
+            );
+            return !alreadyPlayed;
           });
+
+          if (t2) {
+            pairedInThisPass.add(t1.id); pairedInThisPass.add(t2.id);
+            const m: Match = {
+              id: `m-${Date.now()}-${newMatches.length}`, team_a_id: t1.id, team_b_id: t2.id,
+              score_team_a: 0, score_team_b: 0, balls_potted_a: 0, balls_potted_b: 0,
+              black_potted_a: false, black_potted_b: false, status: 'CREATED',
+              winner_id: null, active_team_id: null, duration: 600, start_time: null,
+              order: currentMatches.length,
+              team_a_house: 'SOLID', team_b_house: 'STRIPES',
+              fouls_a: 0, fouls_b: 0
+            };
+            newMatches.push(m);
+            currentMatches.push(m);
+            passCreated = true;
+          }
         }
+        if (!passCreated) quotaReached = true;
       }
     } else {
       // Basic Knockout: Only works if powers of 2 for now, or just simple pairing
@@ -155,6 +172,20 @@ export function QuickTournament() {
     } finally {
       setIsPublishing(false);
     }
+  };
+
+  const addManualMatch = (t1Id: string, t2Id: string) => {
+    if (!t1Id || !t2Id || t1Id === t2Id) return;
+    const match: Match = {
+      id: `m-man-${Date.now()}`, team_a_id: t1Id, team_b_id: t2Id,
+      score_team_a: 0, score_team_b: 0, balls_potted_a: 0, balls_potted_b: 0,
+      black_potted_a: false, black_potted_b: false, status: 'CREATED',
+      winner_id: null, active_team_id: null, duration: 600, start_time: null,
+      order: matches.length,
+      team_a_house: 'SOLID', team_b_house: 'STRIPES',
+      fouls_a: 0, fouls_b: 0
+    };
+    setMatches([...matches, match]);
   };
 
   const startTournament = () => {
@@ -551,7 +582,7 @@ export function QuickTournament() {
                     <div className="s-rank">#{i+1}</div>
                     <div className="s-info">
                       <div className="s-pair">{getTeamName(m.team_a_id)} <span className="dim">vs</span> {getTeamName(m.team_b_id)}</div>
-                      <div className="s-meta">MATCH {m.order + 1} • GROUP STAGE</div>
+                      <div className="s-meta">MATCH {m.order + 1} • {tournamentType} STAGE</div>
                     </div>
                     <div className="s-actions">
                       <button className="s-btn" onClick={() => moveMatch(m.id, 'UP')}>↑</button>
@@ -560,7 +591,37 @@ export function QuickTournament() {
                     </div>
                   </div>
                 ))}
-                {createdMatches.length === 0 && <div className="empty-state">No matches scheduled</div>}
+                
+                <div className="manual-pairing-card mt-6 slide-in">
+                  <div className="p-header">
+                    <label className="section-label-v2">MANUAL DUEL CREATOR</label>
+                    <p className="p-muted">Hand-pick opponents and inject custom matches into the queue.</p>
+                  </div>
+                  <div className="p-grid">
+                    <div className="p-selectors">
+                      <select className="premium-input-v2 p-select" id="p1-select">
+                        <option value="">Select Team A</option>
+                        {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                      </select>
+                      <div className="vs-tiny">VS</div>
+                      <select className="premium-input-v2 p-select" id="p2-select">
+                        <option value="">Select Team B</option>
+                        {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                      </select>
+                    </div>
+                    <button className="button button-gold" onClick={() => {
+                      const p1 = (document.getElementById('p1-select') as HTMLSelectElement).value;
+                      const p2 = (document.getElementById('p2-select') as HTMLSelectElement).value;
+                      if (p1 && p2 && p1 !== p2) {
+                        addManualMatch(p1, p2);
+                        (document.getElementById('p1-select') as HTMLSelectElement).value = "";
+                        (document.getElementById('p2-select') as HTMLSelectElement).value = "";
+                      } else {
+                        alert("Please select two different teams.");
+                      }
+                    }}>INJECT MATCH</button>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -571,6 +632,9 @@ export function QuickTournament() {
                   <div key={t.id} className="team-status-chip">
                     <span className="t-name">{t.name}</span>
                     <span className="t-matches">{t.matches_played}/{matchesPerTeam}</span>
+                    {matches.filter(m => m.team_a_id === t.id || m.team_b_id === t.id).length < matchesPerTeam && (
+                      <div className="bye-badge animate-pulse">SEEKING OPPONENT</div>
+                    )}
                   </div>
                 ))}
               </div>
