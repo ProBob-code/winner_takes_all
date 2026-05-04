@@ -35,10 +35,12 @@ export function QuickTournament() {
   const [activeSubTab, setActiveSubTab] = useState<'arena' | 'standings'>('arena');
   const [currentTime, setCurrentTime] = useState(Math.floor(Date.now() / 1000));
   const [arenaId, setArenaId] = useState<string>("");
-  const [matchesPerTeam, setMatchesPerTeam] = useState(2);
+  const [matchesPerTeam, setMatchesPerTeam] = useState(3);
+  const [defaultDuration, setDefaultDuration] = useState(600);
   const [tournamentType, setTournamentType] = useState<'GROUP' | 'KNOCKOUT'>('GROUP');
   const [arenaName, setArenaName] = useState("Stadium Arena Showdown");
   const [isPublishing, setIsPublishing] = useState(false);
+  const [victoryMatch, setVictoryMatch] = useState<Match | null>(null);
   const [showResetModal, setShowResetModal] = useState(false);
   const [showAddTeamInline, setShowAddTeamInline] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
@@ -52,18 +54,19 @@ export function QuickTournament() {
       setMatches(parsed.matches || []);
       setIsStarted(parsed.isStarted || false);
       setArenaId(parsed.arenaId || "");
-      setMatchesPerTeam(parsed.matchesPerTeam || 2);
+      setMatchesPerTeam(parsed.matchesPerTeam || 3);
+      setDefaultDuration(parsed.defaultDuration || 600);
       setTournamentType(parsed.tournamentType || 'GROUP');
       setArenaName(parsed.arenaName || "Stadium Arena Showdown");
     }
   }, []);
 
   useEffect(() => {
-    localStorage.setItem("wta_arena_quick_v8", JSON.stringify({ teams, matches, isStarted, arenaId, matchesPerTeam, tournamentType, arenaName }));
+    localStorage.setItem("wta_arena_quick_v8", JSON.stringify({ teams, matches, isStarted, arenaId, matchesPerTeam, defaultDuration, tournamentType, arenaName }));
     if (arenaId && isStarted) {
       backendFetch("/public-arenas", { method: "POST", body: JSON.stringify({ id: arenaId, name: arenaName, state: { teams, matches, isStarted } }) }).catch(() => { });
     }
-  }, [teams, matches, isStarted, arenaId, matchesPerTeam, tournamentType, arenaName]);
+  }, [teams, matches, isStarted, arenaId, matchesPerTeam, defaultDuration, tournamentType, arenaName]);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(Math.floor(Date.now() / 1000)), 1000);
@@ -112,7 +115,7 @@ export function QuickTournament() {
               id: `m-${Date.now()}-${newMatches.length}`, team_a_id: t1.id, team_b_id: t2.id,
               score_team_a: 0, score_team_b: 0, balls_potted_a: 0, balls_potted_b: 0,
               black_potted_a: false, black_potted_b: false, status: 'CREATED',
-              winner_id: null, active_team_id: null, duration: 600, start_time: null,
+              winner_id: null, active_team_id: null, duration: defaultDuration, start_time: null,
               order: currentMatches.length,
               team_a_house: 'SOLID', team_b_house: 'STRIPES',
               fouls_a: 0, fouls_b: 0
@@ -133,7 +136,7 @@ export function QuickTournament() {
               id: `m-k-${i}`, team_a_id: allTeams[i].id, team_b_id: allTeams[i + 1].id,
               score_team_a: 0, score_team_b: 0, balls_potted_a: 0, balls_potted_b: 0,
               black_potted_a: false, black_potted_b: false, status: 'CREATED',
-              winner_id: null, active_team_id: null, duration: 600, start_time: null, order: i / 2,
+              winner_id: null, active_team_id: null, duration: defaultDuration, start_time: null, order: i / 2,
               team_a_house: 'SOLID', team_b_house: 'STRIPES',
               fouls_a: 0, fouls_b: 0
             });
@@ -180,7 +183,7 @@ export function QuickTournament() {
       id: `m-man-${Date.now()}`, team_a_id: t1Id, team_b_id: t2Id,
       score_team_a: 0, score_team_b: 0, balls_potted_a: 0, balls_potted_b: 0,
       black_potted_a: false, black_potted_b: false, status: 'CREATED',
-      winner_id: null, active_team_id: null, duration: 600, start_time: null,
+      winner_id: null, active_team_id: null, duration: defaultDuration, start_time: null,
       order: matches.length,
       team_a_house: 'SOLID', team_b_house: 'STRIPES',
       fouls_a: 0, fouls_b: 0
@@ -192,6 +195,14 @@ export function QuickTournament() {
     const initial = generateMatchesPass(teams, []);
     setMatches(initial);
     setIsStarted(true);
+  };
+
+  const adjustDuration = (matchId: string, deltaSeconds: number) => {
+    setMatches(matches.map(m => {
+      if (m.id !== matchId) return m;
+      const newDur = Math.max(60, m.duration + deltaSeconds);
+      return { ...m, duration: newDur };
+    }));
   };
 
   const setRemainingTime = (matchId: string, seconds: number) => {
@@ -224,10 +235,6 @@ export function QuickTournament() {
 
   const updateHouse = (matchId: string, team: 'A' | 'B', house: 'SOLID' | 'STRIPES') => {
     setMatches(matches.map(m => m.id === matchId ? { ...m, [`team_${team.toLowerCase()}_house`]: house } : m));
-  };
-
-  const addExtraTime = (matchId: string) => {
-    setMatches(matches.map(m => m.id === matchId ? { ...m, duration: m.duration + 60 } : m));
   };
 
   const updateScore = (matchId: string, teamId: string, type: 'BALL' | 'BLACK' | 'FOUL') => {
@@ -270,6 +277,10 @@ export function QuickTournament() {
         }
         // Update global stats
         setTeams(prev => prev.map(t => (t.id === nm.team_a_id || t.id === nm.team_b_id) ? { ...t, matches_played: t.matches_played + 1, total_score: t.total_score + (t.id === nm.team_a_id ? nm.score_team_a : nm.score_team_b), group_points: t.group_points + (nm.winner_id === t.id ? 1 : 0) } : t));
+      }
+      if (nm.status === 'COMPLETED') {
+        setVictoryMatch(nm);
+        setTimeout(() => setVictoryMatch(null), 10000);
       }
       return nm;
     }));
@@ -403,6 +414,21 @@ export function QuickTournament() {
 
   return (
     <div className="engine-container animate-in">
+      {victoryMatch && (
+        <div className="victory-overlay animate-in">
+          <div className="fireworks-container">
+            <div className="firework"></div>
+            <div className="firework"></div>
+            <div className="firework"></div>
+          </div>
+          <div className="victory-card slide-in">
+            <div className="v-label">VICTORY DECLARED</div>
+            <h1 className="v-name glow-text">{getTeamName(victoryMatch.winner_id || "")}</h1>
+            <div className="v-stats">MATCH CONCLUDED • {victoryMatch.score_team_a} - {victoryMatch.score_team_b}</div>
+          </div>
+        </div>
+      )}
+
       {showResetModal && (
         <div className="custom-modal-overlay">
           <div className="custom-modal glass-morphism slide-in">
@@ -485,17 +511,14 @@ export function QuickTournament() {
               <div className="match-timer-v3">
                 <div className="live-pill"><span className="live-pulse"></span> LIVE</div>
                 <div className="timer-interactive">
-                  <button className="t-adj" onClick={() => addExtraTime(liveMatch.id)}>−</button>
-                  <span className="time-val" onClick={() => {
-                    const m = prompt("Set remaining minutes:", "10");
-                    if (m) setRemainingTime(liveMatch.id, parseInt(m) * 60);
-                  }}>
+                  <button className="t-adj" onClick={() => adjustDuration(liveMatch.id, -60)}>−</button>
+                  <span className="time-val">
                     {Math.max(0, Math.floor(((liveMatch.start_time || 0) + liveMatch.duration - currentTime) / 60))}:
                     {String(Math.max(0, ((liveMatch.start_time || 0) + liveMatch.duration - currentTime) % 60)).padStart(2, '0')}
                   </span>
-                  <button className="t-adj" onClick={() => addExtraTime(liveMatch.id)}>+</button>
+                  <button className="t-adj" onClick={() => adjustDuration(liveMatch.id, 60)}>+</button>
                 </div>
-                <button className="extra-time-btn" onClick={() => addExtraTime(liveMatch.id)}>+1 MIN</button>
+                <button className="extra-time-btn" onClick={() => adjustDuration(liveMatch.id, 60)}>+1 MIN</button>
               </div>
 
               <div className="battle-view">
@@ -605,6 +628,28 @@ export function QuickTournament() {
 
                     <div className="manual-pairing-card mt-6 slide-in">
                       <div className="p-header">
+                        <label className="section-label-v2">ARENA SETTINGS</label>
+                        <div className="p-grid mt-4">
+                          <div className="p-selectors">
+                            <div className="setting-box">
+                              <label className="stat-label">MATCH QUOTA</label>
+                              <select className="premium-input-v2" value={matchesPerTeam} onChange={e => setMatchesPerTeam(Number(e.target.value))}>
+                                {[1,2,3,4,5].map(v => <option key={v} value={v}>{v} matches/team</option>)}
+                              </select>
+                            </div>
+                            <div className="setting-box">
+                              <label className="stat-label">DEFAULT TIME (MINS)</label>
+                              <div className="timer-scroller-v2" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <button className="s-btn" onClick={() => setDefaultDuration(Math.max(60, defaultDuration - 60))}>-</button>
+                                <span className="dur-val">{Math.floor(defaultDuration/60)}m</span>
+                                <button className="s-btn" onClick={() => setDefaultDuration(defaultDuration + 60)}>+</button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="p-header mt-8">
                         <label className="section-label-v2">MANUAL DUEL CREATOR</label>
                         <p className="p-muted">Hand-pick opponents and inject custom matches into the queue.</p>
                       </div>

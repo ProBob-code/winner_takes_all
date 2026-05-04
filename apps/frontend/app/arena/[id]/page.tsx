@@ -58,8 +58,38 @@ export default function PublicArenaPage() {
     </div>
   );
 
+  const [qPage, setQPage] = useState(0);
+  const qSize = 5;
+  const [lastVictoryId, setLastVictoryId] = useState<string | null>(null);
+  const [showVictory, setShowVictory] = useState<any>(null);
+
+  useEffect(() => {
+    if (state.matches) {
+      const lastMatch = [...state.matches].sort((a,b) => b.order - a.order).find(m => m.status === 'COMPLETED');
+      if (lastMatch && lastMatch.id !== lastVictoryId) {
+        setLastVictoryId(lastMatch.id);
+        setShowVictory(lastMatch);
+        setTimeout(() => setShowVictory(null), 10000);
+      }
+    }
+  }, [state.matches, lastVictoryId]);
+
   return (
     <div className="live-arena-v2 slide-in" style={{ padding: '2rem', minHeight: '100vh', background: 'transparent' }}>
+      {showVictory && (
+        <div className="victory-overlay animate-in">
+          <div className="fireworks-container">
+            <div className="firework"></div>
+            <div className="firework"></div>
+            <div className="firework"></div>
+          </div>
+          <div className="victory-card slide-in">
+            <div className="v-label">MATCH CONCLUDED</div>
+            <h1 className="v-name glow-text">{getTeamName(showVictory.winner_id || "")} WINS!</h1>
+            <div className="v-stats">{showVictory.score_team_a} - {showVictory.score_team_b}</div>
+          </div>
+        </div>
+      )}
       <div className="spectator-badge">READ ONLY STREAM</div>
       <div className="arena-header-v2" style={{ marginBottom: '3rem' }}>
         <div className="arena-meta">
@@ -125,11 +155,18 @@ export default function PublicArenaPage() {
 
       <div className="schedule-grid mt-12">
         <div className="queue-column">
-          <label className="section-label-v2">UPCOMING DUELS</label>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <label className="section-label-v2">UPCOMING DUELS</label>
+            <div className="pagination-v2">
+              <button className={`p-btn ${qPage === 0 ? 'disabled' : ''}`} onClick={() => setQPage(p => Math.max(0, p - 1))}>←</button>
+              <span className="p-info">PAGE {qPage + 1} / {Math.ceil(upcomingMatches.length / qSize) || 1}</span>
+              <button className={`p-btn ${qPage >= Math.ceil(upcomingMatches.length / qSize) - 1 ? 'disabled' : ''}`} onClick={() => setQPage(p => p + 1)}>→</button>
+            </div>
+          </div>
           <div className="queue-list-premium">
-            {upcomingMatches.slice(0, 5).map((m, i) => (
+            {upcomingMatches.slice(qPage * qSize, (qPage + 1) * qSize).map((m, i) => (
               <div key={m.id} className="schedule-item-card animate-in" style={{ animationDelay: `${i * 0.1}s` }}>
-                <div className="s-rank">#{i+1}</div>
+                <div className="s-rank">#{qPage * qSize + i + 1}</div>
                 <div className="s-info">
                   <div className="s-pair">{getTeamName(m.team_a_id)} <span className="dim">vs</span> {getTeamName(m.team_b_id)}</div>
                 </div>
