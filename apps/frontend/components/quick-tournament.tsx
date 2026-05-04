@@ -19,6 +19,7 @@ export function QuickTournament() {
   const [tournamentType, setTournamentType] = useState<'GROUP' | 'KNOCKOUT'>('GROUP');
   const [arenaName, setArenaName] = useState("Stadium Arena Showdown");
   const [isPublishing, setIsPublishing] = useState(false);
+  const [showResetModal, setShowResetModal] = useState(false);
 
   // Sync with LocalStorage
   useEffect(() => {
@@ -52,19 +53,23 @@ export function QuickTournament() {
     let currentMatches = [...existingMatches];
     
     if (tournamentType === 'GROUP') {
-      const eligible = allTeams.filter(t => {
-        const count = currentMatches.filter(m => m.team_a_id === t.id || m.team_b_id === t.id).length;
-        return count < matchesPerTeam;
-      });
-
+      // SWISS-LITE / ROUND-ROBIN LITE: Match teams with fewest matches played first
+      const sortedTeams = [...allTeams].sort((a,b) => a.matches_played - b.matches_played);
+      
       const paired = new Set<string>();
-      for (let i = 0; i < eligible.length; i++) {
-        const t1 = eligible[i];
-        if (paired.has(t1.id)) continue;
+      for (let i = 0; i < sortedTeams.length; i++) {
+        const t1 = sortedTeams[i];
+        if (paired.has(t1.id) || t1.matches_played >= matchesPerTeam) continue;
 
-        const t2 = eligible.find(potential => {
-          if (potential.id === t1.id || paired.has(potential.id)) return false;
-          return !currentMatches.some(m => (m.team_a_id === t1.id && m.team_b_id === potential.id) || (m.team_a_id === potential.id && m.team_b_id === t1.id));
+        // Find best opponent: Hasn't played t1 yet, and has fewest matches played
+        const t2 = sortedTeams.find(potential => {
+          if (potential.id === t1.id || paired.has(potential.id) || potential.matches_played >= matchesPerTeam) return false;
+          // Check if they already played
+          const alreadyPlayed = currentMatches.some(m => 
+            (m.team_a_id === t1.id && m.team_b_id === potential.id) || 
+            (m.team_a_id === potential.id && m.team_b_id === t1.id)
+          );
+          return !alreadyPlayed;
         });
 
         if (t2) {
@@ -132,6 +137,10 @@ export function QuickTournament() {
     setIsStarted(true);
   };
 
+  const addExtraTime = (matchId: string) => {
+    setMatches(matches.map(m => m.id === matchId ? { ...m, duration: m.duration + 60 } : m));
+  };
+
   const updateScore = (matchId: string, teamId: string, type: 'BALL' | 'BLACK') => {
     setMatches(matches.map(m => {
       if (m.id !== matchId || m.status !== 'LIVE') return m;
@@ -154,7 +163,13 @@ export function QuickTournament() {
     }));
   };
 
-  const reset = () => { if (confirm("Reset Arena?")) { setTeams([]); setMatches([]); setIsStarted(false); setArenaId(""); } };
+  const reset = () => {
+    setTeams([]);
+    setMatches([]);
+    setIsStarted(false);
+    setArenaId("");
+    setShowResetModal(false);
+  };
   const getTeamName = (id: string) => teams.find(t => t.id === id)?.name || "Unknown";
 
   const Ticker = ({ balls, black, color }: { balls: number, black: boolean, color: string }) => (
@@ -261,7 +276,7 @@ export function QuickTournament() {
               onClick={startTournament} 
               disabled={teams.length < 2}
             >
-              <span className="launch-text">{teams.length >= 2 ? 'INITIALIZE STADIUM ENGINE' : 'ADD MINIMUM 2 TEAMS'}</span>
+              <span className="launch-text">{teams.length >= 2 ? 'START TOURNAMENT' : 'ADD MINIMUM 2 TEAMS'}</span>
               <div className="launch-glow"></div>
             </button>
           </div>
@@ -276,53 +291,118 @@ export function QuickTournament() {
 
   return (
     <div className="engine-container animate-in">
-      <div className="arena-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-        <div><h2 className="glow-text">{arenaName}</h2><div className="phase-badge">ARENA {tournamentType}</div></div>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <button className={`button button-sm ${activeSubTab === 'arena' ? 'button-primary' : 'button-secondary'}`} onClick={() => setActiveSubTab('arena')}>ARENA</button>
-          <button className={`button button-sm ${activeSubTab === 'standings' ? 'button-primary' : 'button-secondary'}`} onClick={() => setActiveSubTab('standings')}>STANDINGS</button>
-          <button className={`button button-sm ${arenaId ? 'button-gold' : 'button-secondary'}`} onClick={publishArena} disabled={isPublishing}>
-            {isPublishing ? 'PUBLISHING...' : arenaId ? '✅ SHARED' : '🔗 SHARE'}
+      {showResetModal && (
+        <div className="custom-modal-overlay">
+          <div className="custom-modal glass-morphism slide-in">
+            <div className="modal-icon">⚠️</div>
+            <h2>Reset Arena?</h2>
+            <p className="muted">This will erase all teams, matches, and current scores. This action cannot be undone.</p>
+            <div className="modal-actions">
+              <button className="button button-secondary" onClick={() => setShowResetModal(false)}>CANCEL</button>
+              <button className="button button-danger" onClick={reset}>CONFIRM RESET</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="arena-header-v2">
+        <div className="arena-meta">
+          <h2 className="glow-text">{arenaName}</h2>
+          <div className="arena-badge">ARENA {tournamentType} • {teams.length} TEAMS</div>
+        </div>
+        <div className="arena-controls">
+          <div className="sub-tab-switcher">
+            <button className={`sub-tab ${activeSubTab === 'arena' ? 'active' : ''}`} onClick={() => setActiveSubTab('arena')}>ARENA</button>
+            <button className={`sub-tab ${activeSubTab === 'standings' ? 'active' : ''}`} onClick={() => setActiveSubTab('standings')}>STANDINGS</button>
+          </div>
+          <button className={`share-btn ${arenaId ? 'shared' : ''}`} onClick={publishArena} disabled={isPublishing}>
+            {isPublishing ? 'SYNCING...' : arenaId ? '✓ LINK SHARED' : '🔗 SHARE ARENA'}
           </button>
-          <button className="button button-sm" style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444' }} onClick={reset}>RESET</button>
+          <button className="reset-trigger" onClick={() => setShowResetModal(true)}>
+            <span className="icon">↺</span>
+          </button>
         </div>
       </div>
 
       {activeSubTab === 'arena' ? (
-        <div className="center-stage slide-in">
+        <div className="live-arena-v2 slide-in">
           {liveMatch ? (
-            <>
-              <div className="match-status-indicator"><div className="live-dot"></div>LIVE • {Math.floor(((liveMatch.start_time || 0) + liveMatch.duration - currentTime)/60)}:{( (liveMatch.start_time || 0) + liveMatch.duration - currentTime )%60}</div>
-              <div className="score-arena" style={{ width: '100%' }}>
-                <div className={`team-arena-card red ${liveMatch.active_team_id === liveMatch.team_a_id ? 'active' : ''}`} onClick={() => setMatches(matches.map(m => m.id === liveMatch.id ? { ...m, active_team_id: liveMatch.team_a_id } : m))}>
-                  <div className="pod-name" style={{ color: '#ef4444' }}>{getTeamName(liveMatch.team_a_id)}</div>
-                  <div className="pod-score">{liveMatch.score_team_a}</div>
-                  <Ticker balls={liveMatch.balls_potted_a} black={liveMatch.black_potted_a} color="#ef4444" />
-                  <div className="control-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginTop: '2rem' }}>
-                    <button className="score-btn" style={{ background: '#ef4444' }} onClick={(e) => { e.stopPropagation(); updateScore(liveMatch.id, liveMatch.team_a_id, 'BALL') }}>BALL</button>
-                    <button className="score-btn" style={{ background: '#111', border: '1px solid #fff' }} onClick={(e) => { e.stopPropagation(); updateScore(liveMatch.id, liveMatch.team_a_id, 'BLACK') }}>BLACK</button>
+            <div className="match-engine-v2">
+              <div className="match-timer-v2">
+                <span className="live-pulse"></span>
+                LIVE • {Math.floor(((liveMatch.start_time || 0) + liveMatch.duration - currentTime)/60)}:{( (liveMatch.start_time || 0) + liveMatch.duration - currentTime )%60}
+                <button className="extra-time-btn" onClick={() => addExtraTime(liveMatch.id)}>+1 MIN</button>
+              </div>
+
+              <div className="battle-view">
+                {/* Team A Pod */}
+                <div className={`team-pod red ${liveMatch.active_team_id === liveMatch.team_a_id ? 'active' : ''}`} onClick={() => setMatches(matches.map(m => m.id === liveMatch.id ? { ...m, active_team_id: liveMatch.team_a_id } : m))}>
+                  <div className="pod-inner">
+                    <div className="pod-header">
+                      <div className="team-initials">{getTeamName(liveMatch.team_a_id).substring(0,2).toUpperCase()}</div>
+                      <h3 className="team-name">{getTeamName(liveMatch.team_a_id)}</h3>
+                    </div>
+                    <div className="pod-score-large">{liveMatch.score_team_a}</div>
+                    <Ticker balls={liveMatch.balls_potted_a} black={liveMatch.black_potted_a} color="#ef4444" />
+                    <div className="pod-actions">
+                      <button className="pod-btn ball-btn" onClick={(e) => { e.stopPropagation(); updateScore(liveMatch.id, liveMatch.team_a_id, 'BALL') }}>+ BALL</button>
+                      <button className="pod-btn black-btn" onClick={(e) => { e.stopPropagation(); updateScore(liveMatch.id, liveMatch.team_a_id, 'BLACK') }}>+ BLACK</button>
+                    </div>
                   </div>
+                  <div className="active-glow"></div>
                 </div>
-                <div className="vs-orb">VS</div>
-                <div className={`team-arena-card blue ${liveMatch.active_team_id === liveMatch.team_b_id ? 'active' : ''}`} onClick={() => setMatches(matches.map(m => m.id === liveMatch.id ? { ...m, active_team_id: liveMatch.team_b_id } : m))}>
-                  <div className="pod-name" style={{ color: '#3b82f6' }}>{getTeamName(liveMatch.team_b_id)}</div>
-                  <div className="pod-score">{liveMatch.score_team_b}</div>
-                  <Ticker balls={liveMatch.balls_potted_b} black={liveMatch.black_potted_b} color="#3b82f6" />
-                  <div className="control-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginTop: '2rem' }}>
-                    <button className="score-btn" style={{ background: '#3b82f6' }} onClick={(e) => { e.stopPropagation(); updateScore(liveMatch.id, liveMatch.team_b_id, 'BALL') }}>BALL</button>
-                    <button className="score-btn" style={{ background: '#111', border: '1px solid #fff' }} onClick={(e) => { e.stopPropagation(); updateScore(liveMatch.id, liveMatch.team_b_id, 'BLACK') }}>BLACK</button>
+
+                <div className="vs-core">
+                  <div className="vs-ring"></div>
+                  <div className="vs-text">VS</div>
+                </div>
+
+                {/* Team B Pod */}
+                <div className={`team-pod blue ${liveMatch.active_team_id === liveMatch.team_b_id ? 'active' : ''}`} onClick={() => setMatches(matches.map(m => m.id === liveMatch.id ? { ...m, active_team_id: liveMatch.team_b_id } : m))}>
+                  <div className="pod-inner">
+                    <div className="pod-header">
+                      <div className="team-initials">{getTeamName(liveMatch.team_b_id).substring(0,2).toUpperCase()}</div>
+                      <h3 className="team-name">{getTeamName(liveMatch.team_b_id)}</h3>
+                    </div>
+                    <div className="pod-score-large">{liveMatch.score_team_b}</div>
+                    <Ticker balls={liveMatch.balls_potted_b} black={liveMatch.black_potted_b} color="#3b82f6" />
+                    <div className="pod-actions">
+                      <button className="pod-btn ball-btn" onClick={(e) => { e.stopPropagation(); updateScore(liveMatch.id, liveMatch.team_b_id, 'BALL') }}>+ BALL</button>
+                      <button className="pod-btn black-btn" onClick={(e) => { e.stopPropagation(); updateScore(liveMatch.id, liveMatch.team_b_id, 'BLACK') }}>+ BLACK</button>
+                    </div>
                   </div>
+                  <div className="active-glow"></div>
                 </div>
               </div>
-            </>
+            </div>
           ) : (
-            <div style={{ textAlign: 'center', padding: '2rem' }}>
-              <h3 className="glow-text">Add Players Mid-Tournament</h3>
-              <div className="team-input-row" style={{ maxWidth: '400px', margin: '1.5rem auto' }}>
-                <input placeholder="Late entry..." value={newTeamName} onChange={e => setNewTeamName(e.target.value)} onKeyPress={e => e.key === 'Enter' && addTeam()} />
-                <button className="button button-primary" onClick={addTeam}>ADD</button>
+            <div className="arena-setup-mid-tournament slide-in">
+              <div className="setup-card animate-in" style={{ padding: '2rem' }}>
+                <h3 className="glow-text">Manage Tournament</h3>
+                <p className="muted">Add new players or launch the next match.</p>
+                
+                <div className="mid-setup-controls" style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem', justifyContent: 'center' }}>
+                  <div className="roster-input-wrapper" style={{ margin: 0, width: '300px' }}>
+                    <input className="premium-input-v2" placeholder="New entry..." value={newTeamName} onChange={e => setNewTeamName(e.target.value)} onKeyPress={e => e.key === 'Enter' && addTeam()} />
+                    <button className="add-roster-btn" onClick={addTeam}>ADD</button>
+                  </div>
+                  {createdMatches.length > 0 ? (
+                    <button className="button button-gold" onClick={() => setMatches(matches.map(m => m.id === createdMatches[0].id ? { ...m, status: 'LIVE', start_time: currentTime } : m))}>
+                      START NEXT MATCH
+                    </button>
+                  ) : (
+                    <button className="button button-secondary" disabled>QUEUE EMPTY</button>
+                  )}
+                </div>
+
+                <div className="quick-roster-summary mt-6" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', justifyContent: 'center' }}>
+                  {teams.map(t => (
+                    <div key={t.id} className="mini-team-chip">
+                      {t.name} <span className="matches-dot">{t.matches_played}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
-              {createdMatches.length > 0 ? <button className="button button-gold mt-4" onClick={() => setMatches(matches.map(m => m.id === createdMatches[0].id ? { ...m, status: 'LIVE', start_time: currentTime } : m))}>START NEXT MATCH</button> : <p className="muted">No matches in queue.</p>}
             </div>
           )}
         </div>
