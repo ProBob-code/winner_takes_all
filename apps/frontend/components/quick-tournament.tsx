@@ -21,6 +21,7 @@ export function QuickTournament() {
   const [isPublishing, setIsPublishing] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
   const [showAddTeamInline, setShowAddTeamInline] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
 
   // Sync with LocalStorage
   useEffect(() => {
@@ -124,7 +125,7 @@ export function QuickTournament() {
         body: JSON.stringify({ id, name: arenaName, state: { teams, matches, isStarted } })
       });
       setArenaId(id);
-      alert(`Arena Published! Share this link:\n${window.location.origin}/arena/${id}`);
+      setShowShareModal(true);
     } catch (e) {
       alert("Failed to publish.");
     } finally {
@@ -315,6 +316,26 @@ export function QuickTournament() {
             <div className="modal-actions">
               <button className="button button-secondary" onClick={() => setShowResetModal(false)}>CANCEL</button>
               <button className="button button-danger" onClick={reset}>CONFIRM RESET</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showShareModal && (
+        <div className="custom-modal-overlay">
+          <div className="custom-modal glass-morphism slide-in">
+            <div className="modal-icon">🔗</div>
+            <h2>Arena Published!</h2>
+            <p className="muted">Your arena is live! Share this link for real-time tracking.</p>
+            <div className="share-link-wrapper mt-6">
+              <input readOnly value={`${window.location.origin}/arena/${arenaId}`} className="premium-input-v2" />
+              <button className="button button-gold" onClick={() => {
+                navigator.clipboard.writeText(`${window.location.origin}/arena/${arenaId}`);
+                alert("Link copied to clipboard!");
+              }}>COPY</button>
+            </div>
+            <div className="modal-actions">
+              <button className="button button-secondary" style={{ gridColumn: '1 / -1' }} onClick={() => setShowShareModal(false)}>CLOSE</button>
             </div>
           </div>
         </div>
