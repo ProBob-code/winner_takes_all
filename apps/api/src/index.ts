@@ -503,11 +503,10 @@ app.post("/api/engine/tournaments/:id/add-team", async (c) => {
   const team = await store.createEngineTeam(tournamentId, body.name || `Team ${Math.floor(Math.random()*1000)}`);
   
   // THE BRAIN: Run a generation pass specifically to match the newcomer if anyone is waiting
-  const [allTeams, matchups, matches, tournament] = await Promise.all([
+  const [allTeams, matchups, matches] = await Promise.all([
     store.getEngineTeams(tournamentId),
     store.getEngineMatchups(tournamentId),
-    store.getEngineMatches(tournamentId),
-    store.getTournament(tournamentId)
+    store.getEngineMatches(tournamentId)
   ]);
 
   if (matches.length > 0) {
