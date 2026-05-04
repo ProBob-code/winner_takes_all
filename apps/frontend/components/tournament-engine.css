@@ -1189,6 +1189,7 @@
 
 @media (max-width: 768px) {
   .p-selectors { flex-direction: column; width: 100%; }
+}
 /* Arena Settings & Timer Scroller */
 .setting-box {
   flex: 1;
@@ -1383,6 +1384,41 @@
 @keyframes firework {
   0% { transform: scale(1); box-shadow: 0 0 #fff; opacity: 1; }
   100% { transform: scale(30); box-shadow: 50px 50px transparent, -50px -50px transparent, 50px -50px transparent, -50px 50px transparent; opacity: 0; }
+}
+
+/* Extra Time Toast */
+.extra-time-toast {
+  position: absolute;
+  top: 120%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  width: max-content;
+}
+
+.toast-content {
+  background: rgba(13, 17, 23, 0.95);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--gold);
+  padding: 1rem 1.5rem;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.5), 0 0 20px rgba(245, 158, 11, 0.2);
+  animation: toastPulse 2s infinite;
+}
+
+.toast-content span {
+  font-size: 0.65rem;
+  font-weight: 900;
+  letter-spacing: 1px;
+  color: var(--gold);
+}
+
+@keyframes toastPulse {
+  0%, 100% { transform: scale(1); border-color: var(--gold); }
+  50% { transform: scale(1.02); border-color: white; }
 }
 
 /* BYE / Seeking Indicator */

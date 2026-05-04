@@ -41,6 +41,7 @@ export function QuickTournament() {
   const [arenaName, setArenaName] = useState("Stadium Arena Showdown");
   const [isPublishing, setIsPublishing] = useState(false);
   const [victoryMatch, setVictoryMatch] = useState<Match | null>(null);
+  const [extraTimePromptId, setExtraTimePromptId] = useState<string | null>(null);
   const [showResetModal, setShowResetModal] = useState(false);
   const [showAddTeamInline, setShowAddTeamInline] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
@@ -69,9 +70,65 @@ export function QuickTournament() {
   }, [teams, matches, isStarted, arenaId, matchesPerTeam, defaultDuration, tournamentType, arenaName]);
 
   useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(Math.floor(Date.now() / 1000)), 1000);
+    const timer = setInterval(() => {
+      const now = Math.floor(Date.now() / 1000);
+      setCurrentTime(now);
+      
+      // Auto-end expired matches
+      setMatches(prev => {
+        const live = prev.find(m => m.status === 'LIVE');
+        if (live && live.start_time) {
+          const remaining = (live.start_time + live.duration) - now;
+          
+          // Show extra time prompt at 30 seconds
+          if (remaining > 0 && remaining <= 30 && extraTimePromptId !== live.id) {
+            setExtraTimePromptId(live.id);
+          }
+
+          if (remaining <= 0) {
+            setExtraTimePromptId(null);
+            playBuzzer();
+            const winnerId = m.score_team_a > m.score_team_b ? m.team_a_id : (m.score_team_b > m.score_team_a ? m.team_b_id : null);
+            const nm = { ...m, status: 'COMPLETED' as const, winner_id: winnerId };
+            setVictoryMatch(nm);
+            setTimeout(() => setVictoryMatch(null), 10000);
+            
+            // Update stats
+            setTeams(tPrev => tPrev.map(t => (t.id === nm.team_a_id || t.id === nm.team_b_id) ? { 
+              ...t, 
+              matches_played: t.matches_played + 1, 
+              total_score: t.total_score + (t.id === nm.team_a_id ? nm.score_team_a : nm.score_team_b), 
+              group_points: t.group_points + (nm.winner_id === t.id ? 1 : 0) 
+            } : t));
+            
+            return nm;
+          }
+        }
+        return m;
+      }));
+    }, 1000);
     return () => clearInterval(timer);
-  }, []);
+  }, [isStarted, arenaId, arenaName]); // Added dependencies to ensure it works with current state
+
+  const playBuzzer = () => {
+    try {
+      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+      
+      oscillator.type = 'square';
+      oscillator.frequency.setValueAtTime(150, audioCtx.currentTime); // Low buzz
+      oscillator.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+      
+      gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+      gainNode.gain.linearRampToValueAtTime(0.5, audioCtx.currentTime + 0.1);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 1.5);
+      
+      oscillator.start();
+      oscillator.stop(audioCtx.currentTime + 1.5);
+    } catch (e) { console.error("Audio failed", e); }
+  };
 
   const generateMatchesPass = (allTeams: Team[], existingMatches: Match[]) => {
     const newMatches: Match[] = [];
@@ -519,6 +576,16 @@ export function QuickTournament() {
                   <button className="t-adj" onClick={() => adjustDuration(liveMatch.id, 60)}>+</button>
                 </div>
                 <button className="extra-time-btn" onClick={() => adjustDuration(liveMatch.id, 60)}>+1 MIN</button>
+
+                {extraTimePromptId === liveMatch.id && (
+                  <div className="extra-time-toast animate-in">
+                    <div className="toast-content">
+                      <span>CRITICAL TIME! NEED EXTRA?</span>
+                      <button className="button button-gold button-sm" onClick={() => { adjustDuration(liveMatch.id, 120); setExtraTimePromptId(null); }}>+2 MINS</button>
+                      <button className="s-btn" onClick={() => setExtraTimePromptId(null)}>×</button>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="battle-view">
