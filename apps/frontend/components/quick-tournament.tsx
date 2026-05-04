@@ -20,6 +20,7 @@ export function QuickTournament() {
   const [arenaName, setArenaName] = useState("Stadium Arena Showdown");
   const [isPublishing, setIsPublishing] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
+  const [showAddTeamInline, setShowAddTeamInline] = useState(false);
 
   // Sync with LocalStorage
   useEffect(() => {
@@ -135,6 +136,20 @@ export function QuickTournament() {
     const initial = generateMatchesPass(teams, []);
     setMatches(initial);
     setIsStarted(true);
+  };
+
+  const setRemainingTime = (matchId: string, seconds: number) => {
+    setMatches(matches.map(m => m.id === matchId ? { ...m, duration: seconds, start_time: currentTime } : m));
+  };
+
+  const shuffleQueue = () => {
+    const created = matches.filter(m => m.status === 'CREATED');
+    const shuffled = [...created].sort(() => Math.random() - 0.5);
+    setMatches(matches.map(m => {
+      if (m.status !== 'CREATED') return m;
+      const sMatch = shuffled.shift();
+      return sMatch ? { ...m, id: sMatch.id, team_a_id: sMatch.team_a_id, team_b_id: sMatch.team_b_id } : m;
+    }));
   };
 
   const addExtraTime = (matchId: string) => {
@@ -311,6 +326,9 @@ export function QuickTournament() {
           <div className="arena-badge">ARENA {tournamentType} • {teams.length} TEAMS</div>
         </div>
         <div className="arena-controls">
+          <button className="add-team-trigger" onClick={() => setShowAddTeamInline(!showAddTeamInline)}>
+            + ADD TEAM
+          </button>
           <div className="sub-tab-switcher">
             <button className={`sub-tab ${activeSubTab === 'arena' ? 'active' : ''}`} onClick={() => setActiveSubTab('arena')}>ARENA</button>
             <button className={`sub-tab ${activeSubTab === 'standings' ? 'active' : ''}`} onClick={() => setActiveSubTab('standings')}>STANDINGS</button>
@@ -324,13 +342,37 @@ export function QuickTournament() {
         </div>
       </div>
 
+      {showAddTeamInline && (
+        <div className="add-team-popover slide-in">
+          <input 
+            className="premium-input-v2" 
+            placeholder="New team name..." 
+            value={newTeamName} 
+            onChange={e => setNewTeamName(e.target.value)} 
+            onKeyPress={e => e.key === 'Enter' && (addTeam(), setShowAddTeamInline(false))}
+            autoFocus
+          />
+          <button className="button button-gold" onClick={() => { addTeam(); setShowAddTeamInline(false); }}>ADD</button>
+        </div>
+      )}
+
       {activeSubTab === 'arena' ? (
         <div className="live-arena-v2 slide-in">
           {liveMatch ? (
             <div className="match-engine-v2">
-              <div className="match-timer-v2">
-                <span className="live-pulse"></span>
-                LIVE • {Math.floor(((liveMatch.start_time || 0) + liveMatch.duration - currentTime)/60)}:{( (liveMatch.start_time || 0) + liveMatch.duration - currentTime )%60}
+              <div className="match-timer-v3">
+                <div className="live-pill"><span className="live-pulse"></span> LIVE</div>
+                <div className="timer-interactive">
+                  <button className="t-adj" onClick={() => addExtraTime(liveMatch.id)}>−</button>
+                  <span className="time-val" onClick={() => {
+                    const m = prompt("Set remaining minutes:", "10");
+                    if (m) setRemainingTime(liveMatch.id, parseInt(m) * 60);
+                  }}>
+                    {Math.max(0, Math.floor(((liveMatch.start_time || 0) + liveMatch.duration - currentTime)/60))}:
+                    {String(Math.max(0, ( (liveMatch.start_time || 0) + liveMatch.duration - currentTime )%60)).padStart(2, '0')}
+                  </span>
+                  <button className="t-adj" onClick={() => addExtraTime(liveMatch.id)}>+</button>
+                </div>
                 <button className="extra-time-btn" onClick={() => addExtraTime(liveMatch.id)}>+1 MIN</button>
               </div>
 
@@ -374,6 +416,24 @@ export function QuickTournament() {
                   <div className="active-glow"></div>
                 </div>
               </div>
+
+              {createdMatches.length > 0 && (
+                <div className="queue-overlay slide-in">
+                  <div className="queue-header">
+                    <div className="queue-title">UPCOMING DUELS ({createdMatches.length})</div>
+                    <button className="shuffle-btn" onClick={shuffleQueue}>🎲 SHUFFLE QUEUE</button>
+                  </div>
+                  <div className="queue-track">
+                    {createdMatches.slice(0, 3).map((m, i) => (
+                      <div key={m.id} className="queue-item">
+                        <span className="q-idx">{i + 1}</span>
+                        <span className="q-names">{getTeamName(m.team_a_id)} <span className="dim">vs</span> {getTeamName(m.team_b_id)}</span>
+                      </div>
+                    ))}
+                    {createdMatches.length > 3 && <div className="queue-more">+{createdMatches.length - 3} MORE</div>}
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <div className="arena-setup-mid-tournament slide-in">
@@ -395,6 +455,23 @@ export function QuickTournament() {
                   )}
                 </div>
 
+                {createdMatches.length > 0 && (
+                  <div className="queue-section-mid mt-8">
+                    <div className="queue-header" style={{ marginBottom: '1rem' }}>
+                      <span className="section-label-v2">MATCH QUEUE</span>
+                      <button className="shuffle-btn" onClick={shuffleQueue}>🎲 SHUFFLE</button>
+                    </div>
+                    <div className="queue-list-mid">
+                      {createdMatches.map((m, i) => (
+                        <div key={m.id} className="mid-queue-item">
+                          <span className="q-idx">#{i+1}</span>
+                          <span className="q-pair">{getTeamName(m.team_a_id)} vs {getTeamName(m.team_b_id)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <div className="quick-roster-summary mt-6" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', justifyContent: 'center' }}>
                   {teams.map(t => (
                     <div key={t.id} className="mini-team-chip">
@@ -407,15 +484,35 @@ export function QuickTournament() {
           )}
         </div>
       ) : (
-        <div className="standings-card slide-in">
-          <table className="standings-table">
-            <thead><tr><th>Rank</th><th>Team</th><th>P</th><th>W</th><th>Score</th></tr></thead>
-            <tbody>
-              {[...teams].sort((a,b) => b.group_points - a.group_points || b.total_score - a.total_score).map((t, i) => (
-                <tr key={t.id}><td>#{i+1}</td><td style={{ fontWeight: 900 }}>{t.name}</td><td>{t.matches_played}</td><td style={{ color: '#8b5cf6' }}>{t.group_points}</td><td style={{ fontWeight: 900, color: '#f59e0b' }}>{t.total_score}</td></tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="premium-standings slide-in">
+          <div className="standings-grid-v2">
+            {[...teams].sort((a,b) => b.group_points - a.group_points || b.total_score - a.total_score).map((t, i) => {
+              const isTop3 = i < 3;
+              const rankClass = i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : 'normal';
+              
+              return (
+                <div key={t.id} className={`standing-card-v2 ${rankClass}`}>
+                  <div className="rank-indicator">
+                    {i === 0 ? '👑' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i+1}`}
+                  </div>
+                  <div className="team-info">
+                    <div className="team-name">{t.name}</div>
+                    <div className="team-status">{t.matches_played} MATCHES PLAYED</div>
+                  </div>
+                  <div className="stats-row">
+                    <div className="stat">
+                      <div className="stat-label">WINS</div>
+                      <div className="stat-val win">{t.group_points}</div>
+                    </div>
+                    <div className="stat">
+                      <div className="stat-label">SCORE</div>
+                      <div className="stat-val score">{t.total_score}</div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
     </div>
