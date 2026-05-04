@@ -5,7 +5,27 @@ import { backendFetch } from "@/lib/backend";
 import "@/components/tournament-engine.css";
 
 type Team = { id: string; name: string; matches_played: number; group_points: number; total_score: number; };
-type Match = { id: string; team_a_id: string; team_b_id: string; score_team_a: number; score_team_b: number; balls_potted_a: number; balls_potted_b: number; black_potted_a: boolean; black_potted_b: boolean; status: 'CREATED' | 'LIVE' | 'COMPLETED'; winner_id: string | null; active_team_id: string | null; duration: number; start_time: number | null; order: number; };
+type Match = { 
+  id: string; 
+  team_a_id: string; 
+  team_b_id: string; 
+  score_team_a: number; 
+  score_team_b: number; 
+  balls_potted_a: number; 
+  balls_potted_b: number; 
+  black_potted_a: boolean; 
+  black_potted_b: boolean; 
+  status: 'CREATED' | 'LIVE' | 'COMPLETED'; 
+  winner_id: string | null; 
+  active_team_id: string | null; 
+  duration: number; 
+  start_time: number | null; 
+  order: number;
+  team_a_house?: 'SOLID' | 'STRIPES';
+  team_b_house?: 'SOLID' | 'STRIPES';
+  fouls_a: number;
+  fouls_b: number;
+};
 
 export function QuickTournament() {
   const [teams, setTeams] = useState<Team[]>([]);
@@ -82,7 +102,8 @@ export function QuickTournament() {
             black_potted_a: false, black_potted_b: false, status: 'CREATED',
             winner_id: null, active_team_id: null, duration: 600, start_time: null,
             order: currentMatches.length + newMatches.length,
-            team_a_house: 'SOLID', team_b_house: 'STRIPES'
+            team_a_house: 'SOLID', team_b_house: 'STRIPES',
+            fouls_a: 0, fouls_b: 0
           });
         }
       }
@@ -172,7 +193,7 @@ export function QuickTournament() {
     setMatches(matches.map(m => m.id === matchId ? { ...m, duration: m.duration + 60 } : m));
   };
 
-  const updateScore = (matchId: string, teamId: string, type: 'BALL' | 'BLACK') => {
+  const updateScore = (matchId: string, teamId: string, type: 'BALL' | 'BLACK' | 'FOUL') => {
     setMatches(matches.map(m => {
       if (m.id !== matchId || m.status !== 'LIVE') return m;
       const nm = { ...m };
@@ -181,10 +202,18 @@ export function QuickTournament() {
       if (type === 'BALL') {
         if (isA) {
           nm.balls_potted_a = Math.min(7, nm.balls_potted_a + 1);
-          nm.score_team_a += 10;
+          nm.score_team_a = Math.min(70, nm.score_team_a + 10);
         } else {
           nm.balls_potted_b = Math.min(7, nm.balls_potted_b + 1);
-          nm.score_team_b += 10;
+          nm.score_team_b = Math.min(70, nm.score_team_b + 10);
+        }
+      } else if (type === 'FOUL') {
+        if (isA) {
+          nm.fouls_a++;
+          nm.score_team_a -= 5;
+        } else {
+          nm.fouls_b++;
+          nm.score_team_b -= 5;
         }
       } else {
         // BLACK BALL RULE
@@ -199,8 +228,8 @@ export function QuickTournament() {
           // LEGAL WIN
           nm.status = 'COMPLETED';
           nm.winner_id = teamId;
-          if (isA) nm.score_team_a = 100;
-          else nm.score_team_b = 100;
+          if (isA) nm.score_team_a += 30; // 70 + 30 = 100
+          else nm.score_team_b += 30;
         }
         // Update global stats
         setTeams(prev => prev.map(t => (t.id === nm.team_a_id || t.id === nm.team_b_id) ? { ...t, matches_played: t.matches_played + 1, total_score: t.total_score + (t.id === nm.team_a_id ? nm.score_team_a : nm.score_team_b), group_points: t.group_points + (nm.winner_id === t.id ? 1 : 0) } : t));
@@ -433,7 +462,10 @@ export function QuickTournament() {
                   <div className="pod-inner">
                     <div className="pod-header">
                       <div className="team-initials">{getTeamName(liveMatch.team_a_id).substring(0,2).toUpperCase()}</div>
-                      <h3 className="team-name">{getTeamName(liveMatch.team_a_id)}</h3>
+                      <div className="team-title-stack">
+                        <h3 className="team-name">{getTeamName(liveMatch.team_a_id)}</h3>
+                        <button className="foul-chip" onClick={(e) => { e.stopPropagation(); updateScore(liveMatch.id, liveMatch.team_a_id, 'FOUL') }}>FOUL: {liveMatch.fouls_a}</button>
+                      </div>
                       <div className="house-selector" onClick={e => e.stopPropagation()}>
                         <button className={`house-opt ${liveMatch.team_a_house === 'SOLID' ? 'active' : ''}`} onClick={() => updateHouse(liveMatch.id, 'A', 'SOLID')}>●</button>
                         <button className={`house-opt ${liveMatch.team_a_house === 'STRIPES' ? 'active' : ''}`} onClick={() => updateHouse(liveMatch.id, 'A', 'STRIPES')}>◐</button>
@@ -459,7 +491,10 @@ export function QuickTournament() {
                   <div className="pod-inner">
                     <div className="pod-header">
                       <div className="team-initials">{getTeamName(liveMatch.team_b_id).substring(0,2).toUpperCase()}</div>
-                      <h3 className="team-name">{getTeamName(liveMatch.team_b_id)}</h3>
+                      <div className="team-title-stack">
+                        <h3 className="team-name">{getTeamName(liveMatch.team_b_id)}</h3>
+                        <button className="foul-chip" onClick={(e) => { e.stopPropagation(); updateScore(liveMatch.id, liveMatch.team_b_id, 'FOUL') }}>FOUL: {liveMatch.fouls_b}</button>
+                      </div>
                       <div className="house-selector" onClick={e => e.stopPropagation()}>
                         <button className={`house-opt ${liveMatch.team_b_house === 'SOLID' ? 'active' : ''}`} onClick={() => updateHouse(liveMatch.id, 'B', 'SOLID')}>●</button>
                         <button className={`house-opt ${liveMatch.team_b_house === 'STRIPES' ? 'active' : ''}`} onClick={() => updateHouse(liveMatch.id, 'B', 'STRIPES')}>◐</button>

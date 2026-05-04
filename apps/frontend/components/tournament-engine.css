@@ -1041,6 +1041,32 @@
 
 .mid-queue-item .q-pair { font-size: 0.8rem; font-weight: 700; }
 
+/* Foul System & Pod Refinements */
+.team-title-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.foul-chip {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.55rem;
+  font-weight: 900;
+  width: fit-content;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.foul-chip:hover {
+  background: #ef4444;
+  color: white;
+}
+
 /* Share Modal & Mobile Fixes */
 .share-link-wrapper {
   display: flex;
