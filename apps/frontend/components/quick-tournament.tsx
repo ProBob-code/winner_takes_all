@@ -75,14 +75,13 @@ export function QuickTournament() {
       setCurrentTime(now);
       
       // Auto-end expired matches
-      setMatches(prev => {
-        const live = prev.find(m => m.status === 'LIVE');
-        if (live && live.start_time) {
-          const remaining = (live.start_time + live.duration) - now;
+      setMatches(prev => prev.map(m => {
+        if (m.status === 'LIVE' && m.start_time) {
+          const remaining = (m.start_time + m.duration) - now;
           
           // Show extra time prompt at 30 seconds
-          if (remaining > 0 && remaining <= 30 && extraTimePromptId !== live.id) {
-            setExtraTimePromptId(live.id);
+          if (remaining > 0 && remaining <= 30 && extraTimePromptId !== m.id) {
+            setExtraTimePromptId(m.id);
           }
 
           if (remaining <= 0) {
