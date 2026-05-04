@@ -260,13 +260,37 @@
   font-weight: 700;
   color: white;
   transition: all 0.3s ease;
+  outline: none;
 }
 
 .premium-input-v2:focus {
   background: rgba(255,255,255,0.05);
   border-color: var(--gold);
   box-shadow: 0 0 20px rgba(245, 158, 11, 0.1);
-  outline: none;
+}
+
+/* Tactical Select Suite */
+select.premium-input-v2 {
+  appearance: none;
+  background-color: rgba(13, 17, 23, 0.85);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23f59e0b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1.25rem center;
+  background-size: 1.1rem;
+  padding-right: 3.5rem !important;
+  cursor: pointer;
+}
+
+select.premium-input-v2:hover {
+  border-color: var(--gold);
+  background-color: rgba(245, 158, 11, 0.05);
+}
+
+select.premium-input-v2 option {
+  background-color: #0d1117;
+  color: white;
+  padding: 1rem;
+  font-family: inherit;
 }
 
 .segmented-control {
@@ -1343,47 +1367,83 @@
   font-family: monospace;
 }
 
-/* Victory Celebration & Fireworks */
+/* Victory Celebration & Fireworks Revamp */
 .victory-overlay {
   position: fixed;
   top: 0; left: 0; width: 100vw; height: 100vh;
-  background: rgba(0,0,0,0.9);
-  backdrop-filter: blur(20px);
+  background: radial-gradient(circle, rgba(245, 158, 11, 0.1) 0%, rgba(0,0,0,0.95) 100%);
+  backdrop-filter: blur(25px);
   z-index: 20000;
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
+  animation: stadiumShake 0.5s cubic-bezier(.36,.07,.19,.97) both;
 }
 
-.victory-card {
+@keyframes stadiumShake {
+  10%, 90% { transform: translate3d(-1px, 0, 0); }
+  20%, 80% { transform: translate3d(2px, 0, 0); }
+  30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+  40%, 60% { transform: translate3d(4px, 0, 0); }
+}
+
+.victory-podium {
   text-align: center;
-  background: rgba(255,255,255,0.03);
-  border: 1px solid var(--gold);
-  padding: 4rem;
-  border-radius: 40px;
-  box-shadow: 0 0 100px rgba(245, 158, 11, 0.2);
+  background: linear-gradient(180deg, rgba(255,255,255,0.05) 0%, transparent 100%);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  padding: 5rem 6rem;
+  border-radius: 60px;
+  box-shadow: 0 50px 150px rgba(0,0,0,0.9), 0 0 50px rgba(245, 158, 11, 0.2);
+  position: relative;
+  z-index: 2;
 }
 
-.v-label { font-size: 0.7rem; font-weight: 900; letter-spacing: 4px; opacity: 0.5; margin-bottom: 1rem; }
-.v-name { font-size: 4rem; margin-bottom: 1rem; }
-.v-stats { font-size: 0.8rem; font-weight: 800; opacity: 0.4; letter-spacing: 2px; }
+.v-crown { font-size: 4rem; margin-bottom: 1rem; filter: drop-shadow(0 0 20px var(--gold)); animation: crownBounce 2s infinite; }
+@keyframes crownBounce { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-20px) scale(1.1); } }
 
-.fireworks-container { position: absolute; width: 100%; height: 100%; pointer-events: none; }
+.v-label { font-size: 0.8rem; font-weight: 900; letter-spacing: 6px; color: var(--gold); opacity: 0.8; margin-bottom: 1.5rem; }
+.v-name-xl { font-size: 6rem; font-weight: 950; margin-bottom: 2rem; line-height: 1; }
+.glow-text-gold { color: white; text-shadow: 0 0 20px var(--gold), 0 0 40px var(--gold); }
+
+.v-stats-premium {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.v-score { font-size: 2.5rem; font-weight: 900; color: white; }
+.v-vs { font-size: 0.7rem; font-weight: 900; opacity: 0.3; letter-spacing: 2px; }
+.v-footer { font-size: 0.6rem; font-weight: 900; opacity: 0.3; letter-spacing: 3px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 2rem; }
+
 .firework {
   position: absolute;
   top: 50%; left: 50%;
-  width: 4px; height: 4px;
+  width: 6px; height: 6px;
   border-radius: 50%;
-  box-shadow: 0 0 #fff, 0 0 #fff, 0 0 #fff, 0 0 #fff, 0 0 #fff, 0 0 #fff;
-  animation: firework 2s infinite;
+  box-shadow: 0 0 #fff;
+  animation: fireworkComplex 2.5s infinite;
 }
 
-.firework:nth-child(2) { animation-delay: 0.5s; left: 30%; top: 40%; }
-.firework:nth-child(3) { animation-delay: 1.2s; left: 70%; top: 30%; }
+.firework:nth-child(1) { left: 20%; top: 30%; color: #f59e0b; }
+.firework:nth-child(2) { left: 80%; top: 20%; color: #ef4444; animation-delay: 0.4s; }
+.firework:nth-child(3) { left: 50%; top: 40%; color: #3b82f6; animation-delay: 0.8s; }
+.firework:nth-child(4) { left: 15%; top: 70%; color: #8b5cf6; animation-delay: 1.2s; }
+.firework:nth-child(5) { left: 85%; top: 80%; color: #10b981; animation-delay: 1.6s; }
 
-@keyframes firework {
-  0% { transform: scale(1); box-shadow: 0 0 #fff; opacity: 1; }
-  100% { transform: scale(30); box-shadow: 50px 50px transparent, -50px -50px transparent, 50px -50px transparent, -50px 50px transparent; opacity: 0; }
+@keyframes fireworkComplex {
+  0% { transform: scale(1); box-shadow: 0 0 currentColor; opacity: 1; }
+  100% { 
+    transform: scale(40); 
+    box-shadow: 
+      80px 80px transparent, -80px -80px transparent, 
+      80px -80px transparent, -80px 80px transparent,
+      0 100px transparent, 0 -100px transparent,
+      100px 0 transparent, -100px 0 transparent; 
+    opacity: 0; 
+  }
 }
 
 /* Extra Time Toast */
@@ -1420,6 +1480,27 @@
   0%, 100% { transform: scale(1); border-color: var(--gold); }
   50% { transform: scale(1.02); border-color: white; }
 }
+
+/* Phase Transition Overlay */
+.phase-transition-overlay {
+  margin-top: 2rem;
+  display: flex;
+  justify-content: center;
+}
+
+.phase-card {
+  background: rgba(13, 17, 23, 0.8);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--gold);
+  padding: 3rem;
+  border-radius: 40px;
+  text-align: center;
+  max-width: 500px;
+  box-shadow: 0 40px 100px rgba(0,0,0,0.6);
+}
+
+.phase-card .p-icon { font-size: 3rem; margin-bottom: 1rem; }
+.phase-card h3 { font-size: 1.5rem; font-weight: 950; letter-spacing: 2px; margin-bottom: 1rem; color: white; }
 
 /* BYE / Seeking Indicator */
 .bye-badge {
