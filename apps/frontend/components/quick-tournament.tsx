@@ -165,7 +165,7 @@ export function QuickTournament() {
       <div className={`ball-slot black ${black ? 'filled' : ''}`}>8</div>
     </div>
   );
-
+  if (!isStarted) {
     return (
       <div className="setup-view slide-in" style={{ paddingBottom: '5rem' }}>
         <div className="setup-card animate-in">
