@@ -1,301 +1,310 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import { readBackendJson } from "@/lib/backend";
+import { readBackendJson, backendFetch } from "@/lib/backend";
 import { formatMoney } from "@/lib/format";
 import { BracketView } from "@/components/bracket-view";
 import { JoinTournamentButton } from "@/components/join-tournament-button";
 import { ShareTournament } from "@/components/share-tournament";
 import { DeleteTournamentDialog } from "@/components/delete-tournament-dialog";
+import "@/components/tournament-engine.css";
 
-type TournamentDetailResponse = {
-  ok: boolean;
-  tournament?: {
-    id: string;
-    name: string;
-    entryFee: { amount: string; currency: string };
-    prizePool: { amount: string; currency: string };
-    maxPlayers: number;
-    joinedPlayers: number;
-    status: string;
-    bracketType: string;
-    platformFeePercent: number;
-    winnerId?: string | null;
-    tournamentHostId?: string | null;
-    isPrivate: boolean;
-  };
-};
+// --- Types ---
 
-type BracketResponse = {
-  ok: boolean;
-  tournamentId: string;
-  tournamentName: string;
-  status: string;
-  rounds: Array<{
-    name: string;
-    roundNumber: number;
-    scoreThreshold: number;
-    matches: Array<{
-      id: string;
-      player1: { id: string; name: string; score: number; submittedScore?: number | null } | null;
-      player2: { id: string; name: string; score: number; submittedScore?: number | null } | null;
-      winnerId: string | null;
-      status: string;
-      scoreThreshold: number;
-      scheduledAt?: string | null;
-    }>;
-  }>;
-};
+interface EngineTeam {
+  id: string;
+  name: string;
+  matches_played: number;
+  group_points: number;
+  total_score: number;
+  bye_assigned: boolean;
+}
 
-type ParticipantsResponse = {
+interface EngineMatch {
+  id: string;
+  phase: string;
+  team_a_id: string;
+  team_b_id: string;
+  status: 'CREATED' | 'LIVE' | 'COMPLETED';
+  sudden_death: boolean;
+  active_team_id: string | null;
+  balls_potted_a: number;
+  balls_potted_b: number;
+  black_potted_a: boolean;
+  black_potted_b: boolean;
+  start_time: number | null;
+  duration: number;
+  score_team_a: number;
+  score_team_b: number;
+  winner_id: string | null;
+  explanation: string;
+  match_order: number;
+  ended_by?: 'SCORE' | 'TIME';
+}
+
+interface TournamentState {
   ok: boolean;
-  participants: Array<{
-    userId: string;
-    displayName: string;
-    status: string;
-    totalScore: number;
-    wins: number;
-    losses: number;
-    eliminatedInRound?: number | null;
-  }>;
-};
+  phase: string;
+  teams: EngineTeam[];
+  matches: EngineMatch[];
+}
+
+// --- Sub-components ---
+
+function Ticker({ balls, black, color }: { balls: number, black: boolean, color: string }) {
+  return (
+    <div className="ticker-row">
+      {[...Array(7)].map((_, i) => (
+        <div key={i} className={`ball-slot ${i < balls ? 'filled' : ''}`} style={{ '--accent-primary': color } as any}>
+          {i + 1}
+        </div>
+      ))}
+      <div className={`ball-slot black ${black ? 'filled' : ''}`}>8</div>
+    </div>
+  );
+}
+
+// --- Main Page ---
 
 export default function TournamentDetailPage() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<any>(null);
+  const [showArena, setShowArena] = useState(false);
+  const [engineState, setEngineState] = useState<TournamentState | null>(null);
+  const [currentTime, setCurrentTime] = useState(Math.floor(Date.now() / 1000));
+  const [newTeamName, setNewTeamName] = useState("");
 
-  useEffect(() => {
-    async function load() {
-      if (typeof window === "undefined") return;
-      try {
-        setLoading(true);
-        // Extract ID from pathname (e.g., /tournaments/123 -> 123)
-        const pathParts = window.location.pathname.split("/");
-        const id = pathParts[pathParts.length - 1];
+  const fetchTournamentData = useCallback(async () => {
+    if (typeof window === "undefined") return;
+    try {
+      const pathParts = window.location.pathname.split("/");
+      const id = pathParts[pathParts.length - 1];
+      if (!id || id === "view") return;
 
-        if (!id || id === "view" || id === "tournaments") {
-          setError("No tournament ID provided");
-          return;
-        }
-
-        const responses = await Promise.allSettled([
-          readBackendJson<TournamentDetailResponse>(`/tournaments/${id}`),
-          readBackendJson<BracketResponse>(`/tournaments/${id}/bracket`),
-          readBackendJson<ParticipantsResponse>(`/tournaments/${id}/participants`),
-          readBackendJson<any>("/user/profile"),
-        ]);
-        setData({ responses, id });
-      } catch (err) {
-        setError(err);
-      } finally {
-        setLoading(false);
+      const responses = await Promise.allSettled([
+        readBackendJson<any>(`/tournaments/${id}`),
+        readBackendJson<any>(`/tournaments/${id}/bracket`),
+        readBackendJson<any>(`/tournaments/${id}/participants`),
+        readBackendJson<any>("/user/profile"),
+        readBackendJson<TournamentState>(`/engine/tournaments/${id}/state`),
+      ]);
+      
+      setData({ responses, id });
+      if (responses[4].status === "fulfilled") {
+        setEngineState(responses[4].value.payload);
       }
+    } catch (err) {
+      setError(err);
+    } finally {
+      setLoading(false);
     }
-    load();
   }, []);
 
-  if (loading) return <div className="page"><div className="shell">Loading...</div></div>;
+  useEffect(() => {
+    fetchTournamentData();
+    const interval = setInterval(fetchTournamentData, 5000);
+    const timeInterval = setInterval(() => setCurrentTime(Math.floor(Date.now() / 1000)), 1000);
+    return () => {
+      clearInterval(interval);
+      clearInterval(timeInterval);
+    };
+  }, [fetchTournamentData]);
+
+  if (loading && !data) return <div className="page"><div className="shell">Loading...</div></div>;
   if (error) return <div className="page"><div className="shell">Error loading tournament</div></div>;
   
   const { responses, id } = data;
+  const tournamentRes = responses[0];
+  if (tournamentRes.status === "rejected") throw tournamentRes.reason;
+  
+  const tournament = tournamentRes.value.payload.tournament;
+  if (!tournament) return <div className="page"><div className="shell">Not Found</div></div>;
 
-    // Check if tournament fetch failed with 404
-    const tournamentRes = responses[0];
-    if (tournamentRes.status === "rejected") {
-      const errorMsg = tournamentRes.reason?.message || "";
-      if (errorMsg.includes("404")) {
-        return (
-          <main className="page">
-            <div className="shell">
-              <div className="panel page-card slide-in" style={{ textAlign: "center", padding: "4rem 2rem" }}>
-                <div style={{ fontSize: "4rem", marginBottom: "1.5rem" }}>🏟️</div>
-                <h2 style={{ fontSize: "2rem", marginBottom: "1rem" }}>Tournament Not Found</h2>
-                <p style={{ color: "var(--text-muted)", marginBottom: "2rem" }}>This lobby may have been deleted or moved.</p>
-                <Link href="/tournaments" className="button button-primary">Back to Tournaments</Link>
+  const bracketData = responses[1].status === "fulfilled" ? responses[1].value.payload : { rounds: [] };
+  const participantData = responses[2].status === "fulfilled" ? responses[2].value.payload : { participants: [] };
+  const profileData = responses[3].status === "fulfilled" ? responses[3].value.payload : null;
+  const isHost = profileData?.ok && profileData?.user?.id === tournament.tournamentHostId;
+
+  // Engine Actions
+  const addTeam = async () => {
+    if (!newTeamName) return;
+    await backendFetch(`/engine/tournaments/${id}/add-team`, { method: "POST", body: JSON.stringify({ name: newTeamName }) });
+    setNewTeamName("");
+    fetchTournamentData();
+  };
+
+  const updateScore = async (matchId: string, teamId: string, type: 'BALL' | 'BLACK' | 'MISTAKE') => {
+    await backendFetch(`/engine/matches/${matchId}/score`, { method: "POST", body: JSON.stringify({ teamId, type }) });
+    fetchTournamentData();
+  };
+
+  const highlightTeam = async (matchId: string, teamId: string) => {
+    await backendFetch(`/engine/matches/${matchId}/highlight`, { method: "POST", body: JSON.stringify({ teamId }) });
+    fetchTournamentData();
+  };
+
+  const startMatch = async (matchId: string) => {
+    await backendFetch(`/engine/matches/${matchId}/start`, { method: "POST" });
+    fetchTournamentData();
+  };
+
+  const startTournament = async () => {
+    await backendFetch(`/engine/tournaments/${id}/start`, { method: "POST" });
+    fetchTournamentData();
+  };
+
+  const generateMatches = async () => {
+    await backendFetch(`/engine/tournaments/${id}/generate`, { method: "POST" });
+    fetchTournamentData();
+  };
+
+  // Helper
+  const getTeamName = (teamId: string) => engineState?.teams.find(t => t.id === teamId)?.name || "Unknown";
+  const formatTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${s.toString().padStart(2, '0')}`;
+  };
+
+  const liveMatch = engineState?.matches.find(m => m.status === 'LIVE');
+
+  return (
+    <main className="page">
+      <div className="shell">
+        
+        {/* LIVE ARENA BANNER (Visible to all if match is live) */}
+        {liveMatch && (
+          <div className="panel page-card animate-in" style={{ border: '1px solid var(--accent-primary)', background: 'rgba(139, 92, 246, 0.05)', marginBottom: '1.5rem' }}>
+            <div className="match-status-indicator" style={{ marginBottom: '1rem' }}>
+              <div className="live-dot"></div>
+              LIVE MATCH • {formatTime(Math.max(0, (liveMatch.start_time || 0) + liveMatch.duration - currentTime))}
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '2rem' }}>
+              <div style={{ textAlign: 'right', flex: 1 }}>
+                <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#ef4444' }}>{getTeamName(liveMatch.team_a_id)}</div>
+                <div style={{ fontSize: '2.5rem', fontWeight: 900 }}>{liveMatch.score_team_a}</div>
+                <Ticker balls={liveMatch.balls_potted_a} black={liveMatch.black_potted_a} color="#ef4444" />
+              </div>
+              <div className="vs-orb" style={{ width: '40px', height: '40px', fontSize: '0.8rem' }}>VS</div>
+              <div style={{ textAlign: 'left', flex: 1 }}>
+                <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#3b82f6' }}>{getTeamName(liveMatch.team_b_id)}</div>
+                <div style={{ fontSize: '2.5rem', fontWeight: 900 }}>{liveMatch.score_team_b}</div>
+                <Ticker balls={liveMatch.balls_potted_b} black={liveMatch.black_potted_b} color="#3b82f6" />
               </div>
             </div>
-          </main>
-        );
-      }
-      throw tournamentRes.reason;
-    }
-
-    const { payload: tournamentData } = tournamentRes.value;
-    const bracketData = responses[1].status === "fulfilled" ? responses[1].value.payload : { rounds: [] };
-    const participantData = responses[2].status === "fulfilled" ? responses[2].value.payload : { participants: [] };
-    const profileData = responses[3].status === "fulfilled" ? responses[3].value.payload : null;
-
-    const tournament = tournamentData.tournament;
-    if (!tournament) {
-      return (
-        <main className="page">
-          <div className="shell">
-            <div className="panel page-card slide-in" style={{ textAlign: "center", padding: "4rem 2rem" }}>
-              <div style={{ fontSize: "4rem", marginBottom: "1.5rem" }}>🏟️</div>
-              <h2 style={{ fontSize: "2rem", marginBottom: "1rem" }}>Tournament Not Found</h2>
-              <p style={{ color: "var(--text-muted)", marginBottom: "2rem" }}>This lobby is no longer available.</p>
-              <Link href="/tournaments" className="button button-primary">Back to Tournaments</Link>
+            <div style={{ textAlign: 'center', marginTop: '1.5rem', opacity: 0.6, fontSize: '0.8rem' }}>
+              💡 {liveMatch.explanation}
             </div>
           </div>
-        </main>
-      );
-    }
+        )}
 
-    const isHost = profileData.ok && profileData.user && profileData.user.id === tournament.tournamentHostId;
-
-    const statusClass = `tournament-status status-${tournament.status}`;
-    const isCompleted = tournament.status === "completed";
-    const isOpen = tournament.status === "open";
-    const participants = participantData.participants || [];
-    const rounds = bracketData.rounds || [];
-    const winnerParticipant = participants.find((p: any) => p.status === "winner");
-
-    // Calculate prize info
-    const prizePool = parseFloat(tournament.prizePool.amount);
-    const winnerPayout = prizePool * (1 - tournament.platformFeePercent / 100);
-
-    return (
-      <main className="page">
-        <div className="shell">
-          {/* Tournament Header */}
-          <div className="panel page-card slide-in" style={{ marginBottom: "1.5rem" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "1rem" }}>
-              <div>
-                <h2 style={{ fontSize: "1.5rem" }}>{tournament.name}</h2>
-                <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-                  <span className={statusClass}>{tournament.status.replace("_", " ")}</span>
-                  {tournament.isPrivate && (
-                    <span style={{ 
-                      background: "var(--red-subtle)", 
-                      color: "var(--red-light)", 
-                      fontSize: "0.75rem", 
-                      padding: "2px 8px", 
-                      borderRadius: "6px",
-                      fontWeight: "700",
-                      border: "1px solid rgba(239, 68, 68, 0.2)"
-                    }}>
-                      🔒 PRIVATE
-                    </span>
-                  )}
-                </div>
-              </div>
-              <div style={{ textAlign: "right" }}>
-                <div className="tournament-meta">
-                  <div className="tournament-meta-item">
-                    💰 Entry: <span className="meta-value">₹{tournament.entryFee.amount}</span>
-                  </div>
-                  <div className="tournament-meta-item">
-                    🏆 Prize: <span className="meta-value">₹{tournament.prizePool.amount}</span>
-                  </div>
-                  <div className="tournament-meta-item">
-                    👥 <span className="meta-value">{tournament.joinedPlayers}/{tournament.maxPlayers}</span>
-                  </div>
-                </div>
+        {/* Tournament Info */}
+        <div className="panel page-card slide-in" style={{ marginBottom: "1.5rem" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "1rem" }}>
+            <div>
+              <h2 style={{ fontSize: "1.5rem" }}>{tournament.name}</h2>
+              <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+                <span className={`tournament-status status-${tournament.status}`}>{tournament.status.replace("_", " ")}</span>
+                {tournament.isPrivate && <span className="status-badge" style={{ background: "rgba(239, 68, 68, 0.1)", color: "#ef4444" }}>🔒 PRIVATE</span>}
               </div>
             </div>
-
-              <div className="cta-row" style={{ marginTop: "1.5rem" }}>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "1rem", alignItems: "center", flex: 1 }}>
-                  <JoinTournamentButton tournamentId={id} isPrivate={tournament.isPrivate} />
-                  <ShareTournament tournamentId={id} tournamentName={tournament.name} />
-                </div>
-                {isHost && (
-                  <DeleteTournamentDialog tournamentId={id} tournamentName={tournament.name} />
-                )}
-              </div>
+            <div className="tournament-meta">
+              <div className="tournament-meta-item">💰 ₹{tournament.entryFee.amount}</div>
+              <div className="tournament-meta-item">🏆 ₹{tournament.prizePool.amount}</div>
+              <div className="tournament-meta-item">👥 {tournament.joinedPlayers}/{tournament.maxPlayers}</div>
+            </div>
           </div>
 
-          {/* Winner Banner */}
-          {isCompleted && winnerParticipant && (
-            <div className="tournament-complete slide-in" style={{ marginBottom: "1.5rem" }}>
-              <h2>🏆 Tournament Complete!</h2>
-              <div className="tournament-winner-name">{winnerParticipant.displayName}</div>
-              <div className="tournament-payout">
-                Won ₹{winnerPayout.toFixed(2)} ({tournament.platformFeePercent}% platform fee applied)
-              </div>
+          <div className="cta-row" style={{ marginTop: "1.5rem" }}>
+            <div style={{ display: "flex", gap: "1rem", flex: 1 }}>
+              <JoinTournamentButton tournamentId={id} isPrivate={tournament.isPrivate} />
+              <ShareTournament tournamentId={id} tournamentName={tournament.name} />
             </div>
-          )}
-
-          {/* Bracket */}
-          <div className="panel page-card slide-in" style={{ marginBottom: "1.5rem" }}>
-            <h2>🏗️ Bracket</h2>
-            <BracketView rounds={rounds} tournamentStatus={tournament.status} />
-          </div>
-
-          {/* Match Schedule */}
-          {rounds.length > 0 && (
-            <div className="panel page-card slide-in" style={{ marginBottom: "1.5rem" }}>
-              <h2>📅 Match Schedule</h2>
-              <div className="match-schedule">
-                {rounds.flatMap((round: any) =>
-                  round.matches
-                    .filter((m: any) => m.status !== "completed" && m.status !== "bye")
-                    .map((match: any) => (
-                      <Link
-                        key={match.id}
-                        href={`/match/${match.id}`}
-                        className="match-schedule-item"
-                        style={{ textDecoration: "none", color: "inherit" }}
-                      >
-                        <div className="match-time">
-                          {match.scheduledAt ? new Date(match.scheduledAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "TBD"}
-                        </div>
-                        <div className="match-players">
-                          {match.player1?.name || "TBD"} vs {match.player2?.name || "TBD"}
-                        </div>
-                        <span className="match-round-badge">{round.name}</span>
-                      </Link>
-                    ))
-                )}
-                {rounds.every((r: any) => r.matches.every((m: any) => m.status === "completed" || m.status === "bye")) && (
-                  <p className="muted">All matches completed!</p>
-                )}
+            {isHost && (
+              <div style={{ display: "flex", gap: "0.5rem" }}>
+                <button onClick={() => setShowArena(!showArena)} className={`button ${showArena ? 'button-primary' : 'button-secondary'}`}>
+                  🏟️ {showArena ? 'CLOSE ARENA' : 'OPEN ARENA MANAGER'}
+                </button>
+                <DeleteTournamentDialog tournamentId={id} tournamentName={tournament.name} />
               </div>
-            </div>
-          )}
-
-          {/* Participants / Leaderboard */}
-          <div className="panel page-card slide-in">
-            <h2>📊 Standings</h2>
-            {participants.length > 0 ? (
-              <table className="leaderboard-table">
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    <th>Player</th>
-                    <th>Score</th>
-                    <th>W/L</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {participants
-                    .sort((a: any, b: any) => {
-                      const order: Record<string, number> = { winner: 0, active: 1, registered: 2, eliminated: 3 };
-                      return (order[a.status] ?? 9) - (order[b.status] ?? 9) || b.totalScore - a.totalScore;
-                    })
-                    .map((p: any, i: number) => (
-                    <tr key={p.userId}>
-                      <td className={`leaderboard-rank ${i < 3 ? `rank-${i + 1}` : ""}`}>{i + 1}</td>
-                      <td className="leaderboard-name">
-                        {p.displayName}
-                        {p.status === "winner" && <span className="leaderboard-badge badge-winner">👑 Champion</span>}
-                        {p.status === "eliminated" && <span className="leaderboard-badge badge-eliminated">Eliminated R{p.eliminatedInRound}</span>}
-                        {p.status === "active" && <span className="leaderboard-badge badge-active">Active</span>}
-                      </td>
-                      <td>{p.totalScore} pts</td>
-                      <td>{p.wins}W / {p.losses}L</td>
-                      <td><span className={`tournament-status status-${p.status === "winner" ? "completed" : p.status === "eliminated" ? "cancelled" : "open"}`}>{p.status}</span></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            ) : (
-              <p className="muted">No participants yet. Be the first to join!</p>
             )}
           </div>
         </div>
-      </main>
-    );
-  }
+
+        {/* ARENA MANAGER (Host Only) */}
+        {showArena && isHost && engineState && (
+          <div className="engine-container animate-in" style={{ marginBottom: '3rem' }}>
+            <div className="center-stage">
+              {liveMatch ? (
+                <div className="score-arena" style={{ width: '100%', gap: '2rem' }}>
+                  <div className={`team-arena-card red ${liveMatch.active_team_id === liveMatch.team_a_id ? 'active' : ''}`} onClick={() => highlightTeam(liveMatch.id, liveMatch.team_a_id)}>
+                    <div className="pod-score">{liveMatch.score_team_a}</div>
+                    <div className="control-grid">
+                      <button className="score-btn ball" onClick={(e) => { e.stopPropagation(); updateScore(liveMatch.id, liveMatch.team_a_id, 'BALL') }}>BALL +10</button>
+                      <button className="score-btn black" onClick={(e) => { e.stopPropagation(); updateScore(liveMatch.id, liveMatch.team_a_id, 'BLACK') }}>BLACK +30</button>
+                      <button className="score-btn mistake" onClick={(e) => { e.stopPropagation(); updateScore(liveMatch.id, liveMatch.team_b_id, 'MISTAKE') }}>FOUL</button>
+                    </div>
+                  </div>
+                  <div className={`team-arena-card blue ${liveMatch.active_team_id === liveMatch.team_b_id ? 'active' : ''}`} onClick={() => highlightTeam(liveMatch.id, liveMatch.team_b_id)}>
+                    <div className="pod-score">{liveMatch.score_team_b}</div>
+                    <div className="control-grid">
+                      <button className="score-btn ball" onClick={(e) => { e.stopPropagation(); updateScore(liveMatch.id, liveMatch.team_b_id, 'BALL') }}>BALL +10</button>
+                      <button className="score-btn black" onClick={(e) => { e.stopPropagation(); updateScore(liveMatch.id, liveMatch.team_b_id, 'BLACK') }}>BLACK +30</button>
+                      <button className="score-btn mistake" onClick={(e) => { e.stopPropagation(); updateScore(liveMatch.id, liveMatch.team_a_id, 'MISTAKE') }}>FOUL</button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ textAlign: 'center', padding: '2rem' }}>
+                  <h3 className="glow-text">Ready for Next Match</h3>
+                  <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginTop: '1.5rem' }}>
+                    {engineState.matches.filter(m => m.status === 'CREATED').length > 0 ? (
+                      <button className="button button-primary" onClick={() => startMatch(engineState.matches.filter(m => m.status === 'CREATED')[0].id)}>START NEXT MATCH</button>
+                    ) : (
+                      <button className="button button-secondary" onClick={generateMatches}>GENERATE NEW MATCHES</button>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            {engineState.phase === 'SETUP' && (
+              <div className="standings-card" style={{ marginTop: '2rem' }}>
+                <div className="team-input-row">
+                  <input placeholder="Add team..." value={newTeamName} onChange={e => setNewTeamName(e.target.value)} />
+                  <button className="button button-primary" onClick={addTeam}>ADD</button>
+                </div>
+                {engineState.teams.length >= 2 && <button className="button button-secondary" style={{ width: '100%', marginTop: '1rem' }} onClick={startTournament}>BEGIN TOURNAMENT</button>}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Existing Tournament Sections */}
+        <div className="panel page-card" style={{ marginBottom: "1.5rem" }}>
+          <h2>🏗️ Bracket</h2>
+          <BracketView rounds={bracketData.rounds || []} tournamentStatus={tournament.status} />
+        </div>
+
+        <div className="panel page-card">
+          <h2>📊 Standings</h2>
+          <table className="leaderboard-table">
+            <thead><tr><th>#</th><th>Player</th><th>Score</th><th>W/L</th></tr></thead>
+            <tbody>
+              {(participantData.participants || []).map((p: any, i: number) => (
+                <tr key={p.userId}>
+                  <td>{i + 1}</td>
+                  <td>{p.displayName}</td>
+                  <td>{p.totalScore} pts</td>
+                  <td>{p.wins}W / {p.losses}L</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </main>
+  );
+}

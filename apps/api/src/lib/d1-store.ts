@@ -62,6 +62,36 @@ export interface TeamRecord {
   code: string | null; member_ids: string[];
 }
 
+export interface EngineTeam {
+  id: string;
+  name: string;
+  matches_played: number;
+  group_points: number; // wins count
+  total_score: number;  // tie-breaker
+  bye_assigned: boolean;
+}
+
+export interface EngineMatch {
+  id: string;
+  phase: string;
+  team_a_id: string;
+  team_b_id: string;
+  status: string;
+  sudden_death: boolean;
+  active_team_id: string | null;
+  balls_potted_a: number;
+  balls_potted_b: number;
+  black_potted_a: boolean;
+  black_potted_b: boolean;
+  start_time: number | null;
+  duration: number;
+  score_team_a: number;
+  score_team_b: number;
+  winner_id: string | null;
+  explanation: string;
+  match_order: number;
+}
+
 // ── D1 Store ──
 
 export class D1Store {
@@ -503,5 +533,81 @@ export class D1Store {
       teams.push({ ...r, member_ids: members.map((p: any) => p.user_id) });
     }
     return teams;
+  }
+
+  // --- Engine Unification ---
+
+  async createEngineTeam(tournamentId: string, name: string): Promise<EngineTeam> {
+    const id = createId("eteam");
+    const now = new Date().toISOString();
+    await this.db.prepare(
+      `INSERT INTO engine_teams (id, tournament_id, name, created_at) VALUES (?, ?, ?, ?)`
+    ).bind(id, tournamentId, name, now).run();
+    return { id, name, matches_played: 0, group_points: 0, total_score: 0, bye_assigned: false };
+  }
+
+  async getEngineTeams(tournamentId: string): Promise<EngineTeam[]> {
+    const { results } = await this.db.prepare(`SELECT * FROM engine_teams WHERE tournament_id = ?`).bind(tournamentId).all<any>();
+    return results.map(r => ({ ...r, bye_assigned: !!r.bye_assigned }));
+  }
+
+  async updateEngineTeam(teamId: string, updates: Partial<EngineTeam>): Promise<void> {
+    const sets: string[] = [];
+    const vals: any[] = [];
+    for (const [k, v] of Object.entries(updates)) {
+      if (k === 'id') continue;
+      sets.push(`${k} = ?`);
+      vals.push(k === 'bye_assigned' ? (v ? 1 : 0) : v);
+    }
+    if (sets.length === 0) return;
+    vals.push(teamId);
+    await this.db.prepare(`UPDATE engine_teams SET ${sets.join(", ")} WHERE id = ?`).bind(...vals).run();
+  }
+
+  async createEngineMatch(tournamentId: string, data: Partial<EngineMatch>): Promise<EngineMatch> {
+    const id = createId("ematch");
+    const now = new Date().toISOString();
+    await this.db.prepare(
+      `INSERT INTO engine_matches (id, tournament_id, phase, team_a_id, team_b_id, status, sudden_death, duration, explanation, match_order, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    ).bind(id, tournamentId, data.phase || 'GROUP', data.team_a_id, data.team_b_id, 'CREATED', 0, data.duration || 600, data.explanation || '', data.match_order || 0, now).run();
+    return (await this.getEngineMatch(id))!;
+  }
+
+  async getEngineMatch(matchId: string): Promise<EngineMatch | null> {
+    const r = await this.db.prepare(`SELECT * FROM engine_matches WHERE id = ?`).bind(matchId).first<any>();
+    if (!r) return null;
+    return { ...r, sudden_death: !!r.sudden_death, black_potted_a: !!r.black_potted_a, black_potted_b: !!r.black_potted_b };
+  }
+
+  async getEngineMatches(tournamentId: string): Promise<EngineMatch[]> {
+    const { results } = await this.db.prepare(`SELECT * FROM engine_matches WHERE tournament_id = ? ORDER BY match_order ASC, created_at ASC`).bind(tournamentId).all<any>();
+    return results.map(r => ({ ...r, sudden_death: !!r.sudden_death, black_potted_a: !!r.black_potted_a, black_potted_b: !!r.black_potted_b }));
+  }
+
+  async updateEngineMatch(matchId: string, updates: Partial<EngineMatch>): Promise<void> {
+    const sets: string[] = [];
+    const vals: any[] = [];
+    for (const [k, v] of Object.entries(updates)) {
+      if (k === 'id') continue;
+      sets.push(`${k} = ?`);
+      if (['sudden_death', 'black_potted_a', 'black_potted_b'].includes(k)) {
+        vals.push(v ? 1 : 0);
+      } else {
+        vals.push(v);
+      }
+    }
+    if (sets.length === 0) return;
+    vals.push(matchId);
+    await this.db.prepare(`UPDATE engine_matches SET ${sets.join(", ")} WHERE id = ?`).bind(...vals).run();
+  }
+
+  async createEngineMatchup(tournamentId: string, team1Id: string, team2Id: string, matchId: string): Promise<void> {
+    await this.db.prepare(`INSERT INTO engine_matchups (id, tournament_id, team1_id, team2_id, match_id) VALUES (?, ?, ?, ?, ?)`).bind(createId("emup"), tournamentId, team1Id, team2Id, matchId).run();
+  }
+
+  async getEngineMatchups(tournamentId: string): Promise<any[]> {
+    const { results } = await this.db.prepare(`SELECT team1_id, team2_id FROM engine_matchups WHERE tournament_id = ?`).bind(tournamentId).all<any>();
+    return results;
   }
 }

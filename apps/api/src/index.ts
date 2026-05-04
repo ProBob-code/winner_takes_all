@@ -19,12 +19,11 @@ import { centsToMoney, moneyToCents } from "./lib/money";
 import { EngineStore } from "./lib/engine-store";
 import * as Engine from "./lib/tournament-engine";
 
-const app = new Hono<{ Bindings: Env; Variables: { store: D1Store; engineStore: EngineStore; user?: any } }>();
+const app = new Hono<{ Bindings: Env; Variables: { store: D1Store; user?: any } }>();
 
-// Inject Stores
+// Inject Store
 app.use("/api/*", async (c, next) => {
   c.set("store", new D1Store(c.env.DB));
-  c.set("engineStore", new EngineStore(c.env.DB));
   await next();
 });
 
@@ -470,13 +469,13 @@ app.get("/api/admin/overview", async (c) => {
 // --- Tournament Engine Routes ---
 
 app.get("/api/engine/tournaments/:id/state", async (c) => {
-  const engineStore = c.get("engineStore");
+  const store = c.get("store");
   const tournamentId = c.req.param("id");
   
   const [teams, matches, tournament] = await Promise.all([
-    engineStore.getTeams(tournamentId),
-    engineStore.getMatches(tournamentId),
-    c.get("store").getTournament(tournamentId)
+    store.getEngineTeams(tournamentId),
+    store.getEngineMatches(tournamentId),
+    store.getTournament(tournamentId)
   ]);
 
   if (!tournament) return c.json({ ok: false, message: "Tournament not found" }, 404);
@@ -490,42 +489,42 @@ app.get("/api/engine/tournaments/:id/state", async (c) => {
 });
 
 app.post("/api/engine/tournaments/:id/add-team", async (c) => {
-  const engineStore = c.get("engineStore");
+  const store = c.get("store");
   const tournamentId = c.req.param("id");
   const body = await c.req.json();
   
-  const tournament = await c.get("store").getTournament(tournamentId);
+  const tournament = await store.getTournament(tournamentId);
   if (!tournament) return c.json({ ok: false, message: "Tournament not found" }, 404);
   
   if (tournament.status !== 'GROUP' && tournament.status !== 'open') {
     return c.json({ ok: false, message: "Can only add teams during GROUP or SETUP phase" }, 400);
   }
 
-  const matches = await engineStore.getMatches(tournamentId);
+  const matches = await store.getEngineMatches(tournamentId);
   if (matches.some(m => m.status === 'LIVE')) {
     return c.json({ ok: false, message: "Cannot add teams while a match is LIVE" }, 400);
   }
 
-  const team = await engineStore.createTeam(tournamentId, body.name || `Team ${Math.floor(Math.random()*1000)}`);
+  const team = await store.createEngineTeam(tournamentId, body.name || `Team ${Math.floor(Math.random()*1000)}`);
   return c.json({ ok: true, team });
 });
 
 app.post("/api/engine/tournaments/:id/start", async (c) => {
-  const engineStore = c.get("engineStore");
+  const store = c.get("store");
   const tournamentId = c.req.param("id");
   
-  await engineStore.updateTournamentPhase(tournamentId, 'GROUP');
+  await store.updateTournamentPhase(tournamentId, 'GROUP');
   return c.json({ ok: true });
 });
 
 app.post("/api/engine/tournaments/:id/generate", async (c) => {
-  const engineStore = c.get("engineStore");
+  const store = c.get("store");
   const tournamentId = c.req.param("id");
   
   const [teams, matchups, matches] = await Promise.all([
-    engineStore.getTeams(tournamentId),
-    engineStore.getMatchups(tournamentId),
-    engineStore.getMatches(tournamentId)
+    store.getEngineTeams(tournamentId),
+    store.getEngineMatchups(tournamentId),
+    store.getEngineMatches(tournamentId)
   ]);
 
   if (matches.some(m => m.status === 'LIVE')) {
@@ -535,14 +534,14 @@ app.post("/api/engine/tournaments/:id/generate", async (c) => {
   const { matches: nextMatches, byeTeamId } = Engine.generateNextMatches(teams, matchups);
   
   for (const mData of nextMatches) {
-    const match = await engineStore.createMatch(tournamentId, mData);
-    await engineStore.createMatchup(tournamentId, match.team_a_id, match.team_b_id, match.id);
+    const match = await store.createEngineMatch(tournamentId, mData);
+    await store.createEngineMatchup(tournamentId, match.team_a_id, match.team_b_id, match.id);
   }
 
   if (byeTeamId) {
     const team = teams.find(t => t.id === byeTeamId);
     if (team) {
-      await engineStore.updateTeam(byeTeamId, {
+      await store.updateEngineTeam(byeTeamId, {
         matches_played: team.matches_played + 1,
         group_points: team.group_points + 1,
         bye_assigned: true
@@ -554,18 +553,18 @@ app.post("/api/engine/tournaments/:id/generate", async (c) => {
 });
 
 app.post("/api/engine/matches/:id/start", async (c) => {
-  const engineStore = c.get("engineStore");
+  const store = c.get("store");
   const matchId = c.req.param("id");
   
-  const match = await engineStore.getMatch(matchId);
+  const match = await store.getEngineMatch(matchId);
   if (!match) return c.json({ ok: false, message: "Match not found" }, 404);
 
-  const allMatches = await engineStore.getMatches(match.tournamentId);
+  const allMatches = await store.getEngineMatches(match.tournamentId);
   if (allMatches.some(m => m.status === 'LIVE')) {
     return c.json({ ok: false, message: "Another match is already LIVE" }, 400);
   }
 
-  await engineStore.updateMatch(matchId, {
+  await store.updateEngineMatch(matchId, {
     status: 'LIVE',
     start_time: Math.floor(Date.now() / 1000)
   });
@@ -573,32 +572,61 @@ app.post("/api/engine/matches/:id/start", async (c) => {
   return c.json({ ok: true });
 });
 
-app.post("/api/engine/matches/:id/score", async (c) => {
-  const engineStore = c.get("engineStore");
+app.post("/api/engine/tournaments/:id/reorder", async (c) => {
+  const store = c.get("store");
+  const body = await c.req.json();
+  const { matchIds } = body; // Array of IDs in order
+  
+  if (!Array.isArray(matchIds)) return c.json({ ok: false, message: "Invalid matchIds" }, 400);
+
+  for (let i = 0; i < matchIds.length; i++) {
+    await store.updateMatchOrder(matchIds[i], i);
+  }
+
+  return c.json({ ok: true });
+});
+
+app.post("/api/engine/matches/:id/highlight", async (c) => {
+  const store = c.get("store");
   const matchId = c.req.param("id");
   const body = await c.req.json();
-  const { teamId, points } = body;
+  const { teamId } = body;
+  
+  await engineStore.updateMatch(matchId, { active_team_id: teamId });
+  return c.json({ ok: true });
+});
 
-  let match = await engineStore.getMatch(matchId);
+app.post("/api/engine/matches/:id/score", async (c) => {
+  const store = c.get("store");
+  const matchId = c.req.param("id");
+  const body = await c.req.json();
+  const { teamId, type } = body; // type: 'BALL' | 'BLACK' | 'MISTAKE'
+
+  let match = await store.getEngineMatch(matchId);
   if (!match) return c.json({ ok: false, message: "Match not found" }, 404);
 
   // Check timer first
   const { updatedMatch: timedMatch, matchEnded: timerEnded } = Engine.checkTimer(match, Math.floor(Date.now() / 1000));
   match = timedMatch;
 
-  const { updatedMatch: finalMatch, matchEnded: scoreEnded } = Engine.processScoreUpdate(match, teamId, points);
+  const { updatedMatch: finalMatch, matchEnded: scoreEnded } = Engine.processScoreUpdate(match, teamId, type);
   
-  await engineStore.updateMatch(matchId, {
+  await store.updateEngineMatch(matchId, {
     score_team_a: finalMatch.score_team_a,
     score_team_b: finalMatch.score_team_b,
+    balls_potted_a: finalMatch.balls_potted_a,
+    balls_potted_b: finalMatch.balls_potted_b,
+    black_potted_a: finalMatch.black_potted_a,
+    black_potted_b: finalMatch.black_potted_b,
     status: finalMatch.status,
     winner_id: finalMatch.winner_id,
-    sudden_death: finalMatch.sudden_death
+    sudden_death: finalMatch.sudden_death,
+    ended_by: scoreEnded ? 'SCORE' : (timerEnded ? 'TIME' : null)
   });
 
   if (timerEnded || scoreEnded) {
     // Finalize team stats
-    const teams = await engineStore.getTeams(finalMatch.tournamentId);
+    const teams = await store.getEngineTeams(finalMatch.tournamentId);
     const teamA = teams.find(t => t.id === finalMatch.team_a_id)!;
     const teamB = teams.find(t => t.id === finalMatch.team_b_id)!;
 

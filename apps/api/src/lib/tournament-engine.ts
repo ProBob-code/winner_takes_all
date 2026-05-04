@@ -23,12 +23,18 @@ export interface EngineMatch {
   team_b_id: string;
   status: MatchStatus;
   sudden_death: boolean;
+  active_team_id: string | null;
+  balls_potted_a: number;
+  balls_potted_b: number;
+  black_potted_a: boolean;
+  black_potted_b: boolean;
   start_time: number | null; // unix timestamp
   duration: number;          // seconds
   score_team_a: number;
   score_team_b: number;
   winner_id: string | null;
   explanation: string;
+  match_order: number;
 }
 
 export interface MatchupRecord {
@@ -112,12 +118,12 @@ export function generateNextMatches(
 export function processScoreUpdate(
   match: EngineMatch,
   scoringTeamId: string,
-  points: number
+  type: 'BALL' | 'BLACK' | 'MISTAKE'
 ): { updatedMatch: EngineMatch, matchEnded: boolean } {
   
   const updatedMatch = { ...match };
   
-  if (updatedMatch.status !== 'LIVE' && updatedMatch.status !== 'CREATED') {
+  if (updatedMatch.status !== 'LIVE') {
     return { updatedMatch, matchEnded: false };
   }
 
@@ -128,23 +134,38 @@ export function processScoreUpdate(
     return { updatedMatch, matchEnded: true };
   }
 
-  // Update score
-  if (updatedMatch.team_a_id === scoringTeamId) {
+  const isTeamA = updatedMatch.team_a_id === scoringTeamId;
+  const points = type === 'BLACK' ? 30 : 10;
+
+  // Update specific counters
+  if (type === 'BALL') {
+    if (isTeamA) updatedMatch.balls_potted_a++;
+    else updatedMatch.balls_potted_b++;
+  } else if (type === 'BLACK') {
+    if (isTeamA) updatedMatch.black_potted_a = true;
+    else updatedMatch.black_potted_b = true;
+  }
+
+  // Update scores
+  if (isTeamA) {
     updatedMatch.score_team_a += points;
-    if (updatedMatch.score_team_a >= 100) {
-      updatedMatch.score_team_a = 100;
-      updatedMatch.winner_id = scoringTeamId;
-      updatedMatch.status = 'COMPLETED';
-      return { updatedMatch, matchEnded: true };
-    }
   } else {
     updatedMatch.score_team_b += points;
-    if (updatedMatch.score_team_b >= 100) {
-      updatedMatch.score_team_b = 100;
-      updatedMatch.winner_id = scoringTeamId;
-      updatedMatch.status = 'COMPLETED';
-      return { updatedMatch, matchEnded: true };
-    }
+  }
+
+  // Check win condition (Race to 100)
+  if (updatedMatch.score_team_a >= 100) {
+    updatedMatch.score_team_a = 100;
+    updatedMatch.winner_id = updatedMatch.team_a_id;
+    updatedMatch.status = 'COMPLETED';
+    return { updatedMatch, matchEnded: true };
+  }
+  
+  if (updatedMatch.score_team_b >= 100) {
+    updatedMatch.score_team_b = 100;
+    updatedMatch.winner_id = updatedMatch.team_b_id;
+    updatedMatch.status = 'COMPLETED';
+    return { updatedMatch, matchEnded: true };
   }
 
   return { updatedMatch, matchEnded: false };
