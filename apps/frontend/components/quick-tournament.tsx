@@ -116,7 +116,9 @@ export function QuickTournament() {
               id: `m-k-${i}`, team_a_id: allTeams[i].id, team_b_id: allTeams[i+1].id,
               score_team_a: 0, score_team_b: 0, balls_potted_a: 0, balls_potted_b: 0,
               black_potted_a: false, black_potted_b: false, status: 'CREATED',
-              winner_id: null, active_team_id: null, duration: 600, start_time: null, order: i/2
+              winner_id: null, active_team_id: null, duration: 600, start_time: null, order: i/2,
+              team_a_house: 'SOLID', team_b_house: 'STRIPES',
+              fouls_a: 0, fouls_b: 0
             });
           }
         }
