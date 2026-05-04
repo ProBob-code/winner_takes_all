@@ -384,20 +384,25 @@ export function QuickTournament() {
 
       {showShareModal && (
         <div className="custom-modal-overlay">
-          <div className="custom-modal glass-morphism slide-in">
-            <div className="modal-icon">🔗</div>
-            <h2>Arena Published!</h2>
-            <p className="muted">Your arena is live! Share this link for real-time tracking.</p>
-            <div className="share-link-wrapper mt-6">
-              <input readOnly value={`${window.location.origin}/arena/${arenaId}`} className="premium-input-v2" />
-              <button className="button button-gold" onClick={() => {
+          <div className="custom-modal glass-morphism slide-in" style={{ maxWidth: '500px' }}>
+            <div className="modal-icon">🚀</div>
+            <h2 className="glow-text">Arena is Live!</h2>
+            <p className="muted">Your battleground is now synchronized with the global spectator network. Share the link below.</p>
+            
+            <div className="share-link-premium mt-8">
+              <div className="link-display">
+                <span className="link-text">{window.location.origin}/arena/{arenaId}</span>
+              </div>
+              <button className="copy-action-btn" onClick={() => {
                 navigator.clipboard.writeText(`${window.location.origin}/arena/${arenaId}`);
-                alert("Link copied to clipboard!");
-              }}>COPY</button>
+                const btn = document.querySelector('.copy-action-btn') as HTMLButtonElement;
+                if (btn) { btn.innerText = 'COPIED!'; setTimeout(() => btn.innerText = 'COPY LINK', 2000); }
+              }}>
+                COPY LINK
+              </button>
             </div>
-            <div className="modal-actions">
-              <button className="button button-secondary" style={{ gridColumn: '1 / -1' }} onClick={() => setShowShareModal(false)}>CLOSE</button>
-            </div>
+
+            <button className="button button-secondary mt-8" style={{ width: '100%' }} onClick={() => setShowShareModal(false)}>BACK TO CONTROL ROOM</button>
           </div>
         </div>
       )}

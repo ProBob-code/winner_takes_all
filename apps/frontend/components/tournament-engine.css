@@ -1067,6 +1067,56 @@
   color: white;
 }
 
+/* Premium Share Link */
+.share-link-premium {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: rgba(0,0,0,0.3);
+  padding: 1.5rem;
+  border-radius: 20px;
+  border: 1px solid rgba(255,255,255,0.05);
+}
+
+.link-display {
+  padding: 1rem;
+  background: rgba(255,255,255,0.03);
+  border-radius: 12px;
+  border: 1px dashed rgba(255,255,255,0.1);
+  overflow: hidden;
+}
+
+.link-text {
+  font-family: monospace;
+  font-size: 0.8rem;
+  color: var(--gold);
+  white-space: nowrap;
+}
+
+.copy-action-btn {
+  background: var(--gold);
+  color: black;
+  border: none;
+  padding: 1rem;
+  border-radius: 12px;
+  font-weight: 900;
+  font-size: 0.8rem;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.copy-action-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(245, 158, 11, 0.3);
+}
+
+/* Spectator View Adjustments */
+.live-arena-v2 .arena-header-v2 {
+  justify-content: center;
+  text-align: center;
+}
+
 /* Share Modal & Mobile Fixes */
 .share-link-wrapper {
   display: flex;
