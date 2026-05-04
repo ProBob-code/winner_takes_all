@@ -672,12 +672,6 @@ app.post("/api/engine/matches/:id/score", async (c) => {
   return c.json({ ok: true, match: finalMatch });
 });
 
-// --- Original Routes ---
-app.all("*", (c) => {
-  return c.json({ ok: false, message: "Not Found" }, 404);
-});
-
-export default app;
 // --- Public Arena Routes ---
 
 app.post("/api/public-arenas", async (c) => {
@@ -699,3 +693,10 @@ app.get("/api/public-arenas/:id", async (c) => {
   
   return c.json({ ok: true, arena: { id: r.id, name: r.name, state: JSON.parse(r.state_json) } });
 });
+
+// --- Original Routes ---
+app.all("*", (c) => {
+  return c.json({ ok: false, message: "Not Found" }, 404);
+});
+
+export default app;

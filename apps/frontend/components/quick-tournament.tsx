@@ -81,7 +81,8 @@ export function QuickTournament() {
             score_team_a: 0, score_team_b: 0, balls_potted_a: 0, balls_potted_b: 0,
             black_potted_a: false, black_potted_b: false, status: 'CREATED',
             winner_id: null, active_team_id: null, duration: 600, start_time: null,
-            order: currentMatches.length + newMatches.length
+            order: currentMatches.length + newMatches.length,
+            team_a_house: 'SOLID', team_b_house: 'STRIPES'
           });
         }
       }
@@ -143,14 +144,28 @@ export function QuickTournament() {
     setMatches(matches.map(m => m.id === matchId ? { ...m, duration: seconds, start_time: currentTime } : m));
   };
 
-  const shuffleQueue = () => {
-    const created = matches.filter(m => m.status === 'CREATED');
-    const shuffled = [...created].sort(() => Math.random() - 0.5);
-    setMatches(matches.map(m => {
-      if (m.status !== 'CREATED') return m;
-      const sMatch = shuffled.shift();
-      return sMatch ? { ...m, id: sMatch.id, team_a_id: sMatch.team_a_id, team_b_id: sMatch.team_b_id } : m;
-    }));
+  const moveMatch = (matchId: string, direction: 'UP' | 'DOWN') => {
+    const created = matches.filter(m => m.status === 'CREATED').sort((a,b) => a.order - b.order);
+    const idx = created.findIndex(m => m.id === matchId);
+    if (direction === 'UP' && idx > 0) {
+      const prev = created[idx-1];
+      setMatches(matches.map(m => {
+        if (m.id === matchId) return { ...m, order: prev.order };
+        if (m.id === prev.id) return { ...m, order: m.order + 1 };
+        return m;
+      }));
+    } else if (direction === 'DOWN' && idx < created.length - 1) {
+      const next = created[idx+1];
+      setMatches(matches.map(m => {
+        if (m.id === matchId) return { ...m, order: next.order };
+        if (m.id === next.id) return { ...m, order: m.order - 1 };
+        return m;
+      }));
+    }
+  };
+
+  const updateHouse = (matchId: string, team: 'A' | 'B', house: 'SOLID' | 'STRIPES') => {
+    setMatches(matches.map(m => m.id === matchId ? { ...m, [`team_${team.toLowerCase()}_house`]: house } : m));
   };
 
   const addExtraTime = (matchId: string) => {
@@ -162,17 +177,32 @@ export function QuickTournament() {
       if (m.id !== matchId || m.status !== 'LIVE') return m;
       const nm = { ...m };
       const isA = m.team_a_id === teamId;
-      if (isA) {
-        if (type === 'BALL') nm.balls_potted_a = Math.min(7, nm.balls_potted_a + 1);
-        if (type === 'BLACK') nm.black_potted_a = true;
-        nm.score_team_a += (type === 'BLACK' ? 30 : 10);
+      
+      if (type === 'BALL') {
+        if (isA) {
+          nm.balls_potted_a = Math.min(7, nm.balls_potted_a + 1);
+          nm.score_team_a += 10;
+        } else {
+          nm.balls_potted_b = Math.min(7, nm.balls_potted_b + 1);
+          nm.score_team_b += 10;
+        }
       } else {
-        if (type === 'BALL') nm.balls_potted_b = Math.min(7, nm.balls_potted_b + 1);
-        if (type === 'BLACK') nm.black_potted_b = true;
-        nm.score_team_b += (type === 'BLACK' ? 30 : 10);
-      }
-      if (nm.score_team_a >= 100 || nm.score_team_b >= 100) {
-        nm.status = 'COMPLETED'; nm.winner_id = nm.score_team_a >= 100 ? nm.team_a_id : nm.team_b_id;
+        // BLACK BALL RULE
+        const currentBalls = isA ? nm.balls_potted_a : nm.balls_potted_b;
+        if (currentBalls < 7) {
+          // FOUL: Immediate loss
+          nm.status = 'COMPLETED';
+          nm.winner_id = isA ? nm.team_b_id : nm.team_a_id;
+          nm.score_team_a = isA ? nm.score_team_a : 100;
+          nm.score_team_b = !isA ? nm.score_team_b : 100;
+        } else {
+          // LEGAL WIN
+          nm.status = 'COMPLETED';
+          nm.winner_id = teamId;
+          if (isA) nm.score_team_a = 100;
+          else nm.score_team_b = 100;
+        }
+        // Update global stats
         setTeams(prev => prev.map(t => (t.id === nm.team_a_id || t.id === nm.team_b_id) ? { ...t, matches_played: t.matches_played + 1, total_score: t.total_score + (t.id === nm.team_a_id ? nm.score_team_a : nm.score_team_b), group_points: t.group_points + (nm.winner_id === t.id ? 1 : 0) } : t));
       }
       return nm;
@@ -404,6 +434,10 @@ export function QuickTournament() {
                     <div className="pod-header">
                       <div className="team-initials">{getTeamName(liveMatch.team_a_id).substring(0,2).toUpperCase()}</div>
                       <h3 className="team-name">{getTeamName(liveMatch.team_a_id)}</h3>
+                      <div className="house-selector" onClick={e => e.stopPropagation()}>
+                        <button className={`house-opt ${liveMatch.team_a_house === 'SOLID' ? 'active' : ''}`} onClick={() => updateHouse(liveMatch.id, 'A', 'SOLID')}>●</button>
+                        <button className={`house-opt ${liveMatch.team_a_house === 'STRIPES' ? 'active' : ''}`} onClick={() => updateHouse(liveMatch.id, 'A', 'STRIPES')}>◐</button>
+                      </div>
                     </div>
                     <div className="pod-score-large">{liveMatch.score_team_a}</div>
                     <Ticker balls={liveMatch.balls_potted_a} black={liveMatch.black_potted_a} color="#ef4444" />
@@ -412,7 +446,7 @@ export function QuickTournament() {
                       <button className="pod-btn black-btn" onClick={(e) => { e.stopPropagation(); updateScore(liveMatch.id, liveMatch.team_a_id, 'BLACK') }}>+ BLACK</button>
                     </div>
                   </div>
-                  <div className="active-glow"></div>
+                  <div className="active-glow" style={{ background: '#ef4444', opacity: 0.3, boxShadow: '0 0 40px rgba(239, 68, 68, 0.4)' }}></div>
                 </div>
 
                 <div className="vs-core">
@@ -426,6 +460,10 @@ export function QuickTournament() {
                     <div className="pod-header">
                       <div className="team-initials">{getTeamName(liveMatch.team_b_id).substring(0,2).toUpperCase()}</div>
                       <h3 className="team-name">{getTeamName(liveMatch.team_b_id)}</h3>
+                      <div className="house-selector" onClick={e => e.stopPropagation()}>
+                        <button className={`house-opt ${liveMatch.team_b_house === 'SOLID' ? 'active' : ''}`} onClick={() => updateHouse(liveMatch.id, 'B', 'SOLID')}>●</button>
+                        <button className={`house-opt ${liveMatch.team_b_house === 'STRIPES' ? 'active' : ''}`} onClick={() => updateHouse(liveMatch.id, 'B', 'STRIPES')}>◐</button>
+                      </div>
                     </div>
                     <div className="pod-score-large">{liveMatch.score_team_b}</div>
                     <Ticker balls={liveMatch.balls_potted_b} black={liveMatch.black_potted_b} color="#3b82f6" />
@@ -434,7 +472,7 @@ export function QuickTournament() {
                       <button className="pod-btn black-btn" onClick={(e) => { e.stopPropagation(); updateScore(liveMatch.id, liveMatch.team_b_id, 'BLACK') }}>+ BLACK</button>
                     </div>
                   </div>
-                  <div className="active-glow"></div>
+                  <div className="active-glow" style={{ background: '#3b82f6', opacity: 0.3, boxShadow: '0 0 40px rgba(59, 130, 246, 0.4)' }}></div>
                 </div>
               </div>
 
@@ -442,7 +480,6 @@ export function QuickTournament() {
                 <div className="queue-overlay slide-in">
                   <div className="queue-header">
                     <div className="queue-title">UPCOMING DUELS ({createdMatches.length})</div>
-                    <button className="shuffle-btn" onClick={shuffleQueue}>🎲 SHUFFLE QUEUE</button>
                   </div>
                   <div className="queue-track">
                     {createdMatches.slice(0, 3).map((m, i) => (
@@ -457,52 +494,48 @@ export function QuickTournament() {
               )}
             </div>
           ) : (
-            <div className="arena-setup-mid-tournament slide-in">
-              <div className="setup-card animate-in" style={{ padding: '2rem' }}>
-                <h3 className="glow-text">Manage Tournament</h3>
-                <p className="muted">Add new players or launch the next match.</p>
-                
-                <div className="mid-setup-controls" style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem', justifyContent: 'center' }}>
-                  <div className="roster-input-wrapper" style={{ margin: 0, width: '300px' }}>
-                    <input className="premium-input-v2" placeholder="New entry..." value={newTeamName} onChange={e => setNewTeamName(e.target.value)} onKeyPress={e => e.key === 'Enter' && addTeam()} />
-                    <button className="add-roster-btn" onClick={addTeam}>ADD</button>
-                  </div>
-                  {createdMatches.length > 0 ? (
-                    <button className="button button-gold" onClick={() => setMatches(matches.map(m => m.id === createdMatches[0].id ? { ...m, status: 'LIVE', start_time: currentTime } : m))}>
-                      START NEXT MATCH
-                    </button>
-                  ) : (
-                    <button className="button button-secondary" disabled>QUEUE EMPTY</button>
-                  )}
-                </div>
+        <div className="tournament-schedule-view slide-in">
+          <div className="schedule-header">
+            <h3 className="glow-text">Arena Schedule</h3>
+            <p className="muted">Manage future duels and live standings.</p>
+          </div>
 
-                {createdMatches.length > 0 && (
-                  <div className="queue-section-mid mt-8">
-                    <div className="queue-header" style={{ marginBottom: '1rem' }}>
-                      <span className="section-label-v2">MATCH QUEUE</span>
-                      <button className="shuffle-btn" onClick={shuffleQueue}>🎲 SHUFFLE</button>
+          <div className="schedule-grid mt-8">
+            <div className="queue-column">
+              <label className="section-label-v2">MATCH QUEUE</label>
+              <div className="queue-list-premium">
+                {createdMatches.map((m, i) => (
+                  <div key={m.id} className="schedule-item-card animate-in" style={{ animationDelay: `${i * 0.1}s` }}>
+                    <div className="s-rank">#{i+1}</div>
+                    <div className="s-info">
+                      <div className="s-pair">{getTeamName(m.team_a_id)} <span className="dim">vs</span> {getTeamName(m.team_b_id)}</div>
+                      <div className="s-meta">MATCH {m.order + 1} • GROUP STAGE</div>
                     </div>
-                    <div className="queue-list-mid">
-                      {createdMatches.map((m, i) => (
-                        <div key={m.id} className="mid-queue-item">
-                          <span className="q-idx">#{i+1}</span>
-                          <span className="q-pair">{getTeamName(m.team_a_id)} vs {getTeamName(m.team_b_id)}</span>
-                        </div>
-                      ))}
+                    <div className="s-actions">
+                      <button className="s-btn" onClick={() => moveMatch(m.id, 'UP')}>↑</button>
+                      <button className="s-btn" onClick={() => moveMatch(m.id, 'DOWN')}>↓</button>
+                      <button className="button button-gold button-sm" onClick={() => setMatches(matches.map(x => x.id === m.id ? { ...x, status: 'LIVE', start_time: currentTime } : x))}>LAUNCH</button>
                     </div>
                   </div>
-                )}
-
-                <div className="quick-roster-summary mt-6" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', justifyContent: 'center' }}>
-                  {teams.map(t => (
-                    <div key={t.id} className="mini-team-chip">
-                      {t.name} <span className="matches-dot">{t.matches_played}</span>
-                    </div>
-                  ))}
-                </div>
+                ))}
+                {createdMatches.length === 0 && <div className="empty-state">No matches scheduled</div>}
               </div>
             </div>
-          )}
+
+            <div className="summary-column">
+              <label className="section-label-v2">PARTICIPANT STATUS</label>
+              <div className="team-status-grid">
+                {teams.map(t => (
+                  <div key={t.id} className="team-status-chip">
+                    <span className="t-name">{t.name}</span>
+                    <span className="t-matches">{t.matches_played}/{matchesPerTeam}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
         </div>
       ) : (
         <div className="premium-standings slide-in">
