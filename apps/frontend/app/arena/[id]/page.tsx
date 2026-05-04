@@ -60,6 +60,7 @@ export default function PublicArenaPage() {
 
   return (
     <div className="live-arena-v2 slide-in" style={{ padding: '2rem', minHeight: '100vh', background: 'transparent' }}>
+      <div className="spectator-badge">READ ONLY STREAM</div>
       <div className="arena-header-v2" style={{ marginBottom: '3rem' }}>
         <div className="arena-meta">
           <h1 className="glow-text">{arena.name}</h1>

@@ -5,21 +5,21 @@ import { backendFetch } from "@/lib/backend";
 import "@/components/tournament-engine.css";
 
 type Team = { id: string; name: string; matches_played: number; group_points: number; total_score: number; };
-type Match = { 
-  id: string; 
-  team_a_id: string; 
-  team_b_id: string; 
-  score_team_a: number; 
-  score_team_b: number; 
-  balls_potted_a: number; 
-  balls_potted_b: number; 
-  black_potted_a: boolean; 
-  black_potted_b: boolean; 
-  status: 'CREATED' | 'LIVE' | 'COMPLETED'; 
-  winner_id: string | null; 
-  active_team_id: string | null; 
-  duration: number; 
-  start_time: number | null; 
+type Match = {
+  id: string;
+  team_a_id: string;
+  team_b_id: string;
+  score_team_a: number;
+  score_team_b: number;
+  balls_potted_a: number;
+  balls_potted_b: number;
+  black_potted_a: boolean;
+  black_potted_b: boolean;
+  status: 'CREATED' | 'LIVE' | 'COMPLETED';
+  winner_id: string | null;
+  active_team_id: string | null;
+  duration: number;
+  start_time: number | null;
   order: number;
   team_a_house?: 'SOLID' | 'STRIPES';
   team_b_house?: 'SOLID' | 'STRIPES';
@@ -61,7 +61,7 @@ export function QuickTournament() {
   useEffect(() => {
     localStorage.setItem("wta_arena_quick_v8", JSON.stringify({ teams, matches, isStarted, arenaId, matchesPerTeam, tournamentType, arenaName }));
     if (arenaId && isStarted) {
-      backendFetch("/public-arenas", { method: "POST", body: JSON.stringify({ id: arenaId, name: arenaName, state: { teams, matches, isStarted } }) }).catch(()=>{});
+      backendFetch("/public-arenas", { method: "POST", body: JSON.stringify({ id: arenaId, name: arenaName, state: { teams, matches, isStarted } }) }).catch(() => { });
     }
   }, [teams, matches, isStarted, arenaId, matchesPerTeam, tournamentType, arenaName]);
 
@@ -73,11 +73,11 @@ export function QuickTournament() {
   const generateMatchesPass = (allTeams: Team[], existingMatches: Match[]) => {
     const newMatches: Match[] = [];
     let currentMatches = [...existingMatches];
-    
+
     if (tournamentType === 'GROUP') {
       let quotaReached = false;
       while (!quotaReached) {
-        const sortedTeams = [...allTeams].sort((a,b) => {
+        const sortedTeams = [...allTeams].sort((a, b) => {
           const m1 = currentMatches.filter(m => m.team_a_id === a.id || m.team_b_id === a.id).length;
           const m2 = currentMatches.filter(m => m.team_a_id === b.id || m.team_b_id === b.id).length;
           return m1 - m2;
@@ -89,7 +89,7 @@ export function QuickTournament() {
         for (let i = 0; i < sortedTeams.length; i++) {
           const t1 = sortedTeams[i];
           const t1MatchCount = currentMatches.filter(m => m.team_a_id === t1.id || m.team_b_id === t1.id).length;
-          
+
           if (pairedInThisPass.has(t1.id) || t1MatchCount >= matchesPerTeam) continue;
 
           // Find best opponent
@@ -99,8 +99,8 @@ export function QuickTournament() {
             if (t2MatchCount >= matchesPerTeam) return false;
 
             // Check if they already played
-            const alreadyPlayed = currentMatches.some(m => 
-              (m.team_a_id === t1.id && m.team_b_id === potential.id) || 
+            const alreadyPlayed = currentMatches.some(m =>
+              (m.team_a_id === t1.id && m.team_b_id === potential.id) ||
               (m.team_a_id === potential.id && m.team_b_id === t1.id)
             );
             return !alreadyPlayed;
@@ -130,10 +130,10 @@ export function QuickTournament() {
         for (let i = 0; i < allTeams.length; i += 2) {
           if (i + 1 < allTeams.length) {
             newMatches.push({
-              id: `m-k-${i}`, team_a_id: allTeams[i].id, team_b_id: allTeams[i+1].id,
+              id: `m-k-${i}`, team_a_id: allTeams[i].id, team_b_id: allTeams[i + 1].id,
               score_team_a: 0, score_team_b: 0, balls_potted_a: 0, balls_potted_b: 0,
               black_potted_a: false, black_potted_b: false, status: 'CREATED',
-              winner_id: null, active_team_id: null, duration: 600, start_time: null, order: i/2,
+              winner_id: null, active_team_id: null, duration: 600, start_time: null, order: i / 2,
               team_a_house: 'SOLID', team_b_house: 'STRIPES',
               fouls_a: 0, fouls_b: 0
             });
@@ -198,24 +198,28 @@ export function QuickTournament() {
     setMatches(matches.map(m => m.id === matchId ? { ...m, duration: seconds, start_time: currentTime } : m));
   };
 
-  const moveMatch = (matchId: string, direction: 'UP' | 'DOWN') => {
-    const created = matches.filter(m => m.status === 'CREATED').sort((a,b) => a.order - b.order);
-    const idx = created.findIndex(m => m.id === matchId);
-    if (direction === 'UP' && idx > 0) {
-      const prev = created[idx-1];
-      setMatches(matches.map(m => {
-        if (m.id === matchId) return { ...m, order: prev.order };
-        if (m.id === prev.id) return { ...m, order: m.order + 1 };
-        return m;
-      }));
-    } else if (direction === 'DOWN' && idx < created.length - 1) {
-      const next = created[idx+1];
-      setMatches(matches.map(m => {
-        if (m.id === matchId) return { ...m, order: next.order };
-        if (m.id === next.id) return { ...m, order: m.order - 1 };
-        return m;
-      }));
-    }
+  const onDragStart = (e: React.DragEvent, id: string) => {
+    e.dataTransfer.setData("matchId", id);
+  };
+
+  const onDrop = (e: React.DragEvent, targetId: string) => {
+    const draggedId = e.dataTransfer.getData("matchId");
+    if (draggedId === targetId) return;
+
+    const created = matches.filter(m => m.status === 'CREATED').sort((a, b) => a.order - b.order);
+    const draggedIdx = created.findIndex(m => m.id === draggedId);
+    const targetIdx = created.findIndex(m => m.id === targetId);
+
+    const newCreated = [...created];
+    const [draggedItem] = newCreated.splice(draggedIdx, 1);
+    newCreated.splice(targetIdx, 0, draggedItem);
+
+    const updatedMatches = matches.map(m => {
+      const cIdx = newCreated.findIndex(cx => cx.id === m.id);
+      if (cIdx !== -1) return { ...m, order: cIdx };
+      return m;
+    });
+    setMatches(updatedMatches);
   };
 
   const updateHouse = (matchId: string, team: 'A' | 'B', house: 'SOLID' | 'STRIPES') => {
@@ -231,7 +235,7 @@ export function QuickTournament() {
       if (m.id !== matchId || m.status !== 'LIVE') return m;
       const nm = { ...m };
       const isA = m.team_a_id === teamId;
-      
+
       if (type === 'BALL') {
         if (isA) {
           nm.balls_potted_a = Math.min(7, nm.balls_potted_a + 1);
@@ -283,7 +287,7 @@ export function QuickTournament() {
   const Ticker = ({ balls, black, color }: { balls: number, black: boolean, color: string }) => (
     <div className="ticker-row">
       {[...Array(7)].map((_, i) => (
-        <div key={i} className={`ball-slot ${i < balls ? 'filled' : ''}`} style={{ '--accent-primary': color } as any}>{i+1}</div>
+        <div key={i} className={`ball-slot ${i < balls ? 'filled' : ''}`} style={{ '--accent-primary': color } as any}>{i + 1}</div>
       ))}
       <div className={`ball-slot black ${black ? 'filled' : ''}`}>8</div>
     </div>
@@ -296,31 +300,31 @@ export function QuickTournament() {
             <h1 className="glow-text">Arena Engine</h1>
             <p className="muted">Configure your high-stakes showdown parameters.</p>
           </div>
-          
+
           <div className="setup-grid">
             {/* Settings Section */}
             <div className="setup-section">
               <div className="form-group">
                 <label className="section-label-v2">ARENA IDENTITY</label>
-                <input 
-                  className="premium-input-v2" 
-                  value={arenaName} 
-                  onChange={e => setArenaName(e.target.value)} 
-                  placeholder="e.g. Midnight Championship" 
+                <input
+                  className="premium-input-v2"
+                  value={arenaName}
+                  onChange={e => setArenaName(e.target.value)}
+                  placeholder="e.g. Midnight Championship"
                 />
               </div>
 
               <div className="form-group mt-10">
                 <label className="section-label-v2">TOURNAMENT FORMAT</label>
                 <div className="segmented-control">
-                  <button 
-                    className={`segment-btn ${tournamentType === 'GROUP' ? 'active' : ''}`} 
+                  <button
+                    className={`segment-btn ${tournamentType === 'GROUP' ? 'active' : ''}`}
                     onClick={() => setTournamentType('GROUP')}
                   >
                     GROUP STAGE
                   </button>
-                  <button 
-                    className={`segment-btn ${tournamentType === 'KNOCKOUT' ? 'active' : ''}`} 
+                  <button
+                    className={`segment-btn ${tournamentType === 'KNOCKOUT' ? 'active' : ''}`}
                     onClick={() => setTournamentType('KNOCKOUT')}
                   >
                     KNOCKOUT
@@ -347,16 +351,16 @@ export function QuickTournament() {
             <div className="setup-section roster-panel">
               <label className="section-label-v2">PARTICIPANT ROSTER</label>
               <div className="roster-input-wrapper">
-                <input 
+                <input
                   className="premium-input-v2"
-                  placeholder="Enter Team/Player name..." 
-                  value={newTeamName} 
-                  onChange={e => setNewTeamName(e.target.value)} 
-                  onKeyPress={e => e.key === 'Enter' && addTeam()} 
+                  placeholder="Enter Team/Player name..."
+                  value={newTeamName}
+                  onChange={e => setNewTeamName(e.target.value)}
+                  onKeyPress={e => e.key === 'Enter' && addTeam()}
                 />
                 <button className="add-roster-btn" onClick={addTeam}>ADD</button>
               </div>
-              
+
               <div className="roster-list-container">
                 {teams.length > 0 ? (
                   <div className="roster-scroll">
@@ -379,9 +383,9 @@ export function QuickTournament() {
           </div>
 
           <div className="setup-footer">
-            <button 
+            <button
               className={`launch-btn ${teams.length >= 2 ? 'ready' : 'disabled'}`}
-              onClick={startTournament} 
+              onClick={startTournament}
               disabled={teams.length < 2}
             >
               <span className="launch-text">{teams.length >= 2 ? 'START TOURNAMENT' : 'ADD MINIMUM 2 TEAMS'}</span>
@@ -394,7 +398,7 @@ export function QuickTournament() {
   }
 
   const liveMatch = matches.find(m => m.status === 'LIVE');
-  const createdMatches = matches.filter(m => m.status === 'CREATED').sort((a,b) => a.order - b.order);
+  const createdMatches = matches.filter(m => m.status === 'CREATED').sort((a, b) => a.order - b.order);
   const lastCompleted = [...matches].reverse().find(m => m.status === 'COMPLETED');
 
   return (
@@ -419,7 +423,7 @@ export function QuickTournament() {
             <div className="modal-icon">🚀</div>
             <h2 className="glow-text">Arena is Live!</h2>
             <p className="muted">Your battleground is now synchronized with the global spectator network. Share the link below.</p>
-            
+
             <div className="share-link-premium mt-8">
               <div className="link-display">
                 <span className="link-text">{window.location.origin}/arena/{arenaId}</span>
@@ -462,11 +466,11 @@ export function QuickTournament() {
 
       {showAddTeamInline && (
         <div className="add-team-popover slide-in">
-          <input 
-            className="premium-input-v2" 
-            placeholder="New team name..." 
-            value={newTeamName} 
-            onChange={e => setNewTeamName(e.target.value)} 
+          <input
+            className="premium-input-v2"
+            placeholder="New team name..."
+            value={newTeamName}
+            onChange={e => setNewTeamName(e.target.value)}
             onKeyPress={e => e.key === 'Enter' && (addTeam(), setShowAddTeamInline(false))}
             autoFocus
           />
@@ -486,8 +490,8 @@ export function QuickTournament() {
                     const m = prompt("Set remaining minutes:", "10");
                     if (m) setRemainingTime(liveMatch.id, parseInt(m) * 60);
                   }}>
-                    {Math.max(0, Math.floor(((liveMatch.start_time || 0) + liveMatch.duration - currentTime)/60))}:
-                    {String(Math.max(0, ( (liveMatch.start_time || 0) + liveMatch.duration - currentTime )%60)).padStart(2, '0')}
+                    {Math.max(0, Math.floor(((liveMatch.start_time || 0) + liveMatch.duration - currentTime) / 60))}:
+                    {String(Math.max(0, ((liveMatch.start_time || 0) + liveMatch.duration - currentTime) % 60)).padStart(2, '0')}
                   </span>
                   <button className="t-adj" onClick={() => addExtraTime(liveMatch.id)}>+</button>
                 </div>
@@ -499,7 +503,7 @@ export function QuickTournament() {
                 <div className={`team-pod red ${liveMatch.active_team_id === liveMatch.team_a_id ? 'active' : ''}`} onClick={() => setMatches(matches.map(m => m.id === liveMatch.id ? { ...m, active_team_id: liveMatch.team_a_id } : m))}>
                   <div className="pod-inner">
                     <div className="pod-header">
-                      <div className="team-initials">{getTeamName(liveMatch.team_a_id).substring(0,2).toUpperCase()}</div>
+                      <div className="team-initials">{getTeamName(liveMatch.team_a_id).substring(0, 2).toUpperCase()}</div>
                       <div className="team-title-stack">
                         <h3 className="team-name">{getTeamName(liveMatch.team_a_id)}</h3>
                         <button className="foul-chip" onClick={(e) => { e.stopPropagation(); updateScore(liveMatch.id, liveMatch.team_a_id, 'FOUL') }}>FOUL: {liveMatch.fouls_a}</button>
@@ -528,7 +532,7 @@ export function QuickTournament() {
                 <div className={`team-pod blue ${liveMatch.active_team_id === liveMatch.team_b_id ? 'active' : ''}`} onClick={() => setMatches(matches.map(m => m.id === liveMatch.id ? { ...m, active_team_id: liveMatch.team_b_id } : m))}>
                   <div className="pod-inner">
                     <div className="pod-header">
-                      <div className="team-initials">{getTeamName(liveMatch.team_b_id).substring(0,2).toUpperCase()}</div>
+                      <div className="team-initials">{getTeamName(liveMatch.team_b_id).substring(0, 2).toUpperCase()}</div>
                       <div className="team-title-stack">
                         <h3 className="team-name">{getTeamName(liveMatch.team_b_id)}</h3>
                         <button className="foul-chip" onClick={(e) => { e.stopPropagation(); updateScore(liveMatch.id, liveMatch.team_b_id, 'FOUL') }}>FOUL: {liveMatch.fouls_b}</button>
@@ -567,93 +571,100 @@ export function QuickTournament() {
               )}
             </div>
           ) : (
-        <div className="tournament-schedule-view slide-in">
-          <div className="schedule-header">
-            <h3 className="glow-text">Arena Schedule</h3>
-            <p className="muted">Manage future duels and live standings.</p>
-          </div>
+            <div className="tournament-schedule-view slide-in">
+              <div className="schedule-header">
+                <h3 className="glow-text">Arena Schedule</h3>
+                <p className="muted">Manage future duels and live standings.</p>
+              </div>
 
-          <div className="schedule-grid mt-8">
-            <div className="queue-column">
-              <label className="section-label-v2">MATCH QUEUE</label>
-              <div className="queue-list-premium">
-                {createdMatches.map((m, i) => (
-                  <div key={m.id} className="schedule-item-card animate-in" style={{ animationDelay: `${i * 0.1}s` }}>
-                    <div className="s-rank">#{i+1}</div>
-                    <div className="s-info">
-                      <div className="s-pair">{getTeamName(m.team_a_id)} <span className="dim">vs</span> {getTeamName(m.team_b_id)}</div>
-                      <div className="s-meta">MATCH {m.order + 1} • {tournamentType} STAGE</div>
-                    </div>
-                    <div className="s-actions">
-                      <button className="s-btn" onClick={() => moveMatch(m.id, 'UP')}>↑</button>
-                      <button className="s-btn" onClick={() => moveMatch(m.id, 'DOWN')}>↓</button>
-                      <button className="button button-gold button-sm" onClick={() => setMatches(matches.map(x => x.id === m.id ? { ...x, status: 'LIVE', start_time: currentTime } : x))}>LAUNCH</button>
+              <div className="schedule-grid mt-8">
+                <div className="queue-column">
+                  <label className="section-label-v2">MATCH QUEUE</label>
+                  <div className="queue-list-premium">
+                    {createdMatches.map((m, i) => (
+                      <div
+                        key={m.id}
+                        className="schedule-item-card animate-in"
+                        draggable
+                        onDragStart={(e) => onDragStart(e, m.id)}
+                        onDragOver={(e) => e.preventDefault()}
+                        onDrop={(e) => onDrop(e, m.id)}
+                        style={{ animationDelay: `${i * 0.1}s`, cursor: 'grab' }}
+                      >
+                        <div className="s-handle">≡</div>
+                        <div className="s-rank">#{i + 1}</div>
+                        <div className="s-info">
+                          <div className="s-pair">{getTeamName(m.team_a_id)} <span className="dim">vs</span> {getTeamName(m.team_b_id)}</div>
+                          <div className="s-meta">MATCH {m.order + 1} • {tournamentType} STAGE</div>
+                        </div>
+                        <div className="s-actions">
+                          <button className="button button-gold button-sm" onClick={() => setMatches(matches.map(x => x.id === m.id ? { ...x, status: 'LIVE', start_time: currentTime } : x))}>LAUNCH</button>
+                        </div>
+                      </div>
+                    ))}
+
+                    <div className="manual-pairing-card mt-6 slide-in">
+                      <div className="p-header">
+                        <label className="section-label-v2">MANUAL DUEL CREATOR</label>
+                        <p className="p-muted">Hand-pick opponents and inject custom matches into the queue.</p>
+                      </div>
+                      <div className="p-grid">
+                        <div className="p-selectors">
+                          <select className="premium-input-v2 p-select" id="p1-select">
+                            <option value="">Select Team A</option>
+                            {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                          </select>
+                          <div className="vs-tiny">VS</div>
+                          <select className="premium-input-v2 p-select" id="p2-select">
+                            <option value="">Select Team B</option>
+                            {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                          </select>
+                        </div>
+                        <button className="button button-gold" onClick={() => {
+                          const p1 = (document.getElementById('p1-select') as HTMLSelectElement).value;
+                          const p2 = (document.getElementById('p2-select') as HTMLSelectElement).value;
+                          if (p1 && p2 && p1 !== p2) {
+                            addManualMatch(p1, p2);
+                            (document.getElementById('p1-select') as HTMLSelectElement).value = "";
+                            (document.getElementById('p2-select') as HTMLSelectElement).value = "";
+                          } else {
+                            alert("Please select two different teams.");
+                          }
+                        }}>INJECT MATCH</button>
+                      </div>
                     </div>
                   </div>
-                ))}
-                
-                <div className="manual-pairing-card mt-6 slide-in">
-                  <div className="p-header">
-                    <label className="section-label-v2">MANUAL DUEL CREATOR</label>
-                    <p className="p-muted">Hand-pick opponents and inject custom matches into the queue.</p>
-                  </div>
-                  <div className="p-grid">
-                    <div className="p-selectors">
-                      <select className="premium-input-v2 p-select" id="p1-select">
-                        <option value="">Select Team A</option>
-                        {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                      </select>
-                      <div className="vs-tiny">VS</div>
-                      <select className="premium-input-v2 p-select" id="p2-select">
-                        <option value="">Select Team B</option>
-                        {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                      </select>
-                    </div>
-                    <button className="button button-gold" onClick={() => {
-                      const p1 = (document.getElementById('p1-select') as HTMLSelectElement).value;
-                      const p2 = (document.getElementById('p2-select') as HTMLSelectElement).value;
-                      if (p1 && p2 && p1 !== p2) {
-                        addManualMatch(p1, p2);
-                        (document.getElementById('p1-select') as HTMLSelectElement).value = "";
-                        (document.getElementById('p2-select') as HTMLSelectElement).value = "";
-                      } else {
-                        alert("Please select two different teams.");
-                      }
-                    }}>INJECT MATCH</button>
+                </div>
+
+                <div className="summary-column">
+                  <label className="section-label-v2">PARTICIPANT STATUS</label>
+                  <div className="team-status-grid">
+                    {teams.map(t => (
+                      <div key={t.id} className="team-status-chip">
+                        <span className="t-name">{t.name}</span>
+                        <span className="t-matches">{t.matches_played}/{matchesPerTeam}</span>
+                        {matches.filter(m => m.team_a_id === t.id || m.team_b_id === t.id).length < matchesPerTeam && (
+                          <div className="bye-badge animate-pulse">SEEKING OPPONENT</div>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
             </div>
-
-            <div className="summary-column">
-              <label className="section-label-v2">PARTICIPANT STATUS</label>
-              <div className="team-status-grid">
-                {teams.map(t => (
-                  <div key={t.id} className="team-status-chip">
-                    <span className="t-name">{t.name}</span>
-                    <span className="t-matches">{t.matches_played}/{matchesPerTeam}</span>
-                    {matches.filter(m => m.team_a_id === t.id || m.team_b_id === t.id).length < matchesPerTeam && (
-                      <div className="bye-badge animate-pulse">SEEKING OPPONENT</div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+          )}
         </div>
       ) : (
         <div className="premium-standings slide-in">
           <div className="standings-grid-v2">
-            {[...teams].sort((a,b) => b.group_points - a.group_points || b.total_score - a.total_score).map((t, i) => {
+            {[...teams].sort((a, b) => b.group_points - a.group_points || b.total_score - a.total_score).map((t, i) => {
               const isTop3 = i < 3;
               const rankClass = i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : 'normal';
-              
+
               return (
                 <div key={t.id} className={`standing-card-v2 ${rankClass}`}>
                   <div className="rank-indicator">
-                    {i === 0 ? '👑' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i+1}`}
+                    {i === 0 ? '👑' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i + 1}`}
                   </div>
                   <div className="team-info">
                     <div className="team-name">{t.name}</div>
