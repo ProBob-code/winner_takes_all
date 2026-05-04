@@ -23,6 +23,7 @@ export interface TournamentRecord {
   bracket_state: any | null; platform_fee_percent: number; team_size: number;
   host_id: string | null; tournament_type: string; password: string | null;
   winner_id: string | null; started_at: string | null; completed_at: string | null;
+  max_matches_per_team: number;
   participant_ids: string[];
 }
 

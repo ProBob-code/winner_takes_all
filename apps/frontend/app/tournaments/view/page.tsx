@@ -74,6 +74,7 @@ export default function TournamentDetailPage() {
   const [engineState, setEngineState] = useState<TournamentState | null>(null);
   const [currentTime, setCurrentTime] = useState(Math.floor(Date.now() / 1000));
   const [newTeamName, setNewTeamName] = useState("");
+  const [reordering, setReordering] = useState(false);
 
   const fetchTournamentData = useCallback(async () => {
     if (typeof window === "undefined") return;
@@ -103,7 +104,7 @@ export default function TournamentDetailPage() {
 
   useEffect(() => {
     fetchTournamentData();
-    const interval = setInterval(fetchTournamentData, 5000);
+    const interval = setInterval(fetchTournamentData, 3000);
     const timeInterval = setInterval(() => setCurrentTime(Math.floor(Date.now() / 1000)), 1000);
     return () => {
       clearInterval(interval);
@@ -121,8 +122,6 @@ export default function TournamentDetailPage() {
   const tournament = tournamentRes.value.payload.tournament;
   if (!tournament) return <div className="page"><div className="shell">Not Found</div></div>;
 
-  const bracketData = responses[1].status === "fulfilled" ? responses[1].value.payload : { rounds: [] };
-  const participantData = responses[2].status === "fulfilled" ? responses[2].value.payload : { participants: [] };
   const profileData = responses[3].status === "fulfilled" ? responses[3].value.payload : null;
   const isHost = profileData?.ok && profileData?.user?.id === tournament.tournamentHostId;
 
@@ -149,8 +148,8 @@ export default function TournamentDetailPage() {
     fetchTournamentData();
   };
 
-  const startTournament = async () => {
-    await backendFetch(`/engine/tournaments/${id}/start`, { method: "POST" });
+  const addExtraTime = async (matchId: string) => {
+    await backendFetch(`/engine/matches/${matchId}/extra-time`, { method: "POST" });
     fetchTournamentData();
   };
 
@@ -159,8 +158,25 @@ export default function TournamentDetailPage() {
     fetchTournamentData();
   };
 
+  const reorderMatch = async (matchId: string, direction: 'up' | 'down') => {
+    if (!engineState) return;
+    setReordering(true);
+    const created = engineState.matches.filter(m => m.status === 'CREATED');
+    const idx = created.findIndex(m => m.id === matchId);
+    if (idx === -1) return;
+
+    const newList = [...created];
+    const target = direction === 'up' ? idx - 1 : idx + 1;
+    if (target < 0 || target >= newList.length) return;
+
+    [newList[idx], newList[target]] = [newList[target], newList[idx]];
+    await backendFetch(`/engine/tournaments/${id}/reorder`, { method: "POST", body: JSON.stringify({ matchIds: newList.map(m => m.id) }) });
+    fetchTournamentData();
+    setReordering(false);
+  };
+
   // Helper
-  const getTeamName = (teamId: string) => engineState?.teams.find(t => t.id === teamId)?.name || "Unknown";
+  const getTeamName = (teamId: string) => engineState?.teams.find(t => t.id === teamId)?.name || (teamId === 'BYE' ? 'BYE' : "Unknown");
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60);
     const s = seconds % 60;
@@ -168,66 +184,64 @@ export default function TournamentDetailPage() {
   };
 
   const liveMatch = engineState?.matches.find(m => m.status === 'LIVE');
+  const createdMatches = engineState?.matches.filter(m => m.status === 'CREATED') || [];
 
   return (
     <main className="page">
       <div className="shell">
         
-        {/* LIVE ARENA BANNER (Visible to all if match is live) */}
+        {/* LIVE ARENA BANNER (Everyone) */}
         {liveMatch && (
-          <div className="panel page-card animate-in" style={{ border: '1px solid var(--accent-primary)', background: 'rgba(139, 92, 246, 0.05)', marginBottom: '1.5rem' }}>
-            <div className="match-status-indicator" style={{ marginBottom: '1rem' }}>
+          <div className="panel page-card animate-in" style={{ border: '1px solid var(--accent-primary)', background: 'rgba(139, 92, 246, 0.05)', marginBottom: '1.5rem', padding: '2rem' }}>
+            <div className="match-status-indicator" style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'center', gap: '1rem' }}>
               <div className="live-dot"></div>
-              LIVE MATCH • {formatTime(Math.max(0, (liveMatch.start_time || 0) + liveMatch.duration - currentTime))}
+              <span style={{ fontWeight: 900, letterSpacing: '2px' }}>LIVE MATCH</span>
+              <span style={{ opacity: 0.5 }}>|</span>
+              <span style={{ fontWeight: 900, color: 'var(--gold)' }}>{formatTime(Math.max(0, (liveMatch.start_time || 0) + liveMatch.duration - currentTime))}</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '2rem' }}>
-              <div style={{ textAlign: 'right', flex: 1 }}>
-                <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#ef4444' }}>{getTeamName(liveMatch.team_a_id)}</div>
-                <div style={{ fontSize: '2.5rem', fontWeight: 900 }}>{liveMatch.score_team_a}</div>
+            
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '3rem' }}>
+              <div style={{ textAlign: 'center', flex: 1 }}>
+                <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#ef4444', marginBottom: '0.5rem' }}>{getTeamName(liveMatch.team_a_id)}</div>
+                <div style={{ fontSize: '4rem', fontWeight: 900, lineHeight: 1 }}>{liveMatch.score_team_a}</div>
                 <Ticker balls={liveMatch.balls_potted_a} black={liveMatch.black_potted_a} color="#ef4444" />
               </div>
-              <div className="vs-orb" style={{ width: '40px', height: '40px', fontSize: '0.8rem' }}>VS</div>
-              <div style={{ textAlign: 'left', flex: 1 }}>
-                <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#3b82f6' }}>{getTeamName(liveMatch.team_b_id)}</div>
-                <div style={{ fontSize: '2.5rem', fontWeight: 900 }}>{liveMatch.score_team_b}</div>
+              <div className="vs-orb" style={{ width: '80px', height: '80px', fontSize: '1.2rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>VS</div>
+              <div style={{ textAlign: 'center', flex: 1 }}>
+                <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#3b82f6', marginBottom: '0.5rem' }}>{getTeamName(liveMatch.team_b_id)}</div>
+                <div style={{ fontSize: '4rem', fontWeight: 900, lineHeight: 1 }}>{liveMatch.score_team_b}</div>
                 <Ticker balls={liveMatch.balls_potted_b} black={liveMatch.black_potted_b} color="#3b82f6" />
               </div>
-            </div>
-            <div style={{ textAlign: 'center', marginTop: '1.5rem', opacity: 0.6, fontSize: '0.8rem' }}>
-              💡 {liveMatch.explanation}
             </div>
           </div>
         )}
 
-        {/* Tournament Info */}
+        {/* Tournament Header */}
         <div className="panel page-card slide-in" style={{ marginBottom: "1.5rem" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "1rem" }}>
             <div>
-              <h2 style={{ fontSize: "1.5rem" }}>{tournament.name}</h2>
-              <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-                <span className={`tournament-status status-${tournament.status}`}>{tournament.status.replace("_", " ")}</span>
-                {tournament.isPrivate && <span className="status-badge" style={{ background: "rgba(239, 68, 68, 0.1)", color: "#ef4444" }}>🔒 PRIVATE</span>}
+              <h2 style={{ fontSize: "2rem", fontWeight: 900 }}>{tournament.name}</h2>
+              <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", marginTop: '0.5rem' }}>
+                <span className={`status-badge ${tournament.status}`}>{tournament.status.toUpperCase()}</span>
+                {tournament.isPrivate && <span className="status-badge" style={{ background: "rgba(239, 68, 68, 0.1)", color: "#ef4444" }}>PRIVATE</span>}
               </div>
             </div>
-            <div className="tournament-meta">
-              <div className="tournament-meta-item">💰 ₹{tournament.entryFee.amount}</div>
-              <div className="tournament-meta-item">🏆 ₹{tournament.prizePool.amount}</div>
-              <div className="tournament-meta-item">👥 {tournament.joinedPlayers}/{tournament.maxPlayers}</div>
+            <div className="tournament-meta" style={{ display: 'flex', gap: '1.5rem' }}>
+              <div style={{ textAlign: 'right' }}><div className="label" style={{ fontSize: '0.6rem', opacity: 0.5 }}>ENTRY</div><div style={{ fontWeight: 900 }}>₹{tournament.entryFee.amount}</div></div>
+              <div style={{ textAlign: 'right' }}><div className="label" style={{ fontSize: '0.6rem', opacity: 0.5 }}>PRIZE</div><div style={{ fontWeight: 900, color: 'var(--gold)' }}>₹{tournament.prizePool.amount}</div></div>
+              <div style={{ textAlign: 'right' }}><div className="label" style={{ fontSize: '0.6rem', opacity: 0.5 }}>PLAYERS</div><div style={{ fontWeight: 900 }}>{tournament.joinedPlayers}/{tournament.maxPlayers}</div></div>
             </div>
           </div>
 
-          <div className="cta-row" style={{ marginTop: "1.5rem" }}>
-            <div style={{ display: "flex", gap: "1rem", flex: 1 }}>
+          <div className="cta-row" style={{ marginTop: "2rem", display: 'flex', justifyContent: 'space-between' }}>
+            <div style={{ display: "flex", gap: "1rem" }}>
               <JoinTournamentButton tournamentId={id} isPrivate={tournament.isPrivate} />
               <ShareTournament tournamentId={id} tournamentName={tournament.name} />
             </div>
             {isHost && (
-              <div style={{ display: "flex", gap: "0.5rem" }}>
-                <button onClick={() => setShowArena(!showArena)} className={`button ${showArena ? 'button-primary' : 'button-secondary'}`}>
-                  🏟️ {showArena ? 'CLOSE ARENA' : 'OPEN ARENA MANAGER'}
-                </button>
-                <DeleteTournamentDialog tournamentId={id} tournamentName={tournament.name} />
-              </div>
+              <button onClick={() => setShowArena(!showArena)} className={`button ${showArena ? 'button-primary' : 'button-gold'}`} style={{ minWidth: '200px' }}>
+                🏟️ {showArena ? 'CLOSE MANAGER' : 'MANAGE ARENA'}
+              </button>
             )}
           </div>
         </div>
@@ -235,47 +249,84 @@ export default function TournamentDetailPage() {
         {/* ARENA MANAGER (Host Only) */}
         {showArena && isHost && engineState && (
           <div className="engine-container animate-in" style={{ marginBottom: '3rem' }}>
-            <div className="center-stage">
+            <div className="center-stage" style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.05)' }}>
               {liveMatch ? (
-                <div className="score-arena" style={{ width: '100%', gap: '2rem' }}>
-                  <div className={`team-arena-card red ${liveMatch.active_team_id === liveMatch.team_a_id ? 'active' : ''}`} onClick={() => highlightTeam(liveMatch.id, liveMatch.team_a_id)}>
-                    <div className="pod-score">{liveMatch.score_team_a}</div>
-                    <div className="control-grid">
-                      <button className="score-btn ball" onClick={(e) => { e.stopPropagation(); updateScore(liveMatch.id, liveMatch.team_a_id, 'BALL') }}>BALL +10</button>
-                      <button className="score-btn black" onClick={(e) => { e.stopPropagation(); updateScore(liveMatch.id, liveMatch.team_a_id, 'BLACK') }}>BLACK +30</button>
-                      <button className="score-btn mistake" onClick={(e) => { e.stopPropagation(); updateScore(liveMatch.id, liveMatch.team_b_id, 'MISTAKE') }}>FOUL</button>
+                <>
+                  <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                    <h3 className="glow-text">LIVE SCORING</h3>
+                    <button className="button button-secondary button-sm" onClick={() => addExtraTime(liveMatch.id)}>+1 MIN EXTRA TIME</button>
+                  </div>
+                  <div className="score-arena" style={{ width: '100%', gap: '2rem' }}>
+                    <div 
+                      className={`team-arena-card red ${liveMatch.active_team_id === liveMatch.team_a_id ? 'active' : ''}`} 
+                      onClick={() => highlightTeam(liveMatch.id, liveMatch.team_a_id)}
+                    >
+                      {liveMatch.active_team_id === liveMatch.team_a_id && <div className="active-badge">AT TABLE</div>}
+                      <div className="pod-score">{liveMatch.score_team_a}</div>
+                      <Ticker balls={liveMatch.balls_potted_a} black={liveMatch.black_potted_a} color="#ef4444" />
+                      <div className="control-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', width: '100%', marginTop: '1.5rem' }}>
+                        <button className="score-btn" style={{ background: '#ef4444' }} onClick={(e) => { e.stopPropagation(); updateScore(liveMatch.id, liveMatch.team_a_id, 'BALL') }}>BALL</button>
+                        <button className="score-btn" style={{ background: '#111', border: '1px solid #fff' }} onClick={(e) => { e.stopPropagation(); updateScore(liveMatch.id, liveMatch.team_a_id, 'BLACK') }}>BLACK</button>
+                      </div>
+                    </div>
+                    
+                    <div 
+                      className={`team-arena-card blue ${liveMatch.active_team_id === liveMatch.team_b_id ? 'active' : ''}`} 
+                      onClick={() => highlightTeam(liveMatch.id, liveMatch.team_b_id)}
+                    >
+                      {liveMatch.active_team_id === liveMatch.team_b_id && <div className="active-badge">AT TABLE</div>}
+                      <div className="pod-score">{liveMatch.score_team_b}</div>
+                      <Ticker balls={liveMatch.balls_potted_b} black={liveMatch.black_potted_b} color="#3b82f6" />
+                      <div className="control-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', width: '100%', marginTop: '1.5rem' }}>
+                        <button className="score-btn" style={{ background: '#3b82f6' }} onClick={(e) => { e.stopPropagation(); updateScore(liveMatch.id, liveMatch.team_b_id, 'BALL') }}>BALL</button>
+                        <button className="score-btn" style={{ background: '#111', border: '1px solid #fff' }} onClick={(e) => { e.stopPropagation(); updateScore(liveMatch.id, liveMatch.team_b_id, 'BLACK') }}>BLACK</button>
+                      </div>
                     </div>
                   </div>
-                  <div className={`team-arena-card blue ${liveMatch.active_team_id === liveMatch.team_b_id ? 'active' : ''}`} onClick={() => highlightTeam(liveMatch.id, liveMatch.team_b_id)}>
-                    <div className="pod-score">{liveMatch.score_team_b}</div>
-                    <div className="control-grid">
-                      <button className="score-btn ball" onClick={(e) => { e.stopPropagation(); updateScore(liveMatch.id, liveMatch.team_b_id, 'BALL') }}>BALL +10</button>
-                      <button className="score-btn black" onClick={(e) => { e.stopPropagation(); updateScore(liveMatch.id, liveMatch.team_b_id, 'BLACK') }}>BLACK +30</button>
-                      <button className="score-btn mistake" onClick={(e) => { e.stopPropagation(); updateScore(liveMatch.id, liveMatch.team_a_id, 'MISTAKE') }}>FOUL</button>
-                    </div>
-                  </div>
-                </div>
+                </>
               ) : (
                 <div style={{ textAlign: 'center', padding: '2rem' }}>
-                  <h3 className="glow-text">Ready for Next Match</h3>
-                  <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginTop: '1.5rem' }}>
-                    {engineState.matches.filter(m => m.status === 'CREATED').length > 0 ? (
-                      <button className="button button-primary" onClick={() => startMatch(engineState.matches.filter(m => m.status === 'CREATED')[0].id)}>START NEXT MATCH</button>
-                    ) : (
-                      <button className="button button-secondary" onClick={generateMatches}>GENERATE NEW MATCHES</button>
-                    )}
-                  </div>
+                  <h3 className="glow-text">ARENA IDLE</h3>
+                  {createdMatches.length > 0 ? (
+                    <div style={{ marginTop: '1.5rem' }}>
+                      <p className="muted">Next: {getTeamName(createdMatches[0].team_a_id)} vs {getTeamName(createdMatches[0].team_b_id)}</p>
+                      <button className="button button-gold mt-4" onClick={() => startMatch(createdMatches[0].id)}>START NEXT MATCH</button>
+                    </div>
+                  ) : (
+                    <button className="button button-secondary mt-4" onClick={generateMatches}>GENERATE NEXT ROUND</button>
+                  )}
                 </div>
               )}
             </div>
+
+            {/* Match Queue Management */}
+            <div className="match-queue-section" style={{ marginTop: '2rem' }}>
+              <h3 className="section-label">UPCOMING QUEUE ({createdMatches.length})</h3>
+              <div className="queue-grid">
+                {createdMatches.map((m, i) => (
+                  <div key={m.id} className="queue-item">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                      <span style={{ opacity: 0.3, fontWeight: 900 }}>#{i+1}</span>
+                      <span style={{ fontWeight: 700 }}>{getTeamName(m.team_a_id)} vs {getTeamName(m.team_b_id)}</span>
+                    </div>
+                    <div className="queue-controls">
+                      <button className="q-btn" onClick={() => reorderMatch(m.id, 'up')} disabled={i === 0 || reordering}>↑</button>
+                      <button className="q-btn" onClick={() => reorderMatch(m.id, 'down')} disabled={i === createdMatches.length - 1 || reordering}>↓</button>
+                      {i === 0 && !liveMatch && <button className="button button-primary button-sm" style={{ marginLeft: '1rem' }} onClick={() => startMatch(m.id)}>START</button>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
             
-            {engineState.phase === 'SETUP' && (
-              <div className="standings-card" style={{ marginTop: '2rem' }}>
-                <div className="team-input-row">
-                  <input placeholder="Add team..." value={newTeamName} onChange={e => setNewTeamName(e.target.value)} />
+            {engineState.phase === 'SETUP' && engineState.matches.length === 0 && (
+              <div className="standings-card" style={{ marginTop: '2rem', padding: '2rem' }}>
+                <h3 className="section-label">ROSTER SETUP</h3>
+                <div className="team-input-row" style={{ marginTop: '1rem' }}>
+                  <input placeholder="Add team name..." value={newTeamName} onChange={e => setNewTeamName(e.target.value)} onKeyPress={e => e.key === 'Enter' && addTeam()} />
                   <button className="button button-primary" onClick={addTeam}>ADD</button>
                 </div>
-                {engineState.teams.length >= 2 && <button className="button button-secondary" style={{ width: '100%', marginTop: '1rem' }} onClick={startTournament}>BEGIN TOURNAMENT</button>}
+                {engineState.teams.length >= 2 && <button className="button button-gold mt-4" style={{ width: '100%' }} onClick={generateMatches}>GENERATE MATCHES</button>}
               </div>
             )}
           </div>
@@ -283,27 +334,29 @@ export default function TournamentDetailPage() {
 
         {/* Existing Tournament Sections */}
         <div className="panel page-card" style={{ marginBottom: "1.5rem" }}>
-          <h2>🏗️ Bracket</h2>
-          <BracketView rounds={bracketData.rounds || []} tournamentStatus={tournament.status} />
-        </div>
-
-        <div className="panel page-card">
-          <h2>📊 Standings</h2>
+          <h2 style={{ fontSize: '1rem', letterSpacing: '1px', opacity: 0.7, marginBottom: '1.5rem' }}>🏆 LEADERBOARD</h2>
           <table className="leaderboard-table">
-            <thead><tr><th>#</th><th>Player</th><th>Score</th><th>W/L</th></tr></thead>
+            <thead><tr><th>RANK</th><th>TEAM / PLAYER</th><th>PLAYED</th><th>WINS</th><th>SCORE</th></tr></thead>
             <tbody>
-              {(participantData.participants || []).map((p: any, i: number) => (
-                <tr key={p.userId}>
-                  <td>{i + 1}</td>
-                  <td>{p.displayName}</td>
-                  <td>{p.totalScore} pts</td>
-                  <td>{p.wins}W / {p.losses}L</td>
+              {(engineState?.teams || []).sort((a,b) => b.group_points - a.group_points || b.total_score - a.total_score).map((t, i) => (
+                <tr key={t.id}>
+                  <td style={{ padding: '1rem' }}>#{i+1}</td>
+                  <td style={{ fontWeight: 900 }}>{t.name}</td>
+                  <td>{t.matches_played}</td>
+                  <td style={{ color: 'var(--accent-primary)' }}>{t.group_points}</td>
+                  <td style={{ fontWeight: 900, color: 'var(--gold)' }}>{t.total_score}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
 
+        {/* RESET BUTTON (Host Only) */}
+        {isHost && (
+          <div style={{ marginTop: '4rem', textAlign: 'center' }}>
+            <DeleteTournamentDialog tournamentId={id} tournamentName={tournament.name} />
+          </div>
+        )}
       </div>
     </main>
   );

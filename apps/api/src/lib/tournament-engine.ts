@@ -48,7 +48,8 @@ export interface MatchupRecord {
 export function generateNextMatches(
   teams: EngineTeam[],
   pastMatchups: MatchupRecord[],
-  currentPhase: MatchPhase = 'GROUP'
+  currentPhase: MatchPhase = 'GROUP',
+  maxMatches: number = 2
 ): { matches: Partial<EngineMatch>[], byeTeamId?: string } {
   
   if (currentPhase !== 'GROUP') {
@@ -56,7 +57,7 @@ export function generateNextMatches(
     return { matches: [] };
   }
 
-  const eligible = teams.filter(t => t.matches_played < 2);
+  const eligible = teams.filter(t => t.matches_played < maxMatches);
   const matches: Partial<EngineMatch>[] = [];
   let byeTeamId: string | undefined;
 

@@ -500,12 +500,26 @@ app.post("/api/engine/tournaments/:id/add-team", async (c) => {
     return c.json({ ok: false, message: "Can only add teams during GROUP or SETUP phase" }, 400);
   }
 
-  const matches = await store.getEngineMatches(tournamentId);
-  if (matches.some(m => m.status === 'LIVE')) {
-    return c.json({ ok: false, message: "Cannot add teams while a match is LIVE" }, 400);
+  const team = await store.createEngineTeam(tournamentId, body.name || `Team ${Math.floor(Math.random()*1000)}`);
+  
+  // THE BRAIN: Run a generation pass specifically to match the newcomer if anyone is waiting
+  const [allTeams, matchups, matches, tournament] = await Promise.all([
+    store.getEngineTeams(tournamentId),
+    store.getEngineMatchups(tournamentId),
+    store.getEngineMatches(tournamentId),
+    store.getTournament(tournamentId)
+  ]);
+
+  if (matches.length > 0) {
+    const limit = tournament?.max_matches_per_team || 2;
+    const { matches: nextMatches } = Engine.generateNextMatches(allTeams, matchups, 'GROUP', limit);
+    
+    const relevantMatches = nextMatches.filter(m => m.team_a_id === team.id || m.team_b_id === team.id);
+    for (const nm of relevantMatches) {
+      await store.createEngineMatch(tournamentId, nm.phase!, nm.team_a_id!, nm.team_b_id!, nm.explanation!);
+    }
   }
 
-  const team = await store.createEngineTeam(tournamentId, body.name || `Team ${Math.floor(Math.random()*1000)}`);
   return c.json({ ok: true, team });
 });
 
@@ -521,17 +535,19 @@ app.post("/api/engine/tournaments/:id/generate", async (c) => {
   const store = c.get("store");
   const tournamentId = c.req.param("id");
   
-  const [teams, matchups, matches] = await Promise.all([
+  const [teams, matchups, matches, tournament] = await Promise.all([
     store.getEngineTeams(tournamentId),
     store.getEngineMatchups(tournamentId),
-    store.getEngineMatches(tournamentId)
+    store.getEngineMatches(tournamentId),
+    store.getTournament(tournamentId)
   ]);
 
   if (matches.some(m => m.status === 'LIVE')) {
     return c.json({ ok: false, message: "Cannot generate matches while a match is LIVE" }, 400);
   }
 
-  const { matches: nextMatches, byeTeamId } = Engine.generateNextMatches(teams, matchups);
+  const limit = tournament?.max_matches_per_team || 2;
+  const { matches: nextMatches, byeTeamId } = Engine.generateNextMatches(teams, matchups, 'GROUP', limit);
   
   for (const mData of nextMatches) {
     const match = await store.createEngineMatch(tournamentId, mData);
@@ -569,6 +585,18 @@ app.post("/api/engine/matches/:id/start", async (c) => {
     start_time: Math.floor(Date.now() / 1000)
   });
 
+  return c.json({ ok: true });
+});
+
+app.post("/api/engine/matches/:id/extra-time", async (c) => {
+  const store = c.get("store");
+  const matchId = c.req.param("id");
+  const match = await store.getEngineMatch(matchId);
+  if (!match) return c.json({ ok: false, message: "Match not found" }, 404);
+
+  await store.updateEngineMatch(matchId, {
+    duration: match.duration + 60
+  });
   return c.json({ ok: true });
 });
 
@@ -651,3 +679,24 @@ app.all("*", (c) => {
 });
 
 export default app;
+// --- Public Arena Routes ---
+
+app.post("/api/public-arenas", async (c) => {
+  const store = c.get("store");
+  const body = await c.req.json();
+  const { id, name, state } = body;
+  
+  // Use id as primary key (provided by client)
+  await c.env.DB.prepare(`INSERT OR REPLACE INTO public_arenas (id, name, state_json, updated_at) VALUES (?, ?, ?, ?)`)
+    .bind(id, name, JSON.stringify(state), new Date().toISOString()).run();
+    
+  return c.json({ ok: true, id });
+});
+
+app.get("/api/public-arenas/:id", async (c) => {
+  const id = c.req.param("id");
+  const r = await c.env.DB.prepare(`SELECT * FROM public_arenas WHERE id = ?`).bind(id).first<any>();
+  if (!r) return c.json({ ok: false, message: "Arena not found" }, 404);
+  
+  return c.json({ ok: true, arena: { id: r.id, name: r.name, state: JSON.parse(r.state_json) } });
+});
