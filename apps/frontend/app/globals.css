@@ -2781,39 +2781,56 @@ select.form-control option {
 @media (max-width: 768px) {
   .app-container {
     flex-direction: column;
-    padding-bottom: 90px; /* More space for premium dock */
+    padding-bottom: 90px;
   }
 
   .sidebar { display: none !important; }
   .mobile-nav { display: flex !important; }
   
-  .topbar { padding: 0 1rem !important; height: 60px !important; }
-  .main-content { padding: 1rem 0.75rem !important; }
+  .topbar { 
+    padding: 0 0.75rem !important; 
+    height: 60px !important; 
+    gap: 0.5rem !important;
+  }
+  .topbar-brand { gap: 0.4rem !important; }
+  .logo-icon { display: none !important; }
+  .brand-text-mobile { font-size: 0.9rem !important; }
+  
+  .topbar-nav { gap: 0.5rem !important; }
+  .topbar-link { font-size: 0.75rem !important; }
+  .button.button-sm { 
+    padding: 0.35rem 0.6rem !important; 
+    font-size: 0.7rem !important; 
+    border-radius: 8px !important;
+  }
+
+  .main-content { padding: 0.75rem !important; }
+  .page-content { padding-top: 0.5rem !important; }
 
   .profile-banner { flex-direction: column; text-align: center; padding: 1.5rem; gap: 1rem; }
   .profile-balance-highlight { border-left: none; border-top: 1px solid rgba(255,255,255,0.05); padding: 1rem 0 0 0; width: 100%; text-align: center; }
-  .balance-amount { font-size: 2rem !important; }
+  .balance-amount { font-size: 1.8rem !important; }
 
-  .schedule-grid { grid-template-columns: 1fr !important; gap: 2rem !important; }
+  .schedule-grid { grid-template-columns: 1fr !important; gap: 1.5rem !important; }
   .standings-grid-v2 { grid-template-columns: 1fr !important; gap: 0.75rem !important; }
   
-  .arena-header-v2 { flex-direction: column; align-items: flex-start; gap: 1rem; }
-  .arena-meta h1 { font-size: 1.5rem !important; }
-  .arena-badge { font-size: 0.7rem !important; }
+  .arena-header-v2 { flex-direction: column; align-items: flex-start; gap: 0.75rem; }
+  .arena-meta h1 { font-size: 1.3rem !important; }
+  .arena-badge { font-size: 0.65rem !important; }
 
-  .p-grid { grid-template-columns: 1fr !important; }
+  .p-grid { grid-template-columns: 1fr !important; gap: 1rem !important; }
   .p-selectors { flex-direction: column; gap: 0.5rem !important; }
   .vs-tiny { display: none !important; }
   
-  .team-status-grid { grid-template-columns: 1fr !important; }
-  .team-status-chip { padding: 0.75rem !important; }
-
-  /* Table normalization */
-  .leaderboard-table td::before { font-size: 0.65rem; }
+  .team-status-grid { grid-template-columns: 1fr !important; gap: 0.5rem !important; }
+  .team-status-chip { padding: 0.6rem !important; }
   
-  /* Modal optimization */
-  .custom-modal { width: 95% !important; padding: 1.5rem !important; }
-  .victory-podium { width: 95% !important; padding: 2rem 1.5rem !important; }
+  /* Landing Specific Mobile Fixes */
+  .landing-main { padding: 80px 1.25rem 40px !important; }
+  .hero-title { font-size: 2.8rem !important; letter-spacing: -1px !important; margin-bottom: 1.5rem !important; }
+  .hero-desc { font-size: 0.95rem !important; margin-bottom: 2rem !important; }
+  .hero-buttons { flex-direction: column !important; width: 100% !important; gap: 0.75rem !important; }
+  .hero-buttons a { width: 100% !important; text-align: center !important; padding: 1rem !important; font-size: 1rem !important; }
 }
 
 

@@ -231,15 +231,25 @@ export function LandingPage() {
       <div className="landing-bg-glow"></div>
       <div ref={glowRef} className="mouse-glow" style={{ position: "fixed", width: "600px", height: "600px", background: "radial-gradient(circle, rgba(139, 92, 246, 0.08), transparent 70%)", borderRadius: "50%", pointerEvents: "none", zIndex: 999, transform: "translate(-50%, -50%)", opacity: 0 }}></div>
 
-      <main style={{ padding: "120px 6% 60px", textAlign: "center", position: "relative", zIndex: 2 }}>
+      <main className="landing-main" style={{ padding: "120px 6% 60px", textAlign: "center", position: "relative", zIndex: 2 }}>
+        <style jsx>{`
+          @media (max-width: 768px) {
+            .landing-main { padding: 80px 1.5rem 40px !important; }
+            .hero-buttons { flex-direction: column; width: 100%; gap: 1rem !important; }
+            .hero-buttons a { width: 100%; text-align: center; padding: 1rem !important; }
+            .hero-chip { margin-bottom: 1.5rem !important; font-size: 0.75rem !important; }
+            .hero-title { margin-bottom: 1.5rem !important; }
+            .hero-desc { font-size: 1rem !important; margin-bottom: 2.5rem !important; }
+          }
+        `}</style>
         <section className="hero" style={{ minHeight: "80vh", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" }}>
-          <div style={{ background: "rgba(139, 92, 246, 0.1)", border: "1px solid rgba(139, 92, 246, 0.2)", padding: "8px 16px", borderRadius: "9999px", fontSize: "0.85rem", fontWeight: 700, color: "#8b5cf6", marginBottom: "2rem" }}>High-Stakes Gaming Arena</div>
-          <h1 style={{ fontSize: "clamp(3rem, 8vw, 6rem)", fontWeight: 900, lineHeight: 0.9, letterSpacing: "-2px", marginBottom: "2.5rem" }}>
+          <div className="hero-chip" style={{ background: "rgba(139, 92, 246, 0.1)", border: "1px solid rgba(139, 92, 246, 0.2)", padding: "8px 16px", borderRadius: "9999px", fontSize: "0.85rem", fontWeight: 700, color: "#8b5cf6", marginBottom: "2rem" }}>High-Stakes Gaming Arena</div>
+          <h1 className="hero-title" style={{ fontSize: "clamp(3rem, 8vw, 6rem)", fontWeight: 900, lineHeight: 0.9, letterSpacing: "-2px", marginBottom: "2.5rem" }}>
             STOP PLAYING.<br />
             <span className="gradient-text">START DOMINATING.</span>
           </h1>
-          <p style={{ maxWidth: "700px", fontSize: "1.2rem", color: "#94a3b8", marginBottom: "3.5rem", lineHeight: 1.6 }}>The premier destination for professional-grade digital tournaments. Risk everything, beat the field, and secure the ultimate prize.</p>
-          <div style={{ display: "flex", gap: "1.5rem" }}>
+          <p className="hero-desc" style={{ maxWidth: "700px", fontSize: "1.2rem", color: "#94a3b8", marginBottom: "3.5rem", lineHeight: 1.6 }}>The premier destination for professional-grade digital tournaments. Risk everything, beat the field, and secure the ultimate prize.</p>
+          <div className="hero-buttons" style={{ display: "flex", gap: "1.5rem" }}>
             <Link href="/tournaments" style={{ background: "linear-gradient(135deg, #8b5cf6, #06b6d4)", color: "white", padding: "1.25rem 2.5rem", borderRadius: "16px", textDecoration: "none", fontWeight: 800, fontSize: "1.1rem" }}>ENTER THE ARENA →</Link>
             <Link href="#how-it-works" style={{ background: "rgba(255, 255, 255, 0.05)", border: "1px solid rgba(255, 255, 255, 0.1)", color: "white", padding: "1.25rem 2.5rem", borderRadius: "16px", textDecoration: "none", fontWeight: 800, fontSize: "1.1rem" }}>HOW IT WORKS</Link>
           </div>
