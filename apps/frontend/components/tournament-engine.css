@@ -9,11 +9,11 @@
   margin: 0 auto;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 768px) {
   .engine-container {
-    padding: 0.5rem;
-    padding-bottom: 7rem;
-    gap: 1.5rem;
+    padding: 0.75rem;
+    padding-bottom: 8rem;
+    gap: 1.25rem;
   }
 }
 
@@ -254,6 +254,11 @@
   letter-spacing: -2px;
 }
 
+@media (max-width: 768px) {
+  .setup-header { margin-bottom: 2rem; }
+  .setup-header h1 { font-size: 2.2rem !important; letter-spacing: -1px !important; }
+}
+
 .setup-grid {
   display: grid;
   grid-template-columns: 1.2fr 1fr;
@@ -322,9 +327,13 @@ select.premium-input-v2 option {
 .segmented-control {
   display: flex;
   background: rgba(255,255,255,0.03);
-  padding: 6px;
-  border-radius: 20px;
+  padding: 4px;
+  border-radius: 16px;
   border: 1px solid rgba(255,255,255,0.05);
+}
+
+@media (max-width: 768px) {
+  .segment-btn { padding: 0.75rem !important; font-size: 0.7rem !important; border-radius: 12px !important; }
 }
 
 .segment-btn {
@@ -353,6 +362,11 @@ select.premium-input-v2 option {
   border-radius: 20px;
   border: 1px solid rgba(255,255,255,0.05);
   justify-content: space-between;
+}
+
+@media (max-width: 768px) {
+  .quota-stepper { gap: 1rem !important; }
+  .step-btn { width: 44px !important; height: 44px !important; border-radius: 12px !important; }
 }
 
 .quota-display {
@@ -465,6 +479,10 @@ select.premium-input-v2 option {
   overflow: hidden;
   border: none;
   cursor: pointer;
+}
+
+@media (max-width: 768px) {
+  .launch-btn { padding: 1.25rem !important; font-size: 1rem !important; border-radius: 16px !important; }
 }
 
 .launch-btn.ready {
@@ -641,10 +659,12 @@ select.premium-input-v2 option {
 }
 
 @media (max-width: 768px) {
-  .pod-inner { padding: 1.5rem; border-radius: 24px; }
-  .pod-header { gap: 1rem !important; margin-bottom: 1.5rem !important; }
-  .team-initials { width: 44px !important; height: 44px !important; font-size: 1rem !important; }
+  .pod-inner { padding: 1.25rem !important; border-radius: 20px; }
+  .pod-header { gap: 0.75rem !important; margin-bottom: 1.25rem !important; }
+  .team-initials { width: 40px !important; height: 40px !important; font-size: 0.9rem !important; border-radius: 12px !important; }
   .team-name { font-size: 1.1rem !important; }
+  .pod-actions { margin-top: 1.5rem !important; gap: 0.75rem !important; }
+  .pod-btn { padding: 0.85rem !important; font-size: 0.7rem !important; border-radius: 12px !important; }
 }
 
 .pod-header {
@@ -680,7 +700,9 @@ select.premium-input-v2 option {
 }
 
 @media (max-width: 768px) {
-  .pod-score-large { font-size: 3.5rem; margin-bottom: 1.5rem; }
+  .pod-score-large { font-size: 3rem; margin-bottom: 1rem; }
+  .ticker-row { gap: 4px !important; }
+  .ball-slot { width: 22px !important; height: 22px !important; font-size: 0.55rem !important; }
 }
 
 .red .pod-score-large { color: #ef4444; text-shadow: 0 0 30px rgba(239, 68, 68, 0.3); }
