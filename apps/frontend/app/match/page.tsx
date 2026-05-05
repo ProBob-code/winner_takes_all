@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { TeamPod, VSCore } from "@/components/match-components";
 import { readBackendJson } from "@/lib/backend";
 import { GameRoom } from "@/components/game-room";
 import { OfflineTracker } from "@/components/offline-tracker";
@@ -121,36 +122,42 @@ export default function MatchPage() {
 
   // Completed match view
   if (match.status === "completed" || match.scoresApproved) {
+    const winnerId = match.winnerId;
+    const isP1Winner = winnerId === match.player1?.id;
+    const isP2Winner = winnerId === match.player2?.id;
+
     return (
       <main className="page">
         <div className="shell">
-          <div className="panel page-card slide-in">
-            <h2>Match Complete ✅</h2>
-            <div className="score-display" style={{ margin: "2rem 0" }}>
-              <div className="score-player">
-                <div className="score-player-name">{match.player1?.name || "Player 1"}</div>
-                <div className="score-player-value" style={{ color: match.winnerId === match.player1?.id ? "var(--green-light)" : "var(--red-light)" }}>
-                  {match.player1?.score || 0}
-                </div>
-              </div>
-              <div className="score-vs">VS</div>
-              <div className="score-player">
-                <div className="score-player-name">{match.player2?.name || "Player 2"}</div>
-                <div className="score-player-value" style={{ color: match.winnerId === match.player2?.id ? "var(--green-light)" : "var(--red-light)" }}>
-                  {match.player2?.score || 0}
-                </div>
-              </div>
-            </div>
-            {match.winnerId && (
-              <p style={{ textAlign: "center", fontSize: "1.1rem", fontWeight: 700 }}>
-                👑 Winner: {match.winnerId === match.player1?.id ? match.player1?.name : match.player2?.name}
-              </p>
-            )}
-            <div className="cta-row" style={{ justifyContent: "center", marginTop: "1.5rem" }}>
-              <a href={`/tournaments/${match.tournamentId}`} className="button-secondary">
-                ← Back to Tournament
-              </a>
-            </div>
+          <div className="app-header slide-in" style={{ textAlign: 'center', marginBottom: '3rem' }}>
+            <h1 className="glow-text">DUEL CONCLUDED</h1>
+            <p className="muted">The scores have been finalized in the arena.</p>
+          </div>
+
+          <div className="match-engine-v2 slide-in">
+             <div className="battle-view">
+                <TeamPod 
+                  teamName={match.player1?.name || "Player 1"}
+                  score={match.player1?.score || 0}
+                  color="red"
+                  isActive={isP1Winner}
+                />
+
+                <VSCore />
+
+                <TeamPod 
+                  teamName={match.player2?.name || "Player 2"}
+                  score={match.player2?.score || 0}
+                  color="blue"
+                  isActive={isP2Winner}
+                />
+             </div>
+          </div>
+
+          <div className="cta-row" style={{ justifyContent: "center", marginTop: "4rem" }}>
+            <a href={`/tournaments/${match.tournamentId}`} className="button-secondary">
+              ← Back to Arena
+            </a>
           </div>
         </div>
       </main>

@@ -9,9 +9,11 @@
   margin: 0 auto;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 900px) {
   .engine-container {
-    padding-top: 1rem;
+    padding: 0.5rem;
+    padding-bottom: 7rem;
+    gap: 1.5rem;
   }
 }
 
@@ -20,11 +22,15 @@
   flex-direction: column;
   align-items: center;
   gap: 2rem;
-  padding: 2rem;
+  padding: 3rem 2rem;
   background: radial-gradient(circle at center, rgba(31, 41, 55, 0.5) 0%, rgba(17, 24, 39, 0.8) 100%);
   border-radius: 40px;
   border: 1px solid rgba(255, 255, 255, 0.05);
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+@media (max-width: 768px) {
+  .center-stage { padding: 1.5rem 1rem; border-radius: 24px; gap: 1.5rem; }
 }
 
 /* 7-Ball Ticker */
@@ -81,6 +87,11 @@
   align-items: center;
   transition: all 0.4s ease;
   cursor: pointer;
+  width: 100%;
+}
+
+@media (max-width: 768px) {
+  .team-arena-card { padding: 1.25rem; border-radius: 16px; }
 }
 
 .team-arena-card.red { border-left: 4px solid #ef4444; }
@@ -224,6 +235,11 @@
   max-width: 1000px;
   margin: 0 auto;
   box-shadow: 0 40px 100px rgba(0,0,0,0.5);
+  width: 100%;
+}
+
+@media (max-width: 768px) {
+  .setup-card { padding: 1.5rem; border-radius: 20px; }
 }
 
 .setup-header {
@@ -242,6 +258,10 @@
   display: grid;
   grid-template-columns: 1.2fr 1fr;
   gap: 4rem;
+}
+
+@media (max-width: 900px) {
+  .setup-grid { grid-template-columns: 1fr; gap: 2rem; }
 }
 
 .section-label-v2 {
@@ -489,6 +509,11 @@ select.premium-input-v2 option {
   border: 1px solid rgba(255,255,255,0.05);
 }
 
+@media (max-width: 768px) {
+  .arena-header-v2 { padding: 1.25rem 1rem; border-radius: 16px; flex-direction: column; text-align: center; gap: 0.5rem; margin-bottom: 1.5rem !important; }
+  .arena-meta h1 { font-size: 1.5rem !important; }
+}
+
 .arena-badge {
   font-size: 0.65rem;
   font-weight: 900;
@@ -589,6 +614,11 @@ select.premium-input-v2 option {
   justify-content: center;
   gap: 2rem;
   perspective: 1000px;
+  width: 100%;
+}
+
+@media (max-width: 900px) {
+  .battle-view { flex-direction: column; gap: 1.5rem; }
 }
 
 .team-pod {
@@ -607,6 +637,14 @@ select.premium-input-v2 option {
   position: relative;
   z-index: 2;
   overflow: hidden;
+  width: 100%;
+}
+
+@media (max-width: 768px) {
+  .pod-inner { padding: 1.5rem; border-radius: 24px; }
+  .pod-header { gap: 1rem !important; margin-bottom: 1.5rem !important; }
+  .team-initials { width: 44px !important; height: 44px !important; font-size: 1rem !important; }
+  .team-name { font-size: 1.1rem !important; }
 }
 
 .pod-header {
@@ -639,6 +677,10 @@ select.premium-input-v2 option {
   line-height: 1;
   margin-bottom: 2rem;
   text-align: center;
+}
+
+@media (max-width: 768px) {
+  .pod-score-large { font-size: 3.5rem; margin-bottom: 1.5rem; }
 }
 
 .red .pod-score-large { color: #ef4444; text-shadow: 0 0 30px rgba(239, 68, 68, 0.3); }
@@ -687,6 +729,11 @@ select.premium-input-v2 option {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+@media (max-width: 900px) {
+  .vs-core { height: 60px; width: 60px; }
+  .vs-text { font-size: 1.1rem !important; }
 }
 
 .vs-ring {
@@ -804,6 +851,11 @@ select.premium-input-v2 option {
   border: 1px solid rgba(255,255,255,0.1);
   box-shadow: 0 10px 30px rgba(0,0,0,0.5);
   z-index: 10;
+}
+
+@media (max-width: 900px) {
+  .match-timer-v3 { position: relative; top: 0; transform: none; left: 0; margin: 0 auto 1.5rem; width: fit-content; padding: 0.5rem 1.25rem; gap: 1rem; }
+  .time-val { font-size: 1.25rem; }
 }
 
 .live-pill {
@@ -1984,7 +2036,7 @@ select.premium-input-v2 option {
   .v-name-xl { font-size: 2.2rem !important; letter-spacing: 0; margin: 1rem 0 !important; }
   .v-score { font-size: 3rem !important; }
   .v-stats-premium { gap: 1rem; margin: 1.5rem 0; }
-  .victory-podium { padding: 3rem 1rem 2rem; border-radius: 24px; }
+  .victory-podium { padding: 2.5rem 1rem 2rem; border-radius: 24px; width: 92%; }
   .v-crown { font-size: 3rem; }
   .v-label { font-size: 0.65rem; letter-spacing: 2px; }
   .v-footer { margin-top: 1.5rem; padding-top: 1.5rem; font-size: 0.6rem; }

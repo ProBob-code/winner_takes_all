@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { backendFetch } from "@/lib/backend";
+import { TeamPod, VSCore } from "@/components/match-components";
 import "@/components/tournament-engine.css";
 
 type Team = { id: string; name: string; matches_played: number; group_points: number; total_score: number; };
@@ -458,14 +459,6 @@ export function QuickTournament() {
 
   const getTeamName = (id: string) => teams.find(t => t.id === id)?.name || "Unknown";
 
-  const Ticker = ({ balls, black, color }: { balls: number, black: boolean, color: string }) => (
-    <div className="ticker-row">
-      {[...Array(7)].map((_, i) => (
-        <div key={i} className={`ball-slot ${i < balls ? 'filled' : ''}`} style={{ '--accent-primary': color } as any}>{i + 1}</div>
-      ))}
-      <div className={`ball-slot black ${black ? 'filled' : ''}`}>8</div>
-    </div>
-  );
 
   if (!isStarted) {
     return (
@@ -589,6 +582,22 @@ export function QuickTournament() {
               <span className="v-score">{victoryMatch.score_team_b}</span>
             </div>
             <div className="v-footer">POINTS AWARDED: {victoryMatch.is_draw ? '+50 TO EACH' : '+1 WIN'}</div>
+            <div className="v-share-action mt-4">
+              {typeof navigator !== 'undefined' && navigator.share && (
+                <button className="button button-gold button-sm" style={{ width: '100%', borderRadius: '12px' }} onClick={() => {
+                  const title = victoryMatch.is_draw ? "MATCH TIED! 🤝" : "CHAMPION DECLARED! 👑";
+                  const text = victoryMatch.is_draw 
+                    ? `Stalemate Draw between ${getTeamName(victoryMatch.team_a_id)} and ${getTeamName(victoryMatch.team_b_id)}! Score: ${victoryMatch.score_team_a} - ${victoryMatch.score_team_b}`
+                    : `${getTeamName(victoryMatch.winner_id || "")} has dominated the arena! Final score: ${victoryMatch.score_team_a} - ${victoryMatch.score_team_b}`;
+                  
+                  navigator.share({
+                    title: title,
+                    text: text,
+                    url: `${window.location.origin}/arena/${arenaId}`,
+                  }).catch(console.error);
+                }}>SHARE RESULT TO APPS</button>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -629,11 +638,22 @@ export function QuickTournament() {
             <p className="muted">Your battleground is now synchronized with the global spectator network. Share the link below.</p>
             <div className="share-link-premium mt-8">
               <div className="link-display"><span className="link-text">{window.location.origin}/arena/{arenaId}</span></div>
-              <button className="copy-action-btn" onClick={() => {
-                navigator.clipboard.writeText(`${window.location.origin}/arena/${arenaId}`);
-                const btn = document.querySelector('.copy-action-btn') as HTMLButtonElement;
-                if (btn) { btn.innerText = 'COPIED!'; setTimeout(() => btn.innerText = 'COPY LINK', 2000); }
-              }}>COPY LINK</button>
+              <div className="share-actions-group" style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                <button className="copy-action-btn" style={{ flex: 1 }} onClick={() => {
+                  navigator.clipboard.writeText(`${window.location.origin}/arena/${arenaId}`);
+                  const btn = document.querySelector('.copy-action-btn') as HTMLButtonElement;
+                  if (btn) { btn.innerText = 'COPIED!'; setTimeout(() => btn.innerText = 'COPY LINK', 2000); }
+                }}>COPY LINK</button>
+                {typeof navigator !== 'undefined' && navigator.share && (
+                  <button className="button button-gold" style={{ flex: 1, margin: 0, borderRadius: '12px', fontSize: '0.8rem', fontWeight: 900 }} onClick={() => {
+                    navigator.share({
+                      title: `🔥 Arena: ${arenaName}`,
+                      text: `Watch the high-stakes showdown in ${arenaName} live on Winner Takes All!`,
+                      url: `${window.location.origin}/arena/${arenaId}`,
+                    }).catch(console.error);
+                  }}>SHARE TO APPS</button>
+                )}
+              </div>
             </div>
             <button className="button button-secondary mt-8" style={{ width: '100%' }} onClick={() => setShowShareModal(false)}>BACK TO CONTROL ROOM</button>
           </div>
@@ -736,57 +756,41 @@ export function QuickTournament() {
               </div>
 
               <div className="battle-view">
-                <div className={`team-pod red ${liveMatch.active_team_id === liveMatch.team_a_id ? 'active' : ''}`} onClick={() => setMatches(matches.map(m => m.id === liveMatch.id ? { ...m, active_team_id: liveMatch.team_a_id } : m))}>
-                  <div className="pod-inner">
-                    <div className="pod-header">
-                      <div className="team-initials">{getTeamName(liveMatch.team_a_id).substring(0, 2).toUpperCase()}</div>
-                      <div className="team-title-stack">
-                        <h3 className="team-name">{getTeamName(liveMatch.team_a_id)}</h3>
-                        <div className="foul-group">
-                          <button className="foul-chip" onClick={(e) => { e.stopPropagation(); !isLocked && updateScore(liveMatch.id, liveMatch.team_a_id, 'FOUL') }} disabled={isLocked}>FOUL: {liveMatch.fouls_a}</button>
-                          {!isLocked && liveMatch.fouls_a > 0 && <button className="foul-dec" onClick={(e) => { e.stopPropagation(); updateScore(liveMatch.id, liveMatch.team_a_id, 'REMOVE_FOUL' as any) }}>−</button>}
-                        </div>
-                      </div>
-                      <div className="house-selector" onClick={e => e.stopPropagation()}>
-                        <button className={`house-opt ${liveMatch.team_a_house === 'SOLID' ? 'active' : ''}`} onClick={() => updateHouse(liveMatch.id, 'A', 'SOLID')}>●</button>
-                        <button className={`house-opt ${liveMatch.team_a_house === 'STRIPES' ? 'active' : ''}`} onClick={() => updateHouse(liveMatch.id, 'A', 'STRIPES')}>◐</button>
-                      </div>
-                    </div>
-                    <div className="pod-score-large">{liveMatch.score_team_a}</div>
-                    <Ticker balls={liveMatch.balls_potted_a} black={liveMatch.black_potted_a} color="#ef4444" />
-                    <div className="pod-actions">
-                      <button className="pod-btn ball-btn" onClick={(e) => { e.stopPropagation(); updateScore(liveMatch.id, liveMatch.team_a_id, 'BALL') }}>+ BALL</button>
-                      <button className="pod-btn black-btn" onClick={(e) => { e.stopPropagation(); updateScore(liveMatch.id, liveMatch.team_a_id, 'BLACK') }}>+ BLACK</button>
-                    </div>
-                  </div>
-                  <div className="active-glow" style={{ background: '#ef4444', opacity: 0.3 }}></div>
-                </div>
-                <div className="vs-core"><div className="vs-ring"></div><div className="vs-text">VS</div></div>
-                <div className={`team-pod blue ${liveMatch.active_team_id === liveMatch.team_b_id ? 'active' : ''}`} onClick={() => setMatches(matches.map(m => m.id === liveMatch.id ? { ...m, active_team_id: liveMatch.team_b_id } : m))}>
-                  <div className="pod-inner">
-                    <div className="pod-header">
-                      <div className="team-initials">{getTeamName(liveMatch.team_b_id).substring(0, 2).toUpperCase()}</div>
-                      <div className="team-title-stack">
-                        <h3 className="team-name">{getTeamName(liveMatch.team_b_id)}</h3>
-                        <div className="foul-group">
-                          <button className="foul-chip" onClick={(e) => { e.stopPropagation(); !isLocked && updateScore(liveMatch.id, liveMatch.team_b_id, 'FOUL') }} disabled={isLocked}>FOUL: {liveMatch.fouls_b}</button>
-                          {!isLocked && liveMatch.fouls_b > 0 && <button className="foul-dec" onClick={(e) => { e.stopPropagation(); updateScore(liveMatch.id, liveMatch.team_b_id, 'REMOVE_FOUL' as any) }}>−</button>}
-                        </div>
-                      </div>
-                      <div className="house-selector" onClick={e => e.stopPropagation()}>
-                        <button className={`house-opt ${liveMatch.team_b_house === 'SOLID' ? 'active' : ''}`} onClick={() => updateHouse(liveMatch.id, 'B', 'SOLID')}>●</button>
-                        <button className={`house-opt ${liveMatch.team_b_house === 'STRIPES' ? 'active' : ''}`} onClick={() => updateHouse(liveMatch.id, 'B', 'STRIPES')}>◐</button>
-                      </div>
-                    </div>
-                    <div className="pod-score-large">{liveMatch.score_team_b}</div>
-                    <Ticker balls={liveMatch.balls_potted_b} black={liveMatch.black_potted_b} color="#3b82f6" />
-                    <div className="pod-actions">
-                      <button className="pod-btn ball-btn" onClick={(e) => { e.stopPropagation(); updateScore(liveMatch.id, liveMatch.team_b_id, 'BALL') }}>+ BALL</button>
-                      <button className="pod-btn black-btn" onClick={(e) => { e.stopPropagation(); updateScore(liveMatch.id, liveMatch.team_b_id, 'BLACK') }}>+ BLACK</button>
-                    </div>
-                  </div>
-                  <div className="active-glow" style={{ background: '#3b82f6', opacity: 0.3 }}></div>
-                </div>
+                <TeamPod 
+                  teamName={getTeamName(liveMatch.team_a_id)}
+                  score={liveMatch.score_team_a}
+                  color="red"
+                  isActive={liveMatch.active_team_id === liveMatch.team_a_id}
+                  fouls={liveMatch.fouls_a}
+                  house={liveMatch.team_a_house}
+                  ballsPotted={liveMatch.balls_potted_a}
+                  blackPotted={liveMatch.black_potted_a}
+                  onFoulClick={() => updateScore(liveMatch.id, liveMatch.team_a_id, 'FOUL')}
+                  onBallClick={() => updateScore(liveMatch.id, liveMatch.team_a_id, 'BALL')}
+                  onBlackClick={() => updateScore(liveMatch.id, liveMatch.team_a_id, 'BLACK')}
+                  onHouseToggle={(h) => updateHouse(liveMatch.id, 'A', h)}
+                  isLocked={isLocked}
+                  onClick={() => setMatches(matches.map(m => m.id === liveMatch.id ? { ...m, active_team_id: liveMatch.team_a_id } : m))}
+                />
+
+                <VSCore />
+
+                <TeamPod 
+                  teamName={getTeamName(liveMatch.team_b_id)}
+                  score={liveMatch.score_team_b}
+                  color="blue"
+                  isActive={liveMatch.active_team_id === liveMatch.team_b_id}
+                  fouls={liveMatch.fouls_b}
+                  house={liveMatch.team_b_house}
+                  ballsPotted={liveMatch.balls_potted_b}
+                  blackPotted={liveMatch.black_potted_b}
+                  onFoulClick={() => updateScore(liveMatch.id, liveMatch.team_b_id, 'FOUL')}
+                  onBallClick={() => updateScore(liveMatch.id, liveMatch.team_b_id, 'BALL')}
+                  onBlackClick={() => updateScore(liveMatch.id, liveMatch.team_b_id, 'BLACK')}
+                  onHouseToggle={(h) => updateHouse(liveMatch.id, 'B', h)}
+                  isLocked={isLocked}
+                  onClick={() => setMatches(matches.map(m => m.id === liveMatch.id ? { ...m, active_team_id: liveMatch.team_b_id } : m))}
+                />
               </div>
 
               {createdMatches.length > 0 ? (

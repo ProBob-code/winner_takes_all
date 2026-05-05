@@ -303,6 +303,18 @@ export default function TournamentsPage() {
         }
 
         .empty-icon-large { font-size: 4rem; margin-bottom: 1.5rem; opacity: 0.3; }
+
+        @media (max-width: 768px) {
+          .guest-banner-v2 { flex-direction: column; padding: 1.5rem; text-align: center; }
+          .banner-content { flex-direction: column; gap: 1rem; }
+          .banner-icon { font-size: 2rem; }
+          .section-header { margin-bottom: 1.5rem; }
+          .section-title { font-size: 0.75rem; letter-spacing: 1px; }
+          .premium-card { border-radius: 16px; }
+          .card-content { padding: 1.25rem; }
+          .tournament-title { font-size: 1.1rem; }
+          .card-footer { margin-top: 1.5rem; }
+        }
       `}</style>
     </main>
   );

@@ -85,14 +85,14 @@ export default function DashboardPage() {
   const balance = wallet.balance;
 
   return (
-    <main className="page dashboard-page" style={{ padding: "1rem 2rem" }}>
+    <main className="page dashboard-page">
       <div className="shell">
         {/* Welcome Interactive Banner */}
         <div className="profile-banner slide-in">
            <div className="banner-glow"></div>
            <div className="profile-hero-info">
-             <h1 className="glow-text">Welcome back, {user.name.split(' ')[0]}!</h1>
-             <p className="muted">The arena is active. You have {wallet.transactions.length} recent activities to review.</p>
+             <h1 className="glow-text">Welcome, {user.name.split(' ')[0]}!</h1>
+             <p className="muted">The arena is active. You have {wallet.transactions.length} recent activities.</p>
            </div>
            <div className="profile-balance-highlight">
               <Link href="/wallet" style={{ textDecoration: "none" }}>
@@ -107,82 +107,60 @@ export default function DashboardPage() {
         <div className="dashboard-grid">
           
           {/* Left Stack: Interactive Zone */}
-          <div className="stack" style={{ gap: "2rem" }}>
+          <div className="stack" style={{ gap: "1.5rem" }}>
             
             {/* Chill Zone Card with Music */}
-            <div className="panel slide-in dashboard-card interactive-hover" style={{ 
-              animationDelay: "0.1s", 
-              padding: "2.5rem"
-            }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem" }}>
-                <h3 style={{ fontSize: "1.5rem", display: "flex", alignItems: "center", gap: "0.75rem" }}>
-                  <span style={{ animation: "pulse 2s infinite" }}>🎧</span> Gaming Lounge
+            <div className="panel slide-in dashboard-card interactive-hover" style={{ animationDelay: "0.1s" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem", flexWrap: 'wrap', gap: '0.5rem' }}>
+                <h3 style={{ fontSize: "1.25rem", display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                  <span style={{ animation: "pulse 2s infinite" }}>🎧</span> Lounge
                 </h3>
-                <div className="level-badge" style={{ fontSize: "0.75rem", background: "rgba(16, 185, 129, 0.1)", color: "var(--green)" }}>LVL {Math.floor((user?.stats?.points || 0) / 100) + 1}</div>
+                <div className="level-badge" style={{ fontSize: "0.7rem", background: "rgba(16, 185, 129, 0.1)", color: "var(--green)" }}>LVL {Math.floor((user?.stats?.points || 0) / 100) + 1}</div>
               </div>
 
               <GamingRadio />
 
-              <div style={{ marginTop: "2rem" }}>
-                <h4 style={{ marginBottom: "1rem", fontSize: "1rem", opacity: 0.8 }}>Strategy Hub</h4>
+              <div style={{ marginTop: "1.5rem" }}>
+                <h4 style={{ marginBottom: "0.75rem", fontSize: "0.9rem", opacity: 0.8 }}>Strategy Hub</h4>
                 <div className="info-list" style={{ gap: "0.75rem" }}>
                   <div className="info-row" style={{ background: "rgba(139, 92, 246, 0.05)", borderColor: "rgba(139, 92, 246, 0.1)" }}>
-                    <span className="info-label">Current Tip:</span>
-                    <span className="info-value" style={{ color: "var(--accent-light)" }}>"Always observe the break speed in 8-Ball; 85% leads to better scattering."</span>
-                  </div>
-                  <div className="info-row" style={{ background: "rgba(6, 182, 212, 0.05)", borderColor: "rgba(6, 182, 212, 0.1)" }}>
-                    <span className="info-label">Team Synergy:</span>
-                    <span className="info-value">Assign a dedicated 'Finisher' in 2v2 tournaments for consistency.</span>
+                    <span className="info-label">Tip:</span>
+                    <span className="info-value" style={{ color: "var(--accent-light)" }}>"Observe break speed in 8-Ball; 85% is optimal."</span>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Tournament Quick Action */}
-            <div className="panel slide-in dashboard-card" style={{ animationDelay: "0.2s", padding: "2.5rem" }}>
-               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
+            <div className="panel slide-in dashboard-card" style={{ animationDelay: "0.2s" }}>
+               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem", flexWrap: 'wrap', gap: '0.5rem' }}>
                  <h3>Next Up</h3>
-                 <Link href="/tournaments" className="text-accent no-underline hover:glow" style={{ fontSize: "0.9rem" }}>View All Brackets</Link>
+                 <Link href="/tournaments" className="text-accent no-underline hover:glow" style={{ fontSize: "0.85rem" }}>View All</Link>
                </div>
-               <div style={{ display: "flex", gap: "1.5rem" }}>
+               <div className="tournament-action-row" style={{ display: "flex", gap: "1rem", flexWrap: 'wrap' }}>
                   {user?.joinedTournaments && user.joinedTournaments.length > 0 ? (
-                  user.joinedTournaments.map((t: any) => (
-                    <div key={t.id} className="tournament-app-card" style={{ flex: 1, padding: "1.5rem", background: "rgba(0,0,0,0.4)" }}>
+                  user.joinedTournaments.slice(0, 2).map((t: any) => (
+                    <div key={t.id} className="tournament-app-card" style={{ flex: "1 1 200px", padding: "1.25rem", background: "rgba(0,0,0,0.4)" }}>
                       <div className="card-players">Tournament</div>
-                      <div className="card-title" style={{ fontSize: "1.2rem" }}>{t.name}</div>
+                      <div className="card-title" style={{ fontSize: "1.1rem" }}>{t.name}</div>
                       <div className="card-footer" style={{ marginTop: "1rem" }}>
-                        <span className="footer-item">₹{t.entryFee.amount} Entry</span>
-                        <span className="footer-item" style={{ color: "var(--accent)" }}>{t.status.toUpperCase()}</span>
+                        <span className="footer-item">₹{t.entryFee.amount}</span>
+                        <span className="footer-item" style={{ color: "var(--accent)" }}>{t.status}</span>
                       </div>
                     </div>
                   ))
                 ) : (
                   <div style={{ 
                     flex: 1, 
-                    padding: "2rem", 
+                    padding: "1.5rem", 
                     background: "rgba(0,0,0,0.2)", 
                     borderRadius: "1rem", 
                     textAlign: "center",
                     border: "1px dashed rgba(255,255,255,0.1)"
                   }}>
-                    <div style={{ fontSize: "2rem", marginBottom: "0.5rem" }}>🏆</div>
+                    <div style={{ fontSize: "1.5rem", marginBottom: "0.5rem" }}>🏆</div>
                     <div style={{ fontWeight: 600 }}>No active tournaments</div>
-                    <div style={{ fontSize: "0.8rem", opacity: 0.6, marginTop: "0.5rem" }}>
-                      Join a tournament to see your upcoming matches here.
-                    </div>
-                    <Link 
-                      href="/tournaments"
-                      className="button"
-                      style={{ 
-                        marginTop: "1rem", 
-                        display: "inline-block",
-                        fontSize: "0.8rem", 
-                        fontWeight: 700,
-                        textDecoration: "none"
-                      }}
-                    >
-                      BROWSE TOURNAMENTS
-                    </Link>
+                    <Link href="/tournaments" className="button button-sm mt-4">BROWSE</Link>
                   </div>
                 )}
                </div>
@@ -190,47 +168,39 @@ export default function DashboardPage() {
           </div>
 
           {/* Right Aside: Stats & Social */}
-          <div className="stack" style={{ gap: "2rem" }}>
-            <div className="panel slide-in dashboard-card" style={{ animationDelay: "0.3s", padding: "2rem" }}>
-              <h3 style={{ marginBottom: "1.5rem" }}>Elite Status</h3>
-              <div style={{ position: "relative", width: "120px", height: "120px", margin: "0 auto 2rem" }}>
-                <svg style={{ transform: "rotate(-90deg)", width: "120px", height: "120px" }}>
-                  <circle cx="60" cy="60" r="54" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="12" />
-                  <circle cx="60" cy="60" r="54" fill="none" stroke="var(--accent)" strokeWidth="12" strokeDasharray="339.29" strokeDashoffset="84.82" style={{ transition: "stroke-dashoffset 1s ease" }} />
+          <div className="stack" style={{ gap: "1.5rem" }}>
+            <div className="panel slide-in dashboard-card" style={{ animationDelay: "0.3s" }}>
+              <h3 style={{ marginBottom: "1.25rem" }}>Elite Status</h3>
+              <div style={{ position: "relative", width: "100px", height: "100px", margin: "0 auto 1.5rem" }}>
+                <svg style={{ transform: "rotate(-90deg)", width: "100px", height: "100px" }}>
+                  <circle cx="50" cy="50" r="44" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="10" />
+                  <circle cx="50" cy="50" r="44" fill="none" stroke="var(--accent)" strokeWidth="10" strokeDasharray="276.46" strokeDashoffset="69.11" style={{ transition: "stroke-dashoffset 1s ease" }} />
                 </svg>
-                <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", textAlign: "center" }}>
-                  <div style={{ fontSize: "1.5rem", fontWeight: 800 }}>LVL {Math.floor((user?.stats?.points || 0) / 100) + 1}</div>
-                  <div className="muted" style={{ fontSize: "0.6rem" }}>PRO PLAYER</div>
+                <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", textAlign: "center", width: '100%' }}>
+                  <div style={{ fontSize: "1.2rem", fontWeight: 800 }}>LVL {Math.floor((user?.stats?.points || 0) / 100) + 1}</div>
                 </div>
               </div>
               <div className="info-list" style={{ gap: "0.5rem" }}>
-                <div className="info-row" style={{ padding: "0.75rem 1rem", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
-                  <span className="info-label">Tournament Wins</span>
+                <div className="info-row" style={{ padding: "0.6rem 0.8rem", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+                  <span className="info-label">Wins</span>
                   <span className="info-value text-green">{user?.stats?.tournamentWins || 0}</span>
-                </div>
-                <div className="info-row" style={{ padding: "0.75rem 1rem" }}>
-                  <span className="info-label">Win Rate</span>
-                  <span className="info-value">{user?.stats?.winRate || 0}%</span>
                 </div>
               </div>
             </div>
 
-            <div className="panel slide-in dashboard-card" style={{ animationDelay: "0.4s", padding: "2rem" }}>
-              <h3 style={{ marginBottom: "1rem" }}>Recent Earnings</h3>
+            <div className="panel slide-in dashboard-card" style={{ animationDelay: "0.4s" }}>
+              <h3 style={{ marginBottom: "1rem" }}>Earnings</h3>
               <div className="list">
-                {wallet.transactions.slice(0, 4).map((tx: any) => (
-                  <div key={tx.id} style={{ padding: "0.75rem 0", display: "flex", justifyContent: "space-between", borderBottom: "1px solid rgba(255,255,255,0.03)" }}>
-                    <div>
-                      <div style={{ fontSize: "0.9rem" }}>{tx.type.replace('_', ' ')}</div>
-                      <div className="muted" style={{ fontSize: "0.7rem" }}>{tx.referenceType}</div>
-                    </div>
-                    <div className={tx.type.includes('payout') ? 'text-green' : 'text-accent'} style={{ fontWeight: 600 }}>
+                {wallet.transactions.slice(0, 3).map((tx: any) => (
+                  <div key={tx.id} style={{ padding: "0.6rem 0", display: "flex", justifyContent: "space-between", borderBottom: "1px solid rgba(255,255,255,0.03)" }}>
+                    <div style={{ fontSize: "0.8rem" }}>{tx.type.replace('_', ' ')}</div>
+                    <div className={tx.type.includes('payout') ? 'text-green' : 'text-accent'} style={{ fontWeight: 600, fontSize: "0.85rem" }}>
                        {tx.type.includes('debit') ? '-' : '+'}{formatMoney(tx.amount)}
                     </div>
                   </div>
                 ))}
               </div>
-              <Link href="/wallet" className="button-secondary btn-block" style={{ marginTop: "1.5rem", fontSize: "0.85rem", textAlign: "center" }}>Full Transaction History</Link>
+              <Link href="/wallet" className="button-secondary btn-block" style={{ marginTop: "1rem", fontSize: "0.8rem", textAlign: "center", display: 'block' }}>History</Link>
             </div>
           </div>
 
@@ -238,25 +208,18 @@ export default function DashboardPage() {
       </div>
 
       <style dangerouslySetInnerHTML={{ __html: `
-        @keyframes pulse {
-          0% { transform: scale(1); }
-          50% { transform: scale(1.1); }
-          100% { transform: scale(1); }
-        }
-        @keyframes rotate {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
         .interactive-hover { transition: all 0.3s ease; }
-        .interactive-hover:hover { 
-          transform: translateY(-5px);
-          box-shadow: 0 15px 35px rgba(0,0,0,0.5), 0 0 15px rgba(139, 92, 246, 0.2); 
-          border-color: var(--accent);
-        }
+        .interactive-hover:hover { transform: translateY(-5px); border-color: var(--accent); }
         .interactive-scale { transition: transform 0.2s ease; cursor: pointer; }
         .interactive-scale:hover { transform: scale(1.05); }
         .no-underline { text-decoration: none; }
         .hover\\:glow:hover { text-shadow: 0 0 10px var(--accent-light); }
+        
+        @media (max-width: 768px) {
+          .dashboard-page { padding: 0.5rem !important; }
+          .dashboard-card { padding: 1.5rem !important; }
+        }
       `}} />
     </main>
   );

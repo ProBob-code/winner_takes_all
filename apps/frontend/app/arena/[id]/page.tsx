@@ -30,9 +30,11 @@ export async function generateMetadata(
         images: [
           {
             url: "https://winner-takes-all.pages.dev/og-image.png",
+            secureUrl: "https://winner-takes-all.pages.dev/og-image.png",
             width: 1200,
             height: 630,
             alt: `Live Stream: ${name}`,
+            type: 'image/png',
           },
         ],
         type: 'website',

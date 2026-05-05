@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { readBackendJson } from "@/lib/backend";
+import { TeamPod, VSCore } from "@/components/match-components";
 import "@/components/tournament-engine.css";
 
 interface ArenaState {
@@ -85,14 +86,6 @@ export function ArenaClient({ id }: { id: string }) {
   
   const getTeamName = (tid: string) => teams.find(t => t.id === tid)?.name || "Unknown Team";
 
-  const Ticker = ({ balls, black, color }: { balls: number, black: boolean, color: string }) => (
-    <div className="ticker-row">
-      {[...Array(7)].map((_, i) => (
-        <div key={i} className={`ball-slot ${i < balls ? 'filled' : ''}`} style={{ '--accent-primary': color } as any}>{i + 1}</div>
-      ))}
-      <div className={`ball-slot black ${black ? 'filled' : ''}`}>8</div>
-    </div>
-  );
 
   return (
     <div className="engine-container animate-in" style={{ padding: '2rem', minHeight: '100vh', background: 'transparent' }}>
@@ -134,47 +127,29 @@ export function ArenaClient({ id }: { id: string }) {
           </div>
 
           <div className="battle-view">
-            <div className={`team-pod red ${liveMatch.active_team_id === liveMatch.team_a_id ? 'active' : ''}`}>
-              <div className="pod-inner">
-                <div className="pod-header">
-                  <div className="team-initials">{getTeamName(liveMatch.team_a_id).substring(0, 2).toUpperCase()}</div>
-                  <div className="team-title-stack">
-                    <h3 className="team-name">{getTeamName(liveMatch.team_a_id)}</h3>
-                    {liveMatch.fouls_a > 0 && <div className="foul-chip" style={{ cursor: 'default' }}>FOULS: {liveMatch.fouls_a}</div>}
-                  </div>
-                  {liveMatch.team_a_house && (
-                    <div className="house-selector">
-                      <div className="house-opt active">{liveMatch.team_a_house === 'SOLID' ? '●' : '◐'}</div>
-                    </div>
-                  )}
-                </div>
-                <div className="pod-score-large">{liveMatch.score_team_a}</div>
-                <Ticker balls={liveMatch.balls_potted_a} black={liveMatch.black_potted_a} color="#ef4444" />
-              </div>
-              <div className="active-glow" style={{ background: '#ef4444', opacity: 0.2 }}></div>
-            </div>
+            <TeamPod 
+              teamName={getTeamName(liveMatch.team_a_id)}
+              score={liveMatch.score_team_a}
+              color="red"
+              isActive={liveMatch.active_team_id === liveMatch.team_a_id}
+              fouls={liveMatch.fouls_a}
+              house={liveMatch.team_a_house}
+              ballsPotted={liveMatch.balls_potted_a}
+              blackPotted={liveMatch.black_potted_a}
+            />
 
-            <div className="vs-core"><div className="vs-ring"></div><div className="vs-text">VS</div></div>
+            <VSCore />
 
-            <div className={`team-pod blue ${liveMatch.active_team_id === liveMatch.team_b_id ? 'active' : ''}`}>
-              <div className="pod-inner">
-                <div className="pod-header">
-                  <div className="team-initials">{getTeamName(liveMatch.team_b_id).substring(0, 2).toUpperCase()}</div>
-                  <div className="team-title-stack">
-                    <h3 className="team-name">{getTeamName(liveMatch.team_b_id)}</h3>
-                    {liveMatch.fouls_b > 0 && <div className="foul-chip" style={{ cursor: 'default' }}>FOULS: {liveMatch.fouls_b}</div>}
-                  </div>
-                  {liveMatch.team_b_house && (
-                    <div className="house-selector">
-                      <div className="house-opt active">{liveMatch.team_b_house === 'SOLID' ? '●' : '◐'}</div>
-                    </div>
-                  )}
-                </div>
-                <div className="pod-score-large">{liveMatch.score_team_b}</div>
-                <Ticker balls={liveMatch.balls_potted_b} black={liveMatch.black_potted_b} color="#3b82f6" />
-              </div>
-              <div className="active-glow" style={{ background: '#3b82f6', opacity: 0.2 }}></div>
-            </div>
+            <TeamPod 
+              teamName={getTeamName(liveMatch.team_b_id)}
+              score={liveMatch.score_team_b}
+              color="blue"
+              isActive={liveMatch.active_team_id === liveMatch.team_b_id}
+              fouls={liveMatch.fouls_b}
+              house={liveMatch.team_b_house}
+              ballsPotted={liveMatch.balls_potted_b}
+              blackPotted={liveMatch.black_potted_b}
+            />
           </div>
         </div>
       ) : (
