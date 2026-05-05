@@ -25,6 +25,7 @@ type Match = {
   team_b_house?: 'SOLID' | 'STRIPES';
   fouls_a: number;
   fouls_b: number;
+  is_draw?: boolean;
 };
 
 type ModalConfig = {
