@@ -649,44 +649,28 @@ export function QuickTournament() {
             <p className="muted">Your battleground is now synchronized with the global spectator network. Share the link below.</p>
             <div className="share-link-premium mt-8">
               <div className="link-display"><span className="link-text">{window.location.origin}/arena/{arenaId}</span></div>
-              <div className="share-actions-group" style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
-                <button className="copy-action-btn" style={{ flex: 1 }} onClick={() => {
+              <div className="share-actions-group-v2 mt-6">
+                <button className="button button-gold w-full mb-4" style={{ borderRadius: '14px', padding: '1rem' }} onClick={() => {
                   navigator.clipboard.writeText(`${window.location.origin}/arena/${arenaId}`);
-                  const btn = document.querySelector('.copy-action-btn') as HTMLButtonElement;
-                  if (btn) { btn.innerText = 'COPIED!'; setTimeout(() => btn.innerText = 'COPY LINK', 2000); }
+                  const btn = document.querySelector('.share-actions-group-v2 .button-gold') as HTMLButtonElement;
+                  if (btn) { const old = btn.innerText; btn.innerText = 'COPIED!'; setTimeout(() => btn.innerText = old, 2000); }
                 }}>COPY LINK</button>
+                
                 {typeof navigator !== 'undefined' && navigator.share && (
-                  <button className="button button-gold" style={{ flex: 1, margin: 0, borderRadius: '12px', fontSize: '0.8rem', fontWeight: 900 }} onClick={() => {
+                  <button className="button button-secondary w-full mb-6" style={{ borderRadius: '14px', padding: '1rem' }} onClick={() => {
                     navigator.share({
                       title: `🏆 ARENA IS LIVE: ${arenaName}`,
-                      text: `🔥 WITNESS THE SHOWDOWN! Step into the world-class stadium arena for the ${arenaName} tournament. Watch real-time multi-game duels and high-stakes competitive action live on Winner Takes All!`,
+                      text: `🔥 WITNESS THE SHOWDOWN! Step into the world-class stadium arena for the ${arenaName} tournament. Watch real-time multi-game duels live on Winner Takes All!`,
                       url: `${window.location.origin}/arena/${arenaId}`,
                     }).catch(console.error);
                   }}>SYSTEM SHARE</button>
                 )}
               </div>
-              <div className="social-quick-share mt-4" style={{ display: 'flex', gap: '8px' }}>
-                <button 
-                  className="button button-sm" 
-                  style={{ flex: 1, background: '#25D366', color: 'white', border: 'none', borderRadius: '12px' }}
-                  onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent('🏆 THE ARENA IS LIVE! Watch the ' + arenaName + ' showdown live on Winner Takes All. Join the elite spectator stream now: ' + window.location.origin + '/arena/' + arenaId)}`, '_blank')}
-                >
-                  WHATSAPP
-                </button>
-                <button 
-                  className="button button-sm" 
-                  style={{ flex: 1, background: '#1877F2', color: 'white', border: 'none', borderRadius: '12px' }}
-                  onClick={() => window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.origin + '/arena/' + arenaId)}`, '_blank')}
-                >
-                  FACEBOOK
-                </button>
-                <button 
-                  className="button button-sm" 
-                  style={{ flex: 1, background: '#1DA1F2', color: 'white', border: 'none', borderRadius: '12px' }}
-                  onClick={() => window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent('🏆 WITNESS THE SHOWDOWN! Watch the ' + arenaName + ' live on Winner Takes All!')}&url=${encodeURIComponent(window.location.origin + '/arena/' + arenaId)}`, '_blank')}
-                >
-                  TWITTER
-                </button>
+              
+              <div className="social-grid-v2">
+                <button className="social-btn whatsapp" onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent('🏆 THE ARENA IS LIVE! Watch the ' + arenaName + ' showdown live on Winner Takes All. Join the elite spectator stream now: ' + window.location.origin + '/arena/' + arenaId)}`, '_blank')}>WHATSAPP</button>
+                <button className="social-btn facebook" onClick={() => window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.origin + '/arena/' + arenaId)}`, '_blank')}>FACEBOOK</button>
+                <button className="social-btn twitter" onClick={() => window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent('🏆 WITNESS THE SHOWDOWN! Watch the ' + arenaName + ' live on Winner Takes All!')}&url=${encodeURIComponent(window.location.origin + '/arena/' + arenaId)}`, '_blank')}>TWITTER</button>
               </div>
             </div>
             <button className="button button-secondary mt-8" style={{ width: '100%' }} onClick={() => setShowShareModal(false)}>BACK TO CONTROL ROOM</button>
