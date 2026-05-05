@@ -115,7 +115,8 @@ export function QuickTournament() {
               setExtraTimePromptId(null);
               playBuzzer();
               const winnerId = m.score_team_a > m.score_team_b ? m.team_a_id : (m.score_team_b > m.score_team_a ? m.team_b_id : null);
-              const nm = { ...m, status: 'COMPLETED' as const, winner_id: winnerId };
+              const isDraw = m.score_team_a === m.score_team_b;
+              const nm = { ...m, status: 'COMPLETED' as const, winner_id: winnerId, is_draw: isDraw };
               
               setVictoryMatch(nm);
               setTimeout(() => setVictoryMatch(null), 10000);
@@ -123,7 +124,7 @@ export function QuickTournament() {
               setTeams(tPrev => tPrev.map(t => (t.id === nm.team_a_id || t.id === nm.team_b_id) ? { 
                 ...t, 
                 matches_played: t.matches_played + 1, 
-                total_score: t.total_score + (t.id === nm.team_a_id ? nm.score_team_a : nm.score_team_b), 
+                total_score: t.total_score + (t.id === nm.team_a_id ? nm.score_team_a : nm.score_team_b) + (isDraw ? 50 : 0), 
                 group_points: t.group_points + (nm.winner_id === t.id ? 1 : 0) 
               } : t));
               
@@ -577,19 +578,16 @@ export function QuickTournament() {
     <div className="engine-container animate-in">
       {victoryMatch && (
         <div className="victory-overlay animate-in">
-          <div className="fireworks-container">
-            <div className="firework"></div><div className="firework"></div><div className="firework"></div><div className="firework"></div><div className="firework"></div>
-          </div>
           <div className="victory-podium slide-in">
-            <div className="v-crown">👑</div>
-            <div className="v-label">CHAMPION DECLARED</div>
-            <h1 className="v-name-xl glow-text-gold">{getTeamName(victoryMatch.winner_id || "")}</h1>
+            <div className="v-crown">{victoryMatch.is_draw ? '🤝' : '👑'}</div>
+            <div className="v-label">{victoryMatch.is_draw ? 'MATCH TIED' : 'CHAMPION DECLARED'}</div>
+            <h1 className="v-name-xl glow-text-gold">{victoryMatch.is_draw ? 'STALEMATE DRAW' : getTeamName(victoryMatch.winner_id || "")}</h1>
             <div className="v-stats-premium">
               <span className="v-score">{victoryMatch.score_team_a}</span>
-              <span className="v-vs">DEFEATED</span>
+              <span className="v-vs">{victoryMatch.is_draw ? 'DRAW' : 'DEFEATED'}</span>
               <span className="v-score">{victoryMatch.score_team_b}</span>
             </div>
-            <div className="v-footer">MATCH CONCLUDED • STADIUM ARENA</div>
+            <div className="v-footer">POINTS AWARDED: {victoryMatch.is_draw ? '+50 TO EACH' : '+1 WIN'}</div>
           </div>
         </div>
       )}

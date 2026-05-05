@@ -255,8 +255,8 @@ a:hover {
   }
 
   .topbar {
-    padding: 0 1rem !important;
-    height: 64px !important;
+    padding: 0 0.75rem !important;
+    height: 56px !important;
   }
 
   .topbar-brand .brand-text {
