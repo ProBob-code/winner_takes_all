@@ -221,6 +221,15 @@ export function LandingPage() {
           backdrop-filter: blur(20px);
           transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
         }
+
+        @media (max-width: 768px) {
+          .landing-main { padding: 80px 1.5rem 40px !important; }
+          .hero-buttons { flex-direction: column; width: 100%; gap: 1rem !important; }
+          .hero-buttons a { width: 100%; text-align: center; padding: 1rem !important; }
+          .hero-chip { margin-bottom: 1.5rem !important; font-size: 0.75rem !important; }
+          .hero-title { margin-bottom: 1.5rem !important; }
+          .hero-desc { font-size: 1rem !important; margin-bottom: 2.5rem !important; }
+        }
       `}</style>
 
       <div className="landing-stars-container">
@@ -232,16 +241,6 @@ export function LandingPage() {
       <div ref={glowRef} className="mouse-glow" style={{ position: "fixed", width: "600px", height: "600px", background: "radial-gradient(circle, rgba(139, 92, 246, 0.08), transparent 70%)", borderRadius: "50%", pointerEvents: "none", zIndex: 999, transform: "translate(-50%, -50%)", opacity: 0 }}></div>
 
       <main className="landing-main" style={{ padding: "120px 6% 60px", textAlign: "center", position: "relative", zIndex: 2 }}>
-        <style jsx>{`
-          @media (max-width: 768px) {
-            .landing-main { padding: 80px 1.5rem 40px !important; }
-            .hero-buttons { flex-direction: column; width: 100%; gap: 1rem !important; }
-            .hero-buttons a { width: 100%; text-align: center; padding: 1rem !important; }
-            .hero-chip { margin-bottom: 1.5rem !important; font-size: 0.75rem !important; }
-            .hero-title { margin-bottom: 1.5rem !important; }
-            .hero-desc { font-size: 1rem !important; margin-bottom: 2.5rem !important; }
-          }
-        `}</style>
         <section className="hero" style={{ minHeight: "80vh", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" }}>
           <div className="hero-chip" style={{ background: "rgba(139, 92, 246, 0.1)", border: "1px solid rgba(139, 92, 246, 0.2)", padding: "8px 16px", borderRadius: "9999px", fontSize: "0.85rem", fontWeight: 700, color: "#8b5cf6", marginBottom: "2rem" }}>High-Stakes Gaming Arena</div>
           <h1 className="hero-title" style={{ fontSize: "clamp(3rem, 8vw, 6rem)", fontWeight: 900, lineHeight: 0.9, letterSpacing: "-2px", marginBottom: "2.5rem" }}>
