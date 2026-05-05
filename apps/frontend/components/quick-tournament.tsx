@@ -599,11 +599,11 @@ export function QuickTournament() {
               )}
               <div className="social-grid-v2">
                 <button className="social-btn whatsapp" onClick={() => {
-                  const title = victoryMatch.is_draw ? "🏆 STALEMATE IN THE ARENA!" : "👑 A CHAMPION HAS RISEN!";
+                  const title = victoryMatch.is_draw ? "STALEMATE IN THE ARENA!" : "A CHAMPION HAS RISEN!";
                   const text = victoryMatch.is_draw 
-                    ? `An epic clash of titans has concluded in a hard-fought draw! Final Score: ${victoryMatch.score_team_a} - ${victoryMatch.score_team_b}.`
+                    ? `An epic clash has concluded in a hard-fought draw! Final Score: ${victoryMatch.score_team_a} - ${victoryMatch.score_team_b}.`
                     : `LEGENDARY VICTORY! ${getTeamName(victoryMatch.winner_id || "")} has claimed glory in the stadium! Final Score: ${victoryMatch.score_team_a} - ${victoryMatch.score_team_b}.`;
-                  window.open(`https://wa.me/?text=${encodeURIComponent(title + ' ' + text + ' Experience the intensity: ' + window.location.origin + '/arena/' + arenaId)}`, '_blank');
+                  window.open(`https://wa.me/?text=${encodeURIComponent('🔥 ' + title + '\n\n' + text + '\n\nWitness the legend: ' + window.location.origin + '/arena/' + arenaId)}`, '_blank');
                 }}>WHATSAPP</button>
                 <button className="social-btn facebook" onClick={() => window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.origin + '/arena/' + arenaId)}`, '_blank')}>FACEBOOK</button>
                 <button className="social-btn twitter" onClick={() => window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(window.location.origin + '/arena/' + arenaId)}&text=${encodeURIComponent("⚔️ Witness the legend live!")}`, '_blank')}>TWITTER</button>
@@ -668,7 +668,11 @@ export function QuickTournament() {
               </div>
               
               <div className="social-grid-v2">
-                <button className="social-btn whatsapp" onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent('🏆 THE ARENA IS LIVE! Watch the ' + arenaName + ' showdown live on Winner Takes All. Join the elite spectator stream now: ' + window.location.origin + '/arena/' + arenaId)}`, '_blank')}>WHATSAPP</button>
+                <button className="social-btn whatsapp" onClick={() => {
+                  const cleanName = arenaName.toLowerCase().endsWith('showdown') ? arenaName : `${arenaName} Showdown`;
+                  const msg = `🔥 ARENA IS LIVE: ${cleanName}!\n\nWitness the high-stakes duels and join the elite spectator stream live on Winner Takes All.\n\nENTER THE ARENA: ${window.location.origin}/arena/${arenaId}`;
+                  window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+                }}>WHATSAPP</button>
                 <button className="social-btn facebook" onClick={() => window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.origin + '/arena/' + arenaId)}`, '_blank')}>FACEBOOK</button>
                 <button className="social-btn twitter" onClick={() => window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent('🏆 WITNESS THE SHOWDOWN! Watch the ' + arenaName + ' live on Winner Takes All!')}&url=${encodeURIComponent(window.location.origin + '/arena/' + arenaId)}`, '_blank')}>TWITTER</button>
               </div>

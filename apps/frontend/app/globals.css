@@ -2805,6 +2805,13 @@ select.form-control option {
     gap: 0.5rem !important;
     background: rgba(8, 5, 18, 0.98) !important;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 1000 !important;
+    margin-top: -0.75rem !important; /* Offset the main-content padding if any */
+    margin-left: -0.75rem !important;
+    margin-right: -0.75rem !important;
+    width: calc(100% + 1.5rem) !important;
   }
   .topbar-brand { gap: 0.4rem !important; }
   .logo-icon { display: none !important; }
@@ -2819,7 +2826,7 @@ select.form-control option {
     font-weight: 800 !important;
   }
 
-  .main-content { padding: 0.75rem !important; }
+  .main-content { padding: 0.75rem !important; padding-top: 0 !important; }
   .page-content { padding-top: 0.5rem !important; }
 
   /* Premium Grid Revamp */
