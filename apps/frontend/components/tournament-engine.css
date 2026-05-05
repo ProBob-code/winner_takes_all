@@ -324,21 +324,22 @@ select.premium-input-v2 option {
   font-family: inherit;
 }
 
-.segmented-control {
+.segmented-control-v2 {
   display: flex;
   background: rgba(255,255,255,0.03);
   padding: 4px;
   border-radius: 16px;
   border: 1px solid rgba(255,255,255,0.05);
+  width: 100%;
 }
 
 @media (max-width: 480px) {
-  .segmented-control { flex-direction: column; gap: 4px; border-radius: 12px; }
-  .segment-btn { border-radius: 8px !important; }
+  .segmented-control-v2 { flex-direction: column; gap: 4px; border-radius: 12px; }
+  .segmented-control-v2 .segment-btn { border-radius: 8px !important; width: 100% !important; text-align: center; }
 }
 
 @media (max-width: 768px) {
-  .segment-btn { padding: 0.75rem !important; font-size: 0.7rem !important; border-radius: 12px !important; }
+  .segment-btn { padding: 0.85rem !important; font-size: 0.75rem !important; border-radius: 12px !important; }
 }
 
 .segment-btn {
@@ -348,6 +349,10 @@ select.premium-input-v2 option {
   font-size: 0.8rem;
   font-weight: 900;
   letter-spacing: 1px;
+  color: var(--text-muted);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  text-align: center;
+}
   color: var(--text-muted);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -810,7 +815,35 @@ select.premium-input-v2 option {
   margin-top: 2.5rem;
 }
 
-.button-danger { background: #ef4444; color: white; }
+/* Social Grid v2 */
+.social-grid-v2 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.social-btn {
+  padding: 0.8rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.65rem;
+  font-weight: 900;
+  border: none;
+  color: white;
+  cursor: pointer;
+  transition: 0.3s;
+  text-align: center;
+}
+
+.social-btn.whatsapp { background: #25D366; }
+.social-btn.facebook { background: #1877F2; }
+.social-btn.twitter { background: #1da1f2; }
+.social-btn:hover { transform: translateY(-2px); filter: brightness(1.1); }
+
+@media (max-width: 480px) {
+  .social-grid-v2 { grid-template-columns: 1fr; gap: 0.5rem; }
+  .social-btn { font-size: 0.8rem; padding: 1rem; }
+}
 
 @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 @keyframes pulse { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.5); opacity: 0.5; } 100% { transform: scale(1); opacity: 1; } }
