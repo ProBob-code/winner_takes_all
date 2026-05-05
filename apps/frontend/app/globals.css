@@ -2782,59 +2782,97 @@ select.form-control option {
 }
 
 /* ── Mobile Responsiveness ── */
+/* ── Elite Mobile Revamp ── */
 @media (max-width: 768px) {
   .app-container {
     flex-direction: column;
-    padding-bottom: 90px;
+    padding-bottom: 95px; /* Extra room for premium dock */
   }
 
   .sidebar { display: none !important; }
-  .mobile-nav { display: flex !important; }
+  .mobile-nav { 
+    display: flex !important;
+    background: rgba(10, 6, 28, 0.95) !important;
+    backdrop-filter: blur(25px) !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+    height: 85px !important;
+    padding: 0 1rem !important;
+  }
   
   .topbar { 
     padding: 0 0.75rem !important; 
-    height: 60px !important; 
+    height: 64px !important; 
     gap: 0.5rem !important;
+    background: rgba(8, 5, 18, 0.98) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
   }
   .topbar-brand { gap: 0.4rem !important; }
   .logo-icon { display: none !important; }
-  .brand-text-mobile { font-size: 0.9rem !important; }
+  .brand-text-mobile { font-size: 0.95rem !important; letter-spacing: 1px !important; }
   
   .topbar-nav { gap: 0.5rem !important; }
-  .topbar-link { font-size: 0.75rem !important; }
+  .topbar-link { font-size: 0.8rem !important; }
   .button.button-sm { 
-    padding: 0.35rem 0.6rem !important; 
-    font-size: 0.7rem !important; 
-    border-radius: 8px !important;
+    padding: 0.45rem 0.8rem !important; 
+    font-size: 0.75rem !important; 
+    border-radius: 12px !important;
+    font-weight: 800 !important;
   }
 
   .main-content { padding: 0.75rem !important; }
   .page-content { padding-top: 0.5rem !important; }
 
-  .profile-banner { flex-direction: column; text-align: center; padding: 1.5rem; gap: 1rem; }
-  .profile-balance-highlight { border-left: none; border-top: 1px solid rgba(255,255,255,0.05); padding: 1rem 0 0 0; width: 100%; text-align: center; }
-  .balance-amount { font-size: 1.8rem !important; }
+  /* Premium Grid Revamp */
+  .dashboard-grid, .schedule-grid, .standings-grid-v2 { 
+    grid-template-columns: 1fr !important; 
+    gap: 1rem !important; 
+  }
 
-  .schedule-grid { grid-template-columns: 1fr !important; gap: 1.5rem !important; }
-  .standings-grid-v2 { grid-template-columns: 1fr !important; gap: 0.75rem !important; }
+  .profile-banner { flex-direction: column; text-align: center; padding: 1.5rem; gap: 1rem; border-radius: 24px !important; }
+  .profile-balance-highlight { border-left: none; border-top: 1px solid rgba(255,255,255,0.05); padding: 1.25rem 0 0 0; width: 100%; text-align: center; }
+  .balance-amount { font-size: 2rem !important; }
+
+  .arena-header-v2 { padding: 1.25rem !important; border-radius: 20px !important; flex-direction: column; align-items: center; text-align: center; gap: 0.75rem; }
+  .arena-meta h1 { font-size: 1.4rem !important; }
   
-  .arena-header-v2 { flex-direction: column; align-items: flex-start; gap: 0.75rem; }
-  .arena-meta h1 { font-size: 1.3rem !important; }
-  .arena-badge { font-size: 0.65rem !important; }
+  .arena-controls { width: 100%; justify-content: center; gap: 1rem !important; margin-top: 0.5rem; }
+  .sub-tab-switcher { width: 100%; }
+  .sub-tab { flex: 1; text-align: center; font-size: 0.75rem !important; }
 
-  .p-grid { grid-template-columns: 1fr !important; gap: 1rem !important; }
-  .p-selectors { flex-direction: column; gap: 0.5rem !important; }
+  .p-grid { grid-template-columns: 1fr !important; gap: 1.25rem !important; }
+  .p-selectors { width: 100% !important; gap: 0.75rem !important; }
   .vs-tiny { display: none !important; }
   
-  .team-status-grid { grid-template-columns: 1fr !important; gap: 0.5rem !important; }
-  .team-status-chip { padding: 0.6rem !important; }
+  /* Share Modal Revamp */
+  .social-chips { 
+    display: grid !important; 
+    grid-template-columns: 1fr 1fr 1fr !important; 
+    gap: 0.5rem !important; 
+    width: 100% !important;
+  }
+  .social-chip { 
+    width: 100% !important; 
+    justify-content: center !important; 
+    font-size: 0.65rem !important; 
+    padding: 0.6rem !important; 
+    border-radius: 10px !important;
+  }
   
-  /* Landing Specific Mobile Fixes */
-  .landing-main { padding: 80px 1.25rem 40px !important; }
-  .hero-title { font-size: 2.8rem !important; letter-spacing: -1px !important; margin-bottom: 1.5rem !important; }
-  .hero-desc { font-size: 0.95rem !important; margin-bottom: 2rem !important; }
-  .hero-buttons { flex-direction: column !important; width: 100% !important; gap: 0.75rem !important; }
-  .hero-buttons a { width: 100% !important; text-align: center !important; padding: 1rem !important; font-size: 1rem !important; }
+  .victory-podium, .custom-modal { 
+    width: 92% !important; 
+    padding: 2rem 1.25rem !important; 
+    border-radius: 28px !important; 
+  }
+  .v-name-xl { font-size: 2.5rem !important; }
+  .v-stats-premium { gap: 1.5rem !important; }
+  .v-score { font-size: 2.8rem !important; }
+
+  /* Landing Page Premium Polish */
+  .landing-main { padding: 80px 1.25rem 60px !important; }
+  .hero-title { font-size: 2.8rem !important; line-height: 1 !important; margin-bottom: 1.5rem !important; }
+  .hero-desc { font-size: 1.05rem !important; line-height: 1.5 !important; margin-bottom: 2.5rem !important; opacity: 0.8; }
+  .hero-buttons { width: 100% !important; flex-direction: column !important; gap: 1rem !important; }
+  .hero-buttons a { width: 100% !important; text-align: center !important; padding: 1.1rem !important; border-radius: 18px !important; font-size: 1.05rem !important; }
 }
 
 
