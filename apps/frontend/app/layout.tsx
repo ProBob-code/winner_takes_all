@@ -17,7 +17,7 @@ export const metadata: Metadata = {
     siteName: "Winner Takes All",
     images: [
       {
-        url: "/og-image.png",
+        url: "https://winner-takes-all.pages.dev/og-image.png",
         width: 1200,
         height: 630,
         alt: "WTA Arena Preview",
@@ -30,8 +30,9 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "W.T.A | Winner.Takes.All",
     description: "🏆 High-stakes multi-game tournaments. Join the arena now!",
-    images: ["/og-image.png"],
+    images: ["https://winner-takes-all.pages.dev/og-image.png"],
   },
+  metadataBase: new URL("https://winner-takes-all.pages.dev"),
 };
 
 export default function RootLayout({

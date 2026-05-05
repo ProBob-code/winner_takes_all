@@ -1948,6 +1948,48 @@ select.premium-input-v2 option {
   text-align: center;
 }
 
+/* Victory & Result Overlay */
+.victory-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(3, 0, 20, 0.95);
+  backdrop-filter: blur(20px);
+  z-index: 3000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.victory-podium {
+  background: linear-gradient(135deg, rgba(255,215,0,0.05), rgba(0,0,0,0.8));
+  border: 1px solid rgba(255,215,0,0.2);
+  padding: 4rem;
+  border-radius: 40px;
+  text-align: center;
+  max-width: 800px;
+  width: 95%;
+  position: relative;
+  box-shadow: 0 50px 100px rgba(0,0,0,0.9), 0 0 50px rgba(255,215,0,0.1);
+}
+
+.v-crown { font-size: 5rem; margin-bottom: 1rem; filter: drop-shadow(0 0 20px rgba(255,215,0,0.5)); }
+.v-label { font-size: 0.8rem; font-weight: 900; letter-spacing: 4px; color: var(--gold); opacity: 0.8; margin-bottom: 1rem; }
+.v-name-xl { font-size: 5rem; font-weight: 950; letter-spacing: -2px; margin: 1.5rem 0; line-height: 0.9; }
+.v-stats-premium { display: flex; align-items: center; justify-content: center; gap: 3rem; margin: 2rem 0; }
+.v-score { font-size: 5rem; font-weight: 900; font-family: var(--font-outfit); }
+.v-vs { font-size: 1rem; font-weight: 900; opacity: 0.3; letter-spacing: 2px; }
+.v-footer { font-size: 0.7rem; font-weight: 800; opacity: 0.3; letter-spacing: 2px; text-transform: uppercase; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 2rem; margin-top: 2rem; }
+
+@media (max-width: 768px) {
+  .v-name-xl { font-size: 2.2rem !important; letter-spacing: 0; margin: 1rem 0 !important; }
+  .v-score { font-size: 3rem !important; }
+  .v-stats-premium { gap: 1rem; margin: 1.5rem 0; }
+  .victory-podium { padding: 3rem 1rem 2rem; border-radius: 24px; }
+  .v-crown { font-size: 3rem; }
+  .v-label { font-size: 0.65rem; letter-spacing: 2px; }
+  .v-footer { margin-top: 1.5rem; padding-top: 1.5rem; font-size: 0.6rem; }
+}
+
 /* Mobile adjustments for setup */
 @media (max-width: 768px) {
   .setup-grid { grid-template-columns: 1fr !important; gap: 2rem; }

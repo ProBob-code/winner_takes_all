@@ -29,7 +29,7 @@ export async function generateMetadata(
         description: `Don't miss a second of the action in ${name}. Click to watch the live spectator stream!`,
         images: [
           {
-            url: "/og-image.png",
+            url: "https://winner-takes-all.pages.dev/og-image.png",
             width: 1200,
             height: 630,
             alt: `Live Stream: ${name}`,
@@ -41,7 +41,7 @@ export async function generateMetadata(
         card: "summary_large_image",
         title: `🔥 LIVE: ${name}`,
         description: `Watch the high-stakes showdown in ${name} now!`,
-        images: ["/og-image.png"],
+        images: ["https://winner-takes-all.pages.dev/og-image.png"],
       },
     };
   } catch (e) {
