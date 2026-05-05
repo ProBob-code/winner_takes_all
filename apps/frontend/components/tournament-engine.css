@@ -353,9 +353,6 @@ select.premium-input-v2 option {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   text-align: center;
 }
-  color: var(--text-muted);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
 
 .segment-btn.active {
   background: var(--gradient-primary);
