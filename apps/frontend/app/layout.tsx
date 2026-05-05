@@ -8,11 +8,11 @@ const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit" });
 
 export const metadata: Metadata = {
   title: "Winner Takes All | The Ultimate Stadium Arena",
-  description: "🏆 Step into the world's most elite multi-game tournament platform. High-stakes duels, real-time ball protocol tracking, and legendary showdowns. Join the arena and claim your destiny.",
+  description: "🏆 Step into the world's most elite multi-game tournament platform. High-stakes duels and legendary showdowns.",
   themeColor: "#FFD700",
   openGraph: {
-    title: "🏆 Winner Takes All | The Ultimate Stadium Arena",
-    description: "🔥 THE ARENA IS LIVE! Experience high-stakes tournaments, dominate the global leaderboard, and witness legendary duels in real-time. Join the elite now!",
+    title: "🏆 Winner Takes All | Stadium Arena",
+    description: "🔥 THE ARENA IS LIVE! Experience high-stakes tournaments and legendary duels in real-time.",
     url: "https://winner-takes-all.pages.dev",
     siteName: "Winner Takes All",
     images: [
@@ -20,7 +20,7 @@ export const metadata: Metadata = {
         url: "https://winner-takes-all.pages.dev/og-image.jpg",
         width: 1200,
         height: 630,
-        alt: "Winner Takes All - Stadium Arena Preview",
+        alt: "Winner Takes All Stadium Arena",
         type: "image/jpeg",
       },
     ],
@@ -29,8 +29,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "🏆 Winner Takes All | The Ultimate Stadium Arena",
-    description: "⚔️ Join the elite multi-game tournament platform. High-stakes duels and professional gaming live now!",
+    title: "🏆 Winner Takes All | Stadium Arena",
+    description: "⚔️ Join the elite tournament platform. High-stakes duels live now!",
     images: ["https://winner-takes-all.pages.dev/og-image.jpg"],
   },
   metadataBase: new URL("https://winner-takes-all.pages.dev"),

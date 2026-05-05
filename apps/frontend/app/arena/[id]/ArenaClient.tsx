@@ -116,7 +116,7 @@ export function ArenaClient({ id }: { id: string }) {
 
       <div className="spectator-badge">READ ONLY STREAM</div>
       
-      <div className="arena-header-v2" style={{ marginBottom: '3rem' }}>
+      <div className="arena-header-v2">
         <div className="arena-meta">
           <h1 className="glow-text">{arena.name}</h1>
           <div className="arena-badge">LIVE SPECTATOR STREAM • {teams.length} TEAMS</div>
@@ -162,7 +162,7 @@ export function ArenaClient({ id }: { id: string }) {
           </div>
         </div>
       ) : (
-        <div className="phase-transition-overlay animate-in" style={{ padding: '4rem' }}>
+        <div className="phase-transition-overlay animate-in">
           <div className="phase-card glass-morphism">
             <div className="p-icon">⚔️</div>
             <h3>ARENA IS CURRENTLY IDLE</h3>
