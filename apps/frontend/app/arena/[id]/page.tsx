@@ -27,23 +27,23 @@ export async function generateMetadata(
       openGraph: {
         title: `🏟️ ${name} is LIVE on Winner Takes All!`,
         description: `Don't miss a second of the action in ${name}. Click to watch the live spectator stream!`,
+        url: `./${id}`,
+        siteName: "Winner Takes All",
         images: [
           {
-            url: "https://winner-takes-all.pages.dev/og-image.png",
-            secureUrl: "https://winner-takes-all.pages.dev/og-image.png",
+            url: "/og-image.png",
             width: 1200,
             height: 630,
-            alt: `Live Stream: ${name}`,
-            type: 'image/png',
+            alt: `Arena: ${name}`,
           },
         ],
         type: 'website',
       },
       twitter: {
         card: "summary_large_image",
-        title: `🔥 LIVE: ${name}`,
+        title: `🔥 LIVE: ${name} is LIVE!`,
         description: `Watch the high-stakes showdown in ${name} now!`,
-        images: ["https://winner-takes-all.pages.dev/og-image.png"],
+        images: ["/og-image.png"],
       },
     };
   } catch (e) {

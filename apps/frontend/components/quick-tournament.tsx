@@ -582,7 +582,7 @@ export function QuickTournament() {
               <span className="v-score">{victoryMatch.score_team_b}</span>
             </div>
             <div className="v-footer">POINTS AWARDED: {victoryMatch.is_draw ? '+50 TO EACH' : '+1 WIN'}</div>
-            <div className="v-share-action mt-4">
+            <div className="v-share-action mt-4" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {typeof navigator !== 'undefined' && navigator.share && (
                 <button className="button button-gold button-sm" style={{ width: '100%', borderRadius: '12px' }} onClick={() => {
                   const title = victoryMatch.is_draw ? "MATCH TIED! 🤝" : "CHAMPION DECLARED! 👑";
@@ -595,8 +595,29 @@ export function QuickTournament() {
                     text: text,
                     url: `${window.location.origin}/arena/${arenaId}`,
                   }).catch(console.error);
-                }}>SHARE RESULT TO APPS</button>
+                }}>SYSTEM SHARE</button>
               )}
+              <div className="social-chips" style={{ display: 'flex', gap: '8px', width: '100%' }}>
+                <button 
+                  className="button button-sm" 
+                  style={{ flex: 1, background: '#25D366', color: 'white', border: 'none' }}
+                  onClick={() => {
+                    const text = victoryMatch.is_draw ? "MATCH TIED! 🤝" : "CHAMPION DECLARED! 👑";
+                    window.open(`https://wa.me/?text=${encodeURIComponent(text + ' ' + window.location.origin + '/arena/' + arenaId)}`, '_blank');
+                  }}
+                >
+                  WHATSAPP
+                </button>
+                <button 
+                  className="button button-sm" 
+                  style={{ flex: 1, background: '#1877F2', color: 'white', border: 'none' }}
+                  onClick={() => {
+                    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.origin + '/arena/' + arenaId)}`, '_blank');
+                  }}
+                >
+                  FACEBOOK
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -651,8 +672,31 @@ export function QuickTournament() {
                       text: `Watch the high-stakes showdown in ${arenaName} live on Winner Takes All!`,
                       url: `${window.location.origin}/arena/${arenaId}`,
                     }).catch(console.error);
-                  }}>SHARE TO APPS</button>
+                  }}>SYSTEM SHARE</button>
                 )}
+              </div>
+              <div className="social-quick-share mt-4" style={{ display: 'flex', gap: '8px' }}>
+                <button 
+                  className="button button-sm" 
+                  style={{ flex: 1, background: '#25D366', color: 'white', border: 'none', borderRadius: '12px' }}
+                  onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent('🔥 Watch ' + arenaName + ' LIVE on Winner Takes All! ' + window.location.origin + '/arena/' + arenaId)}`, '_blank')}
+                >
+                  WHATSAPP
+                </button>
+                <button 
+                  className="button button-sm" 
+                  style={{ flex: 1, background: '#1877F2', color: 'white', border: 'none', borderRadius: '12px' }}
+                  onClick={() => window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.origin + '/arena/' + arenaId)}`, '_blank')}
+                >
+                  FACEBOOK
+                </button>
+                <button 
+                  className="button button-sm" 
+                  style={{ flex: 1, background: '#1DA1F2', color: 'white', border: 'none', borderRadius: '12px' }}
+                  onClick={() => window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent('🔥 Watch ' + arenaName + ' LIVE!')}&url=${encodeURIComponent(window.location.origin + '/arena/' + arenaId)}`, '_blank')}
+                >
+                  TWITTER
+                </button>
               </div>
             </div>
             <button className="button button-secondary mt-8" style={{ width: '100%' }} onClick={() => setShowShareModal(false)}>BACK TO CONTROL ROOM</button>

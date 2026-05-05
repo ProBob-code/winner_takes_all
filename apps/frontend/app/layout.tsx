@@ -17,12 +17,10 @@ export const metadata: Metadata = {
     siteName: "Winner Takes All",
     images: [
       {
-        url: "https://winner-takes-all.pages.dev/og-image.png",
-        secureUrl: "https://winner-takes-all.pages.dev/og-image.png",
+        url: "/og-image.png",
         width: 1200,
         height: 630,
         alt: "WTA Arena Preview",
-        type: 'image/png',
       },
     ],
     locale: "en_US",
@@ -32,7 +30,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "W.T.A | Winner.Takes.All",
     description: "🏆 High-stakes multi-game tournaments. Join the arena now!",
-    images: ["https://winner-takes-all.pages.dev/og-image.png"],
+    images: ["/og-image.png"],
   },
   metadataBase: new URL("https://winner-takes-all.pages.dev"),
 };
