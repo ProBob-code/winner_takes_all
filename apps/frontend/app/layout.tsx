@@ -7,20 +7,21 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit" });
 
 export const metadata: Metadata = {
-  title: "W.T.A | Winner.Takes.All",
-  description: "🏆 Join the elite. Compete in high-stakes multi-game tournaments. Professional grade gaming arena.",
+  title: "Winner Takes All | The Ultimate Stadium Arena",
+  description: "🏆 Step into the world's most elite multi-game tournament platform. High-stakes duels, real-time ball protocol tracking, and legendary showdowns. Join the arena and claim your destiny.",
   themeColor: "#FFD700",
   openGraph: {
-    title: "W.T.A | Winner.Takes.All",
-    description: "🔥 The arena is live! Join high-stakes tournaments, dominate the leaderboard, and claim your victory.",
+    title: "🏆 Winner Takes All | The Ultimate Stadium Arena",
+    description: "🔥 THE ARENA IS LIVE! Experience high-stakes tournaments, dominate the global leaderboard, and witness legendary duels in real-time. Join the elite now!",
     url: "https://winner-takes-all.pages.dev",
     siteName: "Winner Takes All",
     images: [
       {
-        url: "/og-image.png",
+        url: "https://winner-takes-all.pages.dev/og-image.jpg",
         width: 1200,
         height: 630,
-        alt: "WTA Arena Preview",
+        alt: "Winner Takes All - Stadium Arena Preview",
+        type: "image/jpeg",
       },
     ],
     locale: "en_US",
@@ -28,9 +29,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "W.T.A | Winner.Takes.All",
-    description: "🏆 High-stakes multi-game tournaments. Join the arena now!",
-    images: ["/og-image.png"],
+    title: "🏆 Winner Takes All | The Ultimate Stadium Arena",
+    description: "⚔️ Join the elite multi-game tournament platform. High-stakes duels and professional gaming live now!",
+    images: ["https://winner-takes-all.pages.dev/og-image.jpg"],
   },
   metadataBase: new URL("https://winner-takes-all.pages.dev"),
 };

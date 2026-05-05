@@ -585,10 +585,10 @@ export function QuickTournament() {
             <div className="v-share-action mt-4" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {typeof navigator !== 'undefined' && navigator.share && (
                 <button className="button button-gold button-sm" style={{ width: '100%', borderRadius: '12px' }} onClick={() => {
-                  const title = victoryMatch.is_draw ? "MATCH TIED! 🤝" : "CHAMPION DECLARED! 👑";
+                  const title = victoryMatch.is_draw ? "🏆 STALEMATE IN THE ARENA!" : "👑 A CHAMPION HAS RISEN!";
                   const text = victoryMatch.is_draw 
-                    ? `Stalemate Draw between ${getTeamName(victoryMatch.team_a_id)} and ${getTeamName(victoryMatch.team_b_id)}! Score: ${victoryMatch.score_team_a} - ${victoryMatch.score_team_b}`
-                    : `${getTeamName(victoryMatch.winner_id || "")} has dominated the arena! Final score: ${victoryMatch.score_team_a} - ${victoryMatch.score_team_b}`;
+                    ? `An epic clash of titans has concluded in a hard-fought draw between ${getTeamName(victoryMatch.team_a_id)} and ${getTeamName(victoryMatch.team_b_id)}! Final Score: ${victoryMatch.score_team_a} - ${victoryMatch.score_team_b}. Witness the legend of Winner Takes All.`
+                    : `LEGENDARY VICTORY! ${getTeamName(victoryMatch.winner_id || "")} has dominated the stadium floor, claiming glory against ${getTeamName(victoryMatch.winner_id === victoryMatch.team_a_id ? victoryMatch.team_b_id : victoryMatch.team_a_id)}! Final Score: ${victoryMatch.score_team_a} - ${victoryMatch.score_team_b}. The arena honors its new champion.`;
                   
                   navigator.share({
                     title: title,
@@ -602,8 +602,11 @@ export function QuickTournament() {
                   className="button button-sm" 
                   style={{ flex: 1, background: '#25D366', color: 'white', border: 'none' }}
                   onClick={() => {
-                    const text = victoryMatch.is_draw ? "MATCH TIED! 🤝" : "CHAMPION DECLARED! 👑";
-                    window.open(`https://wa.me/?text=${encodeURIComponent(text + ' ' + window.location.origin + '/arena/' + arenaId)}`, '_blank');
+                    const title = victoryMatch.is_draw ? "🏆 STALEMATE IN THE ARENA!" : "👑 A CHAMPION HAS RISEN!";
+                    const text = victoryMatch.is_draw 
+                      ? `An epic clash of titans has concluded in a hard-fought draw! Final Score: ${victoryMatch.score_team_a} - ${victoryMatch.score_team_b}.`
+                      : `LEGENDARY VICTORY! ${getTeamName(victoryMatch.winner_id || "")} has claimed glory in the stadium! Final Score: ${victoryMatch.score_team_a} - ${victoryMatch.score_team_b}.`;
+                    window.open(`https://wa.me/?text=${encodeURIComponent(title + ' ' + text + ' Experience the intensity: ' + window.location.origin + '/arena/' + arenaId)}`, '_blank');
                   }}
                 >
                   WHATSAPP
@@ -668,8 +671,8 @@ export function QuickTournament() {
                 {typeof navigator !== 'undefined' && navigator.share && (
                   <button className="button button-gold" style={{ flex: 1, margin: 0, borderRadius: '12px', fontSize: '0.8rem', fontWeight: 900 }} onClick={() => {
                     navigator.share({
-                      title: `🔥 Arena: ${arenaName}`,
-                      text: `Watch the high-stakes showdown in ${arenaName} live on Winner Takes All!`,
+                      title: `🏆 ARENA IS LIVE: ${arenaName}`,
+                      text: `🔥 WITNESS THE SHOWDOWN! Step into the world-class stadium arena for the ${arenaName} tournament. Watch real-time multi-game duels and high-stakes competitive action live on Winner Takes All!`,
                       url: `${window.location.origin}/arena/${arenaId}`,
                     }).catch(console.error);
                   }}>SYSTEM SHARE</button>
@@ -679,7 +682,7 @@ export function QuickTournament() {
                 <button 
                   className="button button-sm" 
                   style={{ flex: 1, background: '#25D366', color: 'white', border: 'none', borderRadius: '12px' }}
-                  onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent('🔥 Watch ' + arenaName + ' LIVE on Winner Takes All! ' + window.location.origin + '/arena/' + arenaId)}`, '_blank')}
+                  onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent('🏆 THE ARENA IS LIVE! Watch the ' + arenaName + ' showdown live on Winner Takes All. Join the elite spectator stream now: ' + window.location.origin + '/arena/' + arenaId)}`, '_blank')}
                 >
                   WHATSAPP
                 </button>
@@ -693,7 +696,7 @@ export function QuickTournament() {
                 <button 
                   className="button button-sm" 
                   style={{ flex: 1, background: '#1DA1F2', color: 'white', border: 'none', borderRadius: '12px' }}
-                  onClick={() => window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent('🔥 Watch ' + arenaName + ' LIVE!')}&url=${encodeURIComponent(window.location.origin + '/arena/' + arenaId)}`, '_blank')}
+                  onClick={() => window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent('🏆 WITNESS THE SHOWDOWN! Watch the ' + arenaName + ' live on Winner Takes All!')}&url=${encodeURIComponent(window.location.origin + '/arena/' + arenaId)}`, '_blank')}
                 >
                   TWITTER
                 </button>

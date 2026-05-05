@@ -50,12 +50,21 @@ export function ArenaClient({ id }: { id: string }) {
         .find(m => m.status === 'COMPLETED');
         
       if (lastMatch && lastMatch.id !== lastVictoryId) {
-        setLastVictoryId(lastMatch.id);
-        setShowVictory(lastMatch);
-        setTimeout(() => setShowVictory(null), 10000);
+        // Only show if it ended recently (within last 20 seconds)
+        const matchEndTime = (lastMatch.start_time || 0) + (lastMatch.duration || 0);
+        const isRecent = (currentTime - matchEndTime) < 20;
+
+        if (isRecent) {
+          setLastVictoryId(lastMatch.id);
+          setShowVictory(lastMatch);
+          setTimeout(() => setShowVictory(null), 10000);
+        } else {
+          // Still set lastVictoryId so we don't keep checking it
+          setLastVictoryId(lastMatch.id);
+        }
       }
     }
-  }, [arena?.state?.matches, lastVictoryId]);
+  }, [arena?.state?.matches, lastVictoryId, currentTime]);
 
   if (loading) return (
     <div className="setup-view slide-in">
