@@ -1784,4 +1784,151 @@ select.premium-input-v2 option {
   .schedule-grid { grid-template-columns: 1fr; gap: 2rem; }
   .schedule-item-card { padding: 1rem; gap: 1rem; }
   .s-actions { gap: 0.5rem; }
+  .battle-view { flex-direction: column; gap: 1rem; }
+  .team-pod { width: 100%; max-width: 100%; }
+  .pod-inner { padding: 2rem 1.5rem; }
+  .pod-score-large { font-size: 4.5rem; margin-bottom: 1.5rem; }
+  .vs-core { height: 60px; margin: 0.5rem 0; }
+}
+
+/* --- New Tournament Features Styles --- */
+
+.edit-team-input {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--gold);
+  border-radius: 4px;
+  color: white;
+  padding: 2px 8px;
+  font-size: 1rem;
+  width: 100%;
+  outline: none;
+}
+
+.edit-team-input-inline {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--gold);
+  border-radius: 4px;
+  color: white;
+  padding: 2px 4px;
+  font-size: 0.8rem;
+  width: 80px;
+  outline: none;
+}
+
+.roster-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.edit-btn-tiny {
+  background: none;
+  border: none;
+  color: var(--gold);
+  opacity: 0.5;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: 0.2s;
+}
+
+.edit-btn-tiny:hover { opacity: 1; }
+
+.foul-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.foul-dec {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 6px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  line-height: 0;
+}
+
+.foul-dec:hover { background: #ef4444; color: white; transform: scale(1.1); }
+
+.lock-trigger {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+}
+
+.lock-trigger.locked { background: rgba(245, 158, 11, 0.1); border-color: var(--gold); box-shadow: 0 0 15px rgba(245, 158, 11, 0.2); }
+.lock-trigger:hover { transform: translateY(-2px); border-color: rgba(255,255,255,0.3); }
+
+.team-status-chip {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 100px;
+}
+
+.t-main { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.t-main .t-name { cursor: pointer; transition: 0.2s; }
+.t-main .t-name:hover { color: var(--gold); }
+
+.t-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255,255,255,0.05);
+}
+
+.t-edit, .t-remove {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 8px;
+  padding: 4px 10px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.t-edit { color: var(--gold); }
+.t-remove { color: #ef4444; }
+.t-edit:hover, .t-remove:hover { background: rgba(255,255,255,0.1); transform: translateY(-1px); }
+
+.center-text { text-align: center; }
+
+.pin-input-container {
+  display: flex;
+  justify-content: center;
+}
+
+.pin-input-container input {
+  max-width: 200px;
+  letter-spacing: 1rem;
+  font-size: 2rem;
+  text-align: center;
+}
+
+/* Mobile adjustments for setup */
+@media (max-width: 768px) {
+  .setup-grid { grid-template-columns: 1fr !important; gap: 2rem; }
+  .setup-card { padding: 1.5rem !important; }
+  .setup-header h1 { font-size: 2.5rem; }
+  .team-pod .pod-actions { grid-template-columns: 1fr; }
+  .foul-group { justify-content: center; }
 }

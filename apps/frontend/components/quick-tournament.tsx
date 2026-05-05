@@ -55,6 +55,11 @@ export function QuickTournament() {
   const [showShareModal, setShowShareModal] = useState(false);
   const [modalConfig, setModalConfig] = useState<ModalConfig | null>(null);
   const [manualPair, setManualPair] = useState<[string, string]>(["", ""]);
+  const [editingTeamId, setEditingTeamId] = useState<string | null>(null);
+  const [editingTeamName, setEditingTeamName] = useState("");
+  const [arenaPin, setArenaPin] = useState<string | null>(null);
+  const [isLocked, setIsLocked] = useState(false);
+  const [showPinModal, setShowPinModal] = useState<{ mode: 'SET' | 'VERIFY', onConfirm: (pin: string) => void } | null>(null);
 
   // Sync with LocalStorage
   useEffect(() => {
@@ -67,17 +72,28 @@ export function QuickTournament() {
       setArenaId(parsed.arenaId || "");
       setMatchesPerTeam(parsed.matchesPerTeam || 3);
       setDefaultDuration(parsed.defaultDuration || 600);
-      setTournamentType(parsed.tournamentType || 'GROUP');
+       setTournamentType(parsed.tournamentType || 'GROUP');
       setArenaName(parsed.arenaName || "Stadium Arena Showdown");
+      setArenaPin(parsed.arenaPin || null);
+      setIsLocked(parsed.isLocked || false);
     }
   }, []);
 
   useEffect(() => {
-    localStorage.setItem("wta_arena_quick_v9", JSON.stringify({ teams, matches, isStarted, arenaId, matchesPerTeam, defaultDuration, tournamentType, arenaName }));
+    localStorage.setItem("wta_arena_quick_v9", JSON.stringify({ 
+      teams, matches, isStarted, arenaId, matchesPerTeam, defaultDuration, 
+      tournamentType, arenaName, arenaPin, isLocked 
+    }));
     if (arenaId && isStarted) {
-      backendFetch("/public-arenas", { method: "POST", body: JSON.stringify({ id: arenaId, name: arenaName, state: { teams, matches, isStarted } }) }).catch(() => { });
+      backendFetch("/public-arenas", { 
+        method: "POST", 
+        body: JSON.stringify({ 
+          id: arenaId, name: arenaName, state: { teams, matches, isStarted },
+          pin: arenaPin 
+        }) 
+      }).catch(() => { });
     }
-  }, [teams, matches, isStarted, arenaId, matchesPerTeam, defaultDuration, tournamentType, arenaName]);
+  }, [teams, matches, isStarted, arenaId, matchesPerTeam, defaultDuration, tournamentType, arenaName, arenaPin, isLocked]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -125,20 +141,21 @@ export function QuickTournament() {
   const playBuzzer = () => {
     try {
       const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const oscillator = audioCtx.createOscillator();
-      const gainNode = audioCtx.createGain();
-      
-      oscillator.type = 'square';
-      oscillator.frequency.setValueAtTime(150, audioCtx.currentTime); 
-      oscillator.connect(gainNode);
-      gainNode.connect(audioCtx.destination);
-      
-      gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
-      gainNode.gain.linearRampToValueAtTime(0.5, audioCtx.currentTime + 0.1);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 1.5);
-      
-      oscillator.start();
-      oscillator.stop(audioCtx.currentTime + 1.5);
+      const playBell = (startTime: number, frequency: number, volume: number) => {
+        const oscillator = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(frequency, startTime);
+        gainNode.gain.setValueAtTime(0, startTime);
+        gainNode.gain.linearRampToValueAtTime(volume, startTime + 0.01);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + 5);
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        oscillator.start(startTime);
+        oscillator.stop(startTime + 5);
+      };
+      const now = audioCtx.currentTime;
+      [440, 880, 1320, 1760].forEach((freq, i) => playBell(now, freq, 0.5 / (i + 1)));
     } catch (e) { console.error("Audio failed", e); }
   };
 
@@ -226,13 +243,25 @@ export function QuickTournament() {
     }
   };
 
+  const removeTeam = (teamId: string) => {
+    if (isLocked) return;
+    setTeams(teams.filter(t => t.id !== teamId));
+    setMatches(matches.filter(m => m.team_a_id !== teamId && m.team_b_id !== teamId));
+  };
+
+  const updateTeamName = (teamId: string, newName: string) => {
+    if (isLocked) return;
+    setTeams(teams.map(t => t.id === teamId ? { ...t, name: newName } : t));
+    setEditingTeamId(null);
+  };
+
   const publishArena = async () => {
     setIsPublishing(true);
     const id = arenaId || Math.random().toString(36).substr(2, 8).toUpperCase();
     try {
       await backendFetch("/public-arenas", {
         method: "POST",
-        body: JSON.stringify({ id, name: arenaName, state: { teams, matches, isStarted } })
+        body: JSON.stringify({ id, name: arenaName, state: { teams, matches, isStarted }, pin: arenaPin })
       });
       setArenaId(id);
       setShowShareModal(true);
@@ -386,6 +415,14 @@ export function QuickTournament() {
           nm.fouls_b++;
           nm.score_team_b -= 5;
         }
+      } else if ((type as any) === 'REMOVE_FOUL') {
+        if (isA && nm.fouls_a > 0) {
+          nm.fouls_a--;
+          nm.score_team_a += 5;
+        } else if (!isA && nm.fouls_b > 0) {
+          nm.fouls_b--;
+          nm.score_team_b += 5;
+        }
       } else {
         const currentBalls = isA ? nm.balls_potted_a : nm.balls_potted_b;
         if (currentBalls < 7) {
@@ -491,8 +528,24 @@ export function QuickTournament() {
                     {teams.map((t, idx) => (
                       <div key={t.id} className="roster-item slide-in" style={{ animationDelay: `${idx * 0.05}s` }}>
                         <div className="roster-idx">{String(idx + 1).padStart(2, '0')}</div>
-                        <div className="roster-name">{t.name}</div>
-                        <button className="remove-btn" onClick={() => setTeams(teams.filter(x => x.id !== t.id))}>REMOVE</button>
+                        <div className="roster-name">
+                          {editingTeamId === t.id ? (
+                            <input 
+                              className="edit-team-input" 
+                              value={editingTeamName} 
+                              onChange={e => setEditingTeamName(e.target.value)}
+                              onBlur={() => updateTeamName(t.id, editingTeamName)}
+                              onKeyPress={e => e.key === 'Enter' && updateTeamName(t.id, editingTeamName)}
+                              autoFocus
+                            />
+                          ) : (
+                            <span onClick={() => { setEditingTeamId(t.id); setEditingTeamName(t.name); }}>{t.name}</span>
+                          )}
+                        </div>
+                        <div className="roster-actions">
+                          <button className="edit-btn-tiny" onClick={() => { setEditingTeamId(t.id); setEditingTeamName(t.name); }}>✎</button>
+                          <button className="remove-btn" onClick={() => removeTeam(t.id)}>REMOVE</button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -588,6 +641,38 @@ export function QuickTournament() {
         </div>
       )}
 
+      {showPinModal && (
+        <div className="custom-modal-overlay">
+          <div className="custom-modal glass-morphism slide-in" style={{ maxWidth: '400px' }}>
+            <div className="modal-icon">🔐</div>
+            <h2>{showPinModal.mode === 'SET' ? 'Set Arena PIN' : 'Unlock Arena'}</h2>
+            <p className="muted">{showPinModal.mode === 'SET' ? 'Enter a 6-digit PIN to prevent accidental or unauthorized edits.' : 'Enter your 6-digit PIN to enable editing.'}</p>
+            <div className="pin-input-container mt-8">
+              <input 
+                type="password" 
+                maxLength={6} 
+                className="premium-input-v2 center-text" 
+                placeholder="••••••"
+                onKeyPress={e => {
+                  if (e.key === 'Enter') {
+                    const val = (e.target as HTMLInputElement).value;
+                    if (val.length === 6) showPinModal.onConfirm(val);
+                  }
+                }}
+                autoFocus
+              />
+            </div>
+            <div className="modal-actions mt-8">
+              <button className="button button-secondary" onClick={() => setShowPinModal(null)}>CANCEL</button>
+              <button className="button button-gold" onClick={() => {
+                const input = document.querySelector('.pin-input-container input') as HTMLInputElement;
+                if (input.value.length === 6) showPinModal.onConfirm(input.value);
+              }}>{showPinModal.mode === 'SET' ? 'LOCK NOW' : 'UNLOCK'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="arena-header-v2">
         <div className="arena-meta">
           <h2 className="glow-text">{arenaName}</h2>
@@ -602,7 +687,19 @@ export function QuickTournament() {
           <button className={`share-btn ${arenaId ? 'shared' : ''}`} onClick={publishArena} disabled={isPublishing}>
             {isPublishing ? 'SYNCING...' : arenaId ? '✓ LINK SHARED' : '🔗 SHARE ARENA'}
           </button>
-          <button className="reset-trigger" onClick={() => setShowResetModal(true)}><span className="icon">↺</span></button>
+          <button className={`lock-trigger ${isLocked ? 'locked' : ''}`} onClick={() => {
+            if (isLocked) {
+              setShowPinModal({ mode: 'VERIFY', onConfirm: (p) => {
+                if (p === arenaPin) { setIsLocked(false); setShowPinModal(null); }
+                else { alert("INVALID PIN"); }
+              }});
+            } else {
+              setShowPinModal({ mode: 'SET', onConfirm: (p) => { setArenaPin(p); setIsLocked(true); setShowPinModal(null); }});
+            }
+          }}>
+            <span className="icon">{isLocked ? '🔒' : '🔓'}</span>
+          </button>
+          <button className="reset-trigger" onClick={() => !isLocked && setShowResetModal(true)} disabled={isLocked}><span className="icon">↺</span></button>
         </div>
       </div>
 
@@ -646,7 +743,10 @@ export function QuickTournament() {
                       <div className="team-initials">{getTeamName(liveMatch.team_a_id).substring(0, 2).toUpperCase()}</div>
                       <div className="team-title-stack">
                         <h3 className="team-name">{getTeamName(liveMatch.team_a_id)}</h3>
-                        <button className="foul-chip" onClick={(e) => { e.stopPropagation(); updateScore(liveMatch.id, liveMatch.team_a_id, 'FOUL') }}>FOUL: {liveMatch.fouls_a}</button>
+                        <div className="foul-group">
+                          <button className="foul-chip" onClick={(e) => { e.stopPropagation(); !isLocked && updateScore(liveMatch.id, liveMatch.team_a_id, 'FOUL') }} disabled={isLocked}>FOUL: {liveMatch.fouls_a}</button>
+                          {!isLocked && liveMatch.fouls_a > 0 && <button className="foul-dec" onClick={(e) => { e.stopPropagation(); updateScore(liveMatch.id, liveMatch.team_a_id, 'REMOVE_FOUL' as any) }}>−</button>}
+                        </div>
                       </div>
                       <div className="house-selector" onClick={e => e.stopPropagation()}>
                         <button className={`house-opt ${liveMatch.team_a_house === 'SOLID' ? 'active' : ''}`} onClick={() => updateHouse(liveMatch.id, 'A', 'SOLID')}>●</button>
@@ -669,7 +769,10 @@ export function QuickTournament() {
                       <div className="team-initials">{getTeamName(liveMatch.team_b_id).substring(0, 2).toUpperCase()}</div>
                       <div className="team-title-stack">
                         <h3 className="team-name">{getTeamName(liveMatch.team_b_id)}</h3>
-                        <button className="foul-chip" onClick={(e) => { e.stopPropagation(); updateScore(liveMatch.id, liveMatch.team_b_id, 'FOUL') }}>FOUL: {liveMatch.fouls_b}</button>
+                        <div className="foul-group">
+                          <button className="foul-chip" onClick={(e) => { e.stopPropagation(); !isLocked && updateScore(liveMatch.id, liveMatch.team_b_id, 'FOUL') }} disabled={isLocked}>FOUL: {liveMatch.fouls_b}</button>
+                          {!isLocked && liveMatch.fouls_b > 0 && <button className="foul-dec" onClick={(e) => { e.stopPropagation(); updateScore(liveMatch.id, liveMatch.team_b_id, 'REMOVE_FOUL' as any) }}>−</button>}
+                        </div>
                       </div>
                       <div className="house-selector" onClick={e => e.stopPropagation()}>
                         <button className={`house-opt ${liveMatch.team_b_house === 'SOLID' ? 'active' : ''}`} onClick={() => updateHouse(liveMatch.id, 'B', 'SOLID')}>●</button>
@@ -792,8 +895,20 @@ export function QuickTournament() {
                   <div className="team-status-grid">
                     {teams.map(t => (
                       <div key={t.id} className="team-status-chip">
-                        <span className="t-name">{t.name}</span>
-                        <span className="t-matches">{t.matches_played}/{matchesPerTeam}</span>
+                        <div className="t-main">
+                          {editingTeamId === t.id ? (
+                            <input className="edit-team-input-inline" value={editingTeamName} onChange={e => setEditingTeamName(e.target.value)} onBlur={() => updateTeamName(t.id, editingTeamName)} onKeyPress={e => e.key === 'Enter' && updateTeamName(t.id, editingTeamName)} autoFocus />
+                          ) : (
+                            <span className="t-name" onClick={() => !isLocked && (setEditingTeamId(t.id), setEditingTeamName(t.name))}>{t.name}</span>
+                          )}
+                          <span className="t-matches">{t.matches_played}/{matchesPerTeam}</span>
+                        </div>
+                        {!isLocked && (
+                          <div className="t-actions">
+                            <button className="t-edit" onClick={() => { setEditingTeamId(t.id); setEditingTeamName(t.name); }}>✎</button>
+                            <button className="t-remove" onClick={() => removeTeam(t.id)}>×</button>
+                          </div>
+                        )}
                         {matches.filter(m => m.team_a_id === t.id || m.team_b_id === t.id).length < matchesPerTeam && <div className="bye-badge animate-pulse">SEEKING OPPONENT</div>}
                       </div>
                     ))}

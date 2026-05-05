@@ -675,13 +675,19 @@ app.post("/api/engine/matches/:id/score", async (c) => {
 // --- Public Arena Routes ---
 
 app.post("/api/public-arenas", async (c) => {
-  const store = c.get("store");
   const body = await c.req.json();
-  const { id, name, state } = body;
+  const { id, name, state, pin } = body;
   
-  // Use id as primary key (provided by client)
-  await c.env.DB.prepare(`INSERT OR REPLACE INTO public_arenas (id, name, state_json, updated_at) VALUES (?, ?, ?, ?)`)
-    .bind(id, name, JSON.stringify(state), new Date().toISOString()).run();
+  const existing = await c.env.DB.prepare(`SELECT pin FROM public_arenas WHERE id = ?`).bind(id).first<any>();
+  
+  if (existing && existing.pin && existing.pin !== pin) {
+    return c.json({ ok: false, message: "Invalid PIN. This arena is locked." }, 403);
+  }
+
+  const finalPin = pin || (existing ? existing.pin : null);
+
+  await c.env.DB.prepare(`INSERT OR REPLACE INTO public_arenas (id, name, state_json, pin, updated_at) VALUES (?, ?, ?, ?, ?)`)
+    .bind(id, name, JSON.stringify(state), finalPin, new Date().toISOString()).run();
     
   return c.json({ ok: true, id });
 });
@@ -691,7 +697,12 @@ app.get("/api/public-arenas/:id", async (c) => {
   const r = await c.env.DB.prepare(`SELECT * FROM public_arenas WHERE id = ?`).bind(id).first<any>();
   if (!r) return c.json({ ok: false, message: "Arena not found" }, 404);
   
-  return c.json({ ok: true, arena: { id: r.id, name: r.name, state: JSON.parse(r.state_json) } });
+  return c.json({ ok: true, arena: { 
+    id: r.id, 
+    name: r.name, 
+    state: JSON.parse(r.state_json),
+    isLocked: !!r.pin
+  } });
 });
 
 // --- Original Routes ---
