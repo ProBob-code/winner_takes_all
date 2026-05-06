@@ -94,10 +94,6 @@ export function Sidebar({ user: initialUser }: { user: any }) {
       {/* Sidebar Container */}
       <aside
         className={`sidebar ${isCollapsed ? "collapsed" : ""} ${isOpen ? "mobile-open" : ""}`}
-        style={{
-          transform: isOpen ? 'translateX(0)' : undefined,
-          zIndex: 2000
-        }}
       >
         <SidebarEffects />
 
@@ -169,21 +165,6 @@ export function Sidebar({ user: initialUser }: { user: any }) {
         <button
           className="mobile-hamburger-btn"
           onClick={() => setIsOpen(true)}
-          style={{
-            position: 'fixed',
-            bottom: '2rem',
-            right: '2rem',
-            width: '60px',
-            height: '60px',
-            borderRadius: '50%',
-            background: 'var(--gradient-primary)',
-            border: 'none',
-            color: 'white',
-            fontSize: '1.5rem',
-            boxShadow: '0 8px 32px rgba(139, 92, 246, 0.4)',
-            zIndex: 1900,
-            display: 'none' // controlled by CSS media query
-          }}
         >
           ☰
         </button>

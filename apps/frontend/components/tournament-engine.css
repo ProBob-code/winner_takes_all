@@ -785,13 +785,13 @@ select.premium-input-v2 option {
 .custom-modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(12px);
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(8px);
   z-index: 9999;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1.5rem;
+  padding: 1rem;
   animation: fadeIn 0.3s ease-out;
 }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -1253,19 +1253,20 @@ select.premium-input-v2 option {
 .share-link-premium {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  background: rgba(0,0,0,0.3);
+  gap: 16px;
+  background: var(--bg-surface);
   padding: 1.5rem;
   border-radius: 20px;
-  border: 1px solid rgba(255,255,255,0.05);
+  border: 1px solid var(--border-color);
 }
 
 .link-display {
   padding: 1rem;
-  background: rgba(255,255,255,0.03);
+  background: var(--bg-inset);
   border-radius: 12px;
-  border: 1px dashed rgba(255,255,255,0.1);
+  border: 1px dashed var(--border-color);
   overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .link-text {
@@ -1462,16 +1463,38 @@ select.premium-input-v2 option {
 
 .custom-modal {
   width: 100%;
-  max-width: 500px;
-  background: rgba(13, 17, 23, 0.9);
-  border: 1px solid var(--gold-subtle);
-  border-radius: 32px;
-  padding: 3rem;
-  text-align: center;
-  box-shadow: 0 40px 100px rgba(0,0,0,0.8);
+  max-width: 440px;
+  background: var(--bg-dropdown) !important;
+  backdrop-filter: var(--glass-blur) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: 32px !important;
+  padding: 2.5rem 1.5rem !important;
+  text-align: center !important;
+  box-shadow: var(--shadow-lg) !important;
+  color: var(--text-primary) !important;
+  position: relative;
+  z-index: 10001;
 }
 
-.modal-icon { font-size: 3rem; margin-bottom: 1.5rem; }
+.modal-icon { 
+  font-size: 2.5rem !important; 
+  margin-bottom: 1rem !important; 
+  display: block !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+.custom-modal .button {
+  font-weight: 800 !important;
+  border-radius: 16px !important;
+  padding: 1rem !important;
+}
+
+.custom-modal .button-secondary {
+  background: var(--bg-inset) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border-color) !important;
+}
 
 /* Drag Handles */
 .s-handle {
