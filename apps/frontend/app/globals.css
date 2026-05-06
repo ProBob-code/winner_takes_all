@@ -9,12 +9,12 @@
   padding: 0;
 }
 
-:root {
+:root, .light-mode {
   /* 🎨 Premium Light Mode - "Liquid Silver" - Enhanced Visibility */
   --bg-primary: #f8fafc;
   --bg-secondary: #f1f5f9;
-  --bg-card: rgba(255, 255, 255, 0.85);
-  --bg-card-hover: rgba(255, 255, 255, 0.95);
+  --bg-card: rgba(255, 255, 255, 0.95);
+  --bg-card-hover: #ffffff;
   --bg-surface: rgba(139, 92, 246, 0.05);
   --bg-topbar: rgba(255, 255, 255, 0.92);
   --bg-dropdown: rgba(255, 255, 255, 0.98);
@@ -26,11 +26,11 @@
 
   --border-color: rgba(139, 92, 246, 0.2);
   --border-glow: rgba(139, 92, 246, 0.35);
-  --glass-bg: rgba(255, 255, 255, 0.6);
+  --glass-bg: rgba(255, 255, 255, 0.8);
   --glass-bg-hover: rgba(139, 92, 246, 0.08);
   --glass-border-color: rgba(0, 0, 0, 0.1);
   --glass-border-color-hover: rgba(139, 92, 246, 0.6);
-  --glass-blur: blur(12px);
+  --glass-blur: blur(16px);
 
   --accent: #7c3aed;
   --accent-light: #8b5cf6;

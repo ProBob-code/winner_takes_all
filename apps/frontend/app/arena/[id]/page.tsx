@@ -21,11 +21,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       siteName: "Winner Takes All",
       images: [
         {
-          url: ogImageUrl,
+          url: "https://winner-takes-all.pages.dev/stadium-og-elite.png?v=6",
           width: 1200,
           height: 630,
           alt: "Stadium Arena Live Preview",
-          type: "image/jpeg",
+          type: "image/png",
         },
       ],
       type: 'website',
@@ -34,7 +34,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       card: "summary_large_image",
       title: `🏆 ARENA LIVE: ${name}`,
       description: `🔥 Watch the high-stakes showdown now! Elite gaming live from the Winner Takes All stadium.`,
-      images: [ogImageUrl],
+      images: ["https://winner-takes-all.pages.dev/stadium-og-elite.png?v=6"],
     },
   };
 }
