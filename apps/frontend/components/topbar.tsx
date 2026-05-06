@@ -42,22 +42,21 @@ export function Topbar({ user: initialUser }: { user?: any }) {
       <nav className="topbar-nav">
         <ThemeToggle />
         {user ? (
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
             <div style={{ 
               display: "flex", 
               alignItems: "center", 
               background: "rgba(255, 183, 0, 0.1)", 
-              padding: "0.3rem 0.6rem", 
+              padding: "0.25rem 0.5rem", 
               borderRadius: "8px", 
               border: "1px solid rgba(255, 183, 0, 0.2)",
-              gap: "0.4rem",
-              minWidth: "80px",
-              justifyContent: "center"
+              gap: "0.3rem",
+              flexShrink: 0
             }}>
-              <span style={{ fontSize: "0.7rem", fontWeight: 700, color: "var(--gold-light)", opacity: 0.8 }}>₹</span>
-              <span style={{ fontWeight: 800, color: "var(--gold-light)", fontSize: "0.85rem" }}>{Number(user.walletBalance || 0).toFixed(2)}</span>
+              <span style={{ fontSize: "0.65rem", fontWeight: 700, color: "var(--gold-light)", opacity: 0.8 }}>₹</span>
+              <span style={{ fontWeight: 800, color: "var(--gold-light)", fontSize: "0.8rem" }}>{Number(user.walletBalance || 0).toFixed(0)}</span>
             </div>
-            <Link href="/dashboard" className="topbar-link desktop-only" style={{ fontWeight: 600, color: "var(--text-primary)", fontSize: "0.9rem", minWidth: "60px", textAlign: "right" }}>
+            <Link href="/dashboard" className="topbar-link desktop-only" style={{ fontWeight: 600, color: "var(--text-primary)", fontSize: "0.85rem" }}>
                {user.name.split(' ')[0]}
             </Link>
             <button 

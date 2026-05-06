@@ -6,10 +6,17 @@ import { Metadata } from "next";
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit" });
 
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  themeColor: "#FFD700",
+};
+
 export const metadata: Metadata = {
   title: "Winner Takes All | The Ultimate Stadium Arena",
   description: "🏆 Step into the world's most elite multi-game tournament platform. High-stakes duels and legendary showdowns.",
-  themeColor: "#FFD700",
   openGraph: {
     title: "🏆 Winner Takes All | Stadium Arena",
     description: "🔥 THE ARENA IS LIVE! Experience high-stakes tournaments and legendary duels in real-time.",
