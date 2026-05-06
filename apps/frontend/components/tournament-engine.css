@@ -821,12 +821,13 @@ select.premium-input-v2 option {
   to { transform: scale(1) translateY(0); opacity: 1; } 
 }
 
-@media (max-width: 480px) {
+@media (max-width: 768px) {
   .custom-modal {
-    padding: 1.5rem;
-    border-radius: 24px;
-    gap: 1rem;
-    max-width: 95%;
+    padding: 2rem 1.25rem !important;
+    border-radius: 32px !important;
+    gap: 1.25rem !important;
+    max-width: 92% !important;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.8);
   }
 }
 
@@ -864,9 +865,21 @@ select.premium-input-v2 option {
 .social-btn.twitter { background: #1da1f2; }
 .social-btn:hover { transform: translateY(-2px); filter: brightness(1.1); }
 
-@media (max-width: 480px) {
-  .social-grid-v2 { grid-template-columns: 1fr; gap: 0.5rem; }
-  .social-btn { font-size: 0.8rem; padding: 1rem; }
+@media (max-width: 768px) {
+  .social-grid-v2 { 
+    grid-template-columns: 1fr !important; 
+    gap: 0.75rem !important; 
+  }
+  .social-btn { 
+    font-size: 0.9rem !important; 
+    padding: 1.1rem !important; 
+    border-radius: 16px !important;
+    font-weight: 800 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 0.75rem !important;
+  }
 }
 
 @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
@@ -1278,6 +1291,19 @@ select.premium-input-v2 option {
 .copy-action-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 10px 20px rgba(245, 158, 11, 0.3);
+}
+
+.share-actions-group-v2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+@media (max-width: 480px) {
+  .share-actions-group-v2 {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Spectator View Adjustments */

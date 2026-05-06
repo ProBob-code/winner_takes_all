@@ -254,13 +254,14 @@ a:hover {
     position: fixed;
     top: 0;
     left: 0;
-    z-index: 2000;
+    z-index: 3000; /* Increased to be above everything */
     transform: translateX(-100%);
     width: 280px !important;
   }
   
   .sidebar.mobile-open {
     transform: translateX(0);
+    box-shadow: 20px 0 60px rgba(0, 0, 0, 0.5);
   }
 
   .desktop-only {
@@ -2729,21 +2730,24 @@ select.form-control option {
 .mobile-nav {
   display: none;
   position: fixed;
-  bottom: 1.5rem;
+  bottom: 1.25rem;
   left: 50%;
   transform: translateX(-50%);
-  width: calc(100% - 2rem);
-  max-width: 440px;
-  background: rgba(5, 1, 26, 0.9);
-  backdrop-filter: blur(28px);
-  -webkit-backdrop-filter: blur(28px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 24px;
-  justify-content: space-between;
+  width: calc(100% - 2.5rem);
+  max-width: 460px;
+  background: rgba(5, 1, 26, 0.85);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 26px;
+  justify-content: space-around;
   align-items: center;
-  padding: 0.6rem 1rem;
-  z-index: 2000;
-  box-shadow: 0 15px 45px rgba(0, 0, 0, 0.7), inset 0 0 10px rgba(187, 134, 252, 0.05);
+  padding: 0.75rem;
+  z-index: 5000;
+  box-shadow: 
+    0 25px 60px rgba(0, 0, 0, 0.8),
+    0 0 30px rgba(187, 134, 252, 0.1),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05);
 }
 
 .mobile-nav-link {
@@ -2761,9 +2765,9 @@ select.form-control option {
 }
 
 .mobile-nav-link .mobile-nav-icon {
-  font-size: 1.5rem;
-  opacity: 0.6;
-  transition: all 0.3s ease;
+  font-size: 1.6rem;
+  opacity: 0.75;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 .mobile-nav-link.active {
@@ -2786,100 +2790,183 @@ select.form-control option {
 @media (max-width: 768px) {
   .app-container {
     flex-direction: column;
-    padding-bottom: 95px; /* Extra room for premium dock */
+    padding-bottom: 110px; /* Extra room for the premium floating dock */
   }
 
   .sidebar { display: none !important; }
   .mobile-nav { 
     display: flex !important;
-    background: rgba(10, 6, 28, 0.95) !important;
-    backdrop-filter: blur(25px) !important;
-    border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
-    height: 85px !important;
-    padding: 0 1rem !important;
+    position: fixed;
+    bottom: 1.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100% - 2rem);
+    max-width: 480px;
+    height: 80px !important;
+    background: rgba(10, 6, 28, 0.88) !important;
+    backdrop-filter: blur(24px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    border-radius: 28px;
+    padding: 0 0.75rem !important;
+    z-index: 5000;
+    box-shadow: 
+      0 20px 50px rgba(0, 0, 0, 0.6),
+      0 0 30px rgba(139, 92, 246, 0.15),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+    justify-content: space-around;
   }
   
   .topbar { 
-    padding: 0 0.75rem !important; 
-    height: 64px !important; 
-    gap: 0.5rem !important;
-    background: rgba(8, 5, 18, 0.98) !important;
+    padding: 0 1rem !important; 
+    height: 72px !important; 
+    gap: 0.75rem !important;
+    background: rgba(3, 0, 20, 0.95) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
     position: sticky !important;
     top: 0 !important;
-    z-index: 1000 !important;
-    margin-top: -0.75rem !important; /* Offset the main-content padding if any */
-    margin-left: -0.75rem !important;
-    margin-right: -0.75rem !important;
-    width: calc(100% + 1.5rem) !important;
+    z-index: 4000 !important;
+    width: 100% !important;
+    margin: 0 !important;
   }
-  .topbar-brand { gap: 0.4rem !important; }
+  .topbar-brand { gap: 0.6rem !important; }
   .logo-icon { display: none !important; }
-  .brand-text-mobile { font-size: 0.95rem !important; letter-spacing: 1px !important; }
+  .brand-text-mobile { 
+    font-size: 1.15rem !important; 
+    letter-spacing: 2px !important; 
+    font-weight: 950 !important;
+    background: var(--gradient-gold);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    display: inline-block !important;
+  }
   
-  .topbar-nav { gap: 0.5rem !important; }
-  .topbar-link { font-size: 0.8rem !important; }
+  .topbar-nav { gap: 0.75rem !important; }
+  .topbar-link { 
+    font-size: 0.9rem !important; 
+    font-weight: 700 !important;
+    color: var(--text-primary) !important;
+  }
   .button.button-sm { 
-    padding: 0.45rem 0.8rem !important; 
-    font-size: 0.75rem !important; 
-    border-radius: 12px !important;
+    padding: 0.65rem 1.25rem !important; 
+    font-size: 0.85rem !important; 
+    border-radius: 14px !important;
     font-weight: 800 !important;
+    box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);
   }
 
-  .main-content { padding: 0.75rem !important; padding-top: 0 !important; }
-  .page-content { padding-top: 0.5rem !important; }
+  .main-content { 
+    padding: 1rem !important; 
+    padding-top: 0 !important;
+    overflow-y: visible !important;
+  }
+  
+  .page-content { 
+    padding-top: 1rem !important; 
+    overflow-y: visible !important;
+  }
 
   /* Premium Grid Revamp */
   .dashboard-grid, .schedule-grid, .standings-grid-v2 { 
     grid-template-columns: 1fr !important; 
-    gap: 1rem !important; 
+    gap: 1.5rem !important; 
   }
 
-  .profile-banner { flex-direction: column; text-align: center; padding: 1.5rem; gap: 1rem; border-radius: 24px !important; }
-  .profile-balance-highlight { border-left: none; border-top: 1px solid rgba(255,255,255,0.05); padding: 1.25rem 0 0 0; width: 100%; text-align: center; }
-  .balance-amount { font-size: 2rem !important; }
-
-  .arena-header-v2 { padding: 1.25rem !important; border-radius: 20px !important; flex-direction: column; align-items: center; text-align: center; gap: 0.75rem; }
-  .arena-meta h1 { font-size: 1.4rem !important; }
+  .profile-banner { 
+    flex-direction: column; 
+    text-align: center; 
+    padding: 2.5rem 1.5rem; 
+    gap: 1.5rem; 
+    border-radius: 32px !important;
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.12), rgba(6, 182, 212, 0.08));
+  }
   
-  .arena-controls { width: 100%; justify-content: center; gap: 1rem !important; margin-top: 0.5rem; }
-  .sub-tab-switcher { width: 100%; }
-  .sub-tab { flex: 1; text-align: center; font-size: 0.75rem !important; }
+  .profile-avatar {
+    width: 110px;
+    height: 110px;
+    font-size: 3.5rem;
+  }
 
-  .p-grid { grid-template-columns: 1fr !important; gap: 1.25rem !important; }
-  .p-selectors { width: 100% !important; gap: 0.75rem !important; }
+  .profile-balance-highlight { 
+    border-left: none; 
+    border-top: 1px solid rgba(255,255,255,0.1); 
+    padding: 1.5rem 0 0 0; 
+    width: 100%; 
+    text-align: center; 
+  }
+  
+  .balance-amount { font-size: 3rem !important; }
+
+  .arena-header-v2 { 
+    padding: 1.75rem !important; 
+    border-radius: 28px !important; 
+    flex-direction: column; 
+    align-items: center; 
+    text-align: center; 
+    gap: 1.25rem; 
+  }
+  
+  .arena-meta h1 { font-size: 2rem !important; }
+  
+  .arena-controls { 
+    width: 100%; 
+    justify-content: center; 
+    gap: 1rem !important; 
+    margin-top: 0.5rem; 
+    flex-wrap: wrap;
+  }
+  
+  .sub-tab-switcher { 
+    width: 100%; 
+    padding: 8px;
+    border-radius: 18px;
+  }
+  
+  .sub-tab { 
+    flex: 1; 
+    text-align: center; 
+    font-size: 0.9rem !important; 
+    padding: 0.85rem !important;
+  }
+
+  .p-grid { grid-template-columns: 1fr !important; gap: 1.5rem !important; }
+  .p-selectors { width: 100% !important; gap: 1.25rem !important; }
   .vs-tiny { display: none !important; }
   
-  /* Share Modal Revamp */
-  .social-chips { 
-    display: grid !important; 
-    grid-template-columns: 1fr 1fr 1fr !important; 
-    gap: 0.5rem !important; 
-    width: 100% !important;
-  }
-  .social-chip { 
-    width: 100% !important; 
-    justify-content: center !important; 
-    font-size: 0.65rem !important; 
-    padding: 0.6rem !important; 
-    border-radius: 10px !important;
+  /* Share Modal & Modal Polish */
+  .custom-modal { 
+    width: 95% !important; 
+    padding: 2.5rem 1.5rem !important; 
+    border-radius: 32px !important; 
+    box-shadow: 0 30px 70px rgba(0,0,0,0.8);
   }
   
-  .victory-podium, .custom-modal { 
-    width: 92% !important; 
-    padding: 2rem 1.25rem !important; 
-    border-radius: 28px !important; 
+  .social-grid-v2 { 
+    display: grid !important; 
+    grid-template-columns: 1fr !important; 
+    gap: 0.75rem !important; 
+    width: 100% !important;
   }
-  .v-name-xl { font-size: 2.5rem !important; }
-  .v-stats-premium { gap: 1.5rem !important; }
-  .v-score { font-size: 2.8rem !important; }
+  
+  .social-btn { 
+    width: 100% !important; 
+    padding: 1.1rem !important; 
+    border-radius: 16px !important;
+    font-size: 0.9rem !important;
+  }
 
-  /* Landing Page Premium Polish */
-  .landing-main { padding: 80px 1.25rem 60px !important; }
-  .hero-title { font-size: 2.8rem !important; line-height: 1 !important; margin-bottom: 1.5rem !important; }
-  .hero-desc { font-size: 1.05rem !important; line-height: 1.5 !important; margin-bottom: 2.5rem !important; opacity: 0.8; }
-  .hero-buttons { width: 100% !important; flex-direction: column !important; gap: 1rem !important; }
-  .hero-buttons a { width: 100% !important; text-align: center !important; padding: 1.1rem !important; border-radius: 18px !important; font-size: 1.05rem !important; }
+  .v-name-xl { font-size: 2.8rem !important; }
+  .v-stats-premium { gap: 1.5rem !important; }
+  .v-score { font-size: 3.2rem !important; }
+
+  /* Landing Page Polish */
+  .landing-main { padding: 100px 1.5rem 80px !important; }
+  .hero-title { font-size: 3.2rem !important; line-height: 1.1 !important; }
+  .hero-desc { font-size: 1.15rem !important; }
+  .hero-buttons { width: 100% !important; flex-direction: column !important; gap: 1.25rem !important; }
+  .hero-buttons a { width: 100% !important; padding: 1.25rem !important; border-radius: 20px !important; }
 }
 
 
