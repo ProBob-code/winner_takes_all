@@ -299,13 +299,13 @@
 
 .premium-input-v2 {
   width: 100%;
-  background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(255,255,255,0.1);
+  background: var(--bg-inset);
+  border: 1px solid var(--border-color);
   border-radius: 16px;
   padding: 1.25rem 1.5rem;
   font-size: 1.1rem;
   font-weight: 700;
-  color: white;
+  color: var(--text-primary);
   transition: all 0.3s ease;
   outline: none;
 }
@@ -314,6 +314,11 @@
   background: var(--bg-inset);
   border-color: var(--gold);
   box-shadow: 0 0 20px rgba(245, 158, 11, 0.1);
+}
+
+.premium-input-v2::placeholder {
+  color: var(--text-muted);
+  opacity: 0.6;
 }
 
 /* Tactical Select Suite */
@@ -342,10 +347,10 @@ select.premium-input-v2 option {
 
 .segmented-control-v2 {
   display: flex;
-  background: rgba(255,255,255,0.03);
+  background: var(--bg-inset);
   padding: 4px;
   border-radius: 16px;
-  border: 1px solid rgba(255,255,255,0.05);
+  border: 1px solid var(--border-color);
   width: 100%;
 }
 
@@ -368,6 +373,9 @@ select.premium-input-v2 option {
   color: var(--text-muted);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   text-align: center;
+  border: 1px solid transparent;
+  background: transparent;
+  cursor: pointer;
 }
 
 .segment-btn.active {
@@ -1926,12 +1934,25 @@ select.premium-input-v2 option {
 .schedule-item-card {
   display: flex;
   align-items: center;
-  gap: 1.5rem;
-  background: rgba(255,255,255,0.03);
-  padding: 1.25rem 2rem;
+  gap: 1rem;
+  background: var(--bg-card);
+  padding: 1rem 1.5rem;
   border-radius: 20px;
-  border: 1px solid rgba(255,255,255,0.05);
+  border: 1px solid var(--border-color);
   transition: 0.3s;
+  box-shadow: var(--shadow-sm);
+}
+
+@media (max-width: 450px) {
+  .schedule-item-card {
+    padding: 1rem;
+    gap: 0.5rem;
+  }
+  .s-info {
+    min-width: 0; /* Allow shrinking */
+  }
+  .s-rank { width: 30px; font-size: 1rem; }
+  .s-handle { display: none; }
 }
 
 .schedule-item-card:hover { transform: translateX(10px); background: rgba(255,255,255,0.05); }
@@ -1955,11 +1976,11 @@ select.premium-input-v2 option {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 150px;
+  max-width: 180px;
 }
 
 @media (max-width: 480px) {
-  .s-pair { max-width: 110px; font-size: 0.9rem; }
+  .s-pair { max-width: 120px; font-size: 0.85rem; }
 }
 
 .s-meta { font-size: 0.6rem; font-weight: 800; opacity: 0.3; letter-spacing: 1px; margin-top: 4px; text-transform: uppercase; }
@@ -1969,9 +1990,9 @@ select.premium-input-v2 option {
   width: 32px;
   height: 32px;
   border-radius: 8px;
-  border: 1px solid rgba(255,255,255,0.1);
-  background: rgba(255,255,255,0.05);
-  color: white;
+  border: 1px solid var(--border-color);
+  background: var(--bg-inset);
+  color: var(--text-primary);
   cursor: pointer;
   display: flex;
   align-items: center;
