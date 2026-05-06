@@ -97,7 +97,7 @@ export function ArenaClient({ id }: { id: string }) {
 
 
   return (
-    <div className="engine-container animate-in" style={{ padding: '2rem', minHeight: '100vh', background: 'transparent' }}>
+    <div className="engine-container animate-in">
       {showVictory && (
         <div className="victory-overlay animate-in">
           <div className="victory-podium slide-in">

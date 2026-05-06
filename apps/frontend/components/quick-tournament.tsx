@@ -666,16 +666,6 @@ export function QuickTournament() {
                   }}>🔗 SYSTEM SHARE</button>
                 )}
               </div>
-              
-              <div className="social-grid-v2 mt-6">
-                <button className="social-btn whatsapp" onClick={() => {
-                  const cleanName = arenaName.toLowerCase().endsWith('showdown') ? arenaName : `${arenaName} Showdown`;
-                  const msg = `🔥 ARENA IS LIVE: ${cleanName}!\n\nWitness the high-stakes duels and join the elite spectator stream live on Winner Takes All.\n\nENTER THE ARENA: ${window.location.origin}/arena/${arenaId}`;
-                  window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
-                }}>🟢 WHATSAPP</button>
-                <button className="social-btn facebook" onClick={() => window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.origin + '/arena/' + arenaId)}`, '_blank')}>🔵 FACEBOOK</button>
-                <button className="social-btn twitter" onClick={() => window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent('🏆 WITNESS THE SHOWDOWN! Watch the ' + arenaName + ' live on Winner Takes All!')}&url=${encodeURIComponent(window.location.origin + '/arena/' + arenaId)}`, '_blank')}>🦋 TWITTER</button>
-              </div>
             </div>
             <button className="button button-secondary mt-8 w-full" onClick={() => setShowShareModal(false)}>BACK TO CONTROL ROOM</button>
           </div>

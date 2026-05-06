@@ -250,61 +250,9 @@ a:hover {
 }
 
 @media (max-width: 1024px) {
-  .sidebar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    z-index: 3000; /* Increased to be above everything */
-    transform: translateX(-100%);
-    width: 280px !important;
-  }
-  
-  .sidebar.mobile-open {
-    transform: translateX(0);
-    box-shadow: 20px 0 60px rgba(0, 0, 0, 0.5);
-  }
-
-  .desktop-only {
-    display: none !important;
-  }
-
-  .mobile-hamburger-btn {
-    display: flex !important;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .main-content {
-    width: 100% !important;
-    overflow-x: hidden;
-  }
-
-  .topbar {
-    padding: 0 0.75rem !important;
-    height: 56px !important;
-  }
-
-  .topbar-brand .brand-text {
-    display: none;
-  }
-
-  .topbar-brand .brand-text-mobile {
-    display: block !important;
-  }
-
-  .page {
-    padding: 1rem !important;
-  }
-
-  .shell {
-    padding: 0 0.5rem !important;
-  }
-
-  .page-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 2rem;
-  }
+  .sidebar { display: none !important; }
+  .main-content { width: 100% !important; margin-left: 0 !important; }
+  .desktop-only { display: none !important; }
 }
 
 /* ── Dashboard & Shared Components ── */
@@ -2789,8 +2737,16 @@ select.form-control option {
 /* ── Elite Mobile Revamp ── */
 @media (max-width: 768px) {
   .app-container {
-    flex-direction: column;
-    padding-bottom: 110px; /* Extra room for the premium floating dock */
+    flex-direction: column !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+    height: auto !important;
+    min-height: 100vh !important;
+    overflow-x: hidden !important;
+    position: relative !important;
+    display: flex !important;
   }
 
   .sidebar { display: none !important; }
@@ -2816,9 +2772,8 @@ select.form-control option {
   }
   
   .topbar { 
-    padding: 0 0.75rem !important; 
+    padding: 0 1rem !important; 
     height: 64px !important; 
-    gap: 0.5rem !important;
     background: var(--bg-topbar) !important;
     backdrop-filter: var(--glass-blur) !important;
     -webkit-backdrop-filter: var(--glass-blur) !important;
@@ -2833,46 +2788,51 @@ select.form-control option {
     display: flex !important;
     align-items: center !important;
     justify-content: space-between !important;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
   }
   
   .topbar-brand { 
-    gap: 0.4rem !important; 
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.5rem !important;
     flex-shrink: 0;
-    max-width: 80px;
   }
   
   .logo-icon { display: none !important; }
   
   .brand-text-mobile { 
-    font-size: 1.1rem !important; 
-    letter-spacing: 1px !important; 
+    font-size: 1.15rem !important; 
     font-weight: 900 !important;
     background: var(--gradient-gold);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-    display: inline-block !important;
+    display: block !important;
   }
   
+  .topbar-search {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+  }
+
   .topbar-nav { 
-    gap: 0.4rem !important; 
-    flex: 1; 
-    justify-content: flex-end !important;
     display: flex !important;
     align-items: center !important;
+    gap: 0.75rem !important;
+    flex-shrink: 0;
   }
   
   .topbar-link { 
-    font-size: 0.8rem !important; 
+    font-size: 0.85rem !important; 
     font-weight: 700 !important;
     color: var(--text-primary) !important;
     white-space: nowrap;
-    padding: 0.25rem 0.5rem !important;
   }
   
   .button.button-sm { 
-    padding: 0.5rem 0.75rem !important; 
-    font-size: 0.75rem !important; 
-    border-radius: 10px !important;
+    padding: 0.6rem 1rem !important; 
+    font-size: 0.8rem !important; 
+    border-radius: 12px !important;
     font-weight: 800 !important;
     box-shadow: 0 4px 10px var(--team-blue-glow) !important;
   }
@@ -2881,10 +2841,12 @@ select.form-control option {
     padding: 0 !important; 
     margin: 0 !important;
     width: 100% !important;
+    max-width: 100vw !important;
     display: flex !important;
     flex-direction: column !important;
     min-height: 100vh !important;
-    padding-top: 64px !important; /* Fixed topbar offset */
+    padding-top: 64px !important; 
+    overflow-x: hidden !important;
   }
   
   .page-content { 
