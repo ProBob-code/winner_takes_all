@@ -459,7 +459,6 @@ select.premium-input-v2 option {
   border: 1px solid var(--border-color);
   overflow-y: auto;
 }
-}
 
 .roster-scroll {
   height: 100%;
