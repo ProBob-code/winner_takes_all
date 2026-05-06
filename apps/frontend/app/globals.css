@@ -919,35 +919,7 @@ a:hover {
   gap: 1.5rem;
 }
 
-@media (max-width: 768px) {
-  .topbar {
-    padding: 0 1rem;
-    height: 64px;
-  }
 
-  .brand-text {
-    display: none;
-  }
-
-  .brand-text-mobile {
-    display: inline;
-    font-size: 1.1rem;
-    letter-spacing: 0.1em;
-  }
-
-  .topbar-brand .logo-icon {
-    font-size: 1.2rem;
-  }
-
-  .topbar-nav {
-    gap: 0.75rem;
-  }
-
-  .topbar-link {
-    padding: 0.5rem 0.75rem;
-    font-size: 0.85rem;
-  }
-}
 
 /* ── Desktop UI Refinements ── */
 /* topbar-brand is always visible now */
@@ -2799,6 +2771,7 @@ select.form-control option {
   }
   
   .logo-icon { display: none !important; }
+  .brand-text { display: none !important; }
   
   .brand-text-mobile { 
     font-size: 1.15rem !important; 
@@ -2944,28 +2917,6 @@ select.form-control option {
   .p-selectors { width: 100% !important; gap: 1.25rem !important; }
   .vs-tiny { display: none !important; }
   
-  /* Share Modal & Modal Polish */
-  .custom-modal { 
-    width: 95% !important; 
-    padding: 2.5rem 1.5rem !important; 
-    border-radius: 32px !important; 
-    box-shadow: 0 30px 70px rgba(0,0,0,0.8);
-  }
-  
-  .social-grid-v2 { 
-    display: grid !important; 
-    grid-template-columns: 1fr !important; 
-    gap: 0.75rem !important; 
-    width: 100% !important;
-  }
-  
-  .social-btn { 
-    width: 100% !important; 
-    padding: 1.1rem !important; 
-    border-radius: 16px !important;
-    font-size: 0.9rem !important;
-  }
-
   .v-name-xl { font-size: 2.8rem !important; }
   .v-stats-premium { gap: 1.5rem !important; }
   .v-score { font-size: 3.2rem !important; }

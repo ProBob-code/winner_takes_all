@@ -1,5 +1,13 @@
 /* --- Revamped Tournament Engine Premium Design --- */
 
+/* Utility Classes */
+.mt-4 { margin-top: 1rem !important; }
+.mt-6 { margin-top: 1.5rem !important; }
+.mt-8 { margin-top: 2rem !important; }
+.mt-12 { margin-top: 3rem !important; }
+.w-full { width: 100% !important; }
+.text-center { text-align: center !important; }
+
 .engine-container {
   display: flex;
   flex-direction: column;
@@ -784,10 +792,16 @@ select.premium-input-v2 option {
 /* Custom Modal */
 .custom-modal-overlay {
   position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(8px);
-  z-index: 9999;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 10000;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -798,22 +812,21 @@ select.premium-input-v2 option {
 
 .custom-modal {
   background: var(--bg-card);
-  backdrop-filter: var(--glass-blur);
   border: 1px solid var(--border-color);
   border-radius: 28px;
-  padding: 2rem;
+  padding: 2rem 1.5rem;
+  width: calc(100% - 2rem);
   max-width: 420px;
-  width: 100%;
   text-align: center;
   box-shadow: var(--shadow-lg);
-  position: relative;
-  z-index: 10000;
   color: var(--text-primary);
+  position: relative;
+  z-index: 10001;
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
-  transform-origin: center;
+  gap: 1rem;
   animation: modalPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  margin: 0 auto;
 }
 
 @keyframes modalPop { 
@@ -821,17 +834,36 @@ select.premium-input-v2 option {
   to { transform: scale(1) translateY(0); opacity: 1; } 
 }
 
-@media (max-width: 768px) {
-  .custom-modal {
-    padding: 2rem 1.25rem !important;
-    border-radius: 32px !important;
-    gap: 1.25rem !important;
-    max-width: 92% !important;
-    box-shadow: 0 30px 80px rgba(0,0,0,0.8);
-  }
+.custom-modal .glow-text {
+  font-size: 1.5rem;
+  margin: 0;
 }
 
-.modal-icon { font-size: 3rem; margin-bottom: 1.5rem; }
+.custom-modal .muted {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.custom-modal .button {
+  font-weight: 800;
+  border-radius: 14px;
+  padding: 0.9rem 1.25rem;
+  width: 100%;
+}
+
+.custom-modal .button-secondary {
+  background: var(--bg-inset);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.modal-icon { 
+  font-size: 2.5rem; 
+  margin-bottom: 0.5rem; 
+  display: block;
+  line-height: 1;
+}
 
 .modal-actions {
   display: grid;
@@ -1255,25 +1287,33 @@ select.premium-input-v2 option {
   flex-direction: column;
   gap: 16px;
   background: var(--bg-surface);
-  padding: 1.5rem;
-  border-radius: 20px;
+  padding: 1.25rem;
+  border-radius: 16px;
   border: 1px solid var(--border-color);
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .link-display {
-  padding: 1rem;
+  padding: 0.75rem 1rem;
   background: var(--bg-inset);
   border-radius: 12px;
   border: 1px dashed var(--border-color);
   overflow: hidden;
   text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 .link-text {
   font-family: monospace;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   color: var(--gold);
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+  max-width: 100%;
 }
 
 .copy-action-btn {
@@ -1301,7 +1341,7 @@ select.premium-input-v2 option {
   width: 100%;
 }
 
-@media (max-width: 480px) {
+@media (max-width: 768px) {
   .share-actions-group-v2 {
     grid-template-columns: 1fr;
   }
@@ -1445,56 +1485,7 @@ select.premium-input-v2 option {
 
 .t-adj:hover { background: white; color: black; transform: scale(1.1); }
 
-/* Fixed Modals & Overlays */
-.custom-modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(0, 0, 0, 0.85);
-  backdrop-filter: blur(15px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 10000;
-  padding: 20px;
-}
-
-.custom-modal {
-  width: 100%;
-  max-width: 440px;
-  background: var(--bg-dropdown) !important;
-  backdrop-filter: var(--glass-blur) !important;
-  border: 1px solid var(--border-color) !important;
-  border-radius: 32px !important;
-  padding: 2.5rem 1.5rem !important;
-  text-align: center !important;
-  box-shadow: var(--shadow-lg) !important;
-  color: var(--text-primary) !important;
-  position: relative;
-  z-index: 10001;
-}
-
-.modal-icon { 
-  font-size: 2.5rem !important; 
-  margin-bottom: 1rem !important; 
-  display: block !important;
-  margin-left: auto !important;
-  margin-right: auto !important;
-}
-
-.custom-modal .button {
-  font-weight: 800 !important;
-  border-radius: 16px !important;
-  padding: 1rem !important;
-}
-
-.custom-modal .button-secondary {
-  background: var(--bg-inset) !important;
-  color: var(--text-primary) !important;
-  border: 1px solid var(--border-color) !important;
-}
+/* Fixed Modals & Overlays — see canonical definitions above (line ~785) */
 
 /* Drag Handles */
 .s-handle {
