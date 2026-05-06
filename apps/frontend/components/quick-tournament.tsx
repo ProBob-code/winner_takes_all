@@ -615,7 +615,7 @@ export function QuickTournament() {
 
       {modalConfig && (
         <div className="custom-modal-overlay">
-          <div className="custom-modal glass-morphism slide-in">
+          <div className="custom-modal">
             <div className="modal-icon">{modalConfig.icon}</div>
             <h2>{modalConfig.title}</h2>
             <p className="muted">{modalConfig.message}</p>
@@ -629,7 +629,7 @@ export function QuickTournament() {
 
       {showResetModal && (
         <div className="custom-modal-overlay">
-          <div className="custom-modal glass-morphism slide-in">
+          <div className="custom-modal">
             <div className="modal-icon">⚠️</div>
             <h2>Reset Arena?</h2>
             <p className="muted">This will erase all teams, matches, and current scores. This action cannot be undone.</p>
@@ -643,21 +643,21 @@ export function QuickTournament() {
 
       {showShareModal && (
         <div className="custom-modal-overlay">
-          <div className="custom-modal glass-morphism slide-in" style={{ maxWidth: '500px' }}>
+          <div className="custom-modal">
             <div className="modal-icon">🚀</div>
             <h2 className="glow-text">Arena is Live!</h2>
             <p className="muted">Your battleground is now synchronized with the global spectator network. Share the link below.</p>
             <div className="share-link-premium mt-8">
               <div className="link-display"><span className="link-text">{window.location.origin}/arena/{arenaId}</span></div>
               <div className="share-actions-group-v2 mt-6">
-                <button className="button button-gold w-full mb-4" style={{ borderRadius: '14px', padding: '1rem' }} onClick={() => {
+                <button className="button button-gold w-full" onClick={() => {
                   navigator.clipboard.writeText(`${window.location.origin}/arena/${arenaId}`);
                   const btn = document.querySelector('.share-actions-group-v2 .button-gold') as HTMLButtonElement;
                   if (btn) { const old = btn.innerText; btn.innerText = 'COPIED!'; setTimeout(() => btn.innerText = old, 2000); }
                 }}>COPY LINK</button>
                 
                 {typeof navigator !== 'undefined' && navigator.share && (
-                  <button className="button button-secondary w-full mb-6" style={{ borderRadius: '14px', padding: '1rem' }} onClick={() => {
+                  <button className="button button-secondary w-full" onClick={() => {
                     navigator.share({
                       title: `🏆 ARENA IS LIVE: ${arenaName}`,
                       text: `🔥 WITNESS THE SHOWDOWN! Step into the world-class stadium arena for the ${arenaName} tournament. Watch real-time multi-game duels live on Winner Takes All!`,
@@ -677,14 +677,14 @@ export function QuickTournament() {
                 <button className="social-btn twitter" onClick={() => window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent('🏆 WITNESS THE SHOWDOWN! Watch the ' + arenaName + ' live on Winner Takes All!')}&url=${encodeURIComponent(window.location.origin + '/arena/' + arenaId)}`, '_blank')}>TWITTER</button>
               </div>
             </div>
-            <button className="button button-secondary mt-8" style={{ width: '100%' }} onClick={() => setShowShareModal(false)}>BACK TO CONTROL ROOM</button>
+            <button className="button button-secondary mt-8 w-full" onClick={() => setShowShareModal(false)}>BACK TO CONTROL ROOM</button>
           </div>
         </div>
       )}
 
       {showPinModal && (
         <div className="custom-modal-overlay">
-          <div className="custom-modal glass-morphism slide-in" style={{ maxWidth: '400px' }}>
+          <div className="custom-modal">
             <div className="modal-icon">🔐</div>
             <h2>{showPinModal.mode === 'SET' ? 'Set Arena PIN' : 'Unlock Arena'}</h2>
             <p className="muted">{showPinModal.mode === 'SET' ? 'Enter a 6-digit PIN to prevent accidental or unauthorized edits.' : 'Enter your 6-digit PIN to enable editing.'}</p>
