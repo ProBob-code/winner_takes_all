@@ -396,7 +396,7 @@ export function QuickTournament() {
     setMatches(matches.map(m => m.id === matchId ? { ...m, [`team_${team.toLowerCase()}_house`]: house } : m));
   };
 
-  const updateScore = (matchId: string, teamId: string, type: 'BALL' | 'BLACK' | 'FOUL') => {
+  const updateScore = (matchId: string, teamId: string, type: 'BALL' | 'BLACK' | 'FOUL' | 'REMOVE_BALL' | 'REMOVE_FOUL') => {
     setMatches(matches.map(m => {
       if (m.id !== matchId || m.status !== 'LIVE') return m;
       const nm = { ...m };
@@ -426,7 +426,7 @@ export function QuickTournament() {
           nm.fouls_b++;
           nm.score_team_b -= 5;
         }
-      } else if ((type as any) === 'REMOVE_FOUL') {
+      } else if (type === 'REMOVE_FOUL') {
         if (isA && nm.fouls_a > 0) {
           nm.fouls_a--;
           nm.score_team_a += 5;
@@ -800,9 +800,9 @@ export function QuickTournament() {
                   ballsPotted={liveMatch.balls_potted_a}
                   blackPotted={liveMatch.black_potted_a}
                   onFoulClick={() => updateScore(liveMatch.id, liveMatch.team_a_id, 'FOUL')}
-                  onFoulRemove={() => updateScore(liveMatch.id, liveMatch.team_a_id, 'REMOVE_FOUL' as any)}
+                  onFoulRemove={() => updateScore(liveMatch.id, liveMatch.team_a_id, 'REMOVE_FOUL')}
                   onBallClick={() => updateScore(liveMatch.id, liveMatch.team_a_id, 'BALL')}
-                  onBallRemove={() => updateScore(liveMatch.id, liveMatch.team_a_id, 'REMOVE_BALL' as any)}
+                  onBallRemove={() => updateScore(liveMatch.id, liveMatch.team_a_id, 'REMOVE_BALL')}
                   onBlackClick={() => updateScore(liveMatch.id, liveMatch.team_a_id, 'BLACK')}
                   onHouseToggle={(h) => updateHouse(liveMatch.id, 'A', h)}
                   isLocked={isLocked}
@@ -821,9 +821,9 @@ export function QuickTournament() {
                   ballsPotted={liveMatch.balls_potted_b}
                   blackPotted={liveMatch.black_potted_b}
                   onFoulClick={() => updateScore(liveMatch.id, liveMatch.team_b_id, 'FOUL')}
-                  onFoulRemove={() => updateScore(liveMatch.id, liveMatch.team_b_id, 'REMOVE_FOUL' as any)}
+                  onFoulRemove={() => updateScore(liveMatch.id, liveMatch.team_b_id, 'REMOVE_FOUL')}
                   onBallClick={() => updateScore(liveMatch.id, liveMatch.team_b_id, 'BALL')}
-                  onBallRemove={() => updateScore(liveMatch.id, liveMatch.team_b_id, 'REMOVE_BALL' as any)}
+                  onBallRemove={() => updateScore(liveMatch.id, liveMatch.team_b_id, 'REMOVE_BALL')}
                   onBlackClick={() => updateScore(liveMatch.id, liveMatch.team_b_id, 'BLACK')}
                   onHouseToggle={(h) => updateHouse(liveMatch.id, 'B', h)}
                   isLocked={isLocked}
