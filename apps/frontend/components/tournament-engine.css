@@ -844,8 +844,8 @@ select.premium-input-v2 option {
   position: fixed !important;
   top: 0 !important;
   left: 0 !important;
-  width: 100vw !important;
-  height: 100vh !important;
+  right: 0 !important;
+  bottom: 0 !important;
   background: rgba(0, 0, 0, 0.7);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
@@ -882,6 +882,7 @@ select.premium-input-v2 option {
   gap: 1rem;
   animation: modalPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   margin: 0 auto;
+  box-sizing: border-box;
 }
 
 @keyframes modalPop { 
@@ -2260,6 +2261,7 @@ select.premium-input-v2 option {
   display: flex;
   align-items: center;
   justify-content: center;
+  box-sizing: border-box;
 }
 
 [data-theme='light'] .victory-overlay {
@@ -2276,6 +2278,9 @@ select.premium-input-v2 option {
   width: 90%;
   position: relative;
   box-shadow: var(--shadow-xl);
+  margin: 0 auto;
+  word-break: break-word;
+  box-sizing: border-box;
 }
 
 .v-crown { font-size: 4rem; margin-bottom: 1rem; }
