@@ -49,7 +49,7 @@ export function QuickTournament() {
   const [arenaId, setArenaId] = useState<string>("");
   const [matchesPerTeam, setMatchesPerTeam] = useState(3);
   const [defaultDuration, setDefaultDuration] = useState(600);
-  const [tournamentType, setTournamentType] = useState<'GROUP' | 'KNOCKOUT'>('GROUP');
+  const [tournamentType, setTournamentType] = useState<'GROUP' | 'KNOCKOUT' | 'FINALS'>('GROUP');
   const [arenaName, setArenaName] = useState("Stadium Arena Showdown");
   const [isPublishing, setIsPublishing] = useState(false);
   const [victoryMatch, setVictoryMatch] = useState<Match | null>(null);
@@ -357,6 +357,39 @@ export function QuickTournament() {
         }
         setTournamentType('KNOCKOUT');
         setMatches(knockoutMatches);
+        setModalConfig(null);
+      }
+    });
+  };
+
+  const advanceToFinals = () => {
+    const sf1 = matches.find(m => m.id === 'sf-1');
+    const sf2 = matches.find(m => m.id === 'sf-2');
+    
+    if (!sf1 || !sf2 || !sf1.winner_id || !sf2.winner_id) {
+      setModalConfig({
+        icon: "⚠️",
+        title: "INCOMPLETE SEMI-FINALS",
+        message: "You must complete both Semi-Final matches before advancing to the Finals.",
+        onConfirm: () => setModalConfig(null)
+      });
+      return;
+    }
+
+    setModalConfig({
+      icon: "👑",
+      title: "ADVANCE TO FINALS?",
+      message: `The Semi-Finals are complete! We will now generate the Grand Final between ${getTeamName(sf1.winner_id)} and ${getTeamName(sf2.winner_id)}.`,
+      onConfirm: () => {
+        const finalMatch: Match = {
+          id: `final`, team_a_id: sf1.winner_id!, team_b_id: sf2.winner_id!,
+          score_team_a: 0, score_team_b: 0, balls_potted_a: 0, balls_potted_b: 0,
+          black_potted_a: false, black_potted_b: false, status: 'CREATED',
+          winner_id: null, active_team_id: null, duration: defaultDuration, start_time: null, order: 0,
+          team_a_house: 'SOLID', team_b_house: 'STRIPES', fouls_a: 0, fouls_b: 0
+        };
+        setMatches([...matches, finalMatch]);
+        setTournamentType('FINALS');
         setModalConfig(null);
       }
     });
@@ -844,10 +877,27 @@ export function QuickTournament() {
               ) : (
                 <div className="phase-transition-overlay animate-in">
                   <div className="phase-card glass-morphism">
-                    <div className="p-icon">🏁</div>
-                    <h3>GROUP STAGE COMPLETE</h3>
-                    <p className="muted">All teams have reached their match quota. Ready to resolve the tournament?</p>
-                    <button className="button button-gold button-lg" onClick={advanceToKnockouts}>ADVANCE TO KNOCKOUTS</button>
+                    {tournamentType === 'GROUP' ? (
+                      <>
+                        <div className="p-icon">🏁</div>
+                        <h3>GROUP STAGE COMPLETE</h3>
+                        <p className="muted">All teams have reached their match quota. Ready to resolve the tournament?</p>
+                        <button className="button button-gold button-lg" onClick={advanceToKnockouts}>ADVANCE TO KNOCKOUTS</button>
+                      </>
+                    ) : tournamentType === 'KNOCKOUT' ? (
+                      <>
+                        <div className="p-icon">⚔️</div>
+                        <h3>SEMI-FINALS COMPLETE</h3>
+                        <p className="muted">The finalists have been decided! Ready for the Grand Finale?</p>
+                        <button className="button button-gold button-lg" onClick={advanceToFinals}>ADVANCE TO FINALS</button>
+                      </>
+                    ) : (
+                      <>
+                        <div className="p-icon">🏆</div>
+                        <h3>TOURNAMENT COMPLETE</h3>
+                        <p className="muted">The winner takes all.</p>
+                      </>
+                    )}
                   </div>
                 </div>
               )}
@@ -862,7 +912,7 @@ export function QuickTournament() {
                 <div className="queue-column">
                   <label className="section-label-v2">MATCH QUEUE</label>
                   <div className="queue-list-premium">
-                    {createdMatches.map((m, i) => (
+                    {createdMatches.length > 0 ? createdMatches.map((m, i) => (
                       <div key={m.id} className="schedule-item-card animate-in" draggable onDragStart={(e) => onDragStart(e, m.id)} onDragOver={(e) => e.preventDefault()} onDrop={(e) => onDrop(e, m.id)} style={{ animationDelay: `${i * 0.1}s`, cursor: 'grab' }}>
                         <div className="s-handle">≡</div><div className="s-rank">#{i + 1}</div>
                         <div className="s-info">
@@ -873,7 +923,31 @@ export function QuickTournament() {
                           <button className="button button-gold button-sm launch-btn-small" onClick={() => setMatches(matches.map(x => x.id === m.id ? { ...x, status: 'LIVE', start_time: currentTime } : x))}>LAUNCH</button>
                         </div>
                       </div>
-                    ))}
+                    )) : (
+                      <div className="phase-card glass-morphism text-center mt-6">
+                        {tournamentType === 'GROUP' ? (
+                          <>
+                            <div className="p-icon">🏁</div>
+                            <h3>GROUP STAGE COMPLETE</h3>
+                            <p className="muted mb-4">No matches left in the queue. Ready for knockouts?</p>
+                            <button className="button button-gold button-lg" onClick={advanceToKnockouts}>ADVANCE TO KNOCKOUTS</button>
+                          </>
+                        ) : tournamentType === 'KNOCKOUT' ? (
+                          <>
+                            <div className="p-icon">⚔️</div>
+                            <h3>SEMI-FINALS COMPLETE</h3>
+                            <p className="muted mb-4">The finalists have been decided! Ready for the Grand Finale?</p>
+                            <button className="button button-gold button-lg" onClick={advanceToFinals}>ADVANCE TO FINALS</button>
+                          </>
+                        ) : (
+                          <>
+                            <div className="p-icon">🏆</div>
+                            <h3>TOURNAMENT COMPLETE</h3>
+                            <p className="muted">The grand finals have concluded.</p>
+                          </>
+                        )}
+                      </div>
+                    )}
 
                     <div className="manual-pairing-card mt-10 slide-in">
                       <div className="p-header">
