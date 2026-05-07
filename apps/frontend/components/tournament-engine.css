@@ -2142,8 +2142,11 @@ select.premium-input-v2 option {
 .foul-group {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
   margin-top: 6px;
+  flex-wrap: nowrap;
+  white-space: nowrap;
 }
 
 .foul-dec {
@@ -2230,57 +2233,55 @@ select.premium-input-v2 option {
   text-align: center;
 }
 
-/* Victory & Result Overlay */
+/* Victory & Result Overlay - Cleaned up */
 .victory-overlay {
   position: fixed;
-  inset: 0;
-  background: rgba(3, 0, 20, 0.98);
-  backdrop-filter: blur(20px);
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(10px);
   z-index: 3000;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1rem;
+}
+
+[data-theme='light'] .victory-overlay {
+  background: rgba(255, 255, 255, 0.85);
 }
 
 .victory-podium {
-  background: linear-gradient(135deg, rgba(255,215,0,0.05), rgba(0,0,0,0.9));
-  border: 1px solid rgba(255,215,0,0.3);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
   padding: 3rem 2rem;
-  border-radius: 32px;
+  border-radius: 24px;
   text-align: center;
   max-width: 600px;
-  width: 100%;
+  width: 90%;
   position: relative;
-  box-shadow: 0 40px 100px rgba(0,0,0,0.8);
-  max-height: 90dvh;
-  overflow-y: auto;
-  box-sizing: border-box;
+  box-shadow: var(--shadow-xl);
 }
 
-.v-crown { font-size: 5rem; margin-bottom: 1rem; filter: drop-shadow(0 0 20px rgba(255,215,0,0.5)); }
-.v-label { font-size: 0.8rem; font-weight: 900; letter-spacing: 4px; color: var(--gold); opacity: 0.8; margin-bottom: 1rem; }
-.v-name-xl { font-size: 5rem; font-weight: 950; letter-spacing: -2px; margin: 1.5rem 0; line-height: 0.9; }
-.v-stats-premium { display: flex; align-items: center; justify-content: center; gap: 3rem; margin: 2rem 0; }
-.v-score { font-size: 5rem; font-weight: 900; font-family: var(--font-outfit); }
-.v-vs { font-size: 1rem; font-weight: 900; opacity: 0.3; letter-spacing: 2px; }
-.v-footer { font-size: 0.7rem; font-weight: 800; opacity: 0.3; letter-spacing: 2px; text-transform: uppercase; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 2rem; margin-top: 2rem; }
+.v-crown { font-size: 4rem; margin-bottom: 1rem; }
+.v-label { font-size: 0.8rem; font-weight: 900; letter-spacing: 2px; color: var(--gold); opacity: 0.8; margin-bottom: 1rem; }
+.v-name-xl { font-size: 3.5rem; font-weight: 950; letter-spacing: -1px; margin: 1rem 0; line-height: 1.1; color: var(--text-primary); }
+.v-stats-premium { display: flex; align-items: center; justify-content: center; gap: 2rem; margin: 1.5rem 0; }
+.v-score { font-size: 4rem; font-weight: 900; font-family: var(--font-outfit); color: var(--text-primary); }
+.v-vs { font-size: 1rem; font-weight: 900; color: var(--text-muted); letter-spacing: 2px; }
+.v-footer { font-size: 0.7rem; font-weight: 800; color: var(--text-muted); letter-spacing: 1px; text-transform: uppercase; border-top: 1px solid var(--border-color); padding-top: 1.5rem; margin-top: 1.5rem; }
 
 @media (max-width: 768px) {
-  .v-name-xl { font-size: 2.2rem !important; letter-spacing: 0; margin: 1rem 0 !important; }
-  .v-score { font-size: 3rem !important; }
-  .v-stats-premium { gap: 1rem; margin: 1.5rem 0; }
-  .victory-podium { padding: 2.5rem 1rem 2rem; border-radius: 24px; width: 92%; }
+  .v-name-xl { font-size: 2rem !important; }
+  .v-score { font-size: 2.5rem !important; }
+  .v-stats-premium { gap: 1rem; flex-wrap: wrap; }
+  .victory-podium { padding: 2rem 1.5rem; width: 92%; }
   .v-crown { font-size: 3rem; }
-  .v-label { font-size: 0.65rem; letter-spacing: 2px; }
-  .v-footer { margin-top: 1.5rem; padding-top: 1.5rem; font-size: 0.6rem; }
+  .v-label { font-size: 0.7rem; }
 }
 
-/* Mobile adjustments for setup */
 @media (max-width: 768px) {
   .setup-grid { grid-template-columns: 1fr !important; gap: 2rem; }
   .setup-card { padding: 1.5rem !important; }
   .setup-header h1 { font-size: 2.5rem; }
   .team-pod .pod-actions { grid-template-columns: 1fr; }
-  .foul-group { justify-content: center; }
+  .foul-group { justify-content: center; flex-wrap: nowrap; }
 }

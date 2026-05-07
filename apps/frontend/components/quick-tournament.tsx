@@ -601,10 +601,8 @@ export function QuickTournament() {
               <span className="v-score">{victoryMatch.score_team_b}</span>
             </div>
             <div className="v-footer">POINTS AWARDED: {victoryMatch.is_draw ? '+50 TO EACH' : '+1 WIN'}</div>
-            <div className="mt-8">
-              <button className="button button-secondary w-full" style={{ borderRadius: '14px', padding: '1rem' }} onClick={() => setVictoryMatch(null)}>CLOSE RESULT</button>
-            </div>
           </div>
+
         </div>
       )}
 
