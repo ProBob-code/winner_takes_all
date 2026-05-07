@@ -160,15 +160,6 @@ export function Sidebar({ user: initialUser }: { user: any }) {
         </nav>
       </aside>
 
-      {/* Mobile Toggle Button (Floating or Topbar) */}
-      {!isOpen && (
-        <button
-          className="mobile-hamburger-btn"
-          onClick={() => setIsOpen(true)}
-        >
-          ☰
-        </button>
-      )}
     </>
   );
 }
