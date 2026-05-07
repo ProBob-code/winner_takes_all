@@ -82,13 +82,13 @@ export const TeamPod = ({
                   className="foul-chip" 
                   onClick={(e) => { 
                     e.stopPropagation(); 
-                    if (e.shiftKey || fouls > 0) onFoulRemove?.();
+                    if (e.shiftKey && fouls > 0) onFoulRemove?.();
                     else onFoulClick?.(); 
                   }}
                   onContextMenu={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    onFoulRemove?.();
+                    if (fouls > 0) onFoulRemove?.();
                   }}
                   disabled={isLocked}
                 >

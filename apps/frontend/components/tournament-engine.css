@@ -700,8 +700,8 @@ select.premium-input-v2 option {
 }
 
 .pod-inner {
-  background: rgba(255,255,255,0.02);
-  border: 1px solid rgba(255,255,255,0.05);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
   border-radius: 40px;
   padding: 3rem;
   position: relative;
@@ -738,8 +738,11 @@ select.premium-input-v2 option {
   background: rgba(255,255,255,0.05);
 }
 
-.red .team-initials { color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); }
-.blue .team-initials { color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.2); }
+.red .team-initials { color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); background: rgba(239, 68, 68, 0.1); }
+.blue .team-initials { color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.2); background: rgba(59, 130, 246, 0.1); }
+
+.red .pod-inner { border: 1px solid rgba(239, 68, 68, 0.3); background: rgba(239, 68, 68, 0.05); box-shadow: 0 0 20px rgba(239, 68, 68, 0.05); }
+.blue .pod-inner { border: 1px solid rgba(59, 130, 246, 0.3); background: rgba(59, 130, 246, 0.05); box-shadow: 0 0 20px rgba(59, 130, 246, 0.05); }
 
 .team-name { font-size: 1.5rem; font-weight: 900; letter-spacing: -0.5px; }
 
@@ -777,7 +780,7 @@ select.premium-input-v2 option {
   transition: 0.3s;
 }
 
-.ball-btn { background: rgba(255,255,255,0.05); color: white; }
+.ball-btn { background: var(--bg-inset); color: var(--text-primary); border: 1px solid var(--border-color); }
 .black-btn { background: #000; color: white; border: 1px solid rgba(255,255,255,0.1); }
 
 .red .ball-btn:hover { background: #ef4444; color: black; }
@@ -793,7 +796,7 @@ select.premium-input-v2 option {
 }
 
 .team-pod.active { transform: scale(1.02); }
-.team-pod.active .pod-inner { border-color: currentColor; background: rgba(255,255,255,0.04); }
+.team-pod.active .pod-inner { border-color: currentColor; background: var(--bg-card); }
 .team-pod.active .active-glow { opacity: 1; box-shadow: 0 0 80px currentColor; }
 
 .vs-core {
@@ -1025,7 +1028,7 @@ select.premium-input-v2 option {
 }
 
 @media (max-width: 900px) {
-  .match-timer-v3 { position: relative; top: 0; transform: none; left: 0; margin: 0 auto 1.5rem; width: fit-content; padding: 0.5rem 1.25rem; gap: 1rem; }
+  .match-timer-v3 { position: relative; top: 0; transform: none; left: 0; margin: 0 auto 1.5rem; width: 100%; max-width: 100%; padding: 0.75rem 1.25rem; gap: 0.75rem; flex-wrap: wrap; justify-content: center; }
   .time-val { font-size: 1.25rem; }
 }
 
@@ -1059,18 +1062,22 @@ select.premium-input-v2 option {
 .time-val:hover { color: var(--gold); transform: scale(1.1); }
 
 .t-adj {
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
-  background: rgba(255,255,255,0.05);
+  background: var(--bg-inset);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1rem;
+  font-size: 1.2rem;
+  font-weight: bold;
   cursor: pointer;
-  border: none;
-  color: white;
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  transition: 0.2s;
 }
+
+.t-adj:hover { transform: scale(1.1); background: var(--bg-surface); }
 
 /* Add Team Inline */
 .add-team-trigger {
