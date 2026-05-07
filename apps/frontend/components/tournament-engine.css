@@ -783,7 +783,10 @@ select.premium-input-v2 option {
 .ball-btn { background: var(--bg-inset); color: var(--text-primary); border: 1px solid var(--border-color); }
 .black-btn { background: #000; color: white; border: 1px solid rgba(255,255,255,0.1); }
 
-.red .ball-btn:hover { background: #ef4444; color: black; }
+.red .ball-btn { background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); }
+.blue .ball-btn { background: rgba(59, 130, 246, 0.1); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.3); }
+
+.red .ball-btn:hover { background: #ef4444; color: white; }
 .blue .ball-btn:hover { background: #3b82f6; color: white; }
 
 .active-glow {
@@ -801,32 +804,39 @@ select.premium-input-v2 option {
 
 .vs-core {
   position: relative;
-  width: 100px;
-  height: 100px;
+  width: 90px;
+  height: 90px;
   display: flex;
   align-items: center;
   justify-content: center;
+  background: var(--bg-surface);
+  border-radius: 50%;
+  box-shadow: 0 0 40px rgba(245, 158, 11, 0.15);
+  border: 1px solid var(--gold-subtle);
+  z-index: 10;
 }
 
 @media (max-width: 900px) {
-  .vs-core { height: 60px; width: 60px; }
-  .vs-text { font-size: 1.1rem !important; }
+  .vs-core { height: 70px; width: 70px; }
+  .vs-text { font-size: 1.2rem !important; }
 }
 
 .vs-ring {
   position: absolute;
-  width: 100%;
-  height: 100%;
-  border: 2px solid rgba(255,255,255,0.1);
+  width: 120%;
+  height: 120%;
+  border: 2px dashed var(--gold);
   border-radius: 50%;
-  animation: rotate 10s linear infinite;
+  animation: rotate 15s linear infinite;
+  opacity: 0.6;
 }
 
 .vs-text {
-  font-size: 1.5rem;
+  font-size: 1.6rem;
   font-weight: 900;
   font-style: italic;
-  opacity: 0.5;
+  color: var(--gold);
+  text-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
 }
 
 /* Custom Modal */

@@ -40,6 +40,8 @@ type ModalConfig = {
 export function QuickTournament() {
   const [teams, setTeams] = useState<Team[]>([]);
   const [newTeamName, setNewTeamName] = useState("");
+  const [confirmRestartMatchId, setConfirmRestartMatchId] = useState<string | null>(null);
+
   const [matches, setMatches] = useState<Match[]>([]);
   const [isStarted, setIsStarted] = useState(false);
   const [activeSubTab, setActiveSubTab] = useState<'arena' | 'standings'>('arena');
@@ -393,7 +395,18 @@ export function QuickTournament() {
   };
 
   const updateHouse = (matchId: string, team: 'A' | 'B', house: 'SOLID' | 'STRIPES') => {
-    setMatches(matches.map(m => m.id === matchId ? { ...m, [`team_${team.toLowerCase()}_house`]: house } : m));
+    setMatches(matches.map(m => {
+      if (m.id === matchId) {
+        const otherTeam = team === 'A' ? 'B' : 'A';
+        const otherHouse = house === 'SOLID' ? 'STRIPES' : 'SOLID';
+        return { 
+          ...m, 
+          [`team_${team.toLowerCase()}_house`]: house,
+          [`team_${otherTeam.toLowerCase()}_house`]: otherHouse 
+        };
+      }
+      return m;
+    }));
   };
 
   const updateScore = (matchId: string, teamId: string, type: 'BALL' | 'BLACK' | 'FOUL' | 'REMOVE_BALL' | 'REMOVE_FOUL') => {
@@ -634,6 +647,20 @@ export function QuickTournament() {
         </div>
       )}
 
+      {confirmRestartMatchId && (
+        <div className="custom-modal-overlay">
+          <div className="custom-modal">
+            <div className="modal-icon">🔄</div>
+            <h2>Restart Match?</h2>
+            <p className="muted">This will reset the current scores, fouls, and ball counts for this match. Are you sure?</p>
+            <div className="modal-actions">
+              <button className="button button-secondary" onClick={() => setConfirmRestartMatchId(null)}>CANCEL</button>
+              <button className="button button-danger" onClick={() => { restartMatch(confirmRestartMatchId); setConfirmRestartMatchId(null); }}>RESTART MATCH</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showShareModal && (
         <div className="custom-modal-overlay">
           <div className="custom-modal">
@@ -748,9 +775,7 @@ export function QuickTournament() {
                   </span>
                   <button className="t-adj" onClick={() => adjustDuration(liveMatch.id, 60)}>+</button>
                 </div>
-                <button className="extra-time-btn" style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)' }} onClick={() => {
-                  if (confirm("Restart this match? Current scores will be reset.")) restartMatch(liveMatch.id);
-                }}>RESTART</button>
+                <button className="extra-time-btn" style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)' }} onClick={() => setConfirmRestartMatchId(liveMatch.id)}>RESTART</button>
                 <button className="extra-time-btn" onClick={() => adjustDuration(liveMatch.id, 60)}>+1 MIN</button>
                 {extraTimePromptId === liveMatch.id && (
                   <div className="extra-time-toast animate-in">
