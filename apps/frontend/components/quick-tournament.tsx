@@ -410,6 +410,14 @@ export function QuickTournament() {
           nm.balls_potted_b = Math.min(7, nm.balls_potted_b + 1);
           nm.score_team_b = Math.min(70, nm.score_team_b + 10);
         }
+      } else if (type === 'REMOVE_BALL') {
+        if (isA && nm.balls_potted_a > 0) {
+          nm.balls_potted_a--;
+          nm.score_team_a -= 10;
+        } else if (!isA && nm.balls_potted_b > 0) {
+          nm.balls_potted_b--;
+          nm.score_team_b -= 10;
+        }
       } else if (type === 'FOUL') {
         if (isA) {
           nm.fouls_a++;
@@ -455,6 +463,17 @@ export function QuickTournament() {
     setIsStarted(false);
     setArenaId("");
     setShowResetModal(false);
+  };
+
+  const restartMatch = (matchId: string) => {
+    setMatches(matches.map(m => m.id === matchId ? { 
+      ...m, 
+      score_team_a: 0, score_team_b: 0, 
+      balls_potted_a: 0, balls_potted_b: 0,
+      fouls_a: 0, fouls_b: 0,
+      black_potted_a: false, black_potted_b: false,
+      start_time: currentTime 
+    } : m));
   };
 
   const getTeamName = (id: string) => teams.find(t => t.id === id)?.name || "Unknown";
@@ -755,6 +774,9 @@ export function QuickTournament() {
                   </span>
                   <button className="t-adj" onClick={() => adjustDuration(liveMatch.id, 60)}>+</button>
                 </div>
+                <button className="extra-time-btn" style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)' }} onClick={() => {
+                  if (confirm("Restart this match? Current scores will be reset.")) restartMatch(liveMatch.id);
+                }}>RESTART</button>
                 <button className="extra-time-btn" onClick={() => adjustDuration(liveMatch.id, 60)}>+1 MIN</button>
                 {extraTimePromptId === liveMatch.id && (
                   <div className="extra-time-toast animate-in">
@@ -778,7 +800,9 @@ export function QuickTournament() {
                   ballsPotted={liveMatch.balls_potted_a}
                   blackPotted={liveMatch.black_potted_a}
                   onFoulClick={() => updateScore(liveMatch.id, liveMatch.team_a_id, 'FOUL')}
+                  onFoulRemove={() => updateScore(liveMatch.id, liveMatch.team_a_id, 'REMOVE_FOUL' as any)}
                   onBallClick={() => updateScore(liveMatch.id, liveMatch.team_a_id, 'BALL')}
+                  onBallRemove={() => updateScore(liveMatch.id, liveMatch.team_a_id, 'REMOVE_BALL' as any)}
                   onBlackClick={() => updateScore(liveMatch.id, liveMatch.team_a_id, 'BLACK')}
                   onHouseToggle={(h) => updateHouse(liveMatch.id, 'A', h)}
                   isLocked={isLocked}
@@ -797,7 +821,9 @@ export function QuickTournament() {
                   ballsPotted={liveMatch.balls_potted_b}
                   blackPotted={liveMatch.black_potted_b}
                   onFoulClick={() => updateScore(liveMatch.id, liveMatch.team_b_id, 'FOUL')}
+                  onFoulRemove={() => updateScore(liveMatch.id, liveMatch.team_b_id, 'REMOVE_FOUL' as any)}
                   onBallClick={() => updateScore(liveMatch.id, liveMatch.team_b_id, 'BALL')}
+                  onBallRemove={() => updateScore(liveMatch.id, liveMatch.team_b_id, 'REMOVE_BALL' as any)}
                   onBlackClick={() => updateScore(liveMatch.id, liveMatch.team_b_id, 'BLACK')}
                   onHouseToggle={(h) => updateHouse(liveMatch.id, 'B', h)}
                   isLocked={isLocked}
@@ -844,7 +870,7 @@ export function QuickTournament() {
                           <div className="s-meta">MATCH {m.order + 1} • {tournamentType} STAGE</div>
                         </div>
                         <div className="s-actions">
-                          <button className="button button-gold button-sm" onClick={() => setMatches(matches.map(x => x.id === m.id ? { ...x, status: 'LIVE', start_time: currentTime } : x))}>LAUNCH</button>
+                          <button className="button button-gold button-sm launch-btn-small" onClick={() => setMatches(matches.map(x => x.id === m.id ? { ...x, status: 'LIVE', start_time: currentTime } : x))}>LAUNCH</button>
                         </div>
                       </div>
                     ))}

@@ -2,10 +2,22 @@
 
 import React from "react";
 
-export const Ticker = ({ balls, black, color }: { balls: number, black: boolean, color: string }) => (
+export const Ticker = ({ balls, black, color, onBallClick }: { balls: number, black: boolean, color: string, onBallClick?: (idx: number) => void }) => (
   <div className="ticker-row">
     {[...Array(7)].map((_, i) => (
-      <div key={i} className={`ball-slot ${i < balls ? 'filled' : ''}`} style={{ '--accent-primary': color } as any}>{i + 1}</div>
+      <div 
+        key={i} 
+        className={`ball-slot ${i < balls ? 'filled' : ''} ${onBallClick ? 'clickable' : ''}`} 
+        style={{ '--accent-primary': color } as any}
+        onClick={(e) => {
+          if (i < balls && onBallClick) {
+            e.stopPropagation();
+            onBallClick(i);
+          }
+        }}
+      >
+        {i + 1}
+      </div>
     ))}
     <div className={`ball-slot black ${black ? 'filled' : ''}`}>8</div>
   </div>
@@ -28,7 +40,9 @@ interface TeamPodProps {
   ballsPotted?: number;
   blackPotted?: boolean;
   onFoulClick?: () => void;
+  onFoulRemove?: () => void;
   onBallClick?: () => void;
+  onBallRemove?: () => void;
   onBlackClick?: () => void;
   onHouseToggle?: (house: "SOLID" | "STRIPES") => void;
   isLocked?: boolean;
@@ -45,7 +59,9 @@ export const TeamPod = ({
   ballsPotted = 0,
   blackPotted = false,
   onFoulClick,
+  onFoulRemove,
   onBallClick,
+  onBallRemove,
   onBlackClick,
   onHouseToggle,
   isLocked,
@@ -64,11 +80,23 @@ export const TeamPod = ({
               <div className="foul-group">
                 <button 
                   className="foul-chip" 
-                  onClick={(e) => { e.stopPropagation(); onFoulClick?.(); }}
-                  disabled={isLocked || !onFoulClick}
+                  onClick={(e) => { 
+                    e.stopPropagation(); 
+                    if (e.shiftKey || fouls > 0) onFoulRemove?.();
+                    else onFoulClick?.(); 
+                  }}
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onFoulRemove?.();
+                  }}
+                  disabled={isLocked}
                 >
                   FOUL: {fouls}
                 </button>
+                {!isLocked && onFoulRemove && fouls > 0 && (
+                  <button className="foul-remove-btn" onClick={(e) => { e.stopPropagation(); onFoulRemove(); }}>-</button>
+                )}
               </div>
             )}
           </div>
@@ -90,7 +118,7 @@ export const TeamPod = ({
           )}
         </div>
         <div className="pod-score-large">{score}</div>
-        <Ticker balls={ballsPotted} black={blackPotted} color={hexColor} />
+        <Ticker balls={ballsPotted} black={blackPotted} color={hexColor} onBallClick={onBallRemove} />
         {(onBallClick || onBlackClick) && (
           <div className="pod-actions">
             {onBallClick && <button className="pod-btn ball-btn" onClick={(e) => { e.stopPropagation(); onBallClick(); }}>+ BALL</button>}

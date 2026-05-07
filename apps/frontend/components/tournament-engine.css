@@ -75,6 +75,15 @@
   transform: scale(1.1);
 }
 
+.ball-slot.clickable {
+  cursor: pointer;
+}
+
+.ball-slot.clickable:hover {
+  filter: brightness(1.2);
+  transform: scale(1.2);
+}
+
 .ball-slot.black {
   background: #111;
   border-color: #333;
@@ -310,21 +319,16 @@
   outline: none;
 }
 
-.premium-input-v2::placeholder {
-  color: var(--text-muted);
-  opacity: 0.5;
-}
-
 .premium-input-v2:focus {
-  background: var(--bg-card);
+  background: var(--bg-inset);
   border-color: var(--gold);
-  box-shadow: 0 0 25px var(--gold-subtle);
+  box-shadow: 0 0 20px rgba(245, 158, 11, 0.1);
 }
 
 /* Tactical Select Suite */
 select.premium-input-v2 {
   appearance: none;
-  background-color: var(--bg-card);
+  background-color: var(--bg-inset);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23f59e0b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 1.25rem center;
@@ -334,24 +338,29 @@ select.premium-input-v2 {
   color: var(--text-primary);
 }
 
+select.premium-input-v2 option {
+  background: var(--bg-surface);
+  color: var(--text-primary);
+}
+
 select.premium-input-v2:hover {
   border-color: var(--gold);
-  background-color: var(--bg-surface);
+  background-color: rgba(245, 158, 11, 0.05);
 }
 
 select.premium-input-v2 option {
-  background-color: var(--bg-dropdown);
-  color: var(--text-primary);
+  background-color: #0d1117;
+  color: white;
   padding: 1rem;
   font-family: inherit;
 }
 
 .segmented-control-v2 {
   display: flex;
-  background: var(--bg-inset);
+  background: rgba(255,255,255,0.03);
   padding: 4px;
   border-radius: 16px;
-  border: 1px solid var(--border-color);
+  border: 1px solid rgba(255,255,255,0.05);
   width: 100%;
 }
 
@@ -443,16 +452,6 @@ select.premium-input-v2 option {
   display: flex;
   gap: 0.5rem;
   margin-bottom: 2rem;
-}
-
-@media (max-width: 480px) {
-  .roster-input-wrapper {
-    flex-direction: column;
-  }
-  .add-roster-btn {
-    width: 100%;
-    padding: 1rem !important;
-  }
 }
 
 .add-roster-btn {
@@ -574,6 +573,8 @@ select.premium-input-v2 option {
   padding: 1.5rem 2rem;
   border-radius: 24px;
   border: 1px solid var(--border-color);
+  flex-wrap: wrap;
+  gap: 1.5rem;
 }
 
 @media (max-width: 768px) {
@@ -594,6 +595,8 @@ select.premium-input-v2 option {
   display: flex;
   gap: 1.5rem;
   align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
 }
 
 .sub-tab-switcher {
@@ -1320,6 +1323,33 @@ select.premium-input-v2 option {
   transform: scale(1.05);
 }
 
+.foul-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.foul-remove-btn {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  font-weight: 900;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.foul-remove-btn:hover {
+  background: #ef4444;
+  color: white;
+}
+
 /* Premium Share Link */
 .share-link-premium {
   display: flex;
@@ -1416,6 +1446,7 @@ select.premium-input-v2 option {
   display: flex;
   align-items: center;
   gap: 1rem;
+  flex-wrap: wrap;
 }
 
 .p-select {
@@ -1460,7 +1491,9 @@ select.premium-input-v2 option {
 }
 
 @media (max-width: 768px) {
-  .p-selectors { flex-direction: column; width: 100%; }
+  .p-selectors { flex-direction: column; width: 100%; align-items: stretch; }
+  .p-selectors .p-select-wrapper { width: 100%; }
+  .vs-tiny { text-align: center; margin: 0.5rem 0; }
 }
 /* Arena Settings & Timer Scroller */
 .setting-box {
@@ -1535,8 +1568,30 @@ select.premium-input-v2 option {
   transition: 0.3s;
 }
 
-.schedule-item-card:hover .s-handle { opacity: 0.8; color: var(--gold); }
-.schedule-item-card:active { cursor: grabbing; opacity: 0.6; }
+.schedule-item-card {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  background: var(--bg-card);
+  padding: 1.25rem 1.5rem;
+  border-radius: 20px;
+  border: 1px solid var(--border-color);
+  transition: 0.3s;
+  overflow: hidden;
+}
+
+.schedule-item-card:hover { border-color: var(--gold); transform: translateX(8px); }
+
+@media (max-width: 480px) {
+  .schedule-item-card {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    padding: 1rem;
+  }
+  .s-info { width: 100%; order: 3; }
+  .s-actions { width: 100%; justify-content: flex-end; order: 4; }
+  .launch-btn-small { width: 100%; padding: 0.75rem !important; }
+}
 
 /* Read Only Protection Indicator */
 .spectator-badge {
@@ -2045,24 +2100,24 @@ select.premium-input-v2 option {
 }
 
 .edit-team-input {
-  background: var(--bg-inset);
+  background: rgba(255, 255, 255, 0.1);
   border: 1px solid var(--gold);
-  border-radius: 8px;
-  color: var(--text-primary);
-  padding: 6px 12px;
+  border-radius: 4px;
+  color: white;
+  padding: 2px 8px;
   font-size: 1rem;
   width: 100%;
   outline: none;
 }
 
 .edit-team-input-inline {
-  background: var(--bg-inset);
+  background: rgba(255, 255, 255, 0.1);
   border: 1px solid var(--gold);
   border-radius: 4px;
-  color: var(--text-primary);
-  padding: 2px 6px;
+  color: white;
+  padding: 2px 4px;
   font-size: 0.8rem;
-  width: 100px;
+  width: 80px;
   outline: none;
 }
 
@@ -2217,12 +2272,11 @@ select.premium-input-v2 option {
   .v-footer { margin-top: 1.5rem; padding-top: 1.5rem; font-size: 0.6rem; }
 }
 
-/* End of File Cleanup */
-@media (max-width: 480px) {
-  .setup-grid { gap: 1rem; }
-  .setup-card { padding: 1rem !important; border-radius: 16px !important; }
-  .setup-header h1 { font-size: 1.8rem; }
-  .premium-input-v2 { padding: 1rem; font-size: 0.9rem; }
-  .roster-input-wrapper { flex-direction: column; }
-  .add-roster-btn { width: 100%; padding: 1.25rem !important; }
+/* Mobile adjustments for setup */
+@media (max-width: 768px) {
+  .setup-grid { grid-template-columns: 1fr !important; gap: 2rem; }
+  .setup-card { padding: 1.5rem !important; }
+  .setup-header h1 { font-size: 2.5rem; }
+  .team-pod .pod-actions { grid-template-columns: 1fr; }
+  .foul-group { justify-content: center; }
 }
