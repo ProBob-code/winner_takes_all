@@ -590,8 +590,8 @@ export function QuickTournament() {
   return (
     <div className="engine-container animate-in">
       {victoryMatch && (
-        <div className="victory-overlay animate-in">
-          <div className="victory-podium slide-in">
+        <div className="victory-overlay">
+          <div className="victory-podium">
             <div className="v-crown">{victoryMatch.is_draw ? '🤝' : '👑'}</div>
             <div className="v-label">{victoryMatch.is_draw ? 'MATCH TIED' : 'CHAMPION DECLARED'}</div>
             <h1 className="v-name-xl glow-text-gold">{victoryMatch.is_draw ? 'STALEMATE DRAW' : getTeamName(victoryMatch.winner_id || "")}</h1>
@@ -601,32 +601,8 @@ export function QuickTournament() {
               <span className="v-score">{victoryMatch.score_team_b}</span>
             </div>
             <div className="v-footer">POINTS AWARDED: {victoryMatch.is_draw ? '+50 TO EACH' : '+1 WIN'}</div>
-            <div className="v-share-action mt-6">
-              {typeof navigator !== 'undefined' && navigator.share && (
-                <button className="button button-gold w-full mb-4" style={{ borderRadius: '14px', padding: '1rem' }} onClick={() => {
-                  const title = victoryMatch.is_draw ? "🏆 STALEMATE IN THE ARENA!" : "👑 A CHAMPION HAS RISEN!";
-                  const text = victoryMatch.is_draw 
-                    ? `An epic clash of titans has concluded in a hard-fought draw between ${getTeamName(victoryMatch.team_a_id)} and ${getTeamName(victoryMatch.team_b_id)}! Final Score: ${victoryMatch.score_team_a} - ${victoryMatch.score_team_b}. Witness the legend of Winner Takes All.`
-                    : `LEGENDARY VICTORY! ${getTeamName(victoryMatch.winner_id || "")} has dominated the stadium floor, claiming glory against ${getTeamName(victoryMatch.winner_id === victoryMatch.team_a_id ? victoryMatch.team_b_id : victoryMatch.team_a_id)}! Final Score: ${victoryMatch.score_team_a} - ${victoryMatch.score_team_b}. The arena honors its new champion.`;
-                  
-                  navigator.share({
-                    title: title,
-                    text: text,
-                    url: `${window.location.origin}/arena/${arenaId}`,
-                  }).catch(console.error);
-                }}>SYSTEM SHARE</button>
-              )}
-              <div className="social-grid-v2">
-                <button className="social-btn whatsapp" onClick={() => {
-                  const title = victoryMatch.is_draw ? "STALEMATE IN THE ARENA!" : "A CHAMPION HAS RISEN!";
-                  const text = victoryMatch.is_draw 
-                    ? `An epic clash has concluded in a hard-fought draw! Final Score: ${victoryMatch.score_team_a} - ${victoryMatch.score_team_b}.`
-                    : `LEGENDARY VICTORY! ${getTeamName(victoryMatch.winner_id || "")} has claimed glory in the stadium! Final Score: ${victoryMatch.score_team_a} - ${victoryMatch.score_team_b}.`;
-                  window.open(`https://wa.me/?text=${encodeURIComponent('🔥 ' + title + '\n\n' + text + '\n\nWitness the legend: ' + window.location.origin + '/arena/' + arenaId)}`, '_blank');
-                }}>WHATSAPP</button>
-                <button className="social-btn facebook" onClick={() => window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.origin + '/arena/' + arenaId)}`, '_blank')}>FACEBOOK</button>
-                <button className="social-btn twitter" onClick={() => window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(window.location.origin + '/arena/' + arenaId)}&text=${encodeURIComponent("⚔️ Witness the legend live!")}`, '_blank')}>TWITTER</button>
-              </div>
+            <div className="mt-8">
+              <button className="button button-secondary w-full" style={{ borderRadius: '14px', padding: '1rem' }} onClick={() => setVictoryMatch(null)}>CLOSE RESULT</button>
             </div>
           </div>
         </div>
