@@ -227,8 +227,8 @@ export default function TournamentDetailPage() {
               </div>
             </div>
             <div className="tournament-meta" style={{ display: 'flex', gap: '1.5rem' }}>
-              <div style={{ textAlign: 'right' }}><div className="label" style={{ fontSize: '0.6rem', opacity: 0.5 }}>ENTRY</div><div style={{ fontWeight: 900 }}>₹{tournament.entryFee.amount}</div></div>
-              <div style={{ textAlign: 'right' }}><div className="label" style={{ fontSize: '0.6rem', opacity: 0.5 }}>PRIZE</div><div style={{ fontWeight: 900, color: 'var(--gold)' }}>₹{tournament.prizePool.amount}</div></div>
+              <div style={{ textAlign: 'right' }}><div className="label" style={{ fontSize: '0.6rem', opacity: 0.5 }}>FEE</div><div style={{ fontWeight: 900 }}>₹{tournament.entryFee.amount}</div></div>
+              <div style={{ textAlign: 'right' }}><div className="label" style={{ fontSize: '0.6rem', opacity: 0.5 }}>REWARDS</div><div style={{ fontWeight: 900, color: 'var(--gold)' }}>₹{tournament.prizePool.amount}</div></div>
               <div style={{ textAlign: 'right' }}><div className="label" style={{ fontSize: '0.6rem', opacity: 0.5 }}>PLAYERS</div><div style={{ fontWeight: 900 }}>{tournament.joinedPlayers}/{tournament.maxPlayers}</div></div>
             </div>
           </div>

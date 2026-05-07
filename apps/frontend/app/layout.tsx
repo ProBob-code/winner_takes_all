@@ -15,19 +15,19 @@ export const viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "Winner Takes All | The Ultimate Stadium Arena",
-  description: "🏆 Step into the world's most elite multi-game tournament platform. High-stakes duels and legendary showdowns.",
+  title: "Stadium Arena | Esports Community Platform",
+  description: "🏆 Step into the world's most elite multi-game tournament platform. Skill-based tournaments and social competition.",
   openGraph: {
-    title: "🏆 Winner Takes All | Stadium Arena",
-    description: "🔥 THE ARENA IS LIVE! Experience high-stakes tournaments and legendary duels in real-time.",
-    url: "https://winner-takes-all.pages.dev",
-    siteName: "Winner Takes All",
+    title: "🏆 Stadium Arena | Esports Platform",
+    description: "🔥 THE ARENA IS LIVE! Experience skill-based tournaments and legendary duels in real-time.",
+    url: "https://stadium-arena.pages.dev",
+    siteName: "Stadium Arena",
     images: [
       {
-        url: "https://winner-takes-all.pages.dev/og-image.jpg",
+        url: "https://stadium-arena.pages.dev/og-image.jpg",
         width: 1200,
         height: 630,
-        alt: "Winner Takes All Stadium Arena",
+        alt: "Stadium Arena Platform",
         type: "image/jpeg",
       },
     ],
@@ -36,11 +36,11 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "🏆 Winner Takes All | Stadium Arena",
-    description: "⚔️ Join the elite tournament platform. High-stakes duels live now!",
-    images: ["https://winner-takes-all.pages.dev/og-image.jpg"],
+    title: "🏆 Stadium Arena | Esports Platform",
+    description: "⚔️ Join the elite esports community platform. Skill-based duels live now!",
+    images: ["https://stadium-arena.pages.dev/og-image.jpg"],
   },
-  metadataBase: new URL("https://winner-takes-all.pages.dev"),
+  metadataBase: new URL("https://stadium-arena.pages.dev"),
 };
 
 export default function RootLayout({

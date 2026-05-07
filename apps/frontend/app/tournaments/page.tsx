@@ -173,7 +173,7 @@ export default function TournamentsPage() {
 
                           <div className="card-footer">
                             <div className="entry-info">
-                              <span className="label">ENTRY FEE</span>
+                              <span className="label">PLATFORM FEE</span>
                               <span className={`value ${isFree ? 'free' : 'paid'}`}>
                                 {isFree ? "FREE" : `₹${t.entryFee.amount}`}
                               </span>

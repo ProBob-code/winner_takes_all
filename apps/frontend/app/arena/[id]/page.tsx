@@ -12,13 +12,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const ogImageUrl = "https://winner-takes-all.pages.dev/og-image.jpg";
 
   return {
-    title: `🏆 LIVE: ${name} | Winner Takes All`,
-    description: `🔥 THE ARENA IS LIVE! Witness the high-stakes showdown in ${name}. Real-time score tracking and elite tournament action. Join now!`,
+    title: `🏆 LIVE: ${name} | Stadium Arena`,
+    description: `🔥 THE ARENA IS LIVE! Witness the skill-based showdown in ${name}. Real-time score tracking and elite tournament action. Join now!`,
     openGraph: {
-      title: `🏟️ ${name} is LIVE on Winner Takes All!`,
+      title: `🏟️ ${name} is LIVE on Stadium Arena!`,
       description: `⚔️ WITNESS THE LEGEND! Don't miss a second of the elite action. Click to join the professional spectator stream!`,
       url: `https://winner-takes-all.pages.dev/arena/${params.id}`,
-      siteName: "Winner Takes All",
+      siteName: "Stadium Arena",
       images: [
         {
           url: "https://winner-takes-all.pages.dev/stadium-og-elite.png?v=6",
@@ -33,7 +33,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     twitter: {
       card: "summary_large_image",
       title: `🏆 ARENA LIVE: ${name}`,
-      description: `🔥 Watch the high-stakes showdown now! Elite gaming live from the Winner Takes All stadium.`,
+      description: `🔥 Watch the skill-based showdown now! Elite gaming live from the Stadium Arena.`,
       images: ["https://winner-takes-all.pages.dev/stadium-og-elite.png?v=6"],
     },
   };

@@ -10,8 +10,8 @@ import { getApiUrl } from "@/lib/api-config";
 
 const TX_LABELS: Record<string, { label: string; icon: string; color: string; bg: string }> = {
   deposit: { label: "Wallet Top-up", icon: "💳", color: "var(--green-light)", bg: "var(--green-subtle)" },
-  entry_fee_debit: { label: "Entry Fee", icon: "🎮", color: "var(--red-light)", bg: "var(--red-subtle)" },
-  tournament_payout: { label: "Tournament Payout", icon: "🏆", color: "var(--gold)", bg: "var(--gold-subtle)" },
+  entry_fee_debit: { label: "Platform Fee", icon: "🎮", color: "var(--red-light)", bg: "var(--red-subtle)" },
+  tournament_payout: { label: "Reward Credits", icon: "🏆", color: "var(--gold)", bg: "var(--gold-subtle)" },
   refund: { label: "Refund", icon: "↩️", color: "var(--cyan)", bg: "var(--cyan-subtle)" },
   manual_adjustment: { label: "Bonus", icon: "🎁", color: "var(--accent-light)", bg: "var(--accent-subtle)" },
 };
@@ -232,7 +232,7 @@ export default function WalletPage() {
               <h4 style={{ marginBottom: "1.5rem", fontSize: "1.1rem" }}>Portfolio Analytics</h4>
               <div className="stack" style={{ gap: "1rem" }}>
                 <div style={{ background: "rgba(255,255,255,0.02)", padding: "1rem", borderRadius: "16px", border: "1px solid rgba(255,255,255,0.05)" }}>
-                  <div className="muted" style={{ fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase" }}>Total Winnings</div>
+                  <div className="muted" style={{ fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase" }}>Total Rewards</div>
                   <div style={{ fontSize: "1.5rem", fontWeight: 800, color: "var(--gold)" }}>{formatMoney(stats.winnings)}</div>
                 </div>
                 <div style={{ background: "rgba(255,255,255,0.02)", padding: "1rem", borderRadius: "16px", border: "1px solid rgba(255,255,255,0.05)" }}>
@@ -240,7 +240,7 @@ export default function WalletPage() {
                   <div style={{ fontSize: "1.5rem", fontWeight: 800, color: "var(--green-light)" }}>{formatMoney(stats.deposits)}</div>
                 </div>
                 <div style={{ background: "rgba(255,255,255,0.02)", padding: "1rem", borderRadius: "16px", border: "1px solid rgba(255,255,255,0.05)" }}>
-                  <div className="muted" style={{ fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase" }}>Entry Fees Paid</div>
+                  <div className="muted" style={{ fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase" }}>Platform Fees Paid</div>
                   <div style={{ fontSize: "1.5rem", fontWeight: 800, color: "var(--red-light)" }}>{formatMoney(stats.entries)}</div>
                 </div>
               </div>
@@ -251,7 +251,7 @@ export default function WalletPage() {
               <ul className="muted" style={{ fontSize: "0.85rem", paddingLeft: "1.2rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
                 <li>Never share your tournament OTP with anyone.</li>
                 <li>Refunds for cancelled tournaments are processed instantly.</li>
-                <li>Payouts are subject to anti-cheat verification.</li>
+                <li>Rewards are subject to anti-cheat verification.</li>
               </ul>
             </div>
           </div>

@@ -93,7 +93,7 @@ export default function HostTournamentForm() {
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem", marginBottom: "1.5rem" }}>
         <div className="form-group">
-          <label htmlFor="entryFee" style={{ display: "block", marginBottom: "0.5rem", color: "var(--text-secondary)", fontWeight: 500 }}>Entry Fee (Credits)</label>
+          <label htmlFor="entryFee" style={{ display: "block", marginBottom: "0.5rem", color: "var(--text-secondary)", fontWeight: 500 }}>Platform Fee (Credits)</label>
           <input
             id="entryFee"
             type="number"

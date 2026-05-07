@@ -713,7 +713,7 @@ export function QuickTournament() {
                   <button className="button button-secondary w-full" onClick={() => {
                     navigator.share({
                       title: `🏆 ARENA IS LIVE: ${arenaName}`,
-                      text: `🔥 WITNESS THE SHOWDOWN! Step into the world-class stadium arena for the ${arenaName} tournament. Watch real-time multi-game duels live on Winner Takes All!`,
+                      text: `🔥 WITNESS THE SHOWDOWN! Step into the world-class stadium arena for the ${arenaName} tournament. Watch real-time multi-game duels live on Stadium Arena!`,
                       url: `${window.location.origin}/arena/${arenaId}`,
                     }).catch(console.error);
                   }}>🔗 SYSTEM SHARE</button>
@@ -895,7 +895,7 @@ export function QuickTournament() {
                       <>
                         <div className="p-icon">🏆</div>
                         <h3>TOURNAMENT COMPLETE</h3>
-                        <p className="muted">The winner takes all.</p>
+                        <p className="muted">The ultimate champion.</p>
                       </>
                     )}
                   </div>
