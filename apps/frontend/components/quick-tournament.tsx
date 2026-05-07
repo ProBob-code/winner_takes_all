@@ -758,6 +758,7 @@ export function QuickTournament() {
         <div className="add-team-popover slide-in">
           <input className="premium-input-v2" placeholder="New team name..." value={newTeamName} onChange={e => setNewTeamName(e.target.value)} onKeyPress={e => e.key === 'Enter' && (addTeam(), setShowAddTeamInline(false))} autoFocus />
           <button className="button button-gold" onClick={() => { addTeam(); setShowAddTeamInline(false); }}>ADD</button>
+          <button className="t-remove" onClick={() => setShowAddTeamInline(false)} style={{ height: 'fit-content', padding: '0.8rem 1rem' }}>×</button>
         </div>
       )}
 

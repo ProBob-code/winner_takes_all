@@ -601,9 +601,10 @@ select.premium-input-v2 option {
 
 .sub-tab-switcher {
   display: flex;
-  background: rgba(0,0,0,0.3);
+  background: var(--bg-inset);
   padding: 4px;
   border-radius: 12px;
+  border: 1px solid var(--border-color);
 }
 
 .sub-tab {
@@ -613,15 +614,16 @@ select.premium-input-v2 option {
   font-weight: 800;
   color: var(--text-muted);
   transition: 0.3s;
+  background: transparent;
   border: none;
   cursor: pointer;
 }
 
-.sub-tab.active { background: rgba(255,255,255,0.05); color: white; }
+.sub-tab.active { background: var(--bg-surface); color: var(--text-primary); box-shadow: var(--shadow-sm); }
 
 .share-btn {
   background: rgba(139, 92, 246, 0.1);
-  border: 1px solid rgba(139, 92, 246, 0.2);
+  border: 1px solid rgba(139, 92, 246, 0.3);
   color: #8b5cf6;
   padding: 0.6rem 1.25rem;
   border-radius: 12px;
@@ -631,6 +633,7 @@ select.premium-input-v2 option {
   transition: 0.3s;
 }
 
+.share-btn:hover { background: #8b5cf6; color: white; }
 .share-btn.shared { background: var(--gold); color: black; border-color: transparent; }
 
 .reset-trigger {
@@ -639,13 +642,33 @@ select.premium-input-v2 option {
   border-radius: 50%;
   background: rgba(239, 68, 68, 0.1);
   color: #ef4444;
-  border: none;
+  border: 1px solid rgba(239, 68, 68, 0.3);
   cursor: pointer;
   transition: 0.3s;
   font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .reset-trigger:hover { background: #ef4444; color: white; transform: rotate(-180deg); }
+
+.lock-trigger {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--bg-inset);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lock-trigger:hover { background: var(--bg-surface); }
+.lock-trigger.locked { background: rgba(245, 158, 11, 0.1); color: var(--gold); border-color: rgba(245, 158, 11, 0.3); }
 
 /* Live Arena v2 */
 .match-engine-v2 {
@@ -1092,8 +1115,8 @@ select.premium-input-v2 option {
 
 /* Add Team Inline */
 .add-team-trigger {
-  background: rgba(255,255,255,0.05);
-  color: white;
+  background: var(--bg-inset);
+  color: var(--text-primary);
   padding: 0.6rem 1.25rem;
   border-radius: 12px;
   font-size: 0.7rem;
@@ -1101,13 +1124,13 @@ select.premium-input-v2 option {
   letter-spacing: 1px;
   cursor: pointer;
   transition: 0.3s;
-  border: 1px solid rgba(255,255,255,0.1);
+  border: 1px solid var(--border-color);
 }
 
 .add-team-trigger:hover { background: var(--gold); color: black; border-color: transparent; }
 
 .add-team-popover {
-  background: rgba(13, 17, 23, 0.9);
+  background: var(--bg-card);
   backdrop-filter: blur(20px);
   padding: 1.5rem;
   border-radius: 24px;
@@ -1115,9 +1138,10 @@ select.premium-input-v2 option {
   display: flex;
   gap: 1rem;
   margin-bottom: 2rem;
-  box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+  box-shadow: var(--shadow-lg);
   position: relative;
   z-index: 100;
+  align-items: center;
 }
 
 /* Premium Standings v2 */
