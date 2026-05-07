@@ -357,10 +357,10 @@ select.premium-input-v2 option {
 
 .segmented-control-v2 {
   display: flex;
-  background: rgba(255,255,255,0.03);
+  background: var(--bg-inset);
   padding: 4px;
   border-radius: 16px;
-  border: 1px solid rgba(255,255,255,0.05);
+  border: 1px solid var(--border-color);
   width: 100%;
 }
 
@@ -376,28 +376,30 @@ select.premium-input-v2 option {
 .segment-btn {
   flex: 1;
   padding: 1rem;
-  border-radius: 15px;
+  border-radius: 12px;
   font-size: 0.8rem;
   font-weight: 900;
   letter-spacing: 1px;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   text-align: center;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.segment-btn:hover {
+  color: var(--text-primary);
 }
 
 .segment-btn.active {
   background: var(--gradient-primary);
-  color: white;
+  color: white !important;
   box-shadow: var(--shadow-md);
 }
 
-[data-theme='light'] .segment-btn {
-  background: var(--bg-inset);
-  color: var(--text-secondary);
-}
-
 [data-theme='light'] .segment-btn.active {
-  color: white;
+  color: white !important;
 }
 
 .quota-stepper {
