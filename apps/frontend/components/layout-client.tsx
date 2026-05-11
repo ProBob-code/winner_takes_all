@@ -31,16 +31,21 @@ export function LayoutClient({ children }: { children: React.ReactNode }) {
         </div>
 
         <footer style={{
-          padding: "2rem",
+          padding: "3rem 2rem",
           textAlign: "center",
           borderTop: "1px solid var(--glass-bg-hover)",
           marginTop: "auto",
           color: "var(--text-muted)",
           fontSize: "0.85rem",
-          background: "rgba(0,0,0,0.2)"
+          background: "rgba(0,0,0,0.4)"
         }}>
-          &copy; {new Date().getFullYear()} Winner.Takes.All. All rights reserved. <br/>
-          <span style={{ fontSize: "0.75rem", opacity: 0.7 }}>Premium Competitive Gaming Platform</span>
+          <div style={{ maxWidth: "800px", margin: "0 auto 1.5rem", lineHeight: "1.6", opacity: 0.8 }}>
+            <strong>Legal Disclaimer:</strong> WTA Arena does not facilitate betting or games of chance. 
+            Tournament outcomes are determined solely by player skill and organizer-defined rules. 
+            All competitions hosted on this platform are strictly for skill-based demonstration.
+          </div>
+          &copy; {new Date().getFullYear()} WTA Arena Platform. All rights reserved. <br/>
+          <span style={{ fontSize: "0.75rem", opacity: 0.7 }}>Professional Tournament Infrastructure Software</span>
         </footer>
       </div>
 

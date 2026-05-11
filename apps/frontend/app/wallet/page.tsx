@@ -9,11 +9,11 @@ import { useRouter } from "next/navigation";
 import { getApiUrl } from "@/lib/api-config";
 
 const TX_LABELS: Record<string, { label: string; icon: string; color: string; bg: string }> = {
-  deposit: { label: "Wallet Top-up", icon: "💳", color: "var(--green-light)", bg: "var(--green-subtle)" },
-  entry_fee_debit: { label: "Platform Fee", icon: "🎮", color: "var(--red-light)", bg: "var(--red-subtle)" },
-  tournament_payout: { label: "Reward Credits", icon: "🏆", color: "var(--gold)", bg: "var(--gold-subtle)" },
+  deposit: { label: "Account Top-up", icon: "💳", color: "var(--green-light)", bg: "var(--green-subtle)" },
+  entry_fee_debit: { label: "Participation Fee", icon: "🎮", color: "var(--red-light)", bg: "var(--red-subtle)" },
+  tournament_payout: { label: "Championship Reward", icon: "🏆", color: "var(--gold)", bg: "var(--gold-subtle)" },
   refund: { label: "Refund", icon: "↩️", color: "var(--cyan)", bg: "var(--cyan-subtle)" },
-  manual_adjustment: { label: "Bonus", icon: "🎁", color: "var(--accent-light)", bg: "var(--accent-subtle)" },
+  manual_adjustment: { label: "Adjustment", icon: "🎁", color: "var(--accent-light)", bg: "var(--accent-subtle)" },
 };
 
 export default function WalletPage() {
@@ -73,7 +73,7 @@ export default function WalletPage() {
   if (loading) {
     return (
       <main className="page" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div className="status-main">SYNCING VAULT...</div>
+        <div className="status-main">SYNCING ACCOUNT...</div>
       </main>
     );
   }
@@ -97,8 +97,8 @@ export default function WalletPage() {
       <div className="shell" style={{ maxWidth: "1200px" }}>
         
         <div className="page-header" style={{ marginBottom: "2rem" }}>
-          <h1 style={{ fontSize: "2.5rem", fontWeight: 900 }}>Financial Dashboard</h1>
-          <p className="muted">Manage your tournament credits and track earnings</p>
+          <h1 style={{ fontSize: "2.5rem", fontWeight: 900 }}>Organizer Account Balance</h1>
+          <p className="muted">Manage your tournament participation and track rewards</p>
         </div>
 
         <div className="page-grid" style={{ gridTemplateColumns: "1fr 350px", gap: "2rem" }}>
@@ -122,7 +122,7 @@ export default function WalletPage() {
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "2rem" }}>
                   <div>
                     <div style={{ color: "var(--accent-light)", fontSize: "0.85rem", fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", marginBottom: "0.5rem" }}>
-                      Available Balance
+                      Current Balance
                     </div>
                     <div style={{ fontSize: "4rem", fontWeight: 950, fontFamily: "var(--font-outfit)", letterSpacing: "-2px" }}>
                       {formatMoney(wallet.balance)}
@@ -137,14 +137,14 @@ export default function WalletPage() {
                     alignItems: "center",
                     justifyContent: "center"
                   }}>
-                    <span style={{ fontSize: "2rem" }}>💎</span>
+                    <span style={{ fontSize: "2rem" }}>💼</span>
                   </div>
                 </div>
 
                 <div style={{ display: "flex", gap: "2rem", marginBottom: "2rem", borderTop: "1px solid rgba(255,255,255,0.05)", paddingTop: "1.5rem" }}>
                    <div>
                      <div className="muted" style={{ fontSize: "0.75rem", fontWeight: 600 }}>CURRENCY</div>
-                     <div style={{ fontWeight: 700 }}>INR / Credits</div>
+                     <div style={{ fontWeight: 700 }}>INR / Balance</div>
                    </div>
                    <div>
                      <div className="muted" style={{ fontSize: "0.75rem", fontWeight: 600 }}>STATUS</div>
@@ -162,7 +162,7 @@ export default function WalletPage() {
                 <div className="cta-row" style={{ marginTop: "auto" }}>
                   <PaymentButton />
                   <button className="button-secondary" style={{ opacity: 0.6, cursor: "not-allowed" }} title="Coming Soon">
-                    Withdraw
+                    Request Payout
                   </button>
                 </div>
               </div>
@@ -232,15 +232,15 @@ export default function WalletPage() {
               <h4 style={{ marginBottom: "1.5rem", fontSize: "1.1rem" }}>Portfolio Analytics</h4>
               <div className="stack" style={{ gap: "1rem" }}>
                 <div style={{ background: "rgba(255,255,255,0.02)", padding: "1rem", borderRadius: "16px", border: "1px solid rgba(255,255,255,0.05)" }}>
-                  <div className="muted" style={{ fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase" }}>Total Rewards</div>
+                  <div className="muted" style={{ fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase" }}>Championship Rewards</div>
                   <div style={{ fontSize: "1.5rem", fontWeight: 800, color: "var(--gold)" }}>{formatMoney(stats.winnings)}</div>
                 </div>
                 <div style={{ background: "rgba(255,255,255,0.02)", padding: "1rem", borderRadius: "16px", border: "1px solid rgba(255,255,255,0.05)" }}>
-                  <div className="muted" style={{ fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase" }}>Total Deposited</div>
+                  <div className="muted" style={{ fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase" }}>Total Accounted</div>
                   <div style={{ fontSize: "1.5rem", fontWeight: 800, color: "var(--green-light)" }}>{formatMoney(stats.deposits)}</div>
                 </div>
                 <div style={{ background: "rgba(255,255,255,0.02)", padding: "1rem", borderRadius: "16px", border: "1px solid rgba(255,255,255,0.05)" }}>
-                  <div className="muted" style={{ fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase" }}>Platform Fees Paid</div>
+                  <div className="muted" style={{ fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase" }}>Participation Fees</div>
                   <div style={{ fontSize: "1.5rem", fontWeight: 800, color: "var(--red-light)" }}>{formatMoney(stats.entries)}</div>
                 </div>
               </div>
@@ -249,9 +249,9 @@ export default function WalletPage() {
             <div className="panel" style={{ padding: "1.5rem", border: "1px dashed var(--border-color)", background: "transparent" }}>
               <h4 style={{ marginBottom: "1rem", fontSize: "1rem" }}>Security Tips</h4>
               <ul className="muted" style={{ fontSize: "0.85rem", paddingLeft: "1.2rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-                <li>Never share your tournament OTP with anyone.</li>
-                <li>Refunds for cancelled tournaments are processed instantly.</li>
-                <li>Rewards are subject to anti-cheat verification.</li>
+                <li>Never share your organizer credentials with anyone.</li>
+                <li>Refunds for cancelled tournaments are processed to balance.</li>
+                <li>Rewards are subject to organizer-defined validation.</li>
               </ul>
             </div>
           </div>

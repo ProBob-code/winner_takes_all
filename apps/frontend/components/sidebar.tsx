@@ -60,13 +60,13 @@ export function Sidebar({ user: initialUser }: { user: any }) {
     { label: "Dashboard", href: "/dashboard", icon: "📊" },
     { label: "Games", href: "/games", icon: "🕹️" },
     { label: "Tournaments", href: "/tournaments", icon: "🎮" },
-    { label: "Leaderboard", href: "/leaderboard", icon: "🏆" },
+    { label: "Rankings", href: "/leaderboard", icon: "🏆" },
     { label: "Profile", href: "/profile", icon: "👤" },
-    { label: "Wallet", href: "/wallet", icon: "💳" }
+    { label: "Organizer Account", href: "/wallet", icon: "💳" }
   ] : [
     { label: "Games", href: "/games", icon: "🕹️" },
     { label: "Tournaments", href: "/tournaments", icon: "🎮" },
-    { label: "Leaderboard", href: "/leaderboard", icon: "🏆" }
+    { label: "Rankings", href: "/leaderboard", icon: "🏆" }
   ];
 
   const [isOpen, setIsOpen] = useState(false);
@@ -106,7 +106,7 @@ export function Sidebar({ user: initialUser }: { user: any }) {
                     <path d="M5 16L3 5L8.5 10L12 4L15.5 10L21 5L19 16H5ZM19 19C19 19.5523 18.5523 20 18 20H6C5.44772 20 5 19.5523 5 19V18H19V19Z" fill="#FFD700"/>
                   </svg>
                 </span>
-                <span className="brand-text" style={{ letterSpacing: "2px", fontWeight: 900 }}>W.T.A</span>
+                <span className="brand-text" style={{ letterSpacing: "2px", fontWeight: 900 }}>WTA ARENA</span>
               </>
             )}
           </Link>

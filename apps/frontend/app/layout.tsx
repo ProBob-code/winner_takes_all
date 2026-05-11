@@ -15,19 +15,19 @@ export const viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "Stadium Arena | Esports Community Platform",
-  description: "🏆 Step into the world's most elite multi-game tournament platform. Skill-based tournaments and social competition.",
+  title: "WTA Arena | Professional Tournament Infrastructure",
+  description: "🏆 The premier SaaS platform for esports organizers and community tournaments. Manage brackets, schedules, and event operations with WTA Arena.",
   openGraph: {
-    title: "🏆 Stadium Arena | Esports Platform",
-    description: "🔥 THE ARENA IS LIVE! Experience skill-based tournaments and legendary duels in real-time.",
+    title: "🏆 WTA Arena | Tournament Platform",
+    description: "🔥 Powering the next generation of competitive events. Professional infrastructure for tournament organizers.",
     url: "https://stadium-arena.pages.dev",
-    siteName: "Stadium Arena",
+    siteName: "WTA Arena",
     images: [
       {
         url: "https://stadium-arena.pages.dev/og-image.jpg",
         width: 1200,
         height: 630,
-        alt: "Stadium Arena Platform",
+        alt: "WTA Arena Platform",
         type: "image/jpeg",
       },
     ],
@@ -36,8 +36,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "🏆 Stadium Arena | Esports Platform",
-    description: "⚔️ Join the elite esports community platform. Skill-based duels live now!",
+    title: "🏆 WTA Arena | Tournament Platform",
+    description: "⚔️ Professional tournament infrastructure for communities and esports organizers.",
     images: ["https://stadium-arena.pages.dev/og-image.jpg"],
   },
   metadataBase: new URL("https://stadium-arena.pages.dev"),

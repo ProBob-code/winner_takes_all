@@ -98,7 +98,7 @@ export default function TournamentsPage() {
         <div className="app-header slide-in">
           <div className="header-info">
             <h1 className="glow-text">The Arena</h1>
-            <p className="muted">Compete in high-stakes professional showdowns.</p>
+            <p className="muted">Professional esports tournaments managed by elite organizers.</p>
           </div>
           <div className="header-actions" style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
             <div className="tab-switcher-v2">
@@ -130,8 +130,8 @@ export default function TournamentsPage() {
                 <div className="banner-content">
                   <div className="banner-icon">⚔️</div>
                   <div>
-                    <h3>Locked Potential</h3>
-                    <p className="muted">Login to claim your entry in professional-grade tournaments.</p>
+                    <h3>Organizer Verification Required</h3>
+                    <p className="muted">Secure your account to participate in professional tournament brackets.</p>
                   </div>
                 </div>
                 <Link href="/login" className="button button-gold">Access Arena</Link>
@@ -141,7 +141,7 @@ export default function TournamentsPage() {
             {tournaments.length > 0 && (
               <section className="arena-section slide-in">
                 <div className="section-header">
-                  <h2 className="section-title">Active Showdowns</h2>
+                  <h2 className="section-title">Verified Competitions</h2>
                   <div className="section-line"></div>
                 </div>
                 <div className="tournament-grid">
@@ -173,7 +173,7 @@ export default function TournamentsPage() {
 
                           <div className="card-footer">
                             <div className="entry-info">
-                              <span className="label">PLATFORM FEE</span>
+                              <span className="label">PARTICIPATION FEE</span>
                               <span className={`value ${isFree ? 'free' : 'paid'}`}>
                                 {isFree ? "FREE" : `₹${t.entryFee.amount}`}
                               </span>
@@ -194,8 +194,8 @@ export default function TournamentsPage() {
               <div className="empty-state slide-in">
                 <div className="empty-icon-large">🏆</div>
                 <h3>The Arena is Quiet</h3>
-                <p className="muted">No professional tournaments are active. Be the one to start the fire.</p>
-                <Link href="/tournaments/create" className="button button-gold mt-6">HOST NEW ARENA</Link>
+                <p className="muted">No active tournament brackets found. Create your own community event now.</p>
+                <Link href="/tournaments/create" className="button button-gold mt-6">INITIALIZE EVENT</Link>
               </div>
             )}
           </>

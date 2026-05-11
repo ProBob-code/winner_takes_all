@@ -242,60 +242,60 @@ export function LandingPage() {
 
       <main className="landing-main" style={{ padding: "120px 6% 60px", textAlign: "center", position: "relative", zIndex: 2 }}>
         <section className="hero" style={{ minHeight: "80vh", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" }}>
-          <div className="hero-chip" style={{ background: "rgba(139, 92, 246, 0.1)", border: "1px solid rgba(139, 92, 246, 0.2)", padding: "8px 16px", borderRadius: "9999px", fontSize: "0.85rem", fontWeight: 700, color: "#8b5cf6", marginBottom: "2rem" }}>Esports Community Platform</div>
+          <div className="hero-chip" style={{ background: "rgba(139, 92, 246, 0.1)", border: "1px solid rgba(139, 92, 246, 0.2)", padding: "8px 16px", borderRadius: "9999px", fontSize: "0.85rem", fontWeight: 700, color: "#8b5cf6", marginBottom: "2rem" }}>Professional Tournament Infrastructure</div>
           <h1 className="hero-title" style={{ fontSize: "clamp(3rem, 8vw, 6rem)", fontWeight: 900, lineHeight: 0.9, letterSpacing: "-2px", marginBottom: "2.5rem" }}>
-            COMPETE IN ELITE.<br />
-            <span className="gradient-text">SKILL TOURNAMENTS.</span>
+            POWERING GLOBAL.<br />
+            <span className="gradient-text">ESPORTS EVENTS.</span>
           </h1>
-          <p className="hero-desc" style={{ maxWidth: "700px", fontSize: "1.2rem", color: "#94a3b8", marginBottom: "3.5rem", lineHeight: 1.6 }}>The premier destination for professional-grade digital tournaments. Join club tournaments, compete in skill-based events, and earn reward credits.</p>
+          <p className="hero-desc" style={{ maxWidth: "700px", fontSize: "1.2rem", color: "#94a3b8", marginBottom: "3.5rem", lineHeight: 1.6 }}>The comprehensive SaaS platform for esports organizers, communities, and competitive events. Manage brackets, schedules, and tournament operations with professional-grade tools.</p>
           <div className="hero-buttons" style={{ display: "flex", gap: "1.5rem" }}>
-            <Link href="/tournaments" style={{ background: "linear-gradient(135deg, #8b5cf6, #06b6d4)", color: "white", padding: "1.25rem 2.5rem", borderRadius: "16px", textDecoration: "none", fontWeight: 800, fontSize: "1.1rem" }}>ENTER THE ARENA →</Link>
+            <Link href="/tournaments" style={{ background: "linear-gradient(135deg, #8b5cf6, #06b6d4)", color: "white", padding: "1.25rem 2.5rem", borderRadius: "16px", textDecoration: "none", fontWeight: 800, fontSize: "1.1rem" }}>EXPLORE PLATFORM →</Link>
             <Link href="#how-it-works" style={{ background: "rgba(255, 255, 255, 0.05)", border: "1px solid rgba(255, 255, 255, 0.1)", color: "white", padding: "1.25rem 2.5rem", borderRadius: "16px", textDecoration: "none", fontWeight: 800, fontSize: "1.1rem" }}>HOW IT WORKS</Link>
           </div>
         </section>
 
         <section id="how-it-works" className="section reveal" style={{ marginTop: "120px" }}>
-            <h2 style={{ fontSize: "3rem", fontWeight: 800, marginBottom: "1rem" }}>ROAD TO VICTORY</h2>
-            <p className="muted" style={{ marginBottom: "4rem" }}>Three steps to dominate the digital arena.</p>
+            <h2 style={{ fontSize: "3rem", fontWeight: 800, marginBottom: "1rem" }}>EVENT LIFECYCLE</h2>
+            <p className="muted" style={{ marginBottom: "4rem" }}>Three steps to professional event management.</p>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "2.5rem", position: "relative" }}>
                 <div className="card-3d" style={{ padding: "4rem 3rem", position: "relative", overflow: "hidden" }}>
                     <div style={{ position: "absolute", top: "-20px", right: "-10px", fontSize: "8rem", fontWeight: 900, opacity: 0.05, color: "white" }}>01</div>
-                    <div style={{ background: "linear-gradient(135deg, #8b5cf6, #06b6d4)", width: "60px", height: "60px", borderRadius: "16px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.5rem", marginBottom: "2rem", boxShadow: "0 0 20px rgba(139, 92, 246, 0.4)" }}>⚔️</div>
-                    <h3 style={{ fontSize: "1.5rem", marginBottom: "1rem" }}>Choose Your Event</h3>
-                    <p style={{ color: "#94a3b8", lineHeight: 1.6 }}>Browse skill-based tournaments across multiple genres. From tactical strategy to lightning-fast reflexes.</p>
+                    <div style={{ background: "linear-gradient(135deg, #8b5cf6, #06b6d4)", width: "60px", height: "60px", borderRadius: "16px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.5rem", marginBottom: "2rem", boxShadow: "0 0 20px rgba(139, 92, 246, 0.4)" }}>📊</div>
+                    <h3 style={{ fontSize: "1.5rem", marginBottom: "1rem" }}>Configure Event</h3>
+                    <p style={{ color: "#94a3b8", lineHeight: 1.6 }}>Organizers define rules, schedules, and participation parameters. Our infrastructure handles the complex backend orchestration.</p>
                 </div>
                 <div className="card-3d" style={{ padding: "4rem 3rem", position: "relative", overflow: "hidden" }}>
                     <div style={{ position: "absolute", top: "-20px", right: "-10px", fontSize: "8rem", fontWeight: 900, opacity: 0.05, color: "white" }}>02</div>
-                    <div style={{ background: "linear-gradient(135deg, #f59e0b, #ef4444)", width: "60px", height: "60px", borderRadius: "16px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.5rem", marginBottom: "2rem", boxShadow: "0 0 20px rgba(245, 158, 11, 0.4)" }}>🔥</div>
-                    <h3 style={{ fontSize: "1.5rem", marginBottom: "1rem" }}>Join & Compete</h3>
-                    <p style={{ color: "#94a3b8", lineHeight: 1.6 }}>Enter the lobby, pay the platform fee, and prepare for the ultimate showdown against elite competition.</p>
+                    <div style={{ background: "linear-gradient(135deg, #f59e0b, #ef4444)", width: "60px", height: "60px", borderRadius: "16px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.5rem", marginBottom: "2rem", boxShadow: "0 0 20px rgba(245, 158, 11, 0.4)" }}>🛡️</div>
+                    <h3 style={{ fontSize: "1.5rem", marginBottom: "1rem" }}>Registration & Play</h3>
+                    <p style={{ color: "#94a3b8", lineHeight: 1.6 }}>Participants register via secure participation fees. Real-time bracket management and automated score tracking begin.</p>
                 </div>
                 <div className="card-3d" style={{ padding: "4rem 3rem", position: "relative", overflow: "hidden" }}>
                     <div style={{ position: "absolute", top: "-20px", right: "-10px", fontSize: "8rem", fontWeight: 900, opacity: 0.05, color: "white" }}>03</div>
                     <div style={{ background: "linear-gradient(135deg, #10b981, #3b82f6)", width: "60px", height: "60px", borderRadius: "16px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.5rem", marginBottom: "2rem", boxShadow: "0 0 20px rgba(16, 185, 129, 0.4)" }}>🏆</div>
-                    <h3 style={{ fontSize: "1.5rem", marginBottom: "1rem" }}>Claim the Crown</h3>
-                    <p style={{ color: "#94a3b8", lineHeight: 1.6 }}>Victory means everything. Earn sponsored prizes and reward credits instantly to your account.</p>
+                    <h3 style={{ fontSize: "1.5rem", marginBottom: "1rem" }}>Event Finalization</h3>
+                    <p style={{ color: "#94a3b8", lineHeight: 1.6 }}>Validation of results and distribution of organizer-sponsored championship rewards based on verified performance.</p>
                 </div>
             </div>
         </section>
 
         <section className="section reveal" style={{ marginTop: "120px" }}>
-            <h2 style={{ fontSize: "3rem", fontWeight: 800, marginBottom: "4rem" }}>THE COMPETITIVE EDGE</h2>
+            <h2 style={{ fontSize: "3rem", fontWeight: 800, marginBottom: "4rem" }}>THE INFRASTRUCTURE EDGE</h2>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "2rem" }}>
                 <div className="card-3d" style={{ padding: "3rem" }}>
                     <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>⚡</div>
-                    <h3>Instant Execution</h3>
-                    <p style={{ color: "#94a3b8" }}>Real-time updates, zero latency, maximum adrenaline.</p>
+                    <h3>Automated Orchestration</h3>
+                    <p style={{ color: "#94a3b8" }}>Self-generating brackets and automated score validation.</p>
                 </div>
                 <div className="card-3d" style={{ padding: "3rem" }}>
                     <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>💎</div>
-                    <h3>Elite Interface</h3>
-                    <p style={{ color: "#94a3b8" }}>The refined glassmorphic dashboard built for professionals.</p>
+                    <h3>Organizer Dashboard</h3>
+                    <p style={{ color: "#94a3b8" }}>Comprehensive tools for community and event management.</p>
                 </div>
                 <div className="card-3d" style={{ padding: "3rem" }}>
-                    <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>💳</div>
-                    <h3>Swift Rewards</h3>
-                    <p style={{ color: "#94a3b8" }}>Instant reward credit processing directly to your account.</p>
+                    <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>🛡️</div>
+                    <h3>Secure Settlement</h3>
+                    <p style={{ color: "#94a3b8" }}>Automated reward distribution and participation verification.</p>
                 </div>
             </div>
         </section>
@@ -303,20 +303,20 @@ export function LandingPage() {
 
       <footer style={{ padding: "60px 6%", textAlign: "center", borderTop: "1px solid rgba(255,255,255,0.08)", fontSize: "0.85rem" }}>
         <div style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", gap: "1.5rem", marginBottom: "2rem", color: "rgba(255,255,255,0.5)" }}>
+          <Link href="/about" style={{ color: "inherit", textDecoration: "none" }}>About Us</Link>
+          <Link href="/contact" style={{ color: "inherit", textDecoration: "none" }}>Contact Us</Link>
           <Link href="/terms" style={{ color: "inherit", textDecoration: "none" }}>Terms & Conditions</Link>
           <Link href="/privacy" style={{ color: "inherit", textDecoration: "none" }}>Privacy Policy</Link>
-          <Link href="/refund" style={{ color: "inherit", textDecoration: "none" }}>Refund Policy</Link>
-          <Link href="/kyc-aml" style={{ color: "inherit", textDecoration: "none" }}>KYC & AML</Link>
-          <Link href="/responsible-gaming" style={{ color: "inherit", textDecoration: "none" }}>Responsible Gaming</Link>
-          <span style={{ color: "rgba(255,255,255,0.3)" }}>|</span>
-          <span style={{ fontWeight: 600, color: "rgba(255,255,255,0.7)" }}>Age Restriction (18+)</span>
-          <span style={{ fontWeight: 600, color: "rgba(255,255,255,0.7)" }}>Skill-Based Game Declaration</span>
-          <span style={{ fontWeight: 600, color: "rgba(255,255,255,0.7)" }}>Not Gambling</span>
+          <Link href="/refund" style={{ color: "inherit", textDecoration: "none" }}>Refund & Cancellation</Link>
+          <Link href="/community-guidelines" style={{ color: "inherit", textDecoration: "none" }}>Community Guidelines</Link>
+          <Link href="/skill-based-policy" style={{ color: "inherit", textDecoration: "none" }}>Skill-Based Policy</Link>
         </div>
         <p style={{ color: "rgba(255,255,255,0.3)", maxWidth: "800px", margin: "0 auto 2rem", lineHeight: 1.6 }}>
-          Stadium Arena is a skill-based esports community platform. All competitions are based entirely on player skill, not chance. This platform is strictly not a gambling site. Users compete for reward credits and sponsored prizes by paying a platform hosting fee.
+          WTA Arena is a professional tournament infrastructure platform. We provide software tools for esports organizers to host and manage community events. 
+          WTA Arena does not facilitate betting or games of chance. Tournament outcomes are determined solely by player skill and organizer-defined rules. 
+          Participants pay a participation fee to cover event operations and platform infrastructure.
         </p>
-        <p style={{ color: "rgba(255,255,255,0.2)" }}>&copy; 2026 STADIUM ARENA PLATFORM.</p>
+        <p style={{ color: "rgba(255,255,255,0.2)" }}>&copy; 2026 WTA ARENA PLATFORM. All rights reserved.</p>
       </footer>
     </div>
   );
