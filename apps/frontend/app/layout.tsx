@@ -15,13 +15,13 @@ export const viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "WTA Arena | Professional Tournament Infrastructure",
-  description: "🏆 The premier SaaS platform for esports organizers and community tournaments. Manage brackets, schedules, and event operations with WTA Arena.",
+  title: "Winner.Takes.All | W.T.A Tournament Infrastructure",
+  description: "🏆 The premier SaaS platform for esports organizers and community tournaments. Powering events with W.T.A Infrastructure.",
   openGraph: {
-    title: "🏆 WTA Arena | Tournament Platform",
+    title: "Winner.Takes.All | W.T.A Tournament Infrastructure",
     description: "🔥 Powering the next generation of competitive events. Professional infrastructure for tournament organizers.",
     url: "https://stadium-arena.pages.dev",
-    siteName: "WTA Arena",
+    siteName: "Winner.Takes.All",
     images: [
       {
         url: "https://stadium-arena.pages.dev/og-image.jpg",
@@ -36,7 +36,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "🏆 WTA Arena | Tournament Platform",
+    title: "Winner.Takes.All | W.T.A Platform",
     description: "⚔️ Professional tournament infrastructure for communities and esports organizers.",
     images: ["https://stadium-arena.pages.dev/og-image.jpg"],
   },

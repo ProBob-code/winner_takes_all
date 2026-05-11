@@ -30,9 +30,9 @@ export default function RefundPage() {
           <section>
             <h2 style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: "0.5rem" }}>3. Technical Failures</h2>
             <p className="muted">
-              WTA Arena is not responsible for technical issues originating from the user's side 
+              W.T.A is not responsible for technical issues originating from the user's side 
               (e.g., internet disconnection, hardware failure, game client crashes). In the event of 
-              a Platform-wide technical failure that prevents the completion of an event, WTA Arena 
+              a Platform-wide technical failure that prevents the completion of an event, W.T.A 
               will work with organizers to ensure fair resolution, which may include a full refund of 
               Participation Fees.
             </p>
@@ -42,7 +42,7 @@ export default function RefundPage() {
             <h2 style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: "0.5rem" }}>4. Disputed Results</h2>
             <p className="muted">
               Decisions regarding match results and disqualifications are made by the respective 
-              tournament organizers. WTA Arena provides the infrastructure for these decisions but 
+              tournament organizers. W.T.A provides the infrastructure for these decisions but 
               does not override organizer rulings unless a technical error in the Platform's 
               automation is identified.
             </p>

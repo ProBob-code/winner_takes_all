@@ -31,21 +31,27 @@ export function LayoutClient({ children }: { children: React.ReactNode }) {
         </div>
 
         <footer style={{
-          padding: "3rem 2rem",
+          padding: "4rem 2rem",
           textAlign: "center",
           borderTop: "1px solid var(--glass-bg-hover)",
           marginTop: "auto",
-          color: "var(--text-muted)",
-          fontSize: "0.85rem",
-          background: "rgba(0,0,0,0.4)"
+          color: "#cbd5e1", // Lighter color for better contrast (Slate-300)
+          fontSize: "0.9rem",
+          background: "rgba(0,0,0,0.5)"
         }}>
-          <div style={{ maxWidth: "800px", margin: "0 auto 1.5rem", lineHeight: "1.6", opacity: 0.8 }}>
-            <strong>Legal Disclaimer:</strong> WTA Arena does not facilitate betting or games of chance. 
-            Tournament outcomes are determined solely by player skill and organizer-defined rules. 
-            All competitions hosted on this platform are strictly for skill-based demonstration.
+          <div style={{ maxWidth: "800px", margin: "0 auto 2rem", lineHeight: "1.7" }}>
+            <p style={{ marginBottom: "1.5rem" }}>
+              W.T.A is a professional tournament infrastructure platform designed for organizers, esports communities, gaming cafés, and competitive events. 
+              The platform provides tools for tournament hosting, bracket management, scheduling, rankings, and event operations.
+            </p>
+            <p style={{ fontWeight: 600, color: "var(--text-primary)" }}>
+              W.T.A does not facilitate betting, gambling, or games of chance. Tournament outcomes are determined solely by participant skill and organizer-defined competition rules.
+            </p>
           </div>
-          &copy; {new Date().getFullYear()} WTA Arena Platform. All rights reserved. <br/>
-          <span style={{ fontSize: "0.75rem", opacity: 0.7 }}>Professional Tournament Infrastructure Software</span>
+          <div style={{ color: "var(--text-muted)", fontSize: "0.8rem", marginTop: "2rem" }}>
+            &copy; {new Date().getFullYear()} W.T.A Platform. All rights reserved. <br/>
+            <span style={{ opacity: 0.6 }}>Professional Tournament Infrastructure Software</span>
+          </div>
         </footer>
       </div>
 

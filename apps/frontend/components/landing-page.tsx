@@ -274,7 +274,7 @@ export function LandingPage() {
                     <div style={{ position: "absolute", top: "-20px", right: "-10px", fontSize: "8rem", fontWeight: 900, opacity: 0.05, color: "white" }}>03</div>
                     <div style={{ background: "linear-gradient(135deg, #10b981, #3b82f6)", width: "60px", height: "60px", borderRadius: "16px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.5rem", marginBottom: "2rem", boxShadow: "0 0 20px rgba(16, 185, 129, 0.4)" }}>🏆</div>
                     <h3 style={{ fontSize: "1.5rem", marginBottom: "1rem" }}>Event Finalization</h3>
-                    <p style={{ color: "#94a3b8", lineHeight: 1.6 }}>Validation of results and distribution of organizer-sponsored championship rewards based on verified performance.</p>
+                    <p style={{ color: "#94a3b8", lineHeight: 1.6 }}>Validation of results and professional tournament operations management based on verified performance.</p>
                 </div>
             </div>
         </section>
@@ -295,28 +295,39 @@ export function LandingPage() {
                 <div className="card-3d" style={{ padding: "3rem" }}>
                     <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>🛡️</div>
                     <h3>Secure Settlement</h3>
-                    <p style={{ color: "#94a3b8" }}>Automated reward distribution and participation verification.</p>
+                    <p style={{ color: "#94a3b8" }}>Tournament operations management and participation verification.</p>
                 </div>
             </div>
         </section>
       </main>
 
-      <footer style={{ padding: "60px 6%", textAlign: "center", borderTop: "1px solid rgba(255,255,255,0.08)", fontSize: "0.85rem" }}>
-        <div style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", gap: "1.5rem", marginBottom: "2rem", color: "rgba(255,255,255,0.5)" }}>
-          <Link href="/about" style={{ color: "inherit", textDecoration: "none" }}>About Us</Link>
-          <Link href="/contact" style={{ color: "inherit", textDecoration: "none" }}>Contact Us</Link>
-          <Link href="/terms" style={{ color: "inherit", textDecoration: "none" }}>Terms & Conditions</Link>
-          <Link href="/privacy" style={{ color: "inherit", textDecoration: "none" }}>Privacy Policy</Link>
-          <Link href="/refund" style={{ color: "inherit", textDecoration: "none" }}>Refund & Cancellation</Link>
-          <Link href="/community-guidelines" style={{ color: "inherit", textDecoration: "none" }}>Community Guidelines</Link>
-          <Link href="/skill-based-policy" style={{ color: "inherit", textDecoration: "none" }}>Skill-Based Policy</Link>
+      <footer style={{ 
+        padding: "80px 6%", 
+        textAlign: "center", 
+        borderTop: "1px solid rgba(255,255,255,0.08)", 
+        fontSize: "0.9rem",
+        color: "#cbd5e1", // Improved contrast
+        background: "rgba(0,0,0,0.3)"
+      }}>
+        <div style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", gap: "1.5rem", marginBottom: "2.5rem", color: "var(--accent-secondary)" }}>
+          <Link href="/about" style={{ color: "inherit", textDecoration: "none", fontWeight: 600 }}>About Us</Link>
+          <Link href="/contact" style={{ color: "inherit", textDecoration: "none", fontWeight: 600 }}>Contact Us</Link>
+          <Link href="/terms" style={{ color: "inherit", textDecoration: "none", fontWeight: 600 }}>Terms & Conditions</Link>
+          <Link href="/privacy" style={{ color: "inherit", textDecoration: "none", fontWeight: 600 }}>Privacy Policy</Link>
+          <Link href="/refund" style={{ color: "inherit", textDecoration: "none", fontWeight: 600 }}>Refund & Cancellation</Link>
+          <Link href="/community-guidelines" style={{ color: "inherit", textDecoration: "none", fontWeight: 600 }}>Community Guidelines</Link>
+          <Link href="/skill-based-policy" style={{ color: "inherit", textDecoration: "none", fontWeight: 600 }}>Skill-Based Policy</Link>
         </div>
-        <p style={{ color: "rgba(255,255,255,0.3)", maxWidth: "800px", margin: "0 auto 2rem", lineHeight: 1.6 }}>
-          WTA Arena is a professional tournament infrastructure platform. We provide software tools for esports organizers to host and manage community events. 
-          WTA Arena does not facilitate betting or games of chance. Tournament outcomes are determined solely by player skill and organizer-defined rules. 
-          Participants pay a participation fee to cover event operations and platform infrastructure.
-        </p>
-        <p style={{ color: "rgba(255,255,255,0.2)" }}>&copy; 2026 WTA ARENA PLATFORM. All rights reserved.</p>
+        <div style={{ maxWidth: "850px", margin: "0 auto 2.5rem", lineHeight: 1.8 }}>
+          <p style={{ marginBottom: "1.5rem" }}>
+            W.T.A is a professional tournament infrastructure platform designed for organizers, esports communities, gaming cafés, and competitive events. 
+            The platform provides tools for tournament hosting, bracket management, scheduling, rankings, and event operations.
+          </p>
+          <p style={{ fontWeight: 600, color: "var(--text-primary)" }}>
+            W.T.A does not facilitate betting, gambling, or games of chance. Tournament outcomes are determined solely by participant skill and organizer-defined competition rules.
+          </p>
+        </div>
+        <p style={{ color: "rgba(255,255,255,0.2)", fontSize: "0.8rem" }}>&copy; {new Date().getFullYear()} W.T.A PLATFORM. All rights reserved.</p>
       </footer>
     </div>
   );

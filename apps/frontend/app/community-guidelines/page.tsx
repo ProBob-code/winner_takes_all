@@ -8,14 +8,14 @@ export default function CommunityGuidelinesPage() {
         <h1 style={{ fontSize: "3.5rem", fontWeight: 900, marginBottom: "2rem", textAlign: "center" }}>Community Guidelines</h1>
         
         <p className="muted" style={{ textAlign: "center", marginBottom: "4rem", fontSize: "1.1rem" }}>
-          To maintain a professional and fair environment for all participants and organizers on the WTA Arena platform.
+          To maintain a professional and fair environment for all participants and organizers on the W.T.A platform.
         </p>
 
         <section className="stack" style={{ gap: "2.5rem" }}>
           <div className="panel" style={{ padding: "2.5rem" }}>
             <h2 style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: "1rem", color: "var(--accent-light)" }}>1. Fair Play & Integrity</h2>
             <p className="muted" style={{ lineHeight: 1.8 }}>
-              Integrity is the cornerstone of WTA Arena. Use of cheats, hacks, scripts, or any third-party software 
+              Integrity is the cornerstone of W.T.A. Use of cheats, hacks, scripts, or any third-party software 
               that provides an unfair advantage is strictly prohibited. Any participant found violating these rules 
               will be permanently banned from the platform and forfeit all rewards.
             </p>
@@ -42,7 +42,7 @@ export default function CommunityGuidelinesPage() {
           <div className="panel" style={{ padding: "2.5rem" }}>
             <h2 style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: "1rem", color: "var(--accent-light)" }}>4. Skill-Based Demonstration</h2>
             <p className="muted" style={{ lineHeight: 1.8 }}>
-              All participants acknowledge that tournaments on WTA Arena are tests of skill. Attempting to influence 
+              All participants acknowledge that tournaments on W.T.A are tests of skill. Attempting to influence 
               outcomes via collusion or outside influence is a violation of these guidelines.
             </p>
           </div>

@@ -12,7 +12,7 @@ export default function TermsPage() {
           <section>
             <h2 style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: "0.5rem" }}>1. Agreement to Terms</h2>
             <p className="muted">
-              By accessing or using the WTA Arena platform ("the Platform"), you agree to be bound by these Terms & Conditions. 
+              By accessing or using the W.T.A platform ("the Platform"), you agree to be bound by these Terms & Conditions. 
               The Platform is operated as a Tournament Infrastructure SaaS, providing tools for organizers to manage 
               competitive esports events.
             </p>
@@ -21,7 +21,7 @@ export default function TermsPage() {
           <section>
             <h2 style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: "0.5rem" }}>2. Nature of the Platform</h2>
             <p className="muted">
-              WTA Arena is NOT a gambling platform. We do not facilitate betting, wagering, or games of chance. 
+              W.T.A is NOT a gambling platform. We do not facilitate betting, wagering, or games of chance. 
               All tournaments hosted on the Platform are strictly competitions of skill. The outcome of any match 
               is determined solely by the participants' performance, strategy, and mechanical skill.
             </p>
@@ -48,7 +48,7 @@ export default function TermsPage() {
           <section>
             <h2 style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: "0.5rem" }}>5. Intellectual Property</h2>
             <p className="muted">
-              All content on the Platform, including software, design, logos, and text, is the property of WTA Arena 
+              All content on the Platform, including software, design, logos, and text, is the property of W.T.A 
               or its licensors. You may not reproduce, distribute, or create derivative works without explicit 
               written permission.
             </p>
@@ -57,7 +57,7 @@ export default function TermsPage() {
           <section>
             <h2 style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: "0.5rem" }}>6. Limitation of Liability</h2>
             <p className="muted">
-              WTA Arena provides infrastructure services "as is". We are not liable for match outcomes, 
+              W.T.A provides infrastructure services "as is". We are not liable for match outcomes, 
               organizer mismanagement, technical interruptions, or game-client failures. Our liability is limited 
               to the maximum extent permitted by law.
             </p>
