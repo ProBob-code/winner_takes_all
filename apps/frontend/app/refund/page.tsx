@@ -4,56 +4,42 @@ import React from "react";
 export default function RefundPage() {
   return (
     <main className="page" style={{ padding: "80px 6%" }}>
-      <div className="shell" style={{ maxWidth: "900px", margin: "0 auto" }}>
-        <h1 style={{ fontSize: "3rem", fontWeight: 900, marginBottom: "1rem" }}>Refund & Cancellation Policy</h1>
-        <p className="muted" style={{ marginBottom: "3rem" }}>Last updated: May 11, 2026</p>
+      <div className="shell" style={{ maxWidth: "1000px", margin: "0 auto" }}>
+        <div style={{ textAlign: "center", marginBottom: "5rem" }}>
+          <h1 style={{ fontSize: "clamp(2.5rem, 5vw, 4rem)", fontWeight: 950, marginBottom: "1rem" }}>Refund <span className="text-gradient">Policy</span></h1>
+          <p className="muted" style={{ fontSize: "1.1rem" }}>Fair and transparent cancellation guidelines.</p>
+        </div>
 
-        <div className="stack" style={{ gap: "2.5rem", lineHeight: 1.8 }}>
-          <section>
-            <h2 style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: "0.5rem" }}>1. Event Cancellations</h2>
-            <p className="muted">
-              If an event is cancelled by the organizer before the scheduled start time, 100% of the 
-              Participation Fee paid by the user will be refunded to their Organizer Account Balance. 
-              Refunds are typically processed automatically within 24-48 hours of the cancellation.
+        <div className="terms-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(400px, 1fr))", gap: "2.5rem" }}>
+          <section className="glass-panel" style={{ padding: "3rem" }}>
+            <div className="card-icon" style={{ background: "rgba(187, 134, 252, 0.1)", color: "#bb86fc" }}>🔄</div>
+            <h2 style={{ fontSize: "1.5rem", fontWeight: 800, marginBottom: "1.5rem" }}>1. Event Cancellations</h2>
+            <p className="muted" style={{ lineHeight: 1.8 }}>
+              If an event is cancelled by the organizer before the start time, 100% of the fee will be refunded to your account balance within 24-48 hours.
             </p>
           </section>
 
-          <section>
-            <h2 style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: "0.5rem" }}>2. Participation Fee Refunds</h2>
-            <p className="muted">
-              Participation Fees are non-refundable once the tournament has commenced. If a user chooses 
-              to withdraw from an event after registration but before the event starts, a refund may 
-              be granted at the sole discretion of the organizer, minus any platform service fees.
+          <section className="glass-panel" style={{ padding: "3rem" }}>
+            <div className="card-icon" style={{ background: "rgba(3, 218, 198, 0.1)", color: "#03dac6" }}>🚫</div>
+            <h2 style={{ fontSize: "1.5rem", fontWeight: 800, marginBottom: "1.5rem" }}>2. Participation Fees</h2>
+            <p className="muted" style={{ lineHeight: 1.8 }}>
+              Fees are non-refundable once the tournament has commenced. Withdrawals before the start are subject to organizer approval.
             </p>
           </section>
 
-          <section>
-            <h2 style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: "0.5rem" }}>3. Technical Failures</h2>
-            <p className="muted">
-              W.T.A is not responsible for technical issues originating from the user's side 
-              (e.g., internet disconnection, hardware failure, game client crashes). In the event of 
-              a Platform-wide technical failure that prevents the completion of an event, W.T.A 
-              will work with organizers to ensure fair resolution, which may include a full refund of 
-              Participation Fees.
+          <section className="glass-panel" style={{ padding: "3rem" }}>
+            <div className="card-icon" style={{ background: "rgba(255, 183, 0, 0.1)", color: "#ffb700" }}>🔧</div>
+            <h2 style={{ fontSize: "1.5rem", fontWeight: 800, marginBottom: "1.5rem" }}>3. Technical Failures</h2>
+            <p className="muted" style={{ lineHeight: 1.8 }}>
+              In the event of a Platform-wide failure that prevents completion, we will work with organizers to provide fair fee resolutions.
             </p>
           </section>
 
-          <section>
-            <h2 style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: "0.5rem" }}>4. Disputed Results</h2>
-            <p className="muted">
-              Decisions regarding match results and disqualifications are made by the respective 
-              tournament organizers. W.T.A provides the infrastructure for these decisions but 
-              does not override organizer rulings unless a technical error in the Platform's 
-              automation is identified.
-            </p>
-          </section>
-
-          <section>
-            <h2 style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: "0.5rem" }}>5. Processing Time</h2>
-            <p className="muted">
-              Refunds to your Platform Balance are immediate once approved. Payout requests for your 
-              withdrawable balance are subject to verification and typically take 3-5 business days 
-              to process via our payment partners.
+          <section className="glass-panel" style={{ padding: "3rem" }}>
+            <div className="card-icon" style={{ background: "rgba(139, 92, 246, 0.1)", color: "#8b5cf6" }}>⏱️</div>
+            <h2 style={{ fontSize: "1.5rem", fontWeight: 800, marginBottom: "1.5rem" }}>4. Processing Time</h2>
+            <p className="muted" style={{ lineHeight: 1.8 }}>
+              Internal balance refunds are immediate. Payout requests for withdrawable credits typically take 3-5 business days.
             </p>
           </section>
         </div>

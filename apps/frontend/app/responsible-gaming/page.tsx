@@ -1,22 +1,41 @@
+"use client";
+import React from "react";
+
 export default function ResponsibleGamingPage() {
   return (
-    <div className="container" style={{ paddingTop: "120px", paddingBottom: "60px", maxWidth: "800px", margin: "0 auto", color: "var(--text-primary)" }}>
-      <h1 style={{ fontSize: "2.5rem", marginBottom: "1rem" }}>Responsible Gaming</h1>
-      <p className="muted" style={{ marginBottom: "2rem" }}>Last updated: May 2026</p>
-      <section style={{ display: "flex", flexDirection: "column", gap: "1.5rem", lineHeight: 1.6 }}>
-        <div>
-          <h2 style={{ fontSize: "1.5rem", marginBottom: "0.5rem" }}>1. Healthy Competition</h2>
-          <p>Stadium Arena is a skill-based tournament organizer. We encourage players to engage in healthy social competition and take breaks when needed.</p>
+    <main className="page" style={{ padding: "80px 6%" }}>
+      <div className="shell" style={{ maxWidth: "1100px", margin: "0 auto" }}>
+        <div style={{ textAlign: "center", marginBottom: "5rem" }}>
+          <h1 style={{ fontSize: "clamp(2.5rem, 5vw, 4rem)", fontWeight: 950, marginBottom: "1rem" }}>Responsible <span className="text-gradient">Competition</span></h1>
+          <p className="muted" style={{ fontSize: "1.1rem" }}>Encouraging healthy habits and fair play.</p>
         </div>
-        <div>
-          <h2 style={{ fontSize: "1.5rem", marginBottom: "0.5rem" }}>2. Limits & Self-Exclusion</h2>
-          <p>If you feel you are spending too much time or money on platform fees, you can set limits on your account or opt for self-exclusion. Please contact support to implement these measures.</p>
+
+        <div className="terms-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(400px, 1fr))", gap: "2.5rem" }}>
+          <section className="glass-panel" style={{ padding: "3rem" }}>
+            <div className="card-icon" style={{ background: "rgba(187, 134, 252, 0.1)", color: "#bb86fc" }}>🍏</div>
+            <h2 style={{ fontSize: "1.5rem", fontWeight: 800, marginBottom: "1rem" }}>1. Healthy Habits</h2>
+            <p className="muted" style={{ lineHeight: 1.8 }}>
+              W.T.A is a skill-based tournament provider. We encourage players to engage in healthy social competition and take regular breaks.
+            </p>
+          </section>
+
+          <section className="glass-panel" style={{ padding: "3rem" }}>
+            <div className="card-icon" style={{ background: "rgba(3, 218, 198, 0.1)", color: "#03dac6" }}>🛑</div>
+            <h2 style={{ fontSize: "1.5rem", fontWeight: 800, marginBottom: "1rem" }}>2. Self-Exclusion</h2>
+            <p className="muted" style={{ lineHeight: 1.8 }}>
+              If you feel you are spending too much time on the platform, you can set account limits or opt for temporary self-exclusion via support.
+            </p>
+          </section>
+
+          <section className="glass-panel" style={{ padding: "3rem" }}>
+            <div className="card-icon" style={{ background: "rgba(255, 183, 0, 0.1)", color: "#ffb700" }}>🛡️</div>
+            <h2 style={{ fontSize: "1.5rem", fontWeight: 800, marginBottom: "1rem" }}>3. Skill Integrity</h2>
+            <p className="muted" style={{ lineHeight: 1.8 }}>
+              We reiterate that this is NOT a gambling site. Success depends entirely on your mechanical and tactical skill in the game.
+            </p>
+          </section>
         </div>
-        <div>
-          <h2 style={{ fontSize: "1.5rem", marginBottom: "0.5rem" }}>3. Clear "Not Gambling" Explanation</h2>
-          <p>We reiterate that this is not a gambling site. There are no "winner takes all" wagers or random chance games. Your success depends entirely on your skill in the chosen esports titles.</p>
-        </div>
-      </section>
-    </div>
+      </div>
+    </main>
   );
 }

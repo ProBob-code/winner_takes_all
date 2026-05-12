@@ -4,54 +4,36 @@ import React from "react";
 export default function CommunityGuidelinesPage() {
   return (
     <main className="page" style={{ padding: "80px 6%" }}>
-      <div className="shell" style={{ maxWidth: "900px", margin: "0 auto" }}>
-        <h1 style={{ fontSize: "3.5rem", fontWeight: 900, marginBottom: "2rem", textAlign: "center" }}>Community Guidelines</h1>
-        
-        <p className="muted" style={{ textAlign: "center", marginBottom: "4rem", fontSize: "1.1rem" }}>
-          To maintain a professional and fair environment for all participants and organizers on the W.T.A platform.
-        </p>
+      <div className="shell" style={{ maxWidth: "1100px", margin: "0 auto" }}>
+        <div style={{ textAlign: "center", marginBottom: "5rem" }}>
+          <h1 style={{ fontSize: "clamp(2.5rem, 5vw, 4rem)", fontWeight: 950, marginBottom: "1rem" }}>Community <span className="text-gradient">Guidelines</span></h1>
+          <p className="muted" style={{ fontSize: "1.1rem" }}>Building a professional and respectful esports environment.</p>
+        </div>
 
-        <section className="stack" style={{ gap: "2.5rem" }}>
-          <div className="panel" style={{ padding: "2.5rem" }}>
-            <h2 style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: "1rem", color: "var(--accent-light)" }}>1. Fair Play & Integrity</h2>
-            <p className="muted" style={{ lineHeight: 1.8 }}>
-              Integrity is the cornerstone of W.T.A. Use of cheats, hacks, scripts, or any third-party software 
-              that provides an unfair advantage is strictly prohibited. Any participant found violating these rules 
-              will be permanently banned from the platform and forfeit all rewards.
-            </p>
-          </div>
+        <div className="terms-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(400px, 1fr))", gap: "2.5rem" }}>
+          <section className="glass-panel" style={{ padding: "3rem" }}>
+            <div className="card-icon" style={{ background: "rgba(187, 134, 252, 0.1)", color: "#bb86fc" }}>⚔️</div>
+            <h2 style={{ fontSize: "1.5rem", fontWeight: 800, marginBottom: "1.5rem" }}>1. Fair Play</h2>
+            <p className="muted" style={{ lineHeight: 1.8 }}>Integrity is paramount. Any use of cheats, scripts, or unfair advantages results in a permanent ban and forfeiture of rewards.</p>
+          </section>
 
-          <div className="panel" style={{ padding: "2.5rem" }}>
-            <h2 style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: "1rem", color: "var(--accent-light)" }}>2. Respectful Conduct</h2>
-            <p className="muted" style={{ lineHeight: 1.8 }}>
-              Toxicity, harassment, hate speech, and discriminatory behavior will not be tolerated. Participants 
-              and organizers are expected to treat each other with respect. Professionalism is required during 
-              all tournament-related communications and match play.
-            </p>
-          </div>
+          <section className="glass-panel" style={{ padding: "3rem" }}>
+            <div className="card-icon" style={{ background: "rgba(3, 218, 198, 0.1)", color: "#03dac6" }}>🤝</div>
+            <h2 style={{ fontSize: "1.5rem", fontWeight: 800, marginBottom: "1.5rem" }}>2. Respectful Conduct</h2>
+            <p className="muted" style={{ lineHeight: 1.8 }}>Toxicity and harassment have no place here. Treat every participant and organizer with professional respect.</p>
+          </section>
 
-          <div className="panel" style={{ padding: "2.5rem" }}>
-            <h2 style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: "1rem", color: "var(--accent-light)" }}>3. Organizer Responsibilities</h2>
-            <p className="muted" style={{ lineHeight: 1.8 }}>
-              Organizers are responsible for defining clear rules, maintaining accurate schedules, and ensuring 
-              fair tournament administration. Mismanagement of events or deceptive practices by organizers 
-              will result in immediate termination of their account and platform access.
-            </p>
-          </div>
+          <section className="glass-panel" style={{ padding: "3rem" }}>
+            <div className="card-icon" style={{ background: "rgba(255, 183, 0, 0.1)", color: "#ffb700" }}>📋</div>
+            <h2 style={{ fontSize: "1.5rem", fontWeight: 800, marginBottom: "1.5rem" }}>3. Organizer Rules</h2>
+            <p className="muted" style={{ lineHeight: 1.8 }}>Organizers are responsible for clear rules and fair administration. Platform tools must be used transparently.</p>
+          </section>
 
-          <div className="panel" style={{ padding: "2.5rem" }}>
-            <h2 style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: "1rem", color: "var(--accent-light)" }}>4. Skill-Based Demonstration</h2>
-            <p className="muted" style={{ lineHeight: 1.8 }}>
-              All participants acknowledge that tournaments on W.T.A are tests of skill. Attempting to influence 
-              outcomes via collusion or outside influence is a violation of these guidelines.
-            </p>
-          </div>
-        </section>
-
-        <div style={{ marginTop: "4rem", padding: "2rem", background: "rgba(139, 92, 246, 0.05)", borderRadius: "16px", border: "1px dashed var(--accent-subtle)" }}>
-          <p className="muted" style={{ fontSize: "0.9rem", textAlign: "center" }}>
-            Violation of these guidelines may result in account suspension, forfeiture of rewards, and legal action where applicable.
-          </p>
+          <section className="glass-panel" style={{ padding: "3rem" }}>
+            <div className="card-icon" style={{ background: "rgba(139, 92, 246, 0.1)", color: "#8b5cf6" }}>🏆</div>
+            <h2 style={{ fontSize: "1.5rem", fontWeight: 800, marginBottom: "1.5rem" }}>4. Skill Focus</h2>
+            <p className="muted" style={{ lineHeight: 1.8 }}>Every tournament on W.T.A is a test of skill. Collusion or attempts to influence outcomes are strictly prohibited.</p>
+          </section>
         </div>
       </div>
     </main>
