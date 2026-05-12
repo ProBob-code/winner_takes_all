@@ -3,53 +3,44 @@ import React from "react";
 
 export default function SkillBasedPolicyPage() {
   return (
-    <main className="page" style={{ padding: "80px 6%" }}>
-      <div className="shell" style={{ maxWidth: "1100px", margin: "0 auto" }}>
-        <div style={{ textAlign: "center", marginBottom: "5rem" }}>
-          <h1 style={{ fontSize: "clamp(2.5rem, 5vw, 4rem)", fontWeight: 950, marginBottom: "1rem" }}>Skill-Based <span className="text-gradient">Policy</span></h1>
-          <p className="muted" style={{ fontSize: "1.1rem" }}>Defining the boundary between chance and expertise.</p>
-        </div>
+    <main className="page" style={{ padding: "100px 6% 80px" }}>
+      <div className="shell" style={{ maxWidth: "900px", margin: "0 auto" }}>
+        <header style={{ marginBottom: "5rem" }}>
+          <h1 style={{ fontSize: "clamp(2.5rem, 5vw, 4rem)", fontWeight: 950, marginBottom: "1rem", letterSpacing: "-2px" }}>
+            SKILL-BASED <span className="text-gradient" style={{ background: "linear-gradient(135deg, #fbbf24, #f59e0b)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>POLICY.</span>
+          </h1>
+          <p className="muted" style={{ fontSize: "1.1rem" }}>Defining the technical boundary between chance and expertise.</p>
+        </header>
 
-        <div className="glass-panel glowing-border" style={{ padding: "3.5rem", marginBottom: "4rem", textAlign: "center" }}>
-          <h2 style={{ fontSize: "1.5rem", fontWeight: 800, marginBottom: "1.5rem", color: "var(--accent-light)" }}>Official Declaration</h2>
-          <p style={{ fontSize: "1.2rem", lineHeight: 1.8, fontWeight: 500, maxWidth: "800px", margin: "0 auto" }}>
-            Winner.Takes.All is a Tournament Infrastructure SaaS. We do not facilitate betting or games of chance. 
-            All outcomes are determined solely by player skill and mechanical execution.
-          </p>
-        </div>
-
-        <div className="terms-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(450px, 1fr))", gap: "2.5rem" }}>
-          <section className="glass-panel" style={{ padding: "3rem" }}>
-            <h3 style={{ fontSize: "1.5rem", fontWeight: 800, marginBottom: "1.25rem" }}>Definition of Skill</h3>
-            <p className="muted" style={{ lineHeight: 1.8 }}>
-              On W.T.A, "Skill" includes tactical decision-making, mechanical precision, strategic planning, 
-              and deep knowledge of game mechanics. Every event is a test of expertise.
-            </p>
-          </section>
-
-          <section className="glass-panel" style={{ padding: "3rem" }}>
-            <h3 style={{ fontSize: "1.5rem", fontWeight: 800, marginBottom: "1.25rem" }}>Legal Framework</h3>
-            <p className="muted" style={{ lineHeight: 1.8 }}>
-              Our platform operates within international laws governing skill-based competitions, 
-              which are legally distinct from gambling and protected under constitutional frameworks in many regions.
-            </p>
-          </section>
-
-          <section className="glass-panel" style={{ padding: "3rem" }}>
-            <h3 style={{ fontSize: "1.5rem", fontWeight: 800, marginBottom: "1.25rem" }}>Infrastructure Role</h3>
-            <p className="muted" style={{ lineHeight: 1.8 }}>
-              W.T.A provides the digital environment for organizers. We are the technology layer that 
-              ensures tournaments run smoothly, fairly, and transparently.
-            </p>
-          </section>
-
-          <section className="glass-panel" style={{ padding: "3rem" }}>
-            <h3 style={{ fontSize: "1.5rem", fontWeight: 800, marginBottom: "1.25rem" }}>Regional Compliance</h3>
-            <p className="muted" style={{ lineHeight: 1.8 }}>
-              Users are responsible for local compliance. W.T.A reserves the right to restrict access 
-              in jurisdictions where skill-based rewards are regulated or prohibited.
-            </p>
-          </section>
+        <div className="stack" style={{ gap: "2rem" }}>
+          {[
+            {
+              title: "Definition of Skill",
+              content: "A game of skill is one where the outcome is determined predominantly by mental or physical expertise, rather than chance. W.T.A only supports titles where mechanical skill, strategic planning, and knowledge of game mechanics are the primary factors in success."
+            },
+            {
+              title: "Randomness & RNG",
+              content: "While many modern games contain elements of randomness (RNG), we only support titles where such elements are balanced and controllable by skilled players. Titles that rely primarily on luck or random outcomes are strictly prohibited from utilizing our reward infrastructure."
+            },
+            {
+              title: "Legal Declaration",
+              content: "Winner.Takes.All operates as a B2B tournament infrastructure provider. We facilitate skill-based competitions which are legally distinct from gambling in most jurisdictions. Users and organizers are responsible for verifying the specific legality of skill-based rewards in their region."
+            },
+            {
+               title: "Infrastructure Framing",
+               content: "As a SaaS provider, W.T.A provides the digital environment for organizers to host their events. The platform facilitates the collection of participation fees and the distribution of rewards as a service to the organizer."
+            }
+          ].map((section, idx) => (
+            <section key={idx} className="panel" style={{ padding: "2.5rem", display: "flex", gap: "2rem", alignItems: "flex-start" }}>
+              <div style={{ fontSize: "1.5rem", fontWeight: 900, color: "var(--gold)", opacity: 0.3, fontFamily: "var(--font-outfit)", minWidth: "40px" }}>
+                {(idx + 1).toString().padStart(2, '0')}
+              </div>
+              <div>
+                <h2 style={{ fontSize: "1.4rem", fontWeight: 800, marginBottom: "1rem" }}>{section.title}</h2>
+                <p className="muted" style={{ lineHeight: 1.8 }}>{section.content}</p>
+              </div>
+            </section>
+          ))}
         </div>
       </div>
     </main>

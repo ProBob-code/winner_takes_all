@@ -35,14 +35,14 @@ export function Topbar({ user: initialUser }: { user?: any }) {
             <path d="M5 16L3 5L8.5 10L12 4L15.5 10L21 5L19 16H5ZM19 19C19 19.5523 18.5523 20 18 20H6C5.44772 20 5 19.5523 5 19V18H19V19Z" fill="#FFD700"/>
           </svg>
         </span>
-        <span className="brand-text" style={{ letterSpacing: "0.5px", fontWeight: 800 }}>👑 Winner.Takes.All</span>
+        <span className="brand-text" style={{ letterSpacing: "0.5px", fontWeight: 800 }}>Winner.Takes.All</span>
         <span className="brand-text-mobile" style={{ fontWeight: 900 }}>W.T.A</span>
       </Link>
       <div className="topbar-search"></div>
       <nav className="topbar-nav">
         <div className="desktop-only" style={{ display: "flex", gap: "1.5rem", marginRight: "1rem" }}>
-          <Link href="/about" className="topbar-link">About Us</Link>
-          <Link href="/contact" className="topbar-link">Contact Us</Link>
+          <Link href="/about" className="topbar-link">About</Link>
+          <Link href="/contact" className="topbar-link">Contact</Link>
           <Link href="/terms" className="topbar-link">Terms</Link>
         </div>
         <ThemeToggle />

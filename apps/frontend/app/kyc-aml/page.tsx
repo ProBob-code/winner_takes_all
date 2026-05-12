@@ -3,31 +3,40 @@ import React from "react";
 
 export default function KycAmlPage() {
   return (
-    <main className="page" style={{ padding: "80px 6%" }}>
-      <div className="shell" style={{ maxWidth: "1000px", margin: "0 auto" }}>
-        <div style={{ textAlign: "center", marginBottom: "5rem" }}>
-          <h1 style={{ fontSize: "clamp(2.5rem, 5vw, 4rem)", fontWeight: 950, marginBottom: "1rem" }}>KYC & <span className="text-gradient">AML</span></h1>
-          <p className="muted" style={{ fontSize: "1.1rem" }}>Ensuring a secure and compliant tournament ecosystem.</p>
-        </div>
+    <main className="page" style={{ padding: "100px 6% 80px" }}>
+      <div className="shell" style={{ maxWidth: "900px", margin: "0 auto" }}>
+        <header style={{ marginBottom: "5rem" }}>
+          <h1 style={{ fontSize: "clamp(2.5rem, 5vw, 4rem)", fontWeight: 950, marginBottom: "1rem", letterSpacing: "-2px" }}>
+            KYC & <span className="text-gradient" style={{ background: "linear-gradient(135deg, #6366f1, #a855f7)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>AML POLICY.</span>
+          </h1>
+          <p className="muted" style={{ fontSize: "1.1rem" }}>Ensuring platform integrity and regulatory compliance.</p>
+        </header>
 
-        <div className="terms-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(400px, 1fr))", gap: "2.5rem" }}>
-          <section className="glass-panel" style={{ padding: "3rem" }}>
-            <div className="card-icon" style={{ background: "rgba(187, 134, 252, 0.1)", color: "#bb86fc" }}>🆔</div>
-            <h2 style={{ fontSize: "1.5rem", fontWeight: 800, marginBottom: "1rem" }}>1. Know Your Customer</h2>
-            <p className="muted" style={{ lineHeight: 1.8 }}>
-              To ensure a safe esports environment, we verify user identities. 
-              You may be asked for government-issued ID before high-value reward withdrawals.
-            </p>
-          </section>
-
-          <section className="glass-panel" style={{ padding: "3rem" }}>
-            <div className="card-icon" style={{ background: "rgba(3, 218, 198, 0.1)", color: "#03dac6" }}>🕵️</div>
-            <h2 style={{ fontSize: "1.5rem", fontWeight: 800, marginBottom: "1rem" }}>2. Anti-Money Laundering</h2>
-            <p className="muted" style={{ lineHeight: 1.8 }}>
-              We strictly prohibit money laundering. Our platform monitors transactions 
-              and reports suspicious activity to the relevant authorities.
-            </p>
-          </section>
+        <div className="stack" style={{ gap: "2rem" }}>
+          {[
+            {
+              title: "Know Your Customer (KYC)",
+              content: "To ensure a safe esports community platform, we verify the identity of our users. You may be asked to provide government-issued identification before withdrawing reward credits to prevent fraud and ensure compliance with age restrictions."
+            },
+            {
+              title: "Anti-Money Laundering (AML)",
+              content: "We strictly prohibit the use of our platform for money laundering or illegal activities. We actively monitor transactions and will report any suspicious activity to the relevant authorities."
+            },
+            {
+              title: "Verification Process",
+              content: "Identity verification is performed by our secure compliance partners. Your sensitive documents are encrypted and used only for verification purposes in accordance with our Privacy Policy."
+            }
+          ].map((section, idx) => (
+            <section key={idx} className="panel" style={{ padding: "2.5rem", display: "flex", gap: "2rem", alignItems: "flex-start" }}>
+              <div style={{ fontSize: "1.5rem", fontWeight: 900, color: "var(--accent-light)", opacity: 0.3, fontFamily: "var(--font-outfit)", minWidth: "40px" }}>
+                {(idx + 1).toString().padStart(2, '0')}
+              </div>
+              <div>
+                <h2 style={{ fontSize: "1.4rem", fontWeight: 800, marginBottom: "1rem" }}>{section.title}</h2>
+                <p className="muted" style={{ lineHeight: 1.8 }}>{section.content}</p>
+              </div>
+            </section>
+          ))}
         </div>
       </div>
     </main>
