@@ -1257,71 +1257,93 @@ export function QuickTournament() {
         <div className="premium-standings">
           {teams.length > 0 && (() => {
             const allPlayers = teams.flatMap(t => t.players.map(p => ({ ...p, teamName: t.name })));
-            const topPlayer = [...allPlayers].sort((a, b) => b.total_balls_potted - a.total_balls_potted || a.total_fouls - b.total_fouls)[0];
+            const sortedPlayers = [...allPlayers].sort((a, b) => b.total_balls_potted - a.total_balls_potted || a.total_fouls - b.total_fouls);
+            const topPlayer = sortedPlayers[0];
             const tournamentWinner = [...teams].sort((a, b) => b.group_points - a.group_points || b.total_score - a.total_score)[0];
 
             return (
-              <div className="tournament-awards-row">
-                <div className="award-card glass-morphism gold-glow">
-                  <div className="award-icon">🏆</div>
-                  <div className="award-content">
-                    <div className="award-label">MAN OF THE TOURNAMENT</div>
-                    <div className="award-winner glow-text-gold">
-                      {topPlayer?.name || "TBD"}
+              <>
+                <div className="tournament-awards-row">
+                  <div className="award-card glass-morphism gold-glow">
+                    <div className="award-icon">🏆</div>
+                    <div className="award-content">
+                      <div className="award-label">MAN OF THE TOURNAMENT</div>
+                      <div className="award-winner glow-text-gold">
+                        {topPlayer?.name || "TBD"}
+                      </div>
+                      <div className="award-meta">
+                        {topPlayer?.total_balls_potted || 0} BALLS • {topPlayer?.teamName || ""}
+                      </div>
                     </div>
-                    <div className="award-meta">
-                      {topPlayer?.total_balls_potted || 0} BALLS • {topPlayer?.teamName || ""}
+                  </div>
+                  <div className="award-card glass-morphism blue-glow">
+                    <div className="award-icon">👑</div>
+                    <div className="award-content">
+                      <div className="award-label">TOURNAMENT CHAMPION</div>
+                      <div className="award-winner glow-text">
+                        {tournamentWinner?.name || "TBD"}
+                      </div>
+                      <div className="award-meta">
+                        {tournamentWinner?.group_points || 0} WINS • {tournamentWinner?.total_score || 0} PTS
+                      </div>
                     </div>
                   </div>
                 </div>
-                <div className="award-card glass-morphism blue-glow">
-                  <div className="award-icon">👑</div>
-                  <div className="award-content">
-                    <div className="award-label">TOURNAMENT CHAMPION</div>
-                    <div className="award-winner glow-text">
-                      {tournamentWinner?.name || "TBD"}
-                    </div>
-                    <div className="award-meta">
-                      {tournamentWinner?.group_points || 0} WINS • {tournamentWinner?.total_score || 0} PTS
-                    </div>
+
+                <div className="hof-section">
+                  <div className="hof-title">THE SQUAD LEADERBOARD</div>
+                  <div className="hof-grid">
+                    {sortedPlayers.slice(0, 4).map((p, i) => (
+                      <div key={p.id} className="hof-card">
+                        <div className="hof-rank">{i === 0 ? 'MOTT' : `#${i + 1}`}</div>
+                        <div className="hof-avatar">{i === 0 ? '🔥' : i === 1 ? '⚡' : i === 2 ? '🎯' : '👤'}</div>
+                        <div className="hof-name">{p.name}</div>
+                        <div className="hof-team">{p.teamName}</div>
+                        <div className="hof-stats">
+                          <div className="h-stat"><span className="h-val">{p.total_balls_potted}</span><span className="h-lbl">BALLS</span></div>
+                          <div className="h-stat"><span className="h-val" style={{ color: '#ef4444' }}>{p.total_fouls}</span><span className="h-lbl">FOULS</span></div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
-              </div>
+              </>
             );
           })()}
 
-          <div className="standings-grid-v2">
-            {[...teams].sort((a, b) => b.group_points - a.group_points || b.total_score - a.total_score).map((t, i) => {
-              const rankClass = i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : 'normal';
-              return (
-                <div key={t.id} className={`standing-card-v2 ${rankClass}`}>
-                  <div className="rank-indicator">{i === 0 ? '👑' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i + 1}`}</div>
-                  <div className="team-info"><div className="team-name">{t.name}</div><div className="team-status">{t.matches_played} MATCHES PLAYED</div></div>
-                  <div className="stats-row">
-                    <div className="stat"><div className="stat-label">WINS</div><div className="stat-val win">{t.group_points}</div></div>
-                    <div className="stat"><div className="stat-label">BALLS</div><div className="stat-val">{t.total_balls_potted}</div></div>
-                    <div className="stat"><div className="stat-label">FOULS</div><div className="stat-val danger">{t.total_fouls}</div></div>
-                    <div className="stat"><div className="stat-label">SCORE</div><div className="stat-val">{t.total_score}</div></div>
+          <div className="standings-list-v3">
+            {[...teams].sort((a, b) => b.group_points - a.group_points || b.total_score - a.total_score).map((t, i) => (
+              <div key={t.id} className="team-rank-card">
+                <div className="t-card-header">
+                  <div className="t-rank-big">{i === 0 ? '👑' : i === 1 ? '02' : i === 2 ? '03' : String(i + 1).padStart(2, '0')}</div>
+                  <div className="t-main-info">
+                    <div className="t-name-lg">{t.name}</div>
+                    <div className="t-meta-sm">{t.matches_played} MATCHES PLAYED • {t.is_team ? 'SQUAD' : 'SINGLE'}</div>
                   </div>
-                  {t.is_team && (
-                    <div className="player-breakdown-v2">
-                      <div className="breakdown-header">PLAYER PERFORMANCE</div>
-                      <div className="breakdown-grid">
-                        {t.players.map(p => (
-                          <div key={p.id} className="p-breakdown-row">
-                            <span className="p-b-name">{p.name}</span>
-                            <div className="p-b-stats">
-                              <span className="p-b-stat">🏀 {p.total_balls_potted}</span>
-                              <span className="p-b-stat danger">⚠️ {p.total_fouls}</span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                  <div className="t-stats-grid">
+                    <div className="t-stat-box"><div className="t-s-val win">{t.group_points}</div><div className="t-s-lbl">WINS</div></div>
+                    <div className="t-stat-box"><div className="t-s-val">{t.total_balls_potted}</div><div className="t-s-lbl">BALLS</div></div>
+                    <div className="t-stat-box"><div className="t-s-val" style={{ color: '#ef4444' }}>{t.total_fouls}</div><div className="t-s-lbl">FOULS</div></div>
+                    <div className="t-stat-box"><div className="t-s-val" style={{ color: 'var(--gold)' }}>{t.total_score}</div><div className="t-s-lbl">PTS</div></div>
+                  </div>
                 </div>
-              );
-            })}
+                {t.is_team && (
+                  <div className="t-roster-section">
+                    <div className="roster-grid-v3">
+                      {t.players.map(p => (
+                        <div key={p.id} className="p-mini-card">
+                          <span className="p-m-name">{p.name}</span>
+                          <div className="p-m-stats">
+                            <span className="p-m-stat">🏀 {p.total_balls_potted}</span>
+                            <span className="p-m-stat danger">⚠️ {p.total_fouls}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
         </div>
       )}
