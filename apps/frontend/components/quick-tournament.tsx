@@ -561,7 +561,7 @@ export function QuickTournament() {
           nm.fouls_b--;
           nm.score_team_b += 5;
         }
-      } else {
+      } else if (type === 'BLACK') {
         const currentBalls = isA ? nm.balls_potted_a : nm.balls_potted_b;
         if (currentBalls < 7) {
           nm.status = 'COMPLETED';
@@ -574,25 +574,37 @@ export function QuickTournament() {
           if (isA) nm.score_team_a += 30;
           else nm.score_team_b += 30;
         }
-        setTeams(prev => prev.map(t => (t.id === nm.team_a_id || t.id === nm.team_b_id) ? { 
-          ...t, 
-          matches_played: t.matches_played + 1, 
-          total_score: t.total_score + (t.id === nm.team_a_id ? nm.score_team_a : nm.score_team_b), 
-          group_points: t.group_points + (nm.winner_id === t.id ? 1 : 0),
-          total_balls_potted: t.total_balls_potted + (t.id === nm.team_a_id ? nm.balls_potted_a : nm.balls_potted_b),
-          total_fouls: t.total_fouls + (t.id === nm.team_a_id ? nm.fouls_a : nm.fouls_b),
-          players: t.players.map(p => {
-            const isActive = (t.id === nm.team_a_id && p.id === nm.active_player_a_id) || 
-                             (t.id === nm.team_b_id && p.id === nm.active_player_b_id);
-            if (!isActive) return p;
-            if (type === 'BALL') return { ...p, total_balls_potted: p.total_balls_potted + 1 };
-            if (type === 'REMOVE_BALL') return { ...p, total_balls_potted: Math.max(0, p.total_balls_potted - 1) };
-            if (type === 'FOUL') return { ...p, total_fouls: p.total_fouls + 1 };
-            if (type === 'REMOVE_FOUL') return { ...p, total_fouls: Math.max(0, p.total_fouls - 1) };
-            return p;
-          })
-        } : t));
       }
+
+      // Update team and player stats for ANY change
+      setTeams(prev => prev.map(t => {
+        if (t.id !== nm.team_a_id && t.id !== nm.team_b_id) return t;
+
+        const isCurrentTeam = t.id === teamId;
+        const updatedPlayers = t.players.map(p => {
+          const isActive = (t.id === nm.team_a_id && p.id === nm.active_player_a_id) || 
+                           (t.id === nm.team_b_id && p.id === nm.active_player_b_id);
+          if (!isActive || !isCurrentTeam) return p;
+          
+          if (type === 'BALL') return { ...p, total_balls_potted: p.total_balls_potted + 1 };
+          if (type === 'REMOVE_BALL') return { ...p, total_balls_potted: Math.max(0, p.total_balls_potted - 1) };
+          if (type === 'FOUL') return { ...p, total_fouls: p.total_fouls + 1 };
+          if (type === 'REMOVE_FOUL') return { ...p, total_fouls: Math.max(0, p.total_fouls - 1) };
+          return p;
+        });
+
+        const isMatchComplete = nm.status === 'COMPLETED';
+        return { 
+          ...t, 
+          matches_played: isMatchComplete ? t.matches_played + 1 : t.matches_played, 
+          total_score: isMatchComplete ? t.total_score + (t.id === nm.team_a_id ? nm.score_team_a : nm.score_team_b) : t.total_score, 
+          group_points: isMatchComplete ? t.group_points + (nm.winner_id === t.id ? 1 : 0) : t.group_points,
+          total_balls_potted: t.total_balls_potted + (type === 'BALL' && isCurrentTeam ? 1 : (type === 'REMOVE_BALL' && isCurrentTeam ? -1 : 0)),
+          total_fouls: t.total_fouls + (type === 'FOUL' && isCurrentTeam ? 1 : (type === 'REMOVE_FOUL' && isCurrentTeam ? -1 : 0)),
+          players: updatedPlayers
+        };
+      }));
+
       if (nm.status === 'COMPLETED') {
         setVictoryMatch(nm);
         setTimeout(() => setVictoryMatch(null), 10000);
