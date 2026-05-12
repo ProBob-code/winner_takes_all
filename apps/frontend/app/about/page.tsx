@@ -7,7 +7,7 @@ export default function AboutPage() {
       <div className="shell" style={{ maxWidth: "850px", margin: "0 auto" }}>
         <h1 style={{ fontSize: "clamp(2.5rem, 5vw, 4rem)", fontWeight: 950, marginBottom: "3rem", textAlign: "left", lineHeight: 1 }}>
           The Story Behind<br />
-          <span className="gradient-text">Winner.Takes.All</span>
+          <span className="gradient-text">W.T.A</span>
         </h1>
         
         <section style={{ marginBottom: "4rem" }}>
