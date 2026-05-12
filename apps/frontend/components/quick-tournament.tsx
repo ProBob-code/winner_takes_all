@@ -5,7 +5,15 @@ import { backendFetch } from "@/lib/backend";
 import { TeamPod, VSCore } from "@/components/match-components";
 import "@/components/tournament-engine.css";
 
-type Team = { id: string; name: string; matches_played: number; group_points: number; total_score: number; };
+type Team = { 
+  id: string; 
+  name: string; 
+  matches_played: number; 
+  group_points: number; 
+  total_score: number; 
+  total_balls_potted: number; 
+  total_fouls: number; 
+};
 type Match = {
   id: string;
   team_a_id: string;
@@ -67,7 +75,7 @@ export function QuickTournament() {
 
   // Sync with LocalStorage
   useEffect(() => {
-    const saved = localStorage.getItem("wta_arena_quick_v9");
+    const saved = localStorage.getItem("wta_arena_quick_v10");
     if (saved) {
       const parsed = JSON.parse(saved);
       setTeams(parsed.teams || []);
@@ -84,7 +92,7 @@ export function QuickTournament() {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem("wta_arena_quick_v9", JSON.stringify({ 
+    localStorage.setItem("wta_arena_quick_v10", JSON.stringify({ 
       teams, matches, isStarted, arenaId, matchesPerTeam, defaultDuration, 
       tournamentType, arenaName, arenaPin, isLocked 
     }));
@@ -129,7 +137,9 @@ export function QuickTournament() {
                 ...t, 
                 matches_played: t.matches_played + 1, 
                 total_score: t.total_score + (t.id === nm.team_a_id ? nm.score_team_a : nm.score_team_b) + (isDraw ? 50 : 0), 
-                group_points: t.group_points + (nm.winner_id === t.id ? 1 : 0) 
+                group_points: t.group_points + (nm.winner_id === t.id ? 1 : 0),
+                total_balls_potted: t.total_balls_potted + (t.id === nm.team_a_id ? nm.balls_potted_a : nm.balls_potted_b),
+                total_fouls: t.total_fouls + (t.id === nm.team_a_id ? nm.fouls_a : nm.fouls_b)
               } : t));
               
               return nm;
@@ -237,7 +247,15 @@ export function QuickTournament() {
 
   const addTeam = () => {
     if (!newTeamName.trim()) return;
-    const newTeam: Team = { id: Math.random().toString(36).substr(2, 9), name: newTeamName.trim(), matches_played: 0, group_points: 0, total_score: 0 };
+    const newTeam: Team = { 
+      id: Math.random().toString(36).substr(2, 9), 
+      name: newTeamName.trim(), 
+      matches_played: 0, 
+      group_points: 0, 
+      total_score: 0, 
+      total_balls_potted: 0, 
+      total_fouls: 0 
+    };
     const updatedTeams = [...teams, newTeam];
     setTeams(updatedTeams);
     setNewTeamName("");
@@ -493,7 +511,14 @@ export function QuickTournament() {
           if (isA) nm.score_team_a += 30;
           else nm.score_team_b += 30;
         }
-        setTeams(prev => prev.map(t => (t.id === nm.team_a_id || t.id === nm.team_b_id) ? { ...t, matches_played: t.matches_played + 1, total_score: t.total_score + (t.id === nm.team_a_id ? nm.score_team_a : nm.score_team_b), group_points: t.group_points + (nm.winner_id === t.id ? 1 : 0) } : t));
+        setTeams(prev => prev.map(t => (t.id === nm.team_a_id || t.id === nm.team_b_id) ? { 
+          ...t, 
+          matches_played: t.matches_played + 1, 
+          total_score: t.total_score + (t.id === nm.team_a_id ? nm.score_team_a : nm.score_team_b), 
+          group_points: t.group_points + (nm.winner_id === t.id ? 1 : 0),
+          total_balls_potted: t.total_balls_potted + (t.id === nm.team_a_id ? nm.balls_potted_a : nm.balls_potted_b),
+          total_fouls: t.total_fouls + (t.id === nm.team_a_id ? nm.fouls_a : nm.fouls_b)
+        } : t));
       }
       if (nm.status === 'COMPLETED') {
         setVictoryMatch(nm);
@@ -1035,6 +1060,35 @@ export function QuickTournament() {
         </div>
       ) : (
         <div className="premium-standings slide-in">
+          {teams.length > 0 && (
+            <div className="tournament-awards-row animate-in">
+              <div className="award-card glass-morphism gold-glow">
+                <div className="award-icon">🏆</div>
+                <div className="award-content">
+                  <div className="award-label">MAN OF THE TOURNAMENT</div>
+                  <div className="award-winner glow-text-gold">
+                    {[...teams].sort((a, b) => b.total_balls_potted - a.total_balls_potted || a.total_fouls - b.total_fouls)[0]?.name || "TBD"}
+                  </div>
+                  <div className="award-meta">
+                    {Math.max(...teams.map(t => t.total_balls_potted))} BALLS POTTED
+                  </div>
+                </div>
+              </div>
+              <div className="award-card glass-morphism blue-glow">
+                <div className="award-icon">👑</div>
+                <div className="award-content">
+                  <div className="award-label">MAN OF THE SERIES</div>
+                  <div className="award-winner glow-text">
+                    {[...teams].sort((a, b) => b.total_balls_potted - a.total_balls_potted || a.total_fouls - b.total_fouls)[0]?.name || "TBD"}
+                  </div>
+                  <div className="award-meta">
+                    DOMINATING THE ARENA
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="standings-grid-v2">
             {[...teams].sort((a, b) => b.group_points - a.group_points || b.total_score - a.total_score).map((t, i) => {
               const rankClass = i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : 'normal';
@@ -1044,6 +1098,8 @@ export function QuickTournament() {
                   <div className="team-info"><div className="team-name">{t.name}</div><div className="team-status">{t.matches_played} MATCHES PLAYED</div></div>
                   <div className="stats-row">
                     <div className="stat"><div className="stat-label">WINS</div><div className="stat-val win">{t.group_points}</div></div>
+                    <div className="stat"><div className="stat-label">BALLS</div><div className="stat-val">{t.total_balls_potted}</div></div>
+                    <div className="stat"><div className="stat-label">FOULS</div><div className="stat-val danger">{t.total_fouls}</div></div>
                     <div className="stat"><div className="stat-label">SCORE</div><div className="stat-val">{t.total_score}</div></div>
                   </div>
                 </div>

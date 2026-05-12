@@ -2333,3 +2333,103 @@ select.premium-input-v2 option {
   .team-pod .pod-actions { grid-template-columns: 1fr; }
   .foul-group { justify-content: center; flex-wrap: nowrap; }
 }
+
+/* --- Tournament Awards --- */
+.tournament-awards-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2.5rem;
+}
+
+.award-card {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 1.5rem 2rem;
+  border-radius: 24px;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: transform 0.3s ease;
+}
+
+.award-card:hover {
+  transform: translateY(-5px);
+}
+
+.award-card.gold-glow {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(0, 0, 0, 0.4) 100%);
+  border-color: rgba(245, 158, 11, 0.2);
+  box-shadow: 0 10px 30px rgba(245, 158, 11, 0.1);
+}
+
+.award-card.blue-glow {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(0, 0, 0, 0.4) 100%);
+  border-color: rgba(59, 130, 246, 0.2);
+  box-shadow: 0 10px 30px rgba(59, 130, 246, 0.1);
+}
+
+.award-icon {
+  font-size: 2.5rem;
+  filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.2));
+}
+
+.award-content {
+  flex: 1;
+}
+
+.award-label {
+  font-size: 0.65rem;
+  font-weight: 900;
+  letter-spacing: 2px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin-bottom: 0.25rem;
+}
+
+.award-winner {
+  font-size: 1.5rem;
+  font-weight: 950;
+  margin-bottom: 0.25rem;
+}
+
+.award-meta {
+  font-size: 0.75rem;
+  font-weight: 800;
+  opacity: 0.5;
+  letter-spacing: 1px;
+}
+
+/* Standings Stats Adjustments */
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+  margin-top: 1rem;
+  width: 100%;
+}
+
+.stat-val.danger {
+  color: #ef4444;
+}
+
+@media (max-width: 768px) {
+  .tournament-awards-row {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .award-card {
+    padding: 1.25rem;
+  }
+  
+  .award-winner {
+    font-size: 1.25rem;
+  }
+  
+  .stats-row {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+}
