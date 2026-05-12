@@ -5,6 +5,13 @@ import { backendFetch } from "@/lib/backend";
 import { TeamPod, VSCore } from "@/components/match-components";
 import "@/components/tournament-engine.css";
 
+type Player = {
+  id: string;
+  name: string;
+  total_balls_potted: number;
+  total_fouls: number;
+};
+
 type Team = { 
   id: string; 
   name: string; 
@@ -13,6 +20,8 @@ type Team = {
   total_score: number; 
   total_balls_potted: number; 
   total_fouls: number; 
+  is_team: boolean;
+  players: Player[];
 };
 type Match = {
   id: string;
@@ -35,6 +44,8 @@ type Match = {
   fouls_a: number;
   fouls_b: number;
   is_draw?: boolean;
+  active_player_a_id?: string | null;
+  active_player_b_id?: string | null;
 };
 
 type ModalConfig = {
@@ -72,10 +83,12 @@ export function QuickTournament() {
   const [arenaPin, setArenaPin] = useState<string | null>(null);
   const [isLocked, setIsLocked] = useState(false);
   const [showPinModal, setShowPinModal] = useState<{ mode: 'SET' | 'VERIFY', onConfirm: (pin: string) => void } | null>(null);
+  const [participantType, setParticipantType] = useState<'SINGLE' | 'TEAM'>('SINGLE');
+  const [teamPlayersInput, setTeamPlayersInput] = useState<string[]>(["", ""]);
 
   // Sync with LocalStorage
   useEffect(() => {
-    const saved = localStorage.getItem("wta_arena_quick_v10");
+    const saved = localStorage.getItem("wta_arena_quick_v11");
     if (saved) {
       const parsed = JSON.parse(saved);
       setTeams(parsed.teams || []);
@@ -92,7 +105,7 @@ export function QuickTournament() {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem("wta_arena_quick_v10", JSON.stringify({ 
+    localStorage.setItem("wta_arena_quick_v11", JSON.stringify({ 
       teams, matches, isStarted, arenaId, matchesPerTeam, defaultDuration, 
       tournamentType, arenaName, arenaPin, isLocked 
     }));
@@ -133,14 +146,30 @@ export function QuickTournament() {
               setVictoryMatch(nm);
               setTimeout(() => setVictoryMatch(null), 10000);
               
-              setTeams(tPrev => tPrev.map(t => (t.id === nm.team_a_id || t.id === nm.team_b_id) ? { 
-                ...t, 
-                matches_played: t.matches_played + 1, 
-                total_score: t.total_score + (t.id === nm.team_a_id ? nm.score_team_a : nm.score_team_b) + (isDraw ? 50 : 0), 
-                group_points: t.group_points + (nm.winner_id === t.id ? 1 : 0),
-                total_balls_potted: t.total_balls_potted + (t.id === nm.team_a_id ? nm.balls_potted_a : nm.balls_potted_b),
-                total_fouls: t.total_fouls + (t.id === nm.team_a_id ? nm.fouls_a : nm.fouls_b)
-              } : t));
+              setTeams(tPrev => tPrev.map(t => {
+                if (t.id !== nm.team_a_id && t.id !== nm.team_b_id) return t;
+
+                const updatedPlayers = t.players.map(p => {
+                  const isActive = (t.id === nm.team_a_id && p.id === nm.active_player_a_id) || 
+                                   (t.id === nm.team_b_id && p.id === nm.active_player_b_id);
+                  if (!isActive) return p;
+                  
+                  // In timer completion, we just sync the current match stats if needed, 
+                  // but usually they are already synced during updateScore.
+                  // However, for consistency with the manual completion logic:
+                  return p; 
+                });
+
+                return { 
+                  ...t, 
+                  matches_played: t.matches_played + 1, 
+                  total_score: t.total_score + (t.id === nm.team_a_id ? nm.score_team_a : nm.score_team_b) + (isDraw ? 50 : 0), 
+                  group_points: t.group_points + (nm.winner_id === t.id ? 1 : 0),
+                  total_balls_potted: t.total_balls_potted + (t.id === nm.team_a_id ? nm.balls_potted_a : nm.balls_potted_b),
+                  total_fouls: t.total_fouls + (t.id === nm.team_a_id ? nm.fouls_a : nm.fouls_b),
+                  players: updatedPlayers
+                };
+              }));
               
               return nm;
             }
@@ -247,6 +276,35 @@ export function QuickTournament() {
 
   const addTeam = () => {
     if (!newTeamName.trim()) return;
+    
+    let players: Player[] = [];
+    if (participantType === 'SINGLE') {
+      players = [{
+        id: Math.random().toString(36).substr(2, 9),
+        name: newTeamName.trim(),
+        total_balls_potted: 0,
+        total_fouls: 0
+      }];
+    } else {
+      players = teamPlayersInput
+        .filter(name => name.trim())
+        .map(name => ({
+          id: Math.random().toString(36).substr(2, 9),
+          name: name.trim(),
+          total_balls_potted: 0,
+          total_fouls: 0
+        }));
+      if (players.length < 2) {
+        setModalConfig({
+          icon: "⚠️",
+          title: "INVALID TEAM",
+          message: "A team must have at least 2 players.",
+          onConfirm: () => setModalConfig(null)
+        });
+        return;
+      }
+    }
+
     const newTeam: Team = { 
       id: Math.random().toString(36).substr(2, 9), 
       name: newTeamName.trim(), 
@@ -254,11 +312,14 @@ export function QuickTournament() {
       group_points: 0, 
       total_score: 0, 
       total_balls_potted: 0, 
-      total_fouls: 0 
+      total_fouls: 0,
+      is_team: participantType === 'TEAM',
+      players
     };
     const updatedTeams = [...teams, newTeam];
     setTeams(updatedTeams);
     setNewTeamName("");
+    setTeamPlayersInput(["", ""]);
 
     if (isStarted && tournamentType === 'GROUP') {
       const next = generateMatchesPass(updatedTeams, matches);
@@ -318,7 +379,9 @@ export function QuickTournament() {
       winner_id: null, active_team_id: null, duration: defaultDuration, start_time: null,
       order: matches.length,
       team_a_house: 'SOLID', team_b_house: 'STRIPES',
-      fouls_a: 0, fouls_b: 0
+      fouls_a: 0, fouls_b: 0,
+      active_player_a_id: teams.find(t => t.id === t1Id)?.players[0]?.id || null,
+      active_player_b_id: teams.find(t => t.id === t2Id)?.players[0]?.id || null
     };
     setMatches([...matches, match]);
   };
@@ -517,7 +580,17 @@ export function QuickTournament() {
           total_score: t.total_score + (t.id === nm.team_a_id ? nm.score_team_a : nm.score_team_b), 
           group_points: t.group_points + (nm.winner_id === t.id ? 1 : 0),
           total_balls_potted: t.total_balls_potted + (t.id === nm.team_a_id ? nm.balls_potted_a : nm.balls_potted_b),
-          total_fouls: t.total_fouls + (t.id === nm.team_a_id ? nm.fouls_a : nm.fouls_b)
+          total_fouls: t.total_fouls + (t.id === nm.team_a_id ? nm.fouls_a : nm.fouls_b),
+          players: t.players.map(p => {
+            const isActive = (t.id === nm.team_a_id && p.id === nm.active_player_a_id) || 
+                             (t.id === nm.team_b_id && p.id === nm.active_player_b_id);
+            if (!isActive) return p;
+            if (type === 'BALL') return { ...p, total_balls_potted: p.total_balls_potted + 1 };
+            if (type === 'REMOVE_BALL') return { ...p, total_balls_potted: Math.max(0, p.total_balls_potted - 1) };
+            if (type === 'FOUL') return { ...p, total_fouls: p.total_fouls + 1 };
+            if (type === 'REMOVE_FOUL') return { ...p, total_fouls: Math.max(0, p.total_fouls - 1) };
+            return p;
+          })
         } : t));
       }
       if (nm.status === 'COMPLETED') {
@@ -595,17 +668,53 @@ export function QuickTournament() {
             </div>
 
             <div className="setup-section roster-panel">
-              <label className="section-label-v2">PARTICIPANT ROSTER</label>
+              <label className="section-label-v2">PARTICIPANT TYPE</label>
+              <div className="segmented-control-v2 mb-10">
+                <button className={`segment-btn ${participantType === 'SINGLE' ? 'active' : ''}`} onClick={() => setParticipantType('SINGLE')}>SINGLE PLAYER</button>
+                <button className={`segment-btn ${participantType === 'TEAM' ? 'active' : ''}`} onClick={() => setParticipantType('TEAM')}>TEAM</button>
+              </div>
+
+              <label className="section-label-v2">{participantType === 'SINGLE' ? 'PLAYER IDENTITY' : 'TEAM IDENTITY'}</label>
               <div className="roster-input-wrapper">
                 <input
                   className="premium-input-v2"
-                  placeholder="Enter Team/Player name..."
+                  placeholder={participantType === 'SINGLE' ? "Enter Player name..." : "Enter Team name..."}
                   value={newTeamName}
                   onChange={e => setNewTeamName(e.target.value)}
-                  onKeyPress={e => e.key === 'Enter' && addTeam()}
                 />
-                <button className="add-roster-btn" onClick={addTeam}>ADD</button>
               </div>
+
+              {participantType === 'TEAM' && (
+                <div className="team-members-setup mt-10 animate-in">
+                  <label className="section-label-v2">TEAM MEMBERS <span className="dim">({teamPlayersInput.length})</span></label>
+                  <div className="members-grid">
+                    {teamPlayersInput.map((name, i) => (
+                      <div key={i} className="member-input-row">
+                        <input
+                          className="premium-input-v2-sm"
+                          placeholder={`Player ${i + 1} Name`}
+                          value={name}
+                          onChange={e => {
+                            const next = [...teamPlayersInput];
+                            next[i] = e.target.value;
+                            setTeamPlayersInput(next);
+                          }}
+                        />
+                        {teamPlayersInput.length > 2 && (
+                          <button className="remove-member-btn" onClick={() => setTeamPlayersInput(teamPlayersInput.filter((_, idx) => idx !== i))}>×</button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  <button className="add-member-trigger mt-4" onClick={() => setTeamPlayersInput([...teamPlayersInput, ""])}>+ ADD MEMBER</button>
+                </div>
+              )}
+
+              <button className="launch-btn ready mt-10" onClick={addTeam}>
+                {participantType === 'SINGLE' ? 'ADD PLAYER' : 'ADD TEAM'}
+              </button>
+
+              <label className="section-label-v2 mt-12">ACTIVE ROSTER</label>
 
               <div className="roster-list-container">
                 {teams.length > 0 ? (
@@ -624,7 +733,10 @@ export function QuickTournament() {
                               autoFocus
                             />
                           ) : (
-                            <span onClick={() => { setEditingTeamId(t.id); setEditingTeamName(t.name); }}>{t.name}</span>
+                            <div className="roster-info-stack">
+                              <span className="roster-main-name" onClick={() => { setEditingTeamId(t.id); setEditingTeamName(t.name); }}>{t.name}</span>
+                              {t.is_team && <span className="roster-sub-members">{t.players.map(p => p.name).join(', ')}</span>}
+                            </div>
                           )}
                         </div>
                         <div className="roster-actions">
@@ -663,17 +775,40 @@ export function QuickTournament() {
       {victoryMatch && (
         <div className="victory-overlay">
           <div className="victory-podium">
-            <div className="v-crown">{victoryMatch.is_draw ? '🤝' : '👑'}</div>
-            <div className="v-label">{victoryMatch.is_draw ? 'MATCH TIED' : 'CHAMPION DECLARED'}</div>
-            <h1 className="v-name-xl glow-text-gold">{victoryMatch.is_draw ? 'STALEMATE DRAW' : getTeamName(victoryMatch.winner_id || "")}</h1>
-            <div className="v-stats-premium">
-              <span className="v-score">{victoryMatch.score_team_a}</span>
-              <span className="v-vs">{victoryMatch.is_draw ? 'DRAW' : 'DEFEATED'}</span>
-              <span className="v-score">{victoryMatch.score_team_b}</span>
+            <div className="v-match-status">{victoryMatch.is_draw ? 'DRAW' : 'MATCH COMPLETE'}</div>
+            
+            {!victoryMatch.is_draw ? (
+              <>
+                <div className="v-crown">👑</div>
+                <h1 className="v-name-xl glow-text-gold">{getTeamName(victoryMatch.winner_id || "")}</h1>
+                <div className="v-label" style={{ letterSpacing: '8px', color: 'var(--gold)', marginBottom: '3rem', fontWeight: 950 }}>VICTORIOUS</div>
+              </>
+            ) : (
+              <>
+                <div className="v-crown">🤝</div>
+                <h1 className="v-name-xl glow-text">STALEMATE</h1>
+                <div className="v-label" style={{ letterSpacing: '8px', color: 'rgba(255,255,255,0.4)', marginBottom: '3rem', fontWeight: 950 }}>DRAW DECLARED</div>
+              </>
+            )}
+
+            <div className="v-stats-comparison">
+              <div className="v-team-result">
+                <span className="v-team-name">{getTeamName(liveMatch?.team_a_id || victoryMatch.team_a_id)}</span>
+                <span className="v-team-score">{victoryMatch.score_team_a}</span>
+              </div>
+              <div className="v-vs-divider">VS</div>
+              <div className="v-team-result">
+                <span className="v-team-name">{getTeamName(liveMatch?.team_b_id || victoryMatch.team_b_id)}</span>
+                <span className="v-team-score">{victoryMatch.score_team_b}</span>
+              </div>
             </div>
-            <div className="v-footer">POINTS AWARDED: {victoryMatch.is_draw ? '+50 TO EACH' : '+1 WIN'}</div>
+
+            <div className="v-actions-row">
+              <button className="v-action-btn" onClick={() => setVictoryMatch(null)}>CONTINUE TO ARENA</button>
+            </div>
           </div>
 
+          {[...Array(5)].map((_, i) => <div key={i} className="firework"></div>)}
         </div>
       )}
 
@@ -848,45 +983,81 @@ export function QuickTournament() {
               </div>
 
               <div className="battle-view">
-                <TeamPod 
-                  teamName={getTeamName(liveMatch.team_a_id)}
-                  score={liveMatch.score_team_a}
-                  color="red"
-                  isActive={liveMatch.active_team_id === liveMatch.team_a_id}
-                  fouls={liveMatch.fouls_a}
-                  house={liveMatch.team_a_house}
-                  ballsPotted={liveMatch.balls_potted_a}
-                  blackPotted={liveMatch.black_potted_a}
-                  onFoulClick={() => updateScore(liveMatch.id, liveMatch.team_a_id, 'FOUL')}
-                  onFoulRemove={() => updateScore(liveMatch.id, liveMatch.team_a_id, 'REMOVE_FOUL')}
-                  onBallClick={() => updateScore(liveMatch.id, liveMatch.team_a_id, 'BALL')}
-                  onBallRemove={() => updateScore(liveMatch.id, liveMatch.team_a_id, 'REMOVE_BALL')}
-                  onBlackClick={() => updateScore(liveMatch.id, liveMatch.team_a_id, 'BLACK')}
-                  onHouseToggle={(h) => updateHouse(liveMatch.id, 'A', h)}
-                  isLocked={isLocked}
-                  onClick={() => setMatches(matches.map(m => m.id === liveMatch.id ? { ...m, active_team_id: liveMatch.team_a_id } : m))}
-                />
+                <div className="pod-wrapper red">
+                  {liveMatch.team_a_id && teams.find(t => t.id === liveMatch.team_a_id)?.is_team && (
+                    <div className="player-select-overlay">
+                      <span className="section-label-v2" style={{ textAlign: 'center', marginBottom: '4px' }}>ACTIVE SHOOTER</span>
+                      <div className="player-chips">
+                        {teams.find(t => t.id === liveMatch.team_a_id)?.players.map(p => (
+                          <div 
+                            key={p.id} 
+                            className={`player-chip ${liveMatch.active_player_a_id === p.id ? 'active' : ''}`}
+                            onClick={() => setMatches(matches.map(m => m.id === liveMatch.id ? { ...m, active_player_a_id: p.id } : m))}
+                          >
+                            {p.name}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  <TeamPod 
+                    teamName={getTeamName(liveMatch.team_a_id)}
+                    score={liveMatch.score_team_a}
+                    color="red"
+                    isActive={liveMatch.active_team_id === liveMatch.team_a_id}
+                    fouls={liveMatch.fouls_a}
+                    house={liveMatch.team_a_house}
+                    ballsPotted={liveMatch.balls_potted_a}
+                    blackPotted={liveMatch.black_potted_a}
+                    onFoulClick={() => updateScore(liveMatch.id, liveMatch.team_a_id, 'FOUL')}
+                    onFoulRemove={() => updateScore(liveMatch.id, liveMatch.team_a_id, 'REMOVE_FOUL')}
+                    onBallClick={() => updateScore(liveMatch.id, liveMatch.team_a_id, 'BALL')}
+                    onBallRemove={() => updateScore(liveMatch.id, liveMatch.team_a_id, 'REMOVE_BALL')}
+                    onBlackClick={() => updateScore(liveMatch.id, liveMatch.team_a_id, 'BLACK')}
+                    onHouseToggle={(h) => updateHouse(liveMatch.id, 'A', h)}
+                    isLocked={isLocked}
+                    onClick={() => setMatches(matches.map(m => m.id === liveMatch.id ? { ...m, active_team_id: liveMatch.team_a_id } : m))}
+                  />
+                </div>
 
                 <VSCore />
 
-                <TeamPod 
-                  teamName={getTeamName(liveMatch.team_b_id)}
-                  score={liveMatch.score_team_b}
-                  color="blue"
-                  isActive={liveMatch.active_team_id === liveMatch.team_b_id}
-                  fouls={liveMatch.fouls_b}
-                  house={liveMatch.team_b_house}
-                  ballsPotted={liveMatch.balls_potted_b}
-                  blackPotted={liveMatch.black_potted_b}
-                  onFoulClick={() => updateScore(liveMatch.id, liveMatch.team_b_id, 'FOUL')}
-                  onFoulRemove={() => updateScore(liveMatch.id, liveMatch.team_b_id, 'REMOVE_FOUL')}
-                  onBallClick={() => updateScore(liveMatch.id, liveMatch.team_b_id, 'BALL')}
-                  onBallRemove={() => updateScore(liveMatch.id, liveMatch.team_b_id, 'REMOVE_BALL')}
-                  onBlackClick={() => updateScore(liveMatch.id, liveMatch.team_b_id, 'BLACK')}
-                  onHouseToggle={(h) => updateHouse(liveMatch.id, 'B', h)}
-                  isLocked={isLocked}
-                  onClick={() => setMatches(matches.map(m => m.id === liveMatch.id ? { ...m, active_team_id: liveMatch.team_b_id } : m))}
-                />
+                <div className="pod-wrapper blue">
+                  {liveMatch.team_b_id && teams.find(t => t.id === liveMatch.team_b_id)?.is_team && (
+                    <div className="player-select-overlay">
+                      <span className="section-label-v2" style={{ textAlign: 'center', marginBottom: '4px' }}>ACTIVE SHOOTER</span>
+                      <div className="player-chips">
+                        {teams.find(t => t.id === liveMatch.team_b_id)?.players.map(p => (
+                          <div 
+                            key={p.id} 
+                            className={`player-chip ${liveMatch.active_player_b_id === p.id ? 'active' : ''}`}
+                            onClick={() => setMatches(matches.map(m => m.id === liveMatch.id ? { ...m, active_player_b_id: p.id } : m))}
+                          >
+                            {p.name}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  <TeamPod 
+                    teamName={getTeamName(liveMatch.team_b_id)}
+                    score={liveMatch.score_team_b}
+                    color="blue"
+                    isActive={liveMatch.active_team_id === liveMatch.team_b_id}
+                    fouls={liveMatch.fouls_b}
+                    house={liveMatch.team_b_house}
+                    ballsPotted={liveMatch.balls_potted_b}
+                    blackPotted={liveMatch.black_potted_b}
+                    onFoulClick={() => updateScore(liveMatch.id, liveMatch.team_b_id, 'FOUL')}
+                    onFoulRemove={() => updateScore(liveMatch.id, liveMatch.team_b_id, 'REMOVE_FOUL')}
+                    onBallClick={() => updateScore(liveMatch.id, liveMatch.team_b_id, 'BALL')}
+                    onBallRemove={() => updateScore(liveMatch.id, liveMatch.team_b_id, 'REMOVE_BALL')}
+                    onBlackClick={() => updateScore(liveMatch.id, liveMatch.team_b_id, 'BLACK')}
+                    onHouseToggle={(h) => updateHouse(liveMatch.id, 'B', h)}
+                    isLocked={isLocked}
+                    onClick={() => setMatches(matches.map(m => m.id === liveMatch.id ? { ...m, active_team_id: liveMatch.team_b_id } : m))}
+                  />
+                </div>
               </div>
 
               {createdMatches.length > 0 ? (
@@ -917,11 +1088,24 @@ export function QuickTournament() {
                         <button className="button button-gold button-lg" onClick={advanceToFinals}>ADVANCE TO FINALS</button>
                       </>
                     ) : (
-                      <>
-                        <div className="p-icon">🏆</div>
-                        <h3>TOURNAMENT COMPLETE</h3>
-                        <p className="muted">The ultimate champion.</p>
-                      </>
+                      <div className="tournament-completion-card animate-in">
+                        <div className="p-icon" style={{ fontSize: '4rem', marginBottom: '1.5rem' }}>🏆</div>
+                        <h2 className="glow-text-gold" style={{ fontSize: '2.5rem', fontWeight: 950, marginBottom: '0.5rem' }}>TOURNAMENT CONCLUDED</h2>
+                        <p className="muted" style={{ letterSpacing: '2px', marginBottom: '3rem' }}>THE BATTLE HAS SETTLED • CHAMPIONS REMAIN</p>
+                        
+                        <div className="final-results-summary">
+                          <div className="summary-item gold-border">
+                            <div className="item-label">TOURNAMENT CHAMPION</div>
+                            <div className="item-value">{[...teams].sort((a, b) => b.group_points - a.group_points || b.total_score - a.total_score)[0]?.name || "TBD"}</div>
+                          </div>
+                          <div className="summary-item">
+                            <div className="item-label">MAN OF THE TOURNAMENT</div>
+                            <div className="item-value">{teams.flatMap(t => t.players).sort((a, b) => b.total_balls_potted - a.total_balls_potted || a.total_fouls - b.total_fouls)[0]?.name || "TBD"}</div>
+                          </div>
+                        </div>
+
+                        <button className="button button-gold button-lg mt-12 w-full" onClick={() => setActiveSubTab('standings')}>VIEW FULL HALL OF FAME</button>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -1060,34 +1244,40 @@ export function QuickTournament() {
         </div>
       ) : (
         <div className="premium-standings slide-in">
-          {teams.length > 0 && (
-            <div className="tournament-awards-row animate-in">
-              <div className="award-card glass-morphism gold-glow">
-                <div className="award-icon">🏆</div>
-                <div className="award-content">
-                  <div className="award-label">MAN OF THE TOURNAMENT</div>
-                  <div className="award-winner glow-text-gold">
-                    {[...teams].sort((a, b) => b.total_balls_potted - a.total_balls_potted || a.total_fouls - b.total_fouls)[0]?.name || "TBD"}
+          {teams.length > 0 && (() => {
+            const allPlayers = teams.flatMap(t => t.players.map(p => ({ ...p, teamName: t.name })));
+            const topPlayer = [...allPlayers].sort((a, b) => b.total_balls_potted - a.total_balls_potted || a.total_fouls - b.total_fouls)[0];
+            const tournamentWinner = [...teams].sort((a, b) => b.group_points - a.group_points || b.total_score - a.total_score)[0];
+
+            return (
+              <div className="tournament-awards-row animate-in">
+                <div className="award-card glass-morphism gold-glow">
+                  <div className="award-icon">🏆</div>
+                  <div className="award-content">
+                    <div className="award-label">MAN OF THE TOURNAMENT</div>
+                    <div className="award-winner glow-text-gold">
+                      {topPlayer?.name || "TBD"}
+                    </div>
+                    <div className="award-meta">
+                      {topPlayer?.total_balls_potted || 0} BALLS • {topPlayer?.teamName || ""}
+                    </div>
                   </div>
-                  <div className="award-meta">
-                    {Math.max(...teams.map(t => t.total_balls_potted))} BALLS POTTED
+                </div>
+                <div className="award-card glass-morphism blue-glow">
+                  <div className="award-icon">👑</div>
+                  <div className="award-content">
+                    <div className="award-label">TOURNAMENT CHAMPION</div>
+                    <div className="award-winner glow-text">
+                      {tournamentWinner?.name || "TBD"}
+                    </div>
+                    <div className="award-meta">
+                      {tournamentWinner?.group_points || 0} WINS • {tournamentWinner?.total_score || 0} PTS
+                    </div>
                   </div>
                 </div>
               </div>
-              <div className="award-card glass-morphism blue-glow">
-                <div className="award-icon">👑</div>
-                <div className="award-content">
-                  <div className="award-label">MAN OF THE SERIES</div>
-                  <div className="award-winner glow-text">
-                    {[...teams].sort((a, b) => b.total_balls_potted - a.total_balls_potted || a.total_fouls - b.total_fouls)[0]?.name || "TBD"}
-                  </div>
-                  <div className="award-meta">
-                    DOMINATING THE ARENA
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+            );
+          })()}
 
           <div className="standings-grid-v2">
             {[...teams].sort((a, b) => b.group_points - a.group_points || b.total_score - a.total_score).map((t, i) => {
