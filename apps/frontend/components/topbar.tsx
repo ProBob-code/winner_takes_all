@@ -40,6 +40,11 @@ export function Topbar({ user: initialUser }: { user?: any }) {
       </Link>
       <div className="topbar-search"></div>
       <nav className="topbar-nav">
+        <div className="desktop-only" style={{ display: "flex", gap: "1.5rem", marginRight: "1rem" }}>
+          <Link href="/about" className="topbar-link">About</Link>
+          <Link href="/contact" className="topbar-link">Contact</Link>
+          <Link href="/terms" className="topbar-link">Terms</Link>
+        </div>
         <ThemeToggle />
         {user ? (
           <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>

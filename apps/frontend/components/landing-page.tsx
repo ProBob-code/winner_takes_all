@@ -301,34 +301,6 @@ export function LandingPage() {
         </section>
       </main>
 
-      <footer style={{ 
-        padding: "80px 6%", 
-        textAlign: "center", 
-        borderTop: "1px solid rgba(255,255,255,0.08)", 
-        fontSize: "0.9rem",
-        color: "#cbd5e1", // Improved contrast
-        background: "rgba(0,0,0,0.3)"
-      }}>
-        <div style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", gap: "1.5rem", marginBottom: "2.5rem", color: "var(--accent-secondary)" }}>
-          <Link href="/about" style={{ color: "inherit", textDecoration: "none", fontWeight: 600 }}>About Us</Link>
-          <Link href="/contact" style={{ color: "inherit", textDecoration: "none", fontWeight: 600 }}>Contact Us</Link>
-          <Link href="/terms" style={{ color: "inherit", textDecoration: "none", fontWeight: 600 }}>Terms & Conditions</Link>
-          <Link href="/privacy" style={{ color: "inherit", textDecoration: "none", fontWeight: 600 }}>Privacy Policy</Link>
-          <Link href="/refund" style={{ color: "inherit", textDecoration: "none", fontWeight: 600 }}>Refund & Cancellation</Link>
-          <Link href="/community-guidelines" style={{ color: "inherit", textDecoration: "none", fontWeight: 600 }}>Community Guidelines</Link>
-          <Link href="/skill-based-policy" style={{ color: "inherit", textDecoration: "none", fontWeight: 600 }}>Skill-Based Policy</Link>
-        </div>
-        <div style={{ maxWidth: "850px", margin: "0 auto 2.5rem", lineHeight: 1.8 }}>
-          <p style={{ marginBottom: "1.5rem" }}>
-            W.T.A is a professional tournament infrastructure platform designed for organizers, esports communities, gaming cafés, and competitive events. 
-            The platform provides tools for tournament hosting, bracket management, scheduling, rankings, and event operations.
-          </p>
-          <p style={{ fontWeight: 600, color: "var(--text-primary)" }}>
-            W.T.A does not facilitate betting, gambling, or games of chance. Tournament outcomes are determined solely by participant skill and organizer-defined competition rules.
-          </p>
-        </div>
-        <p style={{ color: "rgba(255,255,255,0.2)", fontSize: "0.8rem" }}>&copy; {new Date().getFullYear()} W.T.A PLATFORM. All rights reserved.</p>
-      </footer>
     </div>
   );
 }
