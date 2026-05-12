@@ -2698,311 +2698,203 @@ select.premium-input-v2 option {
   color: white;
 }
 
-/* --- Player Breakdown in Standings --- */
+/* --- Standings & Leaderboard Revamp --- */
+.premium-standings {
+  padding: 1rem;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.standings-grid-v2 {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+
+.standing-card-v2 {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 24px;
+  padding: 1.5rem;
+  display: grid;
+  grid-template-columns: 80px 1fr auto;
+  align-items: center;
+  gap: 2rem;
+  position: relative;
+  transition: transform 0.2s;
+}
+
+.standing-card-v2:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.standing-card-v2.gold { border-left: 4px solid var(--gold); background: linear-gradient(90deg, rgba(245, 158, 11, 0.05) 0%, transparent 100%); }
+.standing-card-v2.silver { border-left: 4px solid #94a3b8; }
+.standing-card-v2.bronze { border-left: 4px solid #b45309; }
+
+.rank-indicator {
+  font-size: 1.5rem;
+  font-weight: 950;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.team-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.team-name {
+  font-size: 1.25rem;
+  font-weight: 950;
+  letter-spacing: -0.5px;
+}
+
+.team-status {
+  font-size: 0.7rem;
+  font-weight: 900;
+  opacity: 0.4;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.stats-row {
+  display: flex;
+  gap: 2rem;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  min-width: 60px;
+}
+
+.stat-label {
+  font-size: 0.6rem;
+  font-weight: 900;
+  opacity: 0.4;
+  letter-spacing: 1px;
+}
+
+.stat-val {
+  font-size: 1.25rem;
+  font-weight: 950;
+}
+
+.stat-val.win { color: var(--gold); }
+.stat-val.danger { color: #ef4444; }
+
+/* --- Squad Performance Section --- */
 .player-breakdown-v2 {
-  margin-top: 1.5rem;
+  grid-column: 1 / -1;
+  margin-top: 1rem;
   padding-top: 1.5rem;
   border-top: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .breakdown-header {
-  font-size: 0.6rem;
-  font-weight: 900;
+  font-size: 0.65rem;
+  font-weight: 950;
   color: var(--gold);
-  letter-spacing: 1px;
-  margin-bottom: 0.75rem;
-  text-align: center;
+  letter-spacing: 2px;
+  margin-bottom: 1rem;
+  opacity: 0.6;
 }
 
 .breakdown-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
 }
 
 .p-breakdown-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
   background: rgba(255, 255, 255, 0.02);
-  padding: 0.5rem 0.75rem;
-  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 1rem;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
 }
 
 .p-b-name {
-  font-size: 0.75rem;
-  font-weight: 900;
-  opacity: 0.8;
+  font-size: 0.9rem;
+  font-weight: 950;
+  color: white;
 }
 
 .p-b-stats {
   display: flex;
-  gap: 0.75rem;
-}
-
-.p-b-stat {
-  font-size: 0.7rem;
-  font-weight: 900;
-  font-variant-numeric: tabular-nums;
-}
-
-.p-b-stat.danger {
-  color: #ef4444;
-}
-
-/* --- Revamped Standings & Hall of Fame --- */
-.hof-section {
-  margin-bottom: 4rem;
-}
-
-.hof-title {
-  font-size: 0.8rem;
-  font-weight: 950;
-  letter-spacing: 4px;
-  color: var(--gold);
-  text-align: center;
-  margin-bottom: 2rem;
-  opacity: 0.8;
-}
-
-.hof-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1.5rem;
-}
-
-.hof-card {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  padding: 1.5rem;
-  border-radius: 24px;
-  text-align: center;
-  position: relative;
-  transition: 0.3s;
-}
-
-.hof-card:hover {
-  background: rgba(255, 255, 255, 0.05);
-  transform: translateY(-5px);
-}
-
-.hof-rank {
-  position: absolute;
-  top: -10px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: var(--gold);
-  color: black;
-  font-size: 0.6rem;
-  font-weight: 950;
-  padding: 4px 12px;
-  border-radius: 100px;
-}
-
-.hof-avatar {
-  font-size: 2.5rem;
-  margin-bottom: 1rem;
-}
-
-.hof-name {
-  font-size: 1.1rem;
-  font-weight: 950;
-  margin-bottom: 0.25rem;
-}
-
-.hof-team {
-  font-size: 0.65rem;
-  opacity: 0.4;
-  letter-spacing: 1px;
-  margin-bottom: 1.25rem;
-}
-
-.hof-stats {
-  display: flex;
-  justify-content: center;
-  gap: 1.5rem;
-  padding-top: 1.25rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.h-stat {
-  display: flex;
-  flex-direction: column;
-}
-
-.h-val { font-size: 1rem; font-weight: 950; }
-.h-lbl { font-size: 0.5rem; opacity: 0.3; letter-spacing: 1px; font-weight: 900; }
-
-/* --- Team Standings List --- */
-.standings-list-v3 {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-.team-rank-card {
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 30px;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-.t-card-header {
-  padding: 1.5rem 2rem;
-  display: flex;
-  align-items: center;
-  gap: 2rem;
-  background: rgba(255, 255, 255, 0.01);
-}
-
-.t-rank-big {
-  font-size: 2rem;
-  font-weight: 950;
-  opacity: 0.2;
-  width: 40px;
-}
-
-.t-main-info { flex: 1; }
-.t-name-lg { font-size: 1.5rem; font-weight: 950; letter-spacing: -1px; }
-.t-meta-sm { font-size: 0.65rem; opacity: 0.4; letter-spacing: 1px; font-weight: 900; }
-
-.t-stats-grid {
-  display: flex;
-  gap: 3rem;
-}
-
-.t-stat-box { text-align: right; }
-.t-s-val { font-size: 1.2rem; font-weight: 950; line-height: 1; }
-.t-s-val.win { color: #10b981; }
-.t-s-lbl { font-size: 0.55rem; opacity: 0.3; letter-spacing: 1px; font-weight: 900; margin-top: 4px; }
-
-.t-roster-section {
-  padding: 1.5rem 2rem;
-  background: rgba(0, 0, 0, 0.1);
-  border-top: 1px solid rgba(255, 255, 255, 0.03);
-}
-
-.roster-grid-v3 {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   gap: 1rem;
 }
 
-.p-mini-card {
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.03);
-  padding: 1rem;
-  border-radius: 16px;
+.p-b-stat-item {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
 }
 
-.p-m-name { font-size: 0.75rem; font-weight: 950; opacity: 0.8; }
-.p-m-stats { display: flex; gap: 0.75rem; }
-.p-m-stat { font-size: 0.7rem; font-weight: 950; }
-.p-m-stat.danger { color: #ef4444; }
-
-@media (max-width: 900px) {
-  .t-card-header { flex-direction: column; align-items: flex-start; gap: 1.5rem; }
-  .t-stats-grid { width: 100%; justify-content: space-between; gap: 1rem; }
-  .t-rank-big { width: auto; font-size: 1.5rem; }
+.p-b-label {
+  font-size: 0.55rem;
+  font-weight: 900;
+  opacity: 0.4;
+  letter-spacing: 1px;
 }
 
-/* --- Mobile Specific Refinement --- */
-@media (max-width: 600px) {
-  .hof-grid {
+.p-b-val {
+  font-size: 1rem;
+  font-weight: 950;
+}
+
+/* --- Mobile Optimizations --- */
+@media (max-width: 768px) {
+  .standing-card-v2 {
     grid-template-columns: 1fr;
-    gap: 1rem;
-  }
-  
-  .hof-card {
-    padding: 1rem;
-    display: flex;
-    align-items: center;
-    gap: 1.5rem;
-    text-align: left;
-  }
-  
-  .hof-avatar {
-    font-size: 1.8rem;
-    margin-bottom: 0;
-  }
-  
-  .hof-rank {
-    left: 20px;
-    transform: none;
-    top: -8px;
-  }
-  
-  .hof-stats {
-    padding-top: 0;
-    border-top: none;
-    margin-left: auto;
-    gap: 1rem;
-  }
-
-  .t-stats-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1rem;
-    width: 100%;
-  }
-
-  .t-stat-box {
-    text-align: left;
-    background: rgba(255, 255, 255, 0.03);
-    padding: 0.75rem;
-    border-radius: 12px;
-  }
-
-  .t-s-val { font-size: 1rem; }
-  .t-name-lg { font-size: 1.25rem; }
-  
-  .t-roster-section {
-    padding: 1rem;
-  }
-  
-  .roster-grid-v3 {
-    grid-template-columns: 1fr;
-  }
-
-  /* Victory Overlay Mobile */
-  .v-stats-comparison {
-    flex-direction: column;
     gap: 1.5rem;
     padding: 1.5rem;
   }
-  
-  .v-vs-divider {
-    padding: 0.5rem;
-    background: rgba(255, 255, 255, 0.05);
-    width: 100%;
-    border-radius: 8px;
+
+  .rank-indicator {
+    position: absolute;
+    top: 1.5rem;
+    right: 1.5rem;
+    text-align: right;
   }
-  
-  .v-name-xl {
-    font-size: 2.5rem;
+
+  .stats-row {
+    justify-content: space-between;
+    gap: 0.5rem;
+    width: 100%;
+  }
+
+  .stat {
+    align-items: center;
+    flex: 1;
+  }
+
+  .stat-val {
+    font-size: 1rem;
+  }
+
+  .breakdown-grid {
+    grid-template-columns: 1fr;
   }
 }
 
-@media (max-width: 400px) {
-  .t-stats-grid {
-    grid-template-columns: 1fr;
+@media (max-width: 480px) {
+  .premium-standings {
+    padding: 0.5rem;
   }
   
-  .hof-card {
+  .team-name {
+    font-size: 1.1rem;
+  }
+  
+  .v-stats-comparison {
     flex-direction: column;
-    align-items: center;
-    text-align: center;
-  }
-  
-  .hof-stats {
-    margin-left: 0;
-    padding-top: 1rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
-    width: 100%;
+    gap: 1rem;
   }
 }
