@@ -783,7 +783,7 @@ export function QuickTournament() {
   const createdMatches = matches.filter(m => m.status === 'CREATED').sort((a, b) => a.order - b.order);
 
   return (
-    <div className="engine-container animate-in">
+    <div className="engine-container">
       {victoryMatch && (
         <div className="victory-overlay">
           <div className="victory-podium">
@@ -820,7 +820,6 @@ export function QuickTournament() {
             </div>
           </div>
 
-          {[...Array(5)].map((_, i) => <div key={i} className="firework"></div>)}
         </div>
       )}
 
@@ -968,7 +967,7 @@ export function QuickTournament() {
       )}
 
       {activeSubTab === 'arena' ? (
-        <div className="live-arena-v2 slide-in">
+        <div className="live-arena-v2">
           {liveMatch ? (
             <div className="match-engine-v2">
               <div className="match-timer-v3">
@@ -1073,7 +1072,7 @@ export function QuickTournament() {
               </div>
 
               {createdMatches.length > 0 ? (
-                <div className="queue-overlay slide-in">
+                <div className="queue-overlay">
                   <div className="queue-header"><div className="queue-title">UPCOMING DUELS ({createdMatches.length})</div></div>
                   <div className="queue-track">
                     {createdMatches.slice(0, 3).map((m, i) => (
@@ -1083,7 +1082,7 @@ export function QuickTournament() {
                   </div>
                 </div>
               ) : (
-                <div className="phase-transition-overlay animate-in">
+                <div className="phase-transition-overlay">
                   <div className="phase-card glass-morphism">
                     {tournamentType === 'GROUP' ? (
                       <>
@@ -1124,7 +1123,7 @@ export function QuickTournament() {
               )}
             </div>
           ) : (
-            <div className="tournament-schedule-view slide-in">
+            <div className="tournament-schedule-view">
               <div className="schedule-header">
                 <h3 className="glow-text">Arena Schedule</h3>
                 <p className="muted">Manage future duels and live standings.</p>
@@ -1255,14 +1254,14 @@ export function QuickTournament() {
           )}
         </div>
       ) : (
-        <div className="premium-standings slide-in">
+        <div className="premium-standings">
           {teams.length > 0 && (() => {
             const allPlayers = teams.flatMap(t => t.players.map(p => ({ ...p, teamName: t.name })));
             const topPlayer = [...allPlayers].sort((a, b) => b.total_balls_potted - a.total_balls_potted || a.total_fouls - b.total_fouls)[0];
             const tournamentWinner = [...teams].sort((a, b) => b.group_points - a.group_points || b.total_score - a.total_score)[0];
 
             return (
-              <div className="tournament-awards-row animate-in">
+              <div className="tournament-awards-row">
                 <div className="award-card glass-morphism gold-glow">
                   <div className="award-icon">🏆</div>
                   <div className="award-content">
@@ -1304,6 +1303,22 @@ export function QuickTournament() {
                     <div className="stat"><div className="stat-label">FOULS</div><div className="stat-val danger">{t.total_fouls}</div></div>
                     <div className="stat"><div className="stat-label">SCORE</div><div className="stat-val">{t.total_score}</div></div>
                   </div>
+                  {t.is_team && (
+                    <div className="player-breakdown-v2">
+                      <div className="breakdown-header">PLAYER PERFORMANCE</div>
+                      <div className="breakdown-grid">
+                        {t.players.map(p => (
+                          <div key={p.id} className="p-breakdown-row">
+                            <span className="p-b-name">{p.name}</span>
+                            <div className="p-b-stats">
+                              <span className="p-b-stat">🏀 {p.total_balls_potted}</span>
+                              <span className="p-b-stat danger">⚠️ {p.total_fouls}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })}
