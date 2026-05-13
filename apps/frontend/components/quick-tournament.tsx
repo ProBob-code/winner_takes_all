@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { backendFetch } from "@/lib/backend";
-import { TeamPod, VSCore, FootballTeamPod } from "@/components/match-components";
+import { TeamPod, VSCore, FootballTeamPod, ScorersList } from "@/components/match-components";
 import "@/components/tournament-engine.css";
 
 type Player = {
