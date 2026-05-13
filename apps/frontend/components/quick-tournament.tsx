@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { backendFetch } from "@/lib/backend";
-import { TeamPod, VSCore, FootballTeamPod, ScorersList } from "@/components/match-components";
+import { TeamPod, VSCore, FootballTeamPod, ScorersList, FootballScoreboard, FootballPossessionPitch } from "@/components/match-components";
 import "@/components/tournament-engine.css";
 
 type Player = {
@@ -1161,30 +1161,41 @@ export function QuickTournament() {
         <div className="live-arena-v2">
           {liveMatch ? (
             <div className="match-engine-v2">
-              <div className="match-timer-v3">
-                <div className="live-pill"><span className="live-pulse"></span> LIVE</div>
-                <div className="timer-interactive">
-                  <button className="t-adj" onClick={() => adjustDuration(liveMatch.id, -60)}>−</button>
-                  <span className="time-val">
-                    {Math.max(0, Math.floor(((liveMatch.start_time || 0) + liveMatch.duration - currentTime) / 60))}:
-                    {String(Math.max(0, ((liveMatch.start_time || 0) + liveMatch.duration - currentTime) % 60)).padStart(2, '0')}
-                  </span>
-                  <button className="t-adj" onClick={() => adjustDuration(liveMatch.id, 60)}>+</button>
-                </div>
-                <button className="extra-time-btn" style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)' }} onClick={() => setConfirmRestartMatchId(liveMatch.id)}>RESTART</button>
-                <button className="extra-time-btn" onClick={() => adjustDuration(liveMatch.id, 60)}>+1 MIN</button>
-                {extraTimePromptId === liveMatch.id && (
-                  <div className="extra-time-toast animate-in">
-                    <div className="toast-content">
-                      <span>CRITICAL TIME! NEED EXTRA?</span>
-                      <button className="button button-gold button-sm" onClick={() => { adjustDuration(liveMatch.id, 120); setExtraTimePromptId(null); }}>+2 MINS</button>
-                      <button className="s-btn" onClick={() => setExtraTimePromptId(null)}>×</button>
-                    </div>
+              {liveMatch.sport === 'FOOTBALL' ? (
+                <FootballScoreboard 
+                  teamAName={getTeamName(liveMatch.team_a_id)}
+                  teamBName={getTeamName(liveMatch.team_b_id)}
+                  scoreA={liveMatch.score_team_a}
+                  scoreB={liveMatch.score_team_b}
+                  time={`${Math.max(0, Math.floor(((liveMatch.start_time || 0) + liveMatch.duration - currentTime) / 60))}:${String(Math.max(0, ((liveMatch.start_time || 0) + liveMatch.duration - currentTime) % 60)).padStart(2, '0')}`}
+                  status={liveMatch.status === 'LIVE' ? 'LIVE' : liveMatch.status}
+                />
+              ) : (
+                <div className="match-timer-v3">
+                  <div className="live-pill"><span className="live-pulse"></span> LIVE</div>
+                  <div className="timer-interactive">
+                    <button className="t-adj" onClick={() => adjustDuration(liveMatch.id, -60)}>−</button>
+                    <span className="time-val">
+                      {Math.max(0, Math.floor(((liveMatch.start_time || 0) + liveMatch.duration - currentTime) / 60))}:
+                      {String(Math.max(0, ((liveMatch.start_time || 0) + liveMatch.duration - currentTime) % 60)).padStart(2, '0')}
+                    </span>
+                    <button className="t-adj" onClick={() => adjustDuration(liveMatch.id, 60)}>+</button>
                   </div>
-                )}
-              </div>
+                  <button className="extra-time-btn" style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)' }} onClick={() => setConfirmRestartMatchId(liveMatch.id)}>RESTART</button>
+                  <button className="extra-time-btn" onClick={() => adjustDuration(liveMatch.id, 60)}>+1 MIN</button>
+                  {extraTimePromptId === liveMatch.id && (
+                    <div className="extra-time-toast animate-in">
+                      <div className="toast-content">
+                        <span>CRITICAL TIME! NEED EXTRA?</span>
+                        <button className="button button-gold button-sm" onClick={() => { adjustDuration(liveMatch.id, 120); setExtraTimePromptId(null); }}>+2 MINS</button>
+                        <button className="s-btn" onClick={() => setExtraTimePromptId(null)}>×</button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
-              <div className="battle-view">
+              <div className={`battle-view ${liveMatch.sport === 'FOOTBALL' ? 'football-arena' : ''}`}>
                 {liveMatch.sport === '8BALL' ? (
                   <>
                     <div className="pod-wrapper red">
@@ -1281,7 +1292,7 @@ export function QuickTournament() {
                         onClick={() => setMatches(matches.map(m => m.id === liveMatch.id ? { ...m, active_team_id: liveMatch.team_a_id } : m))}
                       />
                     </div>
-                    <VSCore />
+                    {liveMatch.sport !== 'FOOTBALL' && <VSCore />}
                     <div className="pod-wrapper blue">
                       <FootballTeamPod 
                         teamName={getTeamName(liveMatch.team_b_id)}
@@ -1303,35 +1314,42 @@ export function QuickTournament() {
               </div>
 
               {liveMatch.sport === 'FOOTBALL' && (
-                <div className="football-controls-panel slide-in mt-8">
-                  <div className="stat-control-group">
-                    <label className="section-label-v2">POSSESSION BALANCE</label>
-                    <div className="possession-slider-wrapper">
-                      <span className="p-label">{getTeamName(liveMatch.team_a_id)} {liveMatch.footballData?.possession_a}%</span>
-                      <input 
-                        type="range" min="0" max="100" 
-                        value={liveMatch.footballData?.possession_a || 50} 
-                        onChange={(e) => updateFootballStat(liveMatch.id, 'possession', 'A', Number(e.target.value))}
-                        className="premium-slider"
-                      />
-                      <span className="p-label">{liveMatch.footballData?.possession_b}% {getTeamName(liveMatch.team_b_id)}</span>
-                    </div>
-                  </div>
-                  <div className="stat-control-grid mt-4">
-                    <div className="stat-control-item">
-                      <label className="section-label-v2">{getTeamName(liveMatch.team_a_id)} PASSING %</label>
-                      <div className="stepper-v2">
-                        <button className="s-btn" onClick={() => updateFootballStat(liveMatch.id, 'passing', 'A', Math.max(0, (liveMatch.footballData?.passing_a || 80) - 1))}>−</button>
-                        <span className="s-val">{liveMatch.footballData?.passing_a}%</span>
-                        <button className="s-btn" onClick={() => updateFootballStat(liveMatch.id, 'passing', 'A', Math.min(100, (liveMatch.footballData?.passing_a || 80) + 1))}>+</button>
+                <div className="football-controls-panel-v3 slide-in mt-8">
+                  <FootballPossessionPitch 
+                    posA={liveMatch.footballData?.possession_a || 50}
+                    posB={liveMatch.footballData?.possession_b || 50}
+                    teamAName={getTeamName(liveMatch.team_a_id)}
+                    teamBName={getTeamName(liveMatch.team_b_id)}
+                  />
+                  
+                  <div className="stat-control-grid mt-8">
+                    <div className="stat-control-group">
+                      <label className="section-label-v2">POSSESSION BALANCE</label>
+                      <div className="possession-slider-wrapper">
+                        <input 
+                          type="range" min="0" max="100" 
+                          value={liveMatch.footballData?.possession_a || 50} 
+                          onChange={(e) => updateFootballStat(liveMatch.id, 'possession', 'A', Number(e.target.value))}
+                          className="premium-slider"
+                        />
                       </div>
                     </div>
-                    <div className="stat-control-item">
-                      <label className="section-label-v2">{getTeamName(liveMatch.team_b_id)} PASSING %</label>
-                      <div className="stepper-v2">
-                        <button className="s-btn" onClick={() => updateFootballStat(liveMatch.id, 'passing', 'B', Math.max(0, (liveMatch.footballData?.passing_b || 80) - 1))}>−</button>
-                        <span className="s-val">{liveMatch.footballData?.passing_b}%</span>
-                        <button className="s-btn" onClick={() => updateFootballStat(liveMatch.id, 'passing', 'B', Math.min(100, (liveMatch.footballData?.passing_b || 80) + 1))}>+</button>
+                    <div className="stat-control-grid">
+                      <div className="stat-control-item">
+                        <label className="section-label-v2">{getTeamName(liveMatch.team_a_id)} PASSING %</label>
+                        <div className="stepper-v3">
+                          <button className="s-btn" onClick={() => updateFootballStat(liveMatch.id, 'passing', 'A', Math.max(0, (liveMatch.footballData?.passing_a || 80) - 1))}>−</button>
+                          <span className="s-val">{liveMatch.footballData?.passing_a}%</span>
+                          <button className="s-btn" onClick={() => updateFootballStat(liveMatch.id, 'passing', 'A', Math.min(100, (liveMatch.footballData?.passing_a || 80) + 1))}>+</button>
+                        </div>
+                      </div>
+                      <div className="stat-control-item">
+                        <label className="section-label-v2">{getTeamName(liveMatch.team_b_id)} PASSING %</label>
+                        <div className="stepper-v3">
+                          <button className="s-btn" onClick={() => updateFootballStat(liveMatch.id, 'passing', 'B', Math.max(0, (liveMatch.footballData?.passing_b || 80) - 1))}>−</button>
+                          <span className="s-val">{liveMatch.footballData?.passing_b}%</span>
+                          <button className="s-btn" onClick={() => updateFootballStat(liveMatch.id, 'passing', 'B', Math.min(100, (liveMatch.footballData?.passing_b || 80) + 1))}>+</button>
+                        </div>
                       </div>
                     </div>
                   </div>
