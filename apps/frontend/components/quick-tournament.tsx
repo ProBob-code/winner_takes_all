@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { backendFetch } from "@/lib/backend";
-import { TeamPod, VSCore } from "@/components/match-components";
+import { TeamPod, VSCore, FootballTeamPod } from "@/components/match-components";
 import "@/components/tournament-engine.css";
 
 type Player = {
@@ -23,6 +23,24 @@ type Team = {
   is_team: boolean;
   players: Player[];
 };
+type GoalEvent = {
+  id: string;
+  scorerId: string;
+  scorerName: string;
+  minute: number;
+  teamId: string;
+};
+
+type FootballMatchData = {
+  goals: GoalEvent[];
+  possession_a: number;
+  possession_b: number;
+  passing_a: number;
+  passing_b: number;
+};
+
+type SportType = '8BALL' | 'FOOTBALL';
+
 type Match = {
   id: string;
   team_a_id: string;
@@ -46,6 +64,8 @@ type Match = {
   is_draw?: boolean;
   active_player_a_id?: string | null;
   active_player_b_id?: string | null;
+  sport: SportType;
+  footballData?: FootballMatchData;
 };
 
 type ModalConfig = {
@@ -85,6 +105,10 @@ export function QuickTournament() {
   const [showPinModal, setShowPinModal] = useState<{ mode: 'SET' | 'VERIFY', onConfirm: (pin: string) => void } | null>(null);
   const [participantType, setParticipantType] = useState<'SINGLE' | 'TEAM'>('SINGLE');
   const [teamPlayersInput, setTeamPlayersInput] = useState<string[]>(["", ""]);
+  const [selectedSport, setSelectedSport] = useState<SportType>('8BALL');
+  const [goalModal, setGoalModal] = useState<{ matchId: string, teamId: string, teamName: string } | null>(null);
+  const [selectedScorer, setSelectedScorer] = useState<string>("");
+  const [goalMinute, setGoalMinute] = useState<number>(0);
 
   // Sync with LocalStorage
   useEffect(() => {
@@ -101,13 +125,14 @@ export function QuickTournament() {
       setArenaName(parsed.arenaName || "Stadium Arena Showdown");
       setArenaPin(parsed.arenaPin || null);
       setIsLocked(parsed.isLocked || false);
+      setSelectedSport(parsed.selectedSport || '8BALL');
     }
   }, []);
 
   useEffect(() => {
     localStorage.setItem("wta_arena_quick_v11", JSON.stringify({ 
       teams, matches, isStarted, arenaId, matchesPerTeam, defaultDuration, 
-      tournamentType, arenaName, arenaPin, isLocked 
+      tournamentType, arenaName, arenaPin, isLocked, selectedSport 
     }));
     if (arenaId && isStarted) {
       backendFetch("/public-arenas", { 
@@ -118,7 +143,7 @@ export function QuickTournament() {
         }) 
       }).catch(() => { });
     }
-  }, [teams, matches, isStarted, arenaId, matchesPerTeam, defaultDuration, tournamentType, arenaName, arenaPin, isLocked]);
+  }, [teams, matches, isStarted, arenaId, matchesPerTeam, defaultDuration, tournamentType, arenaName, arenaPin, isLocked, selectedSport]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -153,18 +178,19 @@ export function QuickTournament() {
                   const isActive = (t.id === nm.team_a_id && p.id === nm.active_player_a_id) || 
                                    (t.id === nm.team_b_id && p.id === nm.active_player_b_id);
                   if (!isActive) return p;
-                  
-                  // In timer completion, we just sync the current match stats if needed, 
-                  // but usually they are already synced during updateScore.
-                  // However, for consistency with the manual completion logic:
                   return p; 
                 });
+
+                const isFootball = nm.sport === 'FOOTBALL';
+                const winPoints = isFootball ? 3 : 1;
+                const drawPoints = isFootball ? 1 : 0;
+                const pointsGained = nm.winner_id === t.id ? winPoints : (nm.is_draw ? drawPoints : 0);
 
                 return { 
                   ...t, 
                   matches_played: t.matches_played + 1, 
-                  total_score: t.total_score + (t.id === nm.team_a_id ? nm.score_team_a : nm.score_team_b) + (isDraw ? 50 : 0), 
-                  group_points: t.group_points + (nm.winner_id === t.id ? 1 : 0),
+                  total_score: t.total_score + (t.id === nm.team_a_id ? nm.score_team_a : nm.score_team_b) + (!isFootball && isDraw ? 50 : 0), 
+                  group_points: t.group_points + pointsGained,
                   total_balls_potted: t.total_balls_potted + (t.id === nm.team_a_id ? nm.balls_potted_a : nm.balls_potted_b),
                   total_fouls: t.total_fouls + (t.id === nm.team_a_id ? nm.fouls_a : nm.fouls_b),
                   players: updatedPlayers
@@ -246,7 +272,9 @@ export function QuickTournament() {
               winner_id: null, active_team_id: null, duration: defaultDuration, start_time: null,
               order: currentMatches.length,
               team_a_house: 'SOLID', team_b_house: 'STRIPES',
-              fouls_a: 0, fouls_b: 0
+              fouls_a: 0, fouls_b: 0,
+              sport: selectedSport,
+              footballData: selectedSport === 'FOOTBALL' ? { goals: [], possession_a: 50, possession_b: 50, passing_a: 80, passing_b: 80 } : undefined
             };
             newMatches.push(m);
             currentMatches.push(m);
@@ -265,7 +293,9 @@ export function QuickTournament() {
               black_potted_a: false, black_potted_b: false, status: 'CREATED',
               winner_id: null, active_team_id: null, duration: defaultDuration, start_time: null, order: i / 2,
               team_a_house: 'SOLID', team_b_house: 'STRIPES',
-              fouls_a: 0, fouls_b: 0
+              fouls_a: 0, fouls_b: 0,
+              sport: selectedSport,
+              footballData: selectedSport === 'FOOTBALL' ? { goals: [], possession_a: 50, possession_b: 50, passing_a: 80, passing_b: 80 } : undefined
             });
           }
         }
@@ -381,7 +411,9 @@ export function QuickTournament() {
       team_a_house: 'SOLID', team_b_house: 'STRIPES',
       fouls_a: 0, fouls_b: 0,
       active_player_a_id: teams.find(t => t.id === t1Id)?.players[0]?.id || null,
-      active_player_b_id: teams.find(t => t.id === t2Id)?.players[0]?.id || null
+      active_player_b_id: teams.find(t => t.id === t2Id)?.players[0]?.id || null,
+      sport: selectedSport,
+      footballData: selectedSport === 'FOOTBALL' ? { goals: [], possession_a: 50, possession_b: 50, passing_a: 80, passing_b: 80 } : undefined
     };
     setMatches([...matches, match]);
   };
@@ -418,14 +450,18 @@ export function QuickTournament() {
             score_team_a: 0, score_team_b: 0, balls_potted_a: 0, balls_potted_b: 0,
             black_potted_a: false, black_potted_b: false, status: 'CREATED',
             winner_id: null, active_team_id: null, duration: defaultDuration, start_time: null, order: 0,
-            team_a_house: 'SOLID', team_b_house: 'STRIPES', fouls_a: 0, fouls_b: 0
+            team_a_house: 'SOLID', team_b_house: 'STRIPES', fouls_a: 0, fouls_b: 0,
+            sport: selectedSport,
+            footballData: selectedSport === 'FOOTBALL' ? { goals: [], possession_a: 50, possession_b: 50, passing_a: 80, passing_b: 80 } : undefined
           });
           knockoutMatches.push({
             id: `sf-2`, team_a_id: top4[1].id, team_b_id: top4[2].id,
             score_team_a: 0, score_team_b: 0, balls_potted_a: 0, balls_potted_b: 0,
             black_potted_a: false, black_potted_b: false, status: 'CREATED',
             winner_id: null, active_team_id: null, duration: defaultDuration, start_time: null, order: 1,
-            team_a_house: 'SOLID', team_b_house: 'STRIPES', fouls_a: 0, fouls_b: 0
+            team_a_house: 'SOLID', team_b_house: 'STRIPES', fouls_a: 0, fouls_b: 0,
+            sport: selectedSport,
+            footballData: selectedSport === 'FOOTBALL' ? { goals: [], possession_a: 50, possession_b: 50, passing_a: 80, passing_b: 80 } : undefined
           });
         } else {
           knockoutMatches.push({
@@ -433,7 +469,9 @@ export function QuickTournament() {
             score_team_a: 0, score_team_b: 0, balls_potted_a: 0, balls_potted_b: 0,
             black_potted_a: false, black_potted_b: false, status: 'CREATED',
             winner_id: null, active_team_id: null, duration: defaultDuration, start_time: null, order: 0,
-            team_a_house: 'SOLID', team_b_house: 'STRIPES', fouls_a: 0, fouls_b: 0
+            team_a_house: 'SOLID', team_b_house: 'STRIPES', fouls_a: 0, fouls_b: 0,
+            sport: selectedSport,
+            footballData: selectedSport === 'FOOTBALL' ? { goals: [], possession_a: 50, possession_b: 50, passing_a: 80, passing_b: 80 } : undefined
           });
         }
         setTournamentType('KNOCKOUT');
@@ -467,7 +505,9 @@ export function QuickTournament() {
           score_team_a: 0, score_team_b: 0, balls_potted_a: 0, balls_potted_b: 0,
           black_potted_a: false, black_potted_b: false, status: 'CREATED',
           winner_id: null, active_team_id: null, duration: defaultDuration, start_time: null, order: 0,
-          team_a_house: 'SOLID', team_b_house: 'STRIPES', fouls_a: 0, fouls_b: 0
+          team_a_house: 'SOLID', team_b_house: 'STRIPES', fouls_a: 0, fouls_b: 0,
+          sport: selectedSport,
+          footballData: selectedSport === 'FOOTBALL' ? { goals: [], possession_a: 50, possession_b: 50, passing_a: 80, passing_b: 80 } : undefined
         };
         setMatches([...matches, finalMatch]);
         setTournamentType('FINALS');
@@ -594,11 +634,20 @@ export function QuickTournament() {
         });
 
         const isMatchComplete = nm.status === 'COMPLETED';
+        const isFootball = nm.sport === 'FOOTBALL';
+        const winPoints = isFootball ? 3 : 1;
+        const drawPoints = isFootball ? 1 : 0;
+        
+        let pointsGained = 0;
+        if (isMatchComplete) {
+          pointsGained = nm.winner_id === t.id ? winPoints : (nm.score_team_a === nm.score_team_b ? drawPoints : 0);
+        }
+
         return { 
           ...t, 
           matches_played: isMatchComplete ? t.matches_played + 1 : t.matches_played, 
-          total_score: isMatchComplete ? t.total_score + (t.id === nm.team_a_id ? nm.score_team_a : nm.score_team_b) : t.total_score, 
-          group_points: isMatchComplete ? t.group_points + (nm.winner_id === t.id ? 1 : 0) : t.group_points,
+          total_score: isMatchComplete ? t.total_score + (t.id === nm.team_a_id ? nm.score_team_a : nm.score_team_b) + (!isFootball && nm.score_team_a === nm.score_team_b ? 50 : 0) : t.total_score, 
+          group_points: isMatchComplete ? t.group_points + pointsGained : t.group_points,
           total_balls_potted: t.total_balls_potted + (type === 'BALL' && isCurrentTeam ? 1 : (type === 'REMOVE_BALL' && isCurrentTeam ? -1 : 0)),
           total_fouls: t.total_fouls + (type === 'FOUL' && isCurrentTeam ? 1 : (type === 'REMOVE_FOUL' && isCurrentTeam ? -1 : 0)),
           players: updatedPlayers
@@ -628,8 +677,95 @@ export function QuickTournament() {
       balls_potted_a: 0, balls_potted_b: 0,
       fouls_a: 0, fouls_b: 0,
       black_potted_a: false, black_potted_b: false,
-      start_time: currentTime 
+      start_time: currentTime,
+      footballData: m.sport === 'FOOTBALL' ? { goals: [], possession_a: 50, possession_b: 50, passing_a: 80, passing_b: 80 } : undefined
     } : m));
+  };
+
+  const addGoal = () => {
+    if (!goalModal || !selectedScorer) return;
+    const { matchId, teamId } = goalModal;
+    const match = matches.find(m => m.id === matchId);
+    if (!match) return;
+
+    const player = teams.find(t => t.id === teamId)?.players.find(p => p.id === selectedScorer);
+    if (!player) return;
+
+    const elapsedSeconds = currentTime - (match.start_time || currentTime);
+    const minute = Math.floor(elapsedSeconds / 60) + 1;
+
+    const newGoal: GoalEvent = {
+      id: `g-${Date.now()}`,
+      scorerId: selectedScorer,
+      scorerName: player.name,
+      minute: goalMinute || minute,
+      teamId
+    };
+
+    setMatches(prev => prev.map(m => {
+      if (m.id !== matchId) return m;
+      const isA = m.team_a_id === teamId;
+      const fd = m.footballData || { goals: [], possession_a: 50, possession_b: 50, passing_a: 80, passing_b: 80 };
+      return {
+        ...m,
+        score_team_a: isA ? m.score_team_a + 1 : m.score_team_a,
+        score_team_b: !isA ? m.score_team_b + 1 : m.score_team_b,
+        footballData: {
+          ...fd,
+          goals: [...fd.goals, newGoal]
+        }
+      };
+    }));
+
+    setGoalModal(null);
+    setSelectedScorer("");
+    setGoalMinute(0);
+    playBuzzer(); // Goal celebration buzzer
+  };
+
+  const undoGoal = (matchId: string, teamId: string) => {
+    setMatches(prev => prev.map(m => {
+      if (m.id !== matchId) return m;
+      const fd = m.footballData;
+      if (!fd || fd.goals.length === 0) return m;
+
+      const teamGoals = fd.goals.filter(g => g.teamId === teamId);
+      if (teamGoals.length === 0) return m;
+
+      const lastGoal = teamGoals[teamGoals.length - 1];
+      const isA = m.team_a_id === teamId;
+
+      return {
+        ...m,
+        score_team_a: isA ? Math.max(0, m.score_team_a - 1) : m.score_team_a,
+        score_team_b: !isA ? Math.max(0, m.score_team_b - 1) : m.score_team_b,
+        footballData: {
+          ...fd,
+          goals: fd.goals.filter(g => g.id !== lastGoal.id)
+        }
+      };
+    }));
+  };
+
+  const updateFootballStat = (matchId: string, type: 'possession' | 'passing', team: 'A' | 'B', value: number) => {
+    setMatches(prev => prev.map(m => {
+      if (m.id !== matchId) return m;
+      const fd = m.footballData || { goals: [], possession_a: 50, possession_b: 50, passing_a: 80, passing_b: 80 };
+      const next = { ...fd };
+      if (type === 'possession') {
+        if (team === 'A') {
+          next.possession_a = value;
+          next.possession_b = 100 - value;
+        } else {
+          next.possession_b = value;
+          next.possession_a = 100 - value;
+        }
+      } else {
+        if (team === 'A') next.passing_a = value;
+        else next.passing_b = value;
+      }
+      return { ...m, footballData: next };
+    }));
   };
 
   const getTeamName = (id: string) => teams.find(t => t.id === id)?.name || "Unknown";
@@ -654,6 +790,14 @@ export function QuickTournament() {
                   onChange={e => setArenaName(e.target.value)}
                   placeholder="e.g. Midnight Championship"
                 />
+              </div>
+
+              <div className="form-group mt-10">
+                <label className="section-label-v2">SELECT SPORT</label>
+                <div className="segmented-control-v2">
+                  <button className={`segment-btn ${selectedSport === '8BALL' ? 'active' : ''}`} onClick={() => setSelectedSport('8BALL')}>8-BALL POOL</button>
+                  <button className={`segment-btn ${selectedSport === 'FOOTBALL' ? 'active' : ''}`} onClick={() => setSelectedSport('FOOTBALL')}>FOOTBALL</button>
+                </div>
               </div>
 
               <div className="form-group mt-10">
@@ -815,6 +959,17 @@ export function QuickTournament() {
               </div>
             </div>
 
+            {victoryMatch.sport === 'FOOTBALL' && (
+              <div className="v-football-summary mt-8" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', width: '100%', textAlign: 'left' }}>
+                <div className="v-scorers-col">
+                  <ScorersList goals={victoryMatch.footballData?.goals || []} teamId={victoryMatch.team_a_id} />
+                </div>
+                <div className="v-scorers-col">
+                  <ScorersList goals={victoryMatch.footballData?.goals || []} teamId={victoryMatch.team_b_id} />
+                </div>
+              </div>
+            )}
+
             <div className="v-actions-row">
               <button className="v-action-btn" onClick={() => setVictoryMatch(null)}>CONTINUE TO ARENA</button>
             </div>
@@ -928,6 +1083,42 @@ export function QuickTournament() {
         </div>
       )}
 
+      {goalModal && (
+        <div className="custom-modal-overlay">
+          <div className="custom-modal">
+            <div className="modal-icon">⚽</div>
+            <h2>RECORD GOAL</h2>
+            <p className="muted">Recording goal for {goalModal.teamName}</p>
+            
+            <div className="form-group mt-6">
+              <label className="section-label-v2">SELECT SCORER</label>
+              <select className="premium-input-v2" value={selectedScorer} onChange={e => setSelectedScorer(e.target.value)}>
+                <option value="">-- Choose Player --</option>
+                {teams.find(t => t.id === goalModal.teamId)?.players.map(p => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-group mt-4">
+              <label className="section-label-v2">MINUTE (OPTIONAL)</label>
+              <input 
+                type="number" 
+                className="premium-input-v2" 
+                placeholder="Auto-calculating..." 
+                value={goalMinute || ""} 
+                onChange={e => setGoalMinute(Number(e.target.value))}
+              />
+            </div>
+
+            <div className="modal-actions mt-8">
+              <button className="button button-secondary" onClick={() => setGoalModal(null)}>CANCEL</button>
+              <button className="button button-gold" onClick={addGoal} disabled={!selectedScorer}>CONFIRM GOAL</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="arena-header-v2">
         <div className="arena-meta">
           <h2 className="glow-text">{arenaName}</h2>
@@ -994,82 +1185,158 @@ export function QuickTournament() {
               </div>
 
               <div className="battle-view">
-                <div className="pod-wrapper red">
-                  {liveMatch.team_a_id && teams.find(t => t.id === liveMatch.team_a_id)?.is_team && (
-                    <div className="player-select-overlay">
-                      <span className="section-label-v2" style={{ textAlign: 'center', marginBottom: '4px' }}>ACTIVE SHOOTER</span>
-                      <div className="player-chips">
-                        {teams.find(t => t.id === liveMatch.team_a_id)?.players.map(p => (
-                          <div 
-                            key={p.id} 
-                            className={`player-chip ${liveMatch.active_player_a_id === p.id ? 'active' : ''}`}
-                            onClick={() => setMatches(matches.map(m => m.id === liveMatch.id ? { ...m, active_player_a_id: p.id } : m))}
-                          >
-                            {p.name}
+                {liveMatch.sport === '8BALL' ? (
+                  <>
+                    <div className="pod-wrapper red">
+                      {liveMatch.team_a_id && teams.find(t => t.id === liveMatch.team_a_id)?.is_team && (
+                        <div className="player-select-overlay">
+                          <span className="section-label-v2" style={{ textAlign: 'center', marginBottom: '4px' }}>ACTIVE SHOOTER</span>
+                          <div className="player-chips">
+                            {teams.find(t => t.id === liveMatch.team_a_id)?.players.map(p => (
+                              <div 
+                                key={p.id} 
+                                className={`player-chip ${liveMatch.active_player_a_id === p.id ? 'active' : ''}`}
+                                onClick={() => setMatches(matches.map(m => m.id === liveMatch.id ? { ...m, active_player_a_id: p.id } : m))}
+                              >
+                                {p.name}
+                              </div>
+                            ))}
                           </div>
-                        ))}
-                      </div>
+                        </div>
+                      )}
+                      <TeamPod 
+                        teamName={getTeamName(liveMatch.team_a_id)}
+                        score={liveMatch.score_team_a}
+                        color="red"
+                        isActive={liveMatch.active_team_id === liveMatch.team_a_id}
+                        fouls={liveMatch.fouls_a}
+                        house={liveMatch.team_a_house}
+                        ballsPotted={liveMatch.balls_potted_a}
+                        blackPotted={liveMatch.black_potted_a}
+                        onFoulClick={() => updateScore(liveMatch.id, liveMatch.team_a_id, 'FOUL')}
+                        onFoulRemove={() => updateScore(liveMatch.id, liveMatch.team_a_id, 'REMOVE_FOUL')}
+                        onBallClick={() => updateScore(liveMatch.id, liveMatch.team_a_id, 'BALL')}
+                        onBallRemove={() => updateScore(liveMatch.id, liveMatch.team_a_id, 'REMOVE_BALL')}
+                        onBlackClick={() => updateScore(liveMatch.id, liveMatch.team_a_id, 'BLACK')}
+                        onHouseToggle={(h) => updateHouse(liveMatch.id, 'A', h)}
+                        isLocked={isLocked}
+                        onClick={() => setMatches(matches.map(m => m.id === liveMatch.id ? { ...m, active_team_id: liveMatch.team_a_id } : m))}
+                      />
                     </div>
-                  )}
-                  <TeamPod 
-                    teamName={getTeamName(liveMatch.team_a_id)}
-                    score={liveMatch.score_team_a}
-                    color="red"
-                    isActive={liveMatch.active_team_id === liveMatch.team_a_id}
-                    fouls={liveMatch.fouls_a}
-                    house={liveMatch.team_a_house}
-                    ballsPotted={liveMatch.balls_potted_a}
-                    blackPotted={liveMatch.black_potted_a}
-                    onFoulClick={() => updateScore(liveMatch.id, liveMatch.team_a_id, 'FOUL')}
-                    onFoulRemove={() => updateScore(liveMatch.id, liveMatch.team_a_id, 'REMOVE_FOUL')}
-                    onBallClick={() => updateScore(liveMatch.id, liveMatch.team_a_id, 'BALL')}
-                    onBallRemove={() => updateScore(liveMatch.id, liveMatch.team_a_id, 'REMOVE_BALL')}
-                    onBlackClick={() => updateScore(liveMatch.id, liveMatch.team_a_id, 'BLACK')}
-                    onHouseToggle={(h) => updateHouse(liveMatch.id, 'A', h)}
-                    isLocked={isLocked}
-                    onClick={() => setMatches(matches.map(m => m.id === liveMatch.id ? { ...m, active_team_id: liveMatch.team_a_id } : m))}
-                  />
-                </div>
 
-                <VSCore />
+                    <VSCore />
 
-                <div className="pod-wrapper blue">
-                  {liveMatch.team_b_id && teams.find(t => t.id === liveMatch.team_b_id)?.is_team && (
-                    <div className="player-select-overlay">
-                      <span className="section-label-v2" style={{ textAlign: 'center', marginBottom: '4px' }}>ACTIVE SHOOTER</span>
-                      <div className="player-chips">
-                        {teams.find(t => t.id === liveMatch.team_b_id)?.players.map(p => (
-                          <div 
-                            key={p.id} 
-                            className={`player-chip ${liveMatch.active_player_b_id === p.id ? 'active' : ''}`}
-                            onClick={() => setMatches(matches.map(m => m.id === liveMatch.id ? { ...m, active_player_b_id: p.id } : m))}
-                          >
-                            {p.name}
+                    <div className="pod-wrapper blue">
+                      {liveMatch.team_b_id && teams.find(t => t.id === liveMatch.team_b_id)?.is_team && (
+                        <div className="player-select-overlay">
+                          <span className="section-label-v2" style={{ textAlign: 'center', marginBottom: '4px' }}>ACTIVE SHOOTER</span>
+                          <div className="player-chips">
+                            {teams.find(t => t.id === liveMatch.team_b_id)?.players.map(p => (
+                              <div 
+                                key={p.id} 
+                                className={`player-chip ${liveMatch.active_player_b_id === p.id ? 'active' : ''}`}
+                                onClick={() => setMatches(matches.map(m => m.id === liveMatch.id ? { ...m, active_player_b_id: p.id } : m))}
+                              >
+                                {p.name}
+                              </div>
+                            ))}
                           </div>
-                        ))}
-                      </div>
+                        </div>
+                      )}
+                      <TeamPod 
+                        teamName={getTeamName(liveMatch.team_b_id)}
+                        score={liveMatch.score_team_b}
+                        color="blue"
+                        isActive={liveMatch.active_team_id === liveMatch.team_b_id}
+                        fouls={liveMatch.fouls_b}
+                        house={liveMatch.team_b_house}
+                        ballsPotted={liveMatch.balls_potted_b}
+                        blackPotted={liveMatch.black_potted_b}
+                        onFoulClick={() => updateScore(liveMatch.id, liveMatch.team_b_id, 'FOUL')}
+                        onFoulRemove={() => updateScore(liveMatch.id, liveMatch.team_b_id, 'REMOVE_FOUL')}
+                        onBallClick={() => updateScore(liveMatch.id, liveMatch.team_b_id, 'BALL')}
+                        onBallRemove={() => updateScore(liveMatch.id, liveMatch.team_b_id, 'REMOVE_BALL')}
+                        onBlackClick={() => updateScore(liveMatch.id, liveMatch.team_b_id, 'BLACK')}
+                        onHouseToggle={(h) => updateHouse(liveMatch.id, 'B', h)}
+                        isLocked={isLocked}
+                        onClick={() => setMatches(matches.map(m => m.id === liveMatch.id ? { ...m, active_team_id: liveMatch.team_b_id } : m))}
+                      />
                     </div>
-                  )}
-                  <TeamPod 
-                    teamName={getTeamName(liveMatch.team_b_id)}
-                    score={liveMatch.score_team_b}
-                    color="blue"
-                    isActive={liveMatch.active_team_id === liveMatch.team_b_id}
-                    fouls={liveMatch.fouls_b}
-                    house={liveMatch.team_b_house}
-                    ballsPotted={liveMatch.balls_potted_b}
-                    blackPotted={liveMatch.black_potted_b}
-                    onFoulClick={() => updateScore(liveMatch.id, liveMatch.team_b_id, 'FOUL')}
-                    onFoulRemove={() => updateScore(liveMatch.id, liveMatch.team_b_id, 'REMOVE_FOUL')}
-                    onBallClick={() => updateScore(liveMatch.id, liveMatch.team_b_id, 'BALL')}
-                    onBallRemove={() => updateScore(liveMatch.id, liveMatch.team_b_id, 'REMOVE_BALL')}
-                    onBlackClick={() => updateScore(liveMatch.id, liveMatch.team_b_id, 'BLACK')}
-                    onHouseToggle={(h) => updateHouse(liveMatch.id, 'B', h)}
-                    isLocked={isLocked}
-                    onClick={() => setMatches(matches.map(m => m.id === liveMatch.id ? { ...m, active_team_id: liveMatch.team_b_id } : m))}
-                  />
-                </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="pod-wrapper red">
+                      <FootballTeamPod 
+                        teamName={getTeamName(liveMatch.team_a_id)}
+                        score={liveMatch.score_team_a}
+                        color="red"
+                        isActive={liveMatch.active_team_id === liveMatch.team_a_id}
+                        possession={liveMatch.footballData?.possession_a || 50}
+                        passing={liveMatch.footballData?.passing_a || 80}
+                        goals={liveMatch.footballData?.goals || []}
+                        teamId={liveMatch.team_a_id}
+                        onGoalClick={() => setGoalModal({ matchId: liveMatch.id, teamId: liveMatch.team_a_id, teamName: getTeamName(liveMatch.team_a_id) })}
+                        onUndoGoal={() => undoGoal(liveMatch.id, liveMatch.team_a_id)}
+                        isLocked={isLocked}
+                        onClick={() => setMatches(matches.map(m => m.id === liveMatch.id ? { ...m, active_team_id: liveMatch.team_a_id } : m))}
+                      />
+                    </div>
+                    <VSCore />
+                    <div className="pod-wrapper blue">
+                      <FootballTeamPod 
+                        teamName={getTeamName(liveMatch.team_b_id)}
+                        score={liveMatch.score_team_b}
+                        color="blue"
+                        isActive={liveMatch.active_team_id === liveMatch.team_b_id}
+                        possession={liveMatch.footballData?.possession_b || 50}
+                        passing={liveMatch.footballData?.passing_b || 80}
+                        goals={liveMatch.footballData?.goals || []}
+                        teamId={liveMatch.team_b_id}
+                        onGoalClick={() => setGoalModal({ matchId: liveMatch.id, teamId: liveMatch.team_b_id, teamName: getTeamName(liveMatch.team_b_id) })}
+                        onUndoGoal={() => undoGoal(liveMatch.id, liveMatch.team_b_id)}
+                        isLocked={isLocked}
+                        onClick={() => setMatches(matches.map(m => m.id === liveMatch.id ? { ...m, active_team_id: liveMatch.team_b_id } : m))}
+                      />
+                    </div>
+                  </>
+                )}
               </div>
+
+              {liveMatch.sport === 'FOOTBALL' && (
+                <div className="football-controls-panel slide-in mt-8">
+                  <div className="stat-control-group">
+                    <label className="section-label-v2">POSSESSION BALANCE</label>
+                    <div className="possession-slider-wrapper">
+                      <span className="p-label">{getTeamName(liveMatch.team_a_id)} {liveMatch.footballData?.possession_a}%</span>
+                      <input 
+                        type="range" min="0" max="100" 
+                        value={liveMatch.footballData?.possession_a || 50} 
+                        onChange={(e) => updateFootballStat(liveMatch.id, 'possession', 'A', Number(e.target.value))}
+                        className="premium-slider"
+                      />
+                      <span className="p-label">{liveMatch.footballData?.possession_b}% {getTeamName(liveMatch.team_b_id)}</span>
+                    </div>
+                  </div>
+                  <div className="stat-control-grid mt-4">
+                    <div className="stat-control-item">
+                      <label className="section-label-v2">{getTeamName(liveMatch.team_a_id)} PASSING %</label>
+                      <div className="stepper-v2">
+                        <button className="s-btn" onClick={() => updateFootballStat(liveMatch.id, 'passing', 'A', Math.max(0, (liveMatch.footballData?.passing_a || 80) - 1))}>−</button>
+                        <span className="s-val">{liveMatch.footballData?.passing_a}%</span>
+                        <button className="s-btn" onClick={() => updateFootballStat(liveMatch.id, 'passing', 'A', Math.min(100, (liveMatch.footballData?.passing_a || 80) + 1))}>+</button>
+                      </div>
+                    </div>
+                    <div className="stat-control-item">
+                      <label className="section-label-v2">{getTeamName(liveMatch.team_b_id)} PASSING %</label>
+                      <div className="stepper-v2">
+                        <button className="s-btn" onClick={() => updateFootballStat(liveMatch.id, 'passing', 'B', Math.max(0, (liveMatch.footballData?.passing_b || 80) - 1))}>−</button>
+                        <span className="s-val">{liveMatch.footballData?.passing_b}%</span>
+                        <button className="s-btn" onClick={() => updateFootballStat(liveMatch.id, 'passing', 'B', Math.min(100, (liveMatch.footballData?.passing_b || 80) + 1))}>+</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {createdMatches.length > 0 ? (
                 <div className="queue-overlay">
@@ -1111,7 +1378,12 @@ export function QuickTournament() {
                           </div>
                           <div className="summary-item">
                             <div className="item-label">MAN OF THE TOURNAMENT</div>
-                            <div className="item-value">{teams.flatMap(t => t.players).sort((a, b) => b.total_balls_potted - a.total_balls_potted || a.total_fouls - b.total_fouls)[0]?.name || "TBD"}</div>
+                            <div className="item-value">
+                              {(() => {
+                                const p = teams.flatMap(t => t.players).sort((a, b) => ((b.total_balls_potted * 10) - (b.total_fouls * 5)) - ((a.total_balls_potted * 10) - (a.total_fouls * 5)))[0];
+                                return p ? `${p.name} (${(p.total_balls_potted * 10) - (p.total_fouls * 5)})` : "TBD";
+                              })()}
+                            </div>
                           </div>
                         </div>
 
@@ -1256,8 +1528,12 @@ export function QuickTournament() {
       ) : (
         <div className="premium-standings">
           {teams.length > 0 && (() => {
-            const allPlayers = teams.flatMap(t => t.players.map(p => ({ ...p, teamName: t.name })));
-            const topPlayer = [...allPlayers].sort((a, b) => b.total_balls_potted - a.total_balls_potted || a.total_fouls - b.total_fouls)[0];
+            const allPlayers = teams.flatMap(t => t.players.map(p => ({ 
+              ...p, 
+              teamName: t.name,
+              rating: (p.total_balls_potted * 10) - (p.total_fouls * 5)
+            })));
+            const topPlayer = [...allPlayers].sort((a, b) => b.rating - a.rating || b.total_balls_potted - a.total_balls_potted)[0];
             const tournamentWinner = [...teams].sort((a, b) => b.group_points - a.group_points || b.total_score - a.total_score)[0];
 
             return (
@@ -1270,7 +1546,7 @@ export function QuickTournament() {
                       {topPlayer?.name || "TBD"}
                     </div>
                     <div className="award-meta">
-                      {topPlayer?.total_balls_potted || 0} BALLS • {topPlayer?.teamName || ""}
+                      {topPlayer?.rating || 0} RATING • {topPlayer?.teamName || ""}
                     </div>
                   </div>
                 </div>
@@ -1301,31 +1577,84 @@ export function QuickTournament() {
                     <div className="team-status">{t.matches_played} MATCHES PLAYED</div>
                   </div>
                   <div className="stats-row">
-                    <div className="stat"><div className="stat-label">WINS</div><div className="stat-val win">{t.group_points}</div></div>
-                    <div className="stat"><div className="stat-label">BALLS</div><div className="stat-val">{t.total_balls_potted}</div></div>
-                    <div className="stat"><div className="stat-label">FOULS</div><div className="stat-val danger">{t.total_fouls}</div></div>
-                    <div className="stat"><div className="stat-label">SCORE</div><div className="stat-val">{t.total_score}</div></div>
+                    <div className="stat"><div className="stat-label">PTS</div><div className="stat-val win">{t.group_points}</div></div>
+                    {selectedSport === '8BALL' ? (
+                      <>
+                        <div className="stat"><div className="stat-label">BALLS</div><div className="stat-val">{t.total_balls_potted}</div></div>
+                        <div className="stat"><div className="stat-label">FOULS</div><div className="stat-val danger">{t.total_fouls}</div></div>
+                        <div className="stat"><div className="stat-label">SCORE</div><div className="stat-val">{t.total_score}</div></div>
+                      </>
+                    ) : (
+                      <>
+                        {(() => {
+                          const matchesPlayed = matches.filter(m => m.status === 'COMPLETED' && (m.team_a_id === t.id || m.team_b_id === t.id));
+                          const gf = matchesPlayed.reduce((acc, m) => acc + (m.team_a_id === t.id ? m.score_team_a : m.score_team_b), 0);
+                          const ga = matchesPlayed.reduce((acc, m) => acc + (m.team_a_id === t.id ? m.score_team_b : m.score_team_a), 0);
+                          return (
+                            <>
+                              <div className="stat"><div className="stat-label">GF</div><div className="stat-val">{gf}</div></div>
+                              <div className="stat"><div className="stat-label">GA</div><div className="stat-val">{ga}</div></div>
+                              <div className="stat"><div className="stat-label">GD</div><div className="stat-val">{gf - ga >= 0 ? `+${gf - ga}` : gf - ga}</div></div>
+                            </>
+                          );
+                        })()}
+                      </>
+                    )}
                   </div>
                   
                   {t.is_team && (
                     <div className="player-breakdown-v2">
                       <div className="breakdown-header">SQUAD PERFORMANCE</div>
                       <div className="breakdown-grid">
-                        {t.players.map(p => (
-                          <div key={p.id} className="p-breakdown-row">
-                            <span className="p-b-name">{p.name}</span>
-                            <div className="p-b-stats">
-                              <div className="p-b-stat-item">
-                                <span className="p-b-label">BALLS</span>
-                                <span className="p-b-val">🏀 {p.total_balls_potted}</span>
-                              </div>
-                              <div className="p-b-stat-item">
-                                <span className="p-b-label">FOULS</span>
-                                <span className="p-b-val" style={{ color: '#ef4444' }}>⚠️ {p.total_fouls}</span>
+                        {t.players.map(p => {
+                          const isFootball = selectedSport === 'FOOTBALL';
+                          const rating = isFootball 
+                            ? (p.total_balls_potted * 5) // Use total_balls_potted for goals in football if we want, but actually we should use real goals
+                            : (p.total_balls_potted * 10) - (p.total_fouls * 5);
+                          
+                          // In football, we should ideally use the actual goals recorded in footballData
+                          const actualGoals = isFootball ? matches.reduce((acc, m) => {
+                            if (m.sport !== 'FOOTBALL' || !m.footballData) return acc;
+                            return acc + m.footballData.goals.filter(g => g.scorerId === p.id).length;
+                          }, 0) : 0;
+
+                          const footballRating = actualGoals * 10;
+
+                          return (
+                            <div key={p.id} className="p-breakdown-row">
+                              <span className="p-b-name">{p.name}</span>
+                              <div className="p-b-stats">
+                                {isFootball ? (
+                                  <>
+                                    <div className="p-b-stat-item">
+                                      <span className="p-b-label">GOALS</span>
+                                      <span className="p-b-val">⚽ {actualGoals}</span>
+                                    </div>
+                                    <div className="p-b-stat-item" style={{ marginLeft: 'auto', textAlign: 'right' }}>
+                                      <span className="p-b-label" style={{ color: 'var(--gold)' }}>RATING</span>
+                                      <span className="p-b-val" style={{ color: 'var(--gold)' }}>{footballRating}</span>
+                                    </div>
+                                  </>
+                                ) : (
+                                  <>
+                                    <div className="p-b-stat-item">
+                                      <span className="p-b-label">BALLS</span>
+                                      <span className="p-b-val">🏀 {p.total_balls_potted}</span>
+                                    </div>
+                                    <div className="p-b-stat-item">
+                                      <span className="p-b-label">FOULS</span>
+                                      <span className="p-b-val" style={{ color: '#ef4444' }}>⚠️ {p.total_fouls}</span>
+                                    </div>
+                                    <div className="p-b-stat-item" style={{ marginLeft: 'auto', textAlign: 'right' }}>
+                                      <span className="p-b-label" style={{ color: 'var(--gold)' }}>RATING</span>
+                                      <span className="p-b-val" style={{ color: 'var(--gold)' }}>{rating}</span>
+                                    </div>
+                                  </>
+                                )}
                               </div>
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   )}
