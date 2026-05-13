@@ -795,8 +795,12 @@ export function QuickTournament() {
               <div className="form-group mt-10">
                 <label className="section-label-v2">SELECT SPORT</label>
                 <div className="segmented-control-v2">
-                  <button className={`segment-btn ${selectedSport === '8BALL' ? 'active' : ''}`} onClick={() => setSelectedSport('8BALL')}>8-BALL POOL</button>
-                  <button className={`segment-btn ${selectedSport === 'FOOTBALL' ? 'active' : ''}`} onClick={() => setSelectedSport('FOOTBALL')}>FOOTBALL</button>
+                  <button className={`segment-btn sport-card pool ${selectedSport === '8BALL' ? 'active' : ''}`} onClick={() => setSelectedSport('8BALL')}>
+                    <span className="s-icon">🎱</span> 8-BALL POOL
+                  </button>
+                  <button className={`segment-btn sport-card football ${selectedSport === 'FOOTBALL' ? 'active' : ''}`} onClick={() => setSelectedSport('FOOTBALL')}>
+                    <span className="s-icon">⚽</span> FOOTBALL
+                  </button>
                 </div>
               </div>
 
@@ -927,7 +931,8 @@ export function QuickTournament() {
   const createdMatches = matches.filter(m => m.status === 'CREATED').sort((a, b) => a.order - b.order);
 
   return (
-    <div className="engine-container">
+    <div className={`engine-container sport-theme-${selectedSport.toLowerCase()}`}>
+      <div className="arena-vibe-overlay" />
       {victoryMatch && (
         <div className="victory-overlay">
           <div className="victory-podium">

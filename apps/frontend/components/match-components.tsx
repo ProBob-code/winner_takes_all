@@ -66,53 +66,63 @@ export const FootballScoreboard = ({
 }: { 
   teamAName: string, teamBName: string, scoreA: number, scoreB: number, time: string, status: string 
 }) => (
-  <div className="football-scoreboard-v3">
-    <div className="sb-team left">
-      <div className="sb-kit-icon red" />
-      <span className="sb-name">{teamAName}</span>
-    </div>
-    <div className="sb-center">
-      <div className="sb-score-box">
-        <span className="sb-score">{scoreA}</span>
-        <span className="sb-divider">-</span>
-        <span className="sb-score">{scoreB}</span>
+  <div className="football-scoreboard-premium">
+    <div className="sb-content">
+      <div className="sb-side left">
+        <div className="sb-team-badge red">⚽</div>
+        <span className="sb-team-name">{teamAName}</span>
       </div>
-      <div className="sb-timer-box">
-        <span className={`sb-status ${status === 'LIVE' ? 'live' : ''}`}>{status === 'LIVE' ? '● LIVE' : status}</span>
-        <span className="sb-time">{time}</span>
+      
+      <div className="sb-main">
+        <div className="sb-digital-display">
+          <span className="digit">{scoreA}</span>
+          <span className="divider">:</span>
+          <span className="digit">{scoreB}</span>
+        </div>
+        <div className="sb-meta">
+          <span className={`sb-status ${status === 'LIVE' ? 'live' : ''}`}>
+            {status === 'LIVE' ? '● LIVE' : status}
+          </span>
+          <span className="sb-timer">{time}</span>
+        </div>
+      </div>
+
+      <div className="sb-side right">
+        <span className="sb-team-name">{teamBName}</span>
+        <div className="sb-team-badge blue">⚽</div>
       </div>
     </div>
-    <div className="sb-team right">
-      <span className="sb-name">{teamBName}</span>
-      <div className="sb-kit-icon blue" />
-    </div>
+    <div className="sb-bottom-glow" />
   </div>
 );
 
 export const FootballPossessionPitch = ({ posA, posB, teamAName, teamBName }: { posA: number, posB: number, teamAName: string, teamBName: string }) => (
-  <div className="possession-pitch-v3">
-    <div className="pitch-bg">
-      <div className="pitch-center-line" />
-      <div className="pitch-center-circle" />
-      <div className="pitch-area left" />
-      <div className="pitch-area right" />
+  <div className="possession-pitch-premium">
+    <div className="pitch-surface">
+      <div className="pitch-markings">
+        <div className="m-center-circle" />
+        <div className="m-center-line" />
+        <div className="m-penalty-area left" />
+        <div className="m-penalty-area right" />
+      </div>
+      
+      <div className="pos-overlay">
+        <div className="pos-segment segment-a" style={{ width: `${posA}%` }}>
+          <div className="pos-label">{posA}%</div>
+        </div>
+        <div className="pos-ball-tracker" style={{ left: `${posA}%` }}>
+          <div className="ball-sprite">⚽</div>
+          <div className="ball-flare" />
+        </div>
+        <div className="pos-segment segment-b" style={{ width: `${posB}%` }}>
+          <div className="pos-label">{posB}%</div>
+        </div>
+      </div>
     </div>
-    <div className="possession-overlay">
-      <div className="pos-bar-a" style={{ width: `${posA}%` }}>
-        <span className="pos-val">{posA}%</span>
-      </div>
-      <div className="pos-ball-indicator" style={{ left: `${posA}%` }}>
-        <div className="ball-glow" />
-        ⚽
-      </div>
-      <div className="pos-bar-b" style={{ width: `${posB}%` }}>
-        <span className="pos-val">{posB}%</span>
-      </div>
-    </div>
-    <div className="pitch-labels">
-      <span>{teamAName}</span>
-      <span>POSSESSION</span>
-      <span>{teamBName}</span>
+    <div className="pitch-footer">
+      <span className="p-team">{teamAName}</span>
+      <span className="p-title">FIELD DOMINANCE</span>
+      <span className="p-team">{teamBName}</span>
     </div>
   </div>
 );
@@ -250,53 +260,51 @@ export const FootballTeamPod = ({
   const hexColor = color === "red" ? "#ef4444" : "#3b82f6";
   
   return (
-    <div className={`team-pod football-v3 ${color} ${isActive ? 'active' : ''}`} onClick={onClick}>
-      <div className="pod-inner">
-        <div className="football-kit-header">
-          <div className={`kit-badge ${color}`}>
-            <div className="kit-icon">👕</div>
-            <div className="kit-glow" />
-          </div>
-          <div className="team-title-stack">
-            <h3 className="team-name">{teamName}</h3>
-            <span className="team-role">MAIN SQUAD</span>
-          </div>
+    <div className={`football-team-card ${color} ${isActive ? 'active' : ''}`} onClick={onClick}>
+      <div className="card-top">
+        <div className="team-kit">
+          <div className="kit-base">👕</div>
+          <div className="kit-glow" />
         </div>
-
-        <div className="match-score-display">
-          <div className="score-val">{score}</div>
-          <div className="score-label">GOALS</div>
+        <div className="team-info">
+          <h3 className="team-name">{teamName}</h3>
+          <span className="team-tag">FIRST XI</span>
         </div>
-        
-        <div className="mini-stats-grid">
-          <div className="mini-stat">
-            <span className="ms-label">PASSING</span>
-            <span className="ms-val">{passing}%</span>
-            <div className="ms-bar"><div className="ms-fill" style={{ width: `${passing}%`, background: hexColor }} /></div>
-          </div>
-          <div className="mini-stat">
-            <span className="ms-label">THREAT</span>
-            <span className="ms-val">{Math.round(possession * 0.8 + score * 5)}%</span>
-            <div className="ms-bar"><div className="ms-fill" style={{ width: `${Math.min(100, possession * 0.8 + score * 5)}%`, background: '#f59e0b' }} /></div>
-          </div>
-        </div>
-
-        <ScorersList goals={goals} teamId={teamId} compact />
-
-        {!isLocked && (
-          <div className="football-actions">
-            <button className="fb-action-btn goal" onClick={(e) => { e.stopPropagation(); onGoalClick?.(); }}>
-              <span className="btn-icon">⚽</span> RECORD GOAL
-            </button>
-            {score > 0 && (
-              <button className="fb-action-btn undo" onClick={(e) => { e.stopPropagation(); onUndoGoal?.(); }}>
-                UNDO
-              </button>
-            )}
-          </div>
-        )}
       </div>
-      <div className="pod-grass-texture" />
+
+      <div className="score-display-xl">
+        <div className="score-num">{score}</div>
+        <div className="score-sub">GOALS</div>
+      </div>
+
+      <div className="stats-dashboard">
+        <div className="dashboard-item">
+          <div className="d-label">PASSING</div>
+          <div className="d-val">{passing}%</div>
+          <div className="d-progress"><div className="d-fill" style={{ width: `${passing}%`, background: hexColor }} /></div>
+        </div>
+        <div className="dashboard-item">
+          <div className="d-label">THREAT</div>
+          <div className="d-val">{Math.round(possession * 0.8 + score * 5)}%</div>
+          <div className="d-progress"><div className="d-fill" style={{ width: `${Math.min(100, possession * 0.8 + score * 5)}%`, background: '#f59e0b' }} /></div>
+        </div>
+      </div>
+
+      <ScorersList goals={goals} teamId={teamId} compact />
+
+      {!isLocked && (
+        <div className="card-actions">
+          <button className="goal-trigger" onClick={(e) => { e.stopPropagation(); onGoalClick?.(); }}>
+            <span className="icon">⚽</span> RECORD GOAL
+          </button>
+          {score > 0 && (
+            <button className="undo-trigger" onClick={(e) => { e.stopPropagation(); onUndoGoal?.(); }}>
+              UNDO
+            </button>
+          )}
+        </div>
+      )}
+      <div className="card-pitch-texture" />
     </div>
   );
 };
