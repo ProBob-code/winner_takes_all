@@ -58,12 +58,14 @@ export function Sidebar({ user: initialUser }: { user: any }) {
 
   const navItems = user ? [
     { label: "Dashboard", href: "/dashboard", icon: "📊" },
+    { label: "Live Screening", href: "/screening", icon: "📺" },
     { label: "Games", href: "/games", icon: "🕹️" },
     { label: "Tournaments", href: "/tournaments", icon: "🎮" },
     { label: "Rankings", href: "/leaderboard", icon: "🏆" },
     { label: "Profile", href: "/profile", icon: "👤" },
     { label: "Organizer Account", href: "/wallet", icon: "💳" }
   ] : [
+    { label: "Live Screening", href: "/screening", icon: "📺" },
     { label: "Games", href: "/games", icon: "🕹️" },
     { label: "Tournaments", href: "/tournaments", icon: "🎮" },
     { label: "Rankings", href: "/leaderboard", icon: "🏆" }

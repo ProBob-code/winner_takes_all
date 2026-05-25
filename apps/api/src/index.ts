@@ -674,6 +674,18 @@ app.post("/api/engine/matches/:id/score", async (c) => {
 
 // --- Public Arena Routes ---
 
+app.get("/api/public-arenas", async (c) => {
+  const arenas = await c.env.DB.prepare(`SELECT * FROM public_arenas ORDER BY updated_at DESC LIMIT 50`).all<any>();
+  const results = (arenas.results || []).map((r: any) => ({
+    id: r.id,
+    name: r.name,
+    state: JSON.parse(r.state_json),
+    isLocked: !!r.pin,
+    updatedAt: r.updated_at
+  }));
+  return c.json({ ok: true, arenas: results });
+});
+
 app.post("/api/public-arenas", async (c) => {
   const body = await c.req.json();
   const { id, name, state, pin } = body;

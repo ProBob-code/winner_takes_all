@@ -232,6 +232,7 @@
   margin-bottom: 2rem;
   background: linear-gradient(to bottom, #fff, #999);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
@@ -2176,11 +2177,11 @@ select.premium-input-v2 option {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 150px;
+  max-width: 320px;
 }
 
 @media (max-width: 480px) {
-  .s-pair { max-width: 110px; font-size: 0.9rem; }
+  .s-pair { max-width: 130px; font-size: 0.9rem; }
 }
 
 .s-meta { font-size: 0.6rem; font-weight: 800; opacity: 0.3; letter-spacing: 1px; margin-top: 4px; text-transform: uppercase; }
@@ -3252,4 +3253,128 @@ select.premium-input-v2 option {
   border-color: #3b82f6 !important;
   background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%) !important;
   box-shadow: 0 0 40px rgba(59, 130, 246, 0.4) !important;
+}
+
+/* --- FOOTBALL EXTRA TIME CONTROL --- */
+.football-extra-time-control {
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 16px;
+  padding: 1rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 20px rgba(16, 185, 129, 0.1);
+  backdrop-filter: blur(10px);
+}
+
+.football-extra-time-control .premium-input-v2-sm {
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid #10b981;
+  color: #10b981;
+  font-weight: 950;
+  font-size: 1.2rem;
+  text-shadow: 0 0 5px rgba(16, 185, 129, 0.5);
+}
+
+.football-extra-time-control .premium-input-v2-sm:focus {
+  border-color: #34d399;
+  box-shadow: 0 0 10px rgba(52, 211, 153, 0.3);
+}
+
+/* --- SPORTY UI ENHANCEMENTS --- */
+.football-scoreboard-premium {
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), 0 0 40px rgba(16, 185, 129, 0.2);
+}
+
+.digit {
+  font-family: 'Outfit', sans-serif;
+  text-shadow: 0 0 20px rgba(245, 158, 11, 0.8);
+}
+
+.sb-team-name {
+  font-family: 'Outfit', sans-serif;
+  letter-spacing: 3px;
+}
+
+/* --- PLAYER FORMATION ON PITCH --- */
+.player-dot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.player-dot .dot-marker {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 0 10px rgba(0,0,0,0.5);
+}
+
+.player-dot.red .dot-marker {
+  background: #ef4444;
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.6);
+}
+
+.player-dot.blue .dot-marker {
+  background: #3b82f6;
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.6);
+}
+
+.player-dot .dot-label {
+  font-size: 0.7rem;
+  font-weight: bold;
+  color: #fff;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+  white-space: nowrap;
+}
+
+/* --- PLAYER LIST & SUBS --- */
+.player-item:hover {
+  background: rgba(255,255,255,0.02);
+}
+
+.sub-btn:hover {
+  background: rgba(255,255,255,0.2) !important;
+  color: #fff !important;
+}
+
+.captain-badge {
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
+}
+
+/* --- MOBILE RESPONSIVENESS FIXES --- */
+@media (max-width: 768px) {
+  .lineup-pitch {
+    grid-template-columns: 1fr !important;
+    gap: 1.5rem !important;
+    padding: 1rem !important;
+  }
+  
+  .lineup-pitch > div[style*="position: 'absolute'"] {
+    display: none !important; /* Hide pitch central circle and line on mobile stacked view */
+  }
+
+  .player-cards-container {
+    max-height: none !important;
+  }
+
+  .lineup-column {
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+  }
+  
+  .lineup-column:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+
+  .player-select-card {
+    padding: 8px 10px !important;
+  }
 }

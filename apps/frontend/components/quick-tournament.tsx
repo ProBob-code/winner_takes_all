@@ -1,8 +1,11 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { backendFetch } from "@/lib/backend";
-import { TeamPod, VSCore, FootballTeamPod, ScorersList, FootballScoreboard, FootballPossessionPitch } from "@/components/match-components";
+import { FootballTeamPod, ScorersList, FootballScoreboard, FootballPossessionPitch } from "@/components/match-components";
+import { FootballMatchEngine } from "./football-match-engine";
+import { PoolMatchEngine } from "./pool-match-engine";
 import "@/components/tournament-engine.css";
 
 type Player = {
@@ -10,6 +13,7 @@ type Player = {
   name: string;
   total_balls_potted: number;
   total_fouls: number;
+  role: 'CAPTAIN' | 'PLAYER' | 'SUB' | 'GOALKEEPER'; // Added role for lineup management
 };
 
 type Team = { 
@@ -31,13 +35,70 @@ type GoalEvent = {
   teamId: string;
 };
 
+type SubEvent = {
+  id: string;
+  playerInId: string;
+  playerInName: string;
+  playerOutId: string;
+  playerOutName: string;
+  minute: number;
+  teamId: string;
+};
+
+type CardEvent = {
+  id: string;
+  playerId: string;
+  playerName: string;
+  minute: number;
+  type: 'YELLOW' | 'RED';
+  teamId: string;
+};
+
+type AttemptEvent = {
+  id: string;
+  teamId: string;
+  playerId: string;
+  playerName: string;
+  minute: number;
+  outcome: 'SCORED' | 'SAVED' | 'MISSED';
+  goalkeeperId?: string;
+  goalkeeperName?: string;
+};
+
 type FootballMatchData = {
   goals: GoalEvent[];
+  attempts?: AttemptEvent[];
+  cards: CardEvent[]; // Record yellow/red cards
   possession_a: number;
   possession_b: number;
   passing_a: number;
   passing_b: number;
+  extra_time?: number;
+  timerSeconds: number; // elapsed seconds from start of current half
+  half: 1 | 2; // Current half of the match
+  lineup_a?: string[];
+  lineup_b?: string[];
+  captain_a?: string;
+  captain_b?: string;
+  subs?: SubEvent[];
 };
+
+const createDefaultFootballData = (teamA?: Team, teamB?: Team): FootballMatchData => ({
+  goals: [],
+  attempts: [],
+  cards: [],
+  possession_a: 50,
+  possession_b: 50,
+  passing_a: 80,
+  passing_b: 80,
+  timerSeconds: 0,
+  half: 1,
+  lineup_a: teamA?.players.map(p => p.id) || [],
+  lineup_b: teamB?.players.map(p => p.id) || [],
+  captain_a: teamA?.players[0]?.id,
+  captain_b: teamB?.players[0]?.id,
+  subs: []
+});
 
 type SportType = '8BALL' | 'FOOTBALL';
 
@@ -76,6 +137,36 @@ type ModalConfig = {
   showCancel?: boolean;
 };
 
+const getElapsedSeconds = (match: Match) => {
+  if (!match.footballData) return 0;
+  const fd = match.footballData;
+  if (fd.half === 1) {
+    return fd.timerSeconds;
+  } else {
+    return Math.floor(match.duration / 2) + fd.timerSeconds;
+  }
+};
+
+const getFootballTimeDisplay = (match: Match) => {
+  if (!match.footballData) return "0:00";
+  const fd = match.footballData;
+  const halfDuration = Math.floor(match.duration / 2);
+  
+  if (fd.half === 1) {
+    if (fd.timerSeconds >= halfDuration) {
+      return "HALF TIME";
+    }
+    const mins = Math.floor(fd.timerSeconds / 60);
+    const secs = fd.timerSeconds % 60;
+    return `${mins}:${String(secs).padStart(2, '0')}`;
+  } else {
+    const totalSeconds = halfDuration + fd.timerSeconds;
+    const mins = Math.floor(totalSeconds / 60);
+    const secs = totalSeconds % 60;
+    return `${mins}:${String(secs).padStart(2, '0')}`;
+  }
+};
+
 export function QuickTournament() {
   const [teams, setTeams] = useState<Team[]>([]);
   const [newTeamName, setNewTeamName] = useState("");
@@ -83,7 +174,8 @@ export function QuickTournament() {
 
   const [matches, setMatches] = useState<Match[]>([]);
   const [isStarted, setIsStarted] = useState(false);
-  const [activeSubTab, setActiveSubTab] = useState<'arena' | 'standings'>('arena');
+  const [activeSubTab, setActiveSubTab] = useState<'arena' | 'screening' | 'standings'>('arena');
+  const [activeLiveMatchId, setActiveLiveMatchId] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState(Math.floor(Date.now() / 1000));
   const [arenaId, setArenaId] = useState<string>("");
   const [matchesPerTeam, setMatchesPerTeam] = useState(3);
@@ -104,14 +196,30 @@ export function QuickTournament() {
   const [isLocked, setIsLocked] = useState(false);
   const [showPinModal, setShowPinModal] = useState<{ mode: 'SET' | 'VERIFY', onConfirm: (pin: string) => void } | null>(null);
   const [participantType, setParticipantType] = useState<'SINGLE' | 'TEAM'>('SINGLE');
-  const [teamPlayersInput, setTeamPlayersInput] = useState<string[]>(["", ""]);
+  const [teamPlayersInput, setTeamPlayersInput] = useState<{ name: string; role: 'CAPTAIN' | 'PLAYER' | 'SUB' | 'GOALKEEPER' }[]>([
+    { name: "", role: "CAPTAIN" },
+    { name: "", role: "GOALKEEPER" }
+  ]);
   const [selectedSport, setSelectedSport] = useState<SportType>('8BALL');
   const [goalModal, setGoalModal] = useState<{ matchId: string, teamId: string, teamName: string } | null>(null);
+  const [subModal, setSubModal] = useState<{ matchId: string, teamId: string, playerOutId: string } | null>(null);
   const [selectedScorer, setSelectedScorer] = useState<string>("");
   const [goalMinute, setGoalMinute] = useState<number>(0);
+  const [lineupModalConfig, setLineupModalConfig] = useState<{
+    matchId: string;
+    teamAId: string;
+    teamBId: string;
+    lineupA: string[];
+    lineupB: string[];
+    captainA: string;
+    captainB: string;
+  } | null>(null);
+
+  const [isMounted, setIsMounted] = useState(false);
 
   // Sync with LocalStorage
   useEffect(() => {
+    setIsMounted(true);
     const saved = localStorage.getItem("wta_arena_quick_v11");
     if (saved) {
       const parsed = JSON.parse(saved);
@@ -138,12 +246,25 @@ export function QuickTournament() {
       backendFetch("/public-arenas", { 
         method: "POST", 
         body: JSON.stringify({ 
-          id: arenaId, name: arenaName, state: { teams, matches, isStarted },
+          id: arenaId, name: arenaName, state: { teams, matches, isStarted, selectedSport },
           pin: arenaPin 
         }) 
       }).catch(() => { });
     }
   }, [teams, matches, isStarted, arenaId, matchesPerTeam, defaultDuration, tournamentType, arenaName, arenaPin, isLocked, selectedSport]);
+
+  useEffect(() => {
+    if (teams.length >= 2) {
+      const maxPossibleQuota = teams.length - 1;
+      if (matchesPerTeam > maxPossibleQuota) {
+        setMatchesPerTeam(maxPossibleQuota);
+      } else if (matchesPerTeam === 3 && maxPossibleQuota < 3) {
+        setMatchesPerTeam(maxPossibleQuota);
+      } else if (teams.length === 4) {
+        setMatchesPerTeam(3);
+      }
+    }
+  }, [teams.length]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -154,7 +275,16 @@ export function QuickTournament() {
         let changed = false;
         const next = prev.map(m => {
           if (m.status === 'LIVE' && m.start_time) {
-            const remaining = (m.start_time + m.duration) - now;
+            const extraTime = m.footballData?.extra_time || 0;
+            let remaining = (m.start_time + m.duration + extraTime) - now;
+            if (m.sport === 'FOOTBALL' && m.footballData) {
+              const fd = m.footballData;
+              if (fd.half === 1) {
+                remaining = 999;
+              } else {
+                remaining = Math.floor(m.duration / 2) - fd.timerSeconds;
+              }
+            }
             
             if (remaining > 0 && remaining <= 30 && extraTimePromptId !== m.id) {
               setExtraTimePromptId(m.id);
@@ -274,7 +404,7 @@ export function QuickTournament() {
               team_a_house: 'SOLID', team_b_house: 'STRIPES',
               fouls_a: 0, fouls_b: 0,
               sport: selectedSport,
-              footballData: selectedSport === 'FOOTBALL' ? { goals: [], possession_a: 50, possession_b: 50, passing_a: 80, passing_b: 80 } : undefined
+              footballData: selectedSport === 'FOOTBALL' ? createDefaultFootballData(t1, t2) : undefined
             };
             newMatches.push(m);
             currentMatches.push(m);
@@ -295,7 +425,7 @@ export function QuickTournament() {
               team_a_house: 'SOLID', team_b_house: 'STRIPES',
               fouls_a: 0, fouls_b: 0,
               sport: selectedSport,
-              footballData: selectedSport === 'FOOTBALL' ? { goals: [], possession_a: 50, possession_b: 50, passing_a: 80, passing_b: 80 } : undefined
+              footballData: selectedSport === 'FOOTBALL' ? createDefaultFootballData(allTeams[i], allTeams[i + 1]) : undefined
             });
           }
         }
@@ -313,16 +443,18 @@ export function QuickTournament() {
         id: Math.random().toString(36).substr(2, 9),
         name: newTeamName.trim(),
         total_balls_potted: 0,
-        total_fouls: 0
+        total_fouls: 0,
+        role: 'CAPTAIN'
       }];
     } else {
       players = teamPlayersInput
-        .filter(name => name.trim())
-        .map(name => ({
+        .filter(p => p.name.trim())
+        .map(p => ({
           id: Math.random().toString(36).substr(2, 9),
-          name: name.trim(),
+          name: p.name.trim(),
           total_balls_potted: 0,
-          total_fouls: 0
+          total_fouls: 0,
+          role: p.role
         }));
       if (players.length < 2) {
         setModalConfig({
@@ -349,7 +481,10 @@ export function QuickTournament() {
     const updatedTeams = [...teams, newTeam];
     setTeams(updatedTeams);
     setNewTeamName("");
-    setTeamPlayersInput(["", ""]);
+    setTeamPlayersInput([
+      { name: "", role: "CAPTAIN" },
+      { name: "", role: "PLAYER" }
+    ]);
 
     if (isStarted && tournamentType === 'GROUP') {
       const next = generateMatchesPass(updatedTeams, matches);
@@ -413,7 +548,7 @@ export function QuickTournament() {
       active_player_a_id: teams.find(t => t.id === t1Id)?.players[0]?.id || null,
       active_player_b_id: teams.find(t => t.id === t2Id)?.players[0]?.id || null,
       sport: selectedSport,
-      footballData: selectedSport === 'FOOTBALL' ? { goals: [], possession_a: 50, possession_b: 50, passing_a: 80, passing_b: 80 } : undefined
+      footballData: selectedSport === 'FOOTBALL' ? createDefaultFootballData(teams.find(t => t.id === t1Id), teams.find(t => t.id === t2Id)) : undefined
     };
     setMatches([...matches, match]);
   };
@@ -452,7 +587,7 @@ export function QuickTournament() {
             winner_id: null, active_team_id: null, duration: defaultDuration, start_time: null, order: 0,
             team_a_house: 'SOLID', team_b_house: 'STRIPES', fouls_a: 0, fouls_b: 0,
             sport: selectedSport,
-            footballData: selectedSport === 'FOOTBALL' ? { goals: [], possession_a: 50, possession_b: 50, passing_a: 80, passing_b: 80 } : undefined
+            footballData: selectedSport === 'FOOTBALL' ? createDefaultFootballData(top4[0], top4[3]) : undefined
           });
           knockoutMatches.push({
             id: `sf-2`, team_a_id: top4[1].id, team_b_id: top4[2].id,
@@ -461,7 +596,7 @@ export function QuickTournament() {
             winner_id: null, active_team_id: null, duration: defaultDuration, start_time: null, order: 1,
             team_a_house: 'SOLID', team_b_house: 'STRIPES', fouls_a: 0, fouls_b: 0,
             sport: selectedSport,
-            footballData: selectedSport === 'FOOTBALL' ? { goals: [], possession_a: 50, possession_b: 50, passing_a: 80, passing_b: 80 } : undefined
+            footballData: selectedSport === 'FOOTBALL' ? createDefaultFootballData(top4[1], top4[2]) : undefined
           });
         } else {
           knockoutMatches.push({
@@ -471,7 +606,7 @@ export function QuickTournament() {
             winner_id: null, active_team_id: null, duration: defaultDuration, start_time: null, order: 0,
             team_a_house: 'SOLID', team_b_house: 'STRIPES', fouls_a: 0, fouls_b: 0,
             sport: selectedSport,
-            footballData: selectedSport === 'FOOTBALL' ? { goals: [], possession_a: 50, possession_b: 50, passing_a: 80, passing_b: 80 } : undefined
+            footballData: selectedSport === 'FOOTBALL' ? createDefaultFootballData(top4[0], top4[1]) : undefined
           });
         }
         setTournamentType('KNOCKOUT');
@@ -507,7 +642,7 @@ export function QuickTournament() {
           winner_id: null, active_team_id: null, duration: defaultDuration, start_time: null, order: 0,
           team_a_house: 'SOLID', team_b_house: 'STRIPES', fouls_a: 0, fouls_b: 0,
           sport: selectedSport,
-          footballData: selectedSport === 'FOOTBALL' ? { goals: [], possession_a: 50, possession_b: 50, passing_a: 80, passing_b: 80 } : undefined
+          footballData: selectedSport === 'FOOTBALL' ? createDefaultFootballData(teams.find(t => t.id === sf1.winner_id), teams.find(t => t.id === sf2.winner_id)) : undefined
         };
         setMatches([...matches, finalMatch]);
         setTournamentType('FINALS');
@@ -678,7 +813,21 @@ export function QuickTournament() {
       fouls_a: 0, fouls_b: 0,
       black_potted_a: false, black_potted_b: false,
       start_time: currentTime,
-      footballData: m.sport === 'FOOTBALL' ? { goals: [], possession_a: 50, possession_b: 50, passing_a: 80, passing_b: 80 } : undefined
+      footballData: m.sport === 'FOOTBALL' ? { 
+        goals: [], 
+        cards: [], 
+        possession_a: 50, 
+        possession_b: 50, 
+        passing_a: 80, 
+        passing_b: 80,
+        timerSeconds: 0,
+        half: 1,
+        lineup_a: teams.find(t => t.id === m.team_a_id)?.players.map(p => p.id) || [],
+        lineup_b: teams.find(t => t.id === m.team_b_id)?.players.map(p => p.id) || [],
+        captain_a: teams.find(t => t.id === m.team_a_id)?.players[0]?.id,
+        captain_b: teams.find(t => t.id === m.team_b_id)?.players[0]?.id,
+        subs: []
+      } : undefined
     } : m));
   };
 
@@ -705,7 +854,7 @@ export function QuickTournament() {
     setMatches(prev => prev.map(m => {
       if (m.id !== matchId) return m;
       const isA = m.team_a_id === teamId;
-      const fd = m.footballData || { goals: [], possession_a: 50, possession_b: 50, passing_a: 80, passing_b: 80 };
+      const fd = m.footballData || { goals: [], cards: [], possession_a: 50, possession_b: 50, passing_a: 80, passing_b: 80, timerSeconds: 0, half: 1 };
       return {
         ...m,
         score_team_a: isA ? m.score_team_a + 1 : m.score_team_a,
@@ -721,6 +870,151 @@ export function QuickTournament() {
     setSelectedScorer("");
     setGoalMinute(0);
     playBuzzer(); // Goal celebration buzzer
+  };
+
+  const recordCard = (matchId: string, teamId: string, playerId: string, cardType: 'YELLOW' | 'RED') => {
+    setMatches(prev => prev.map(m => {
+      if (m.id !== matchId) return m;
+      const fd = m.footballData;
+      if (!fd) return m;
+      const elapsed = getElapsedSeconds(m);
+      const minute = Math.floor(elapsed / 60) + 1;
+      const player = teams.find(t => t.id === teamId)?.players.find(p => p.id === playerId);
+      if (!player) return m;
+
+      // Count existing yellow cards for this player
+      const existingYellows = fd.cards.filter(c => c.playerId === playerId && c.type === 'YELLOW').length;
+
+      // If adding a second yellow, promote to red automatically
+      let newCards: CardEvent[] = [];
+      if (cardType === 'YELLOW' && existingYellows === 1) {
+        // Second yellow becomes red and player is out
+        newCards = [
+          {
+            id: `c-${Date.now()}-y`,
+            playerId,
+            playerName: player.name,
+            minute,
+            type: 'YELLOW',
+            teamId
+          },
+          {
+            id: `c-${Date.now()}-r`,
+            playerId,
+            playerName: player.name,
+            minute,
+            type: 'RED',
+            teamId
+          }
+        ];
+        // Mark player as substituted out (prevent re‑entry)
+        const subEvent: SubEvent = {
+          id: Math.random().toString(36).substr(2, 9),
+          playerInId: '', // no replacement
+          playerInName: '',
+          playerOutId: playerId,
+          playerOutName: player.name,
+          minute,
+          teamId
+        };
+        const nextLineupA = (fd.lineup_a || []).filter(id => id !== playerId);
+        const nextLineupB = (fd.lineup_b || []).filter(id => id !== playerId);
+        return {
+          ...m,
+          footballData: {
+            ...fd,
+            cards: [...fd.cards, ...newCards],
+            subs: [...(fd.subs || []), subEvent],
+            lineup_a: nextLineupA,
+            lineup_b: nextLineupB
+          }
+        };
+      }
+
+      // Straight red or first yellow
+      const card: CardEvent = {
+        id: `c-${Date.now()}`,
+        playerId,
+        playerName: player.name,
+        minute,
+        type: cardType,
+        teamId
+      };
+      const updatedCards = [...fd.cards, card];
+
+      // If red card, also create substitution event to remove player
+      let updatedSubs = fd.subs || [];
+      let nextLineupA = fd.lineup_a || [];
+      let nextLineupB = fd.lineup_b || [];
+      if (cardType === 'RED') {
+        const subEvent: SubEvent = {
+          id: Math.random().toString(36).substr(2, 9),
+          playerInId: '',
+          playerInName: '',
+          playerOutId: playerId,
+          playerOutName: player.name,
+          minute,
+          teamId
+        };
+        updatedSubs = [...updatedSubs, subEvent];
+        nextLineupA = nextLineupA.filter(id => id !== playerId);
+        nextLineupB = nextLineupB.filter(id => id !== playerId);
+      }
+
+      return {
+        ...m,
+        footballData: {
+          ...fd,
+          cards: updatedCards,
+          subs: updatedSubs,
+          lineup_a: nextLineupA,
+          lineup_b: nextLineupB
+        }
+      };
+    }));
+  };
+
+  // Increment football timer each second while match is live and first half not completed
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setMatches(prev => prev.map(m => {
+        if (m.status !== 'LIVE' || !m.footballData) return m;
+        const fd = m.footballData;
+        // If first half completed, pause timer
+        if (fd.half === 1 && fd.timerSeconds >= Math.floor(m.duration / 2)) {
+          return m; // paused, wait for user to start second half
+        }
+        // Increment timer
+        const newTimer = fd.timerSeconds + 1;
+        return {
+          ...m,
+          footballData: {
+            ...fd,
+            timerSeconds: newTimer
+          }
+        };
+      }));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Helper to start second half manually
+  const startSecondHalf = (matchId: string) => {
+    setMatches(prev => prev.map(m => {
+      if (m.id !== matchId || !m.footballData) return m;
+      const fd = m.footballData;
+      if (fd.half === 1 && fd.timerSeconds >= Math.floor(m.duration / 2)) {
+        return {
+          ...m,
+          footballData: {
+            ...fd,
+            half: 2,
+            timerSeconds: 0 // reset timer for second half
+          }
+        };
+      }
+      return m;
+    }));
   };
 
   const undoGoal = (matchId: string, teamId: string) => {
@@ -747,10 +1041,119 @@ export function QuickTournament() {
     }));
   };
 
+  const openLineupSetup = (matchId: string) => {
+    const match = matches.find(m => m.id === matchId);
+    if (!match) return;
+    const tA = teams.find(t => t.id === match.team_a_id);
+    const tB = teams.find(t => t.id === match.team_b_id);
+    
+    const lA = tA?.players.filter(p => p.role !== 'SUB').map(p => p.id) || [];
+    const lB = tB?.players.filter(p => p.role !== 'SUB').map(p => p.id) || [];
+    const cA = tA?.players.find(p => p.role === 'CAPTAIN')?.id || tA?.players[0]?.id || "";
+    const cB = tB?.players.find(p => p.role === 'CAPTAIN')?.id || tB?.players[0]?.id || "";
+
+    setLineupModalConfig({
+      matchId,
+      teamAId: match.team_a_id,
+      teamBId: match.team_b_id,
+      lineupA: lA,
+      lineupB: lB,
+      captainA: cA,
+      captainB: cB
+    });
+  };
+
+  const launchMatchWithLineups = () => {
+    if (!lineupModalConfig) return;
+    const { matchId, lineupA, lineupB, captainA, captainB } = lineupModalConfig;
+    
+    setMatches(matches.map(m => {
+      if (m.id === matchId) {
+        return {
+          ...m,
+          status: 'LIVE',
+          start_time: currentTime,
+          footballData: {
+            ...m.footballData,
+            lineup_a: lineupA,
+            lineup_b: lineupB,
+            captain_a: captainA,
+            captain_b: captainB,
+            possession_a: 50,
+            possession_b: 50,
+            passing_a: 80,
+            passing_b: 80,
+            timerSeconds: 0,
+            half: 1,
+            goals: [],
+            subs: [],
+            cards: []
+          }
+        };
+      }
+      return m;
+    }));
+    setLineupModalConfig(null);
+  };
+
+  const handleScoreSync = (matchId: string, scoreA: number, scoreB: number) => {
+    setMatches(prev => prev.map(m => m.id === matchId ? { ...m, score_team_a: scoreA, score_team_b: scoreB } : m));
+  };
+
+  const performSubstitution = (matchId: string, teamId: string, playerOutId: string, playerInId: string) => {
+    const match = matches.find(m => m.id === matchId);
+    if (!match) return;
+    
+    const team = teams.find(t => t.id === teamId);
+    if (!team) return;
+    
+    const playerOut = team.players.find(p => p.id === playerOutId);
+    const playerIn = team.players.find(p => p.id === playerInId);
+    
+    if (!playerOut || !playerIn) return;
+    
+    const subEvent: SubEvent = {
+      id: Math.random().toString(36).substr(2, 9),
+      playerInId,
+      playerInName: playerIn.name,
+      playerOutId,
+      playerOutName: playerOut.name,
+      minute: Math.floor((currentTime - (match.start_time || 0)) / 60),
+      teamId
+    };
+    // Ensure substituted out player cannot re-enter this match (handled by UI selection logic elsewhere)
+    
+    setMatches(matches.map(m => m.id === matchId ? {
+      ...m,
+      footballData: {
+        ...m.footballData!,
+        subs: [...(m.footballData?.subs || []), subEvent],
+        lineup_a: teamId === m.team_a_id 
+          ? (m.footballData?.lineup_a || team.players.map(p => p.id)).map(id => id === playerOutId ? playerInId : id)
+          : m.footballData?.lineup_a,
+        lineup_b: teamId === m.team_b_id 
+          ? (m.footballData?.lineup_b || team.players.map(p => p.id)).map(id => id === playerOutId ? playerInId : id)
+          : m.footballData?.lineup_b
+      }
+    } : m));
+    
+    setSubModal(null);
+  };
+
   const updateFootballStat = (matchId: string, type: 'possession' | 'passing', team: 'A' | 'B', value: number) => {
     setMatches(prev => prev.map(m => {
       if (m.id !== matchId) return m;
-      const fd = m.footballData || { goals: [], possession_a: 50, possession_b: 50, passing_a: 80, passing_b: 80 };
+      const fd = m.footballData || { 
+        goals: [], 
+        cards: [], 
+        possession_a: 50, 
+        possession_b: 50, 
+        passing_a: 80, 
+        passing_b: 80,
+        timerSeconds: 0,
+        half: 1,
+        subs: []
+      };
       const next = { ...fd };
       if (type === 'possession') {
         if (team === 'A') {
@@ -821,7 +1224,20 @@ export function QuickTournament() {
                       <span className="quota-val">{matchesPerTeam}</span>
                       <span className="quota-unit">MATCHES</span>
                     </div>
-                    <button className="step-btn" onClick={() => setMatchesPerTeam(matchesPerTeam + 1)}>+</button>
+                    <button className="step-btn" onClick={() => {
+                      const maxPossible = teams.length >= 2 ? teams.length - 1 : 10;
+                      if (matchesPerTeam < maxPossible) {
+                        setMatchesPerTeam(matchesPerTeam + 1);
+                      } else {
+                        setModalConfig({
+                          icon: "❗",
+                          title: "QUOTA EXCEEDED",
+                          message: `With ${teams.length} teams, each team can play a maximum of ${maxPossible} matches in a single round-robin group stage.`,
+                          onConfirm: () => setModalConfig(null),
+                          showCancel: false
+                        });
+                      }
+                    }}>+</button>
                   </div>
                 </div>
               )}
@@ -848,25 +1264,40 @@ export function QuickTournament() {
                 <div className="team-members-setup mt-10 animate-in">
                   <label className="section-label-v2">TEAM MEMBERS <span className="dim">({teamPlayersInput.length})</span></label>
                   <div className="members-grid">
-                    {teamPlayersInput.map((name, i) => (
-                      <div key={i} className="member-input-row">
+                    {teamPlayersInput.map((p, i) => (
+                      <div key={i} className="member-input-row" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                         <input
                           className="premium-input-v2-sm"
                           placeholder={`Player ${i + 1} Name`}
-                          value={name}
+                          value={p.name}
                           onChange={e => {
                             const next = [...teamPlayersInput];
-                            next[i] = e.target.value;
+                            next[i] = { ...next[i], name: e.target.value };
                             setTeamPlayersInput(next);
                           }}
                         />
+                        <select
+                          className="premium-input-v2-sm"
+                          style={{ maxWidth: '120px', background: '#070714', border: '1px solid #1e293b', color: '#fff', borderRadius: '6px', padding: '6px 10px', fontSize: '0.8rem', cursor: 'pointer' }}
+                          value={p.role}
+                          onChange={e => {
+                            const next = [...teamPlayersInput];
+                            next[i] = { ...next[i], role: e.target.value as any };
+                            setTeamPlayersInput(next);
+                          }}
+                        >
+                          <option value="CAPTAIN">Captain</option>
+                          <option value="GOALKEEPER">Goalkeeper</option>
+                          <option value="PLAYER">Playing</option>
+                          <option value="SUB">Sub</option>
+                        </select>
                         {teamPlayersInput.length > 2 && (
                           <button className="remove-member-btn" onClick={() => setTeamPlayersInput(teamPlayersInput.filter((_, idx) => idx !== i))}>×</button>
                         )}
                       </div>
                     ))}
                   </div>
-                  <button className="add-member-trigger mt-4" onClick={() => setTeamPlayersInput([...teamPlayersInput, ""])}>+ ADD MEMBER</button>
+                  <button className="add-member-trigger mt-4" onClick={() => setTeamPlayersInput([...teamPlayersInput, { name: "", role: "PLAYER" }])}>+ ADD MEMBER</button>
                 </div>
               )}
 
@@ -928,6 +1359,8 @@ export function QuickTournament() {
   }
 
   const liveMatch = matches.find(m => m.status === 'LIVE');
+  const teamA = liveMatch ? teams.find(t => t.id === liveMatch.team_a_id) : null;
+  const teamB = liveMatch ? teams.find(t => t.id === liveMatch.team_b_id) : null;
   const createdMatches = matches.filter(m => m.status === 'CREATED').sort((a, b) => a.order - b.order);
 
   return (
@@ -983,7 +1416,7 @@ export function QuickTournament() {
         </div>
       )}
 
-      {modalConfig && (
+      {modalConfig && isMounted && createPortal(
         <div className="custom-modal-overlay">
           <div className="custom-modal">
             <div className="modal-icon">{modalConfig.icon}</div>
@@ -994,10 +1427,11 @@ export function QuickTournament() {
               <button className="button button-gold" onClick={modalConfig.onConfirm}>CONFIRM</button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {showResetModal && (
+      {showResetModal && isMounted && createPortal(
         <div className="custom-modal-overlay">
           <div className="custom-modal">
             <div className="modal-icon">⚠️</div>
@@ -1008,10 +1442,11 @@ export function QuickTournament() {
               <button className="button button-danger" onClick={reset}>CONFIRM RESET</button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {confirmRestartMatchId && (
+      {confirmRestartMatchId && isMounted && createPortal(
         <div className="custom-modal-overlay">
           <div className="custom-modal">
             <div className="modal-icon">🔄</div>
@@ -1022,10 +1457,11 @@ export function QuickTournament() {
               <button className="button button-danger" onClick={() => { restartMatch(confirmRestartMatchId); setConfirmRestartMatchId(null); }}>RESTART MATCH</button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {showShareModal && (
+      {showShareModal && isMounted && createPortal(
         <div className="custom-modal-overlay">
           <div className="custom-modal">
             <div className="modal-icon">🚀</div>
@@ -1053,10 +1489,11 @@ export function QuickTournament() {
             </div>
             <button className="button button-secondary mt-8 w-full" onClick={() => setShowShareModal(false)}>BACK TO CONTROL ROOM</button>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {showPinModal && (
+      {showPinModal && isMounted && createPortal(
         <div className="custom-modal-overlay">
           <div className="custom-modal">
             <div className="modal-icon">🔐</div>
@@ -1085,10 +1522,156 @@ export function QuickTournament() {
               }}>{showPinModal.mode === 'SET' ? 'LOCK NOW' : 'UNLOCK'}</button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {goalModal && (
+      {lineupModalConfig && isMounted && createPortal(
+        <div className="custom-modal-overlay">
+          <div className="custom-modal" style={{ maxWidth: '750px', width: '95%', background: '#090916', border: '1px solid #1e1e38' }}>
+            <div className="modal-icon">📋</div>
+            <h2 className="glow-text">PRE-MATCH LINEUP SETUP</h2>
+            <p className="muted">Select playing starters and designate captains before kickoff.</p>
+            
+            <div className="lineup-pitch mt-6" style={{ 
+              display: 'grid', 
+              gridTemplateColumns: '1fr 1fr', 
+              gap: '24px', 
+              textAlign: 'left',
+              background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(5, 150, 105, 0.05) 100%)',
+              border: '1px solid rgba(16, 185, 129, 0.2)',
+              borderRadius: '16px',
+              padding: '24px',
+              position: 'relative',
+              overflow: 'hidden'
+            }}>
+              {/* Pitch Texture Overlay */}
+              <div style={{ position: 'absolute', top: 0, left: '50%', bottom: 0, width: '2px', background: 'rgba(255,255,255,0.1)', transform: 'translateX(-50%)' }} />
+              <div style={{ position: 'absolute', top: '50%', left: '50%', width: '80px', height: '80px', borderRadius: '50%', border: '2px solid rgba(255,255,255,0.1)', transform: 'translate(-50%, -50%)' }} />
+
+              {/* Team A Lineup Selector */}
+              <div className="lineup-column" style={{ position: 'relative', zIndex: 2 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+                  <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#ef4444', boxShadow: '0 0 10px #ef4444' }} />
+                  <h4 style={{ color: '#fff', fontWeight: '900', fontSize: '1.2rem', textTransform: 'uppercase', letterSpacing: '1px', margin: 0 }}>
+                    {getTeamName(lineupModalConfig.teamAId)}
+                  </h4>
+                </div>
+
+                <div className="player-cards-container" style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '220px', overflowY: 'auto', paddingRight: '10px' }}>
+                  <label className="section-label-v2" style={{ fontSize: '0.7rem', color: '#10b981' }}>SELECT STARTING XI</label>
+                  {teams.find(t => t.id === lineupModalConfig.teamAId)?.players.map(p => {
+                    const isSelected = lineupModalConfig.lineupA.includes(p.id);
+                    return (
+                      <label key={p.id} className={`player-select-card ${isSelected ? 'selected' : ''}`} style={{ 
+                        display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', 
+                        background: isSelected ? 'rgba(239, 68, 68, 0.15)' : 'rgba(0,0,0,0.3)', 
+                        border: `1px solid ${isSelected ? 'rgba(239, 68, 68, 0.4)' : 'rgba(255,255,255,0.05)'}`,
+                        padding: '10px 12px', borderRadius: '8px', transition: 'all 0.2s ease'
+                      }}>
+                        <div style={{ 
+                          width: '20px', height: '20px', borderRadius: '4px', 
+                          border: `2px solid ${isSelected ? '#ef4444' : '#555'}`,
+                          background: isSelected ? '#ef4444' : 'transparent',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center'
+                        }}>
+                          {isSelected && <span style={{ color: '#fff', fontSize: '12px', fontWeight: 'bold' }}>✓</span>}
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ color: isSelected ? '#fff' : '#aaa', fontSize: '0.95rem', fontWeight: isSelected ? 'bold' : 'normal' }}>{p.name}</div>
+                          <div style={{ fontSize: '0.7rem', color: isSelected ? 'rgba(255,255,255,0.6)' : '#666', textTransform: 'uppercase' }}>{p.role}</div>
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
+                
+                <div className="form-group mt-5">
+                  <label className="section-label-v2" style={{ fontSize: '0.7rem', color: 'var(--gold)' }}>👑 DESIGNATE CAPTAIN</label>
+                  <select 
+                    className="premium-input-v2" 
+                    value={lineupModalConfig.captainA}
+                    onChange={(e) => setLineupModalConfig({ ...lineupModalConfig, captainA: e.target.value })}
+                    style={{ background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255, 215, 0, 0.3)', color: 'var(--gold)' }}
+                  >
+                    <option value="">-- Choose Captain --</option>
+                    {teams.find(t => t.id === lineupModalConfig.teamAId)?.players.map(p => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Team B Lineup Selector */}
+              <div className="lineup-column" style={{ position: 'relative', zIndex: 2 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+                  <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#3b82f6', boxShadow: '0 0 10px #3b82f6' }} />
+                  <h4 style={{ color: '#fff', fontWeight: '900', fontSize: '1.2rem', textTransform: 'uppercase', letterSpacing: '1px', margin: 0 }}>
+                    {getTeamName(lineupModalConfig.teamBId)}
+                  </h4>
+                </div>
+
+                <div className="player-cards-container" style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '220px', overflowY: 'auto', paddingRight: '10px' }}>
+                  <label className="section-label-v2" style={{ fontSize: '0.7rem', color: '#10b981' }}>SELECT STARTING XI</label>
+                  {teams.find(t => t.id === lineupModalConfig.teamBId)?.players.map(p => {
+                    const isSelected = lineupModalConfig.lineupB.includes(p.id);
+                    return (
+                      <label key={p.id} className={`player-select-card ${isSelected ? 'selected' : ''}`} style={{ 
+                        display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', 
+                        background: isSelected ? 'rgba(59, 130, 246, 0.15)' : 'rgba(0,0,0,0.3)', 
+                        border: `1px solid ${isSelected ? 'rgba(59, 130, 246, 0.4)' : 'rgba(255,255,255,0.05)'}`,
+                        padding: '10px 12px', borderRadius: '8px', transition: 'all 0.2s ease'
+                      }}>
+                        <div style={{ 
+                          width: '20px', height: '20px', borderRadius: '4px', 
+                          border: `2px solid ${isSelected ? '#3b82f6' : '#555'}`,
+                          background: isSelected ? '#3b82f6' : 'transparent',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center'
+                        }}>
+                          {isSelected && <span style={{ color: '#fff', fontSize: '12px', fontWeight: 'bold' }}>✓</span>}
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ color: isSelected ? '#fff' : '#aaa', fontSize: '0.95rem', fontWeight: isSelected ? 'bold' : 'normal' }}>{p.name}</div>
+                          <div style={{ fontSize: '0.7rem', color: isSelected ? 'rgba(255,255,255,0.6)' : '#666', textTransform: 'uppercase' }}>{p.role}</div>
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
+
+                <div className="form-group mt-5">
+                  <label className="section-label-v2" style={{ fontSize: '0.7rem', color: 'var(--gold)' }}>👑 DESIGNATE CAPTAIN</label>
+                  <select 
+                    className="premium-input-v2" 
+                    value={lineupModalConfig.captainB}
+                    onChange={(e) => setLineupModalConfig({ ...lineupModalConfig, captainB: e.target.value })}
+                    style={{ background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255, 215, 0, 0.3)', color: 'var(--gold)' }}
+                  >
+                    <option value="">-- Choose Captain --</option>
+                    {teams.find(t => t.id === lineupModalConfig.teamBId)?.players.map(p => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div className="modal-actions mt-8">
+              <button className="button button-secondary" onClick={() => setLineupModalConfig(null)}>CANCEL</button>
+              <button 
+                className="button button-gold" 
+                onClick={launchMatchWithLineups}
+                disabled={lineupModalConfig.lineupA.length === 0 || lineupModalConfig.lineupB.length === 0}
+              >
+                CONFIRM & LAUNCH MATCH
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {goalModal && isMounted && createPortal(
         <div className="custom-modal-overlay">
           <div className="custom-modal">
             <div className="modal-icon">⚽</div>
@@ -1099,7 +1682,12 @@ export function QuickTournament() {
               <label className="section-label-v2">SELECT SCORER</label>
               <select className="premium-input-v2" value={selectedScorer} onChange={e => setSelectedScorer(e.target.value)}>
                 <option value="">-- Choose Player --</option>
-                {teams.find(t => t.id === goalModal.teamId)?.players.map(p => (
+                {teams.find(t => t.id === goalModal.teamId)?.players.filter(p => {
+                  const m = matches.find(x => x.id === goalModal.matchId);
+                  if (!m || !m.footballData) return true;
+                  const lineup = m.team_a_id === goalModal.teamId ? m.footballData.lineup_a : m.footballData.lineup_b;
+                  return lineup?.includes(p.id);
+                }).map(p => (
                   <option key={p.id} value={p.id}>{p.name}</option>
                 ))}
               </select>
@@ -1121,7 +1709,56 @@ export function QuickTournament() {
               <button className="button button-gold" onClick={addGoal} disabled={!selectedScorer}>CONFIRM GOAL</button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
+      )}
+
+      {subModal && isMounted && createPortal(
+        <div className="custom-modal-overlay">
+          <div className="custom-modal">
+            <div className="modal-icon">🔄</div>
+            <h2>SUBSTITUTION</h2>
+            <p className="muted">Select player to come ON</p>
+            
+            <div className="form-group mt-6">
+              <label className="section-label-v2">SELECT PLAYER IN</label>
+              <select 
+                className="premium-input-v2" 
+                onChange={e => {
+                  if (e.target.value) {
+                    performSubstitution(subModal.matchId, subModal.teamId, subModal.playerOutId, e.target.value);
+                  }
+                }}
+              >
+                <option value="">-- Choose Player --</option>
+                {teams.find(t => t.id === subModal.teamId)?.players
+                  .filter(p => {
+                    const m = matches.find(x => x.id === subModal.matchId);
+                    if (!m || !m.footballData) return p.id !== subModal.playerOutId;
+                    
+                    const fd = m.footballData;
+                    const lineup = m.team_a_id === subModal.teamId ? fd.lineup_a : fd.lineup_b;
+                    
+                    if (p.id === subModal.playerOutId) return false;
+                    if (lineup?.includes(p.id)) return false;
+                    
+                    const wasSubbedOut = fd.subs?.some(s => s.playerOutId === p.id);
+                    if (wasSubbedOut) return false;
+                    
+                    return true;
+                  })
+                  .map(p => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+              </select>
+            </div>
+
+            <div className="modal-actions mt-8">
+              <button className="button button-secondary" onClick={() => setSubModal(null)}>CANCEL</button>
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
 
       <div className="arena-header-v2">
@@ -1166,199 +1803,87 @@ export function QuickTournament() {
         <div className="live-arena-v2">
           {liveMatch ? (
             <div className="match-engine-v2">
-              {liveMatch.sport === 'FOOTBALL' ? (
-                <FootballScoreboard 
-                  teamAName={getTeamName(liveMatch.team_a_id)}
-                  teamBName={getTeamName(liveMatch.team_b_id)}
-                  scoreA={liveMatch.score_team_a}
-                  scoreB={liveMatch.score_team_b}
-                  time={`${Math.max(0, Math.floor(((liveMatch.start_time || 0) + liveMatch.duration - currentTime) / 60))}:${String(Math.max(0, ((liveMatch.start_time || 0) + liveMatch.duration - currentTime) % 60)).padStart(2, '0')}`}
-                  status={liveMatch.status === 'LIVE' ? 'LIVE' : liveMatch.status}
-                />
-              ) : (
-                <div className="match-timer-v3">
-                  <div className="live-pill"><span className="live-pulse"></span> LIVE</div>
-                  <div className="timer-interactive">
-                    <button className="t-adj" onClick={() => adjustDuration(liveMatch.id, -60)}>−</button>
-                    <span className="time-val">
-                      {Math.max(0, Math.floor(((liveMatch.start_time || 0) + liveMatch.duration - currentTime) / 60))}:
-                      {String(Math.max(0, ((liveMatch.start_time || 0) + liveMatch.duration - currentTime) % 60)).padStart(2, '0')}
-                    </span>
-                    <button className="t-adj" onClick={() => adjustDuration(liveMatch.id, 60)}>+</button>
+              {matches.filter(m => m.status === 'LIVE').length > 1 && (
+                <div className="active-matches-selector glass-morphism mb-6 animate-in" style={{ padding: '15px', borderRadius: '8px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', width: '100%' }}>
+                  <span className="section-label-v2 glow-text" style={{ fontSize: '0.8rem', display: 'block', marginBottom: '8px' }}>🎮 MULTIPLE LIVE MATCHES DETECTED - SELECT ACTIVE CONTROL ROOM</span>
+                  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                    {matches.filter(m => m.status === 'LIVE').map(m => {
+                      const isActive = m.id === liveMatch.id;
+                      return (
+                        <button 
+                          key={m.id} 
+                          className={`button ${isActive ? 'button-gold' : 'button-secondary'}`} 
+                          style={{ padding: '8px 16px', fontSize: '0.85rem' }}
+                          onClick={() => setActiveLiveMatchId(m.id)}
+                        >
+                          {m.sport === 'FOOTBALL' ? '⚽' : '🎱'} {getTeamName(m.team_a_id)} vs {getTeamName(m.team_b_id)}
+                        </button>
+                      );
+                    })}
                   </div>
-                  <button className="extra-time-btn" style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)' }} onClick={() => setConfirmRestartMatchId(liveMatch.id)}>RESTART</button>
-                  <button className="extra-time-btn" onClick={() => adjustDuration(liveMatch.id, 60)}>+1 MIN</button>
-                  {extraTimePromptId === liveMatch.id && (
-                    <div className="extra-time-toast animate-in">
-                      <div className="toast-content">
-                        <span>CRITICAL TIME! NEED EXTRA?</span>
-                        <button className="button button-gold button-sm" onClick={() => { adjustDuration(liveMatch.id, 120); setExtraTimePromptId(null); }}>+2 MINS</button>
-                        <button className="s-btn" onClick={() => setExtraTimePromptId(null)}>×</button>
-                      </div>
-                    </div>
-                  )}
                 </div>
               )}
 
-              <div className={`battle-view ${liveMatch.sport === 'FOOTBALL' ? 'football-arena' : ''}`}>
-                {liveMatch.sport === '8BALL' ? (
-                  <>
-                    <div className="pod-wrapper red">
-                      {liveMatch.team_a_id && teams.find(t => t.id === liveMatch.team_a_id)?.is_team && (
-                        <div className="player-select-overlay">
-                          <span className="section-label-v2" style={{ textAlign: 'center', marginBottom: '4px' }}>ACTIVE SHOOTER</span>
-                          <div className="player-chips">
-                            {teams.find(t => t.id === liveMatch.team_a_id)?.players.map(p => (
-                              <div 
-                                key={p.id} 
-                                className={`player-chip ${liveMatch.active_player_a_id === p.id ? 'active' : ''}`}
-                                onClick={() => setMatches(matches.map(m => m.id === liveMatch.id ? { ...m, active_player_a_id: p.id } : m))}
-                              >
-                                {p.name}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      <TeamPod 
-                        teamName={getTeamName(liveMatch.team_a_id)}
-                        score={liveMatch.score_team_a}
-                        color="red"
-                        isActive={liveMatch.active_team_id === liveMatch.team_a_id}
-                        fouls={liveMatch.fouls_a}
-                        house={liveMatch.team_a_house}
-                        ballsPotted={liveMatch.balls_potted_a}
-                        blackPotted={liveMatch.black_potted_a}
-                        onFoulClick={() => updateScore(liveMatch.id, liveMatch.team_a_id, 'FOUL')}
-                        onFoulRemove={() => updateScore(liveMatch.id, liveMatch.team_a_id, 'REMOVE_FOUL')}
-                        onBallClick={() => updateScore(liveMatch.id, liveMatch.team_a_id, 'BALL')}
-                        onBallRemove={() => updateScore(liveMatch.id, liveMatch.team_a_id, 'REMOVE_BALL')}
-                        onBlackClick={() => updateScore(liveMatch.id, liveMatch.team_a_id, 'BLACK')}
-                        onHouseToggle={(h) => updateHouse(liveMatch.id, 'A', h)}
-                        isLocked={isLocked}
-                        onClick={() => setMatches(matches.map(m => m.id === liveMatch.id ? { ...m, active_team_id: liveMatch.team_a_id } : m))}
-                      />
+              {/* Match Header Info (Timer, controls) */}
+              <div className="match-timer-v3">
+                <div className="live-pill"><span className="live-pulse"></span> LIVE</div>
+                <div className="timer-interactive">
+                  <button className="t-adj" onClick={() => adjustDuration(liveMatch.id, -60)}>−</button>
+                  <span className="time-val">
+                    {liveMatch.sport === 'FOOTBALL' ? getFootballTimeDisplay(liveMatch) : (
+                      <>
+                        {Math.max(0, Math.floor(((liveMatch.start_time || 0) + liveMatch.duration - currentTime) / 60))}:
+                        {String(Math.max(0, ((liveMatch.start_time || 0) + liveMatch.duration - currentTime) % 60)).padStart(2, '0')}
+                      </>
+                    )}
+                  </span>
+                  <button className="t-adj" onClick={() => adjustDuration(liveMatch.id, 60)}>+</button>
+                </div>
+                {liveMatch.sport === 'FOOTBALL' && liveMatch.footballData && (
+                  <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    Half {liveMatch.footballData.half} • {Math.floor(liveMatch.duration / 120)}m half ({Math.floor(liveMatch.duration / 60)}m whole match)
+                  </span>
+                )}
+                <button className="extra-time-btn" style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)' }} onClick={() => setConfirmRestartMatchId(liveMatch.id)}>RESTART</button>
+                <button className="extra-time-btn" onClick={() => adjustDuration(liveMatch.id, 60)}>+1 MIN</button>
+                {extraTimePromptId === liveMatch.id && (
+                  <div className="extra-time-toast animate-in">
+                    <div className="toast-content">
+                      <span>CRITICAL TIME! NEED EXTRA?</span>
+                      <button className="button button-gold button-sm" onClick={() => { adjustDuration(liveMatch.id, 120); setExtraTimePromptId(null); }}>+2 MINS</button>
+                      <button className="s-btn" onClick={() => setExtraTimePromptId(null)}>×</button>
                     </div>
-
-                    <VSCore />
-
-                    <div className="pod-wrapper blue">
-                      {liveMatch.team_b_id && teams.find(t => t.id === liveMatch.team_b_id)?.is_team && (
-                        <div className="player-select-overlay">
-                          <span className="section-label-v2" style={{ textAlign: 'center', marginBottom: '4px' }}>ACTIVE SHOOTER</span>
-                          <div className="player-chips">
-                            {teams.find(t => t.id === liveMatch.team_b_id)?.players.map(p => (
-                              <div 
-                                key={p.id} 
-                                className={`player-chip ${liveMatch.active_player_b_id === p.id ? 'active' : ''}`}
-                                onClick={() => setMatches(matches.map(m => m.id === liveMatch.id ? { ...m, active_player_b_id: p.id } : m))}
-                              >
-                                {p.name}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      <TeamPod 
-                        teamName={getTeamName(liveMatch.team_b_id)}
-                        score={liveMatch.score_team_b}
-                        color="blue"
-                        isActive={liveMatch.active_team_id === liveMatch.team_b_id}
-                        fouls={liveMatch.fouls_b}
-                        house={liveMatch.team_b_house}
-                        ballsPotted={liveMatch.balls_potted_b}
-                        blackPotted={liveMatch.black_potted_b}
-                        onFoulClick={() => updateScore(liveMatch.id, liveMatch.team_b_id, 'FOUL')}
-                        onFoulRemove={() => updateScore(liveMatch.id, liveMatch.team_b_id, 'REMOVE_FOUL')}
-                        onBallClick={() => updateScore(liveMatch.id, liveMatch.team_b_id, 'BALL')}
-                        onBallRemove={() => updateScore(liveMatch.id, liveMatch.team_b_id, 'REMOVE_BALL')}
-                        onBlackClick={() => updateScore(liveMatch.id, liveMatch.team_b_id, 'BLACK')}
-                        onHouseToggle={(h) => updateHouse(liveMatch.id, 'B', h)}
-                        isLocked={isLocked}
-                        onClick={() => setMatches(matches.map(m => m.id === liveMatch.id ? { ...m, active_team_id: liveMatch.team_b_id } : m))}
-                      />
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="pod-wrapper red">
-                      <FootballTeamPod 
-                        teamName={getTeamName(liveMatch.team_a_id)}
-                        score={liveMatch.score_team_a}
-                        color="red"
-                        isActive={liveMatch.active_team_id === liveMatch.team_a_id}
-                        possession={liveMatch.footballData?.possession_a || 50}
-                        passing={liveMatch.footballData?.passing_a || 80}
-                        goals={liveMatch.footballData?.goals || []}
-                        teamId={liveMatch.team_a_id}
-                        onGoalClick={() => setGoalModal({ matchId: liveMatch.id, teamId: liveMatch.team_a_id, teamName: getTeamName(liveMatch.team_a_id) })}
-                        onUndoGoal={() => undoGoal(liveMatch.id, liveMatch.team_a_id)}
-                        isLocked={isLocked}
-                        onClick={() => setMatches(matches.map(m => m.id === liveMatch.id ? { ...m, active_team_id: liveMatch.team_a_id } : m))}
-                      />
-                    </div>
-                    {liveMatch.sport !== 'FOOTBALL' && <VSCore />}
-                    <div className="pod-wrapper blue">
-                      <FootballTeamPod 
-                        teamName={getTeamName(liveMatch.team_b_id)}
-                        score={liveMatch.score_team_b}
-                        color="blue"
-                        isActive={liveMatch.active_team_id === liveMatch.team_b_id}
-                        possession={liveMatch.footballData?.possession_b || 50}
-                        passing={liveMatch.footballData?.passing_b || 80}
-                        goals={liveMatch.footballData?.goals || []}
-                        teamId={liveMatch.team_b_id}
-                        onGoalClick={() => setGoalModal({ matchId: liveMatch.id, teamId: liveMatch.team_b_id, teamName: getTeamName(liveMatch.team_b_id) })}
-                        onUndoGoal={() => undoGoal(liveMatch.id, liveMatch.team_b_id)}
-                        isLocked={isLocked}
-                        onClick={() => setMatches(matches.map(m => m.id === liveMatch.id ? { ...m, active_team_id: liveMatch.team_b_id } : m))}
-                      />
-                    </div>
-                  </>
+                  </div>
                 )}
               </div>
 
-              {liveMatch.sport === 'FOOTBALL' && (
-                <div className="football-controls-panel-v3 slide-in mt-8">
-                  <FootballPossessionPitch 
-                    posA={liveMatch.footballData?.possession_a || 50}
-                    posB={liveMatch.footballData?.possession_b || 50}
-                    teamAName={getTeamName(liveMatch.team_a_id)}
-                    teamBName={getTeamName(liveMatch.team_b_id)}
-                  />
-                  
-                  <div className="stat-control-grid mt-8">
-                    <div className="stat-control-group">
-                      <label className="section-label-v2">POSSESSION BALANCE</label>
-                      <div className="possession-slider-wrapper">
-                        <input 
-                          type="range" min="0" max="100" 
-                          value={liveMatch.footballData?.possession_a || 50} 
-                          onChange={(e) => updateFootballStat(liveMatch.id, 'possession', 'A', Number(e.target.value))}
-                          className="premium-slider"
-                        />
-                      </div>
-                    </div>
-                    <div className="stat-control-grid">
-                      <div className="stat-control-item">
-                        <label className="section-label-v2">{getTeamName(liveMatch.team_a_id)} PASSING %</label>
-                        <div className="stepper-v3">
-                          <button className="s-btn" onClick={() => updateFootballStat(liveMatch.id, 'passing', 'A', Math.max(0, (liveMatch.footballData?.passing_a || 80) - 1))}>−</button>
-                          <span className="s-val">{liveMatch.footballData?.passing_a}%</span>
-                          <button className="s-btn" onClick={() => updateFootballStat(liveMatch.id, 'passing', 'A', Math.min(100, (liveMatch.footballData?.passing_a || 80) + 1))}>+</button>
-                        </div>
-                      </div>
-                      <div className="stat-control-item">
-                        <label className="section-label-v2">{getTeamName(liveMatch.team_b_id)} PASSING %</label>
-                        <div className="stepper-v3">
-                          <button className="s-btn" onClick={() => updateFootballStat(liveMatch.id, 'passing', 'B', Math.max(0, (liveMatch.footballData?.passing_b || 80) - 1))}>−</button>
-                          <span className="s-val">{liveMatch.footballData?.passing_b}%</span>
-                          <button className="s-btn" onClick={() => updateFootballStat(liveMatch.id, 'passing', 'B', Math.min(100, (liveMatch.footballData?.passing_b || 80) + 1))}>+</button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+              {/* Modular Engines */}
+              {liveMatch.sport === 'FOOTBALL' ? (
+                <FootballMatchEngine 
+                  match={liveMatch}
+                  teams={teams}
+                  isLocked={isLocked}
+                  currentTime={currentTime}
+                  onUpdateFootballStat={updateFootballStat}
+                  onUpdateFootballData={(matchId, data) => {
+                    setMatches(prev => prev.map(m => m.id === matchId ? { ...m, footballData: data } : m));
+                  }}
+                  onRecordCard={recordCard}
+                  onPerformSubstitution={performSubstitution}
+                  onStartSecondHalf={startSecondHalf}
+                  onScoreSync={handleScoreSync}
+                />
+              ) : (
+                <PoolMatchEngine 
+                  match={liveMatch}
+                  teams={teams}
+                  isLocked={isLocked}
+                  onUpdateScore={updateScore}
+                  onUpdateHouse={updateHouse}
+                  onSetActiveTeam={(matchId, teamId) => {
+                    setMatches(prev => prev.map(m => m.id === matchId ? { ...m, active_team_id: teamId } : m));
+                  }}
+                />
               )}
 
               {createdMatches.length > 0 ? (
@@ -1434,8 +1959,35 @@ export function QuickTournament() {
                           <div className="s-pair">{getTeamName(m.team_a_id)} <span className="dim">vs</span> {getTeamName(m.team_b_id)}</div>
                           <div className="s-meta">MATCH {m.order + 1} • {tournamentType} STAGE</div>
                         </div>
-                        <div className="s-actions">
-                          <button className="button button-gold button-sm launch-btn-small" onClick={() => setMatches(matches.map(x => x.id === m.id ? { ...x, status: 'LIVE', start_time: currentTime } : x))}>LAUNCH</button>
+                        <div className="s-actions" style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                          {m.sport === 'FOOTBALL' && (
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
+                              <input 
+                                type="number" 
+                                className="premium-input-v2-sm" 
+                                placeholder="Mins" 
+                                style={{ width: '60px', textAlign: 'center' }}
+                                value={m.duration / 60}
+                                onChange={(e) => {
+                                  const mins = parseInt(e.target.value) || 0;
+                                  setMatches(matches.map(x => x.id === m.id ? { ...x, duration: mins * 60 } : x));
+                                }}
+                              />
+                              <span style={{ fontSize: '0.45rem', fontWeight: 900, opacity: 0.4, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Whole Mins</span>
+                            </div>
+                          )}
+                          <button 
+                            className="button button-gold button-sm launch-btn-small" 
+                            onClick={() => {
+                              if (m.sport === 'FOOTBALL') {
+                                openLineupSetup(m.id);
+                              } else {
+                                setMatches(matches.map(x => x.id === m.id ? { ...x, status: 'LIVE', start_time: currentTime } : x));
+                              }
+                            }}
+                          >
+                            LAUNCH
+                          </button>
                         </div>
                       </div>
                     )) : (
@@ -1471,8 +2023,22 @@ export function QuickTournament() {
                           <div className="p-selectors">
                             <div className="setting-box">
                               <label className="stat-label">MATCH QUOTA</label>
-                              <select className="premium-input-v2" value={matchesPerTeam} onChange={e => setMatchesPerTeam(Number(e.target.value))}>
-                                {[1,2,3,4,5].map(v => <option key={v} value={v}>{v} matches/team</option>)}
+                              <select className="premium-input-v2" value={matchesPerTeam} onChange={e => {
+                                const val = Number(e.target.value);
+                                const maxPossible = teams.length >= 2 ? teams.length - 1 : 10;
+                                if (val > maxPossible) {
+                                  setModalConfig({
+                                    icon: "❗",
+                                    title: "QUOTA EXCEEDED",
+                                    message: `With ${teams.length} teams, each team can play a maximum of ${maxPossible} matches in a single round-robin group stage.`,
+                                    onConfirm: () => setModalConfig(null),
+                                    showCancel: false
+                                  });
+                                } else {
+                                  setMatchesPerTeam(val);
+                                }
+                              }}>
+                                {[1,2,3,4,5].filter(v => teams.length < 2 || v < teams.length).map(v => <option key={v} value={v}>{v} matches/team</option>)}
                               </select>
                             </div>
                             <div className="setting-box">
@@ -1482,6 +2048,7 @@ export function QuickTournament() {
                                 <span className="dur-val">{Math.floor(defaultDuration/60)}m</span>
                                 <button className="s-btn" onClick={() => setDefaultDuration(defaultDuration + 60)}>+</button>
                               </div>
+                              <span style={{ fontSize: '0.55rem', opacity: 0.4, marginTop: '4px', display: 'block', fontWeight: 900 }}>WHOLE MATCH (AUTOMATICALLY SPLIT INTO 2 HALVES)</span>
                             </div>
                           </div>
                         </div>
@@ -1548,31 +2115,206 @@ export function QuickTournament() {
             </div>
           )}
         </div>
+      ) : activeSubTab === 'screening' ? (
+        <div className="live-screening-tab animate-in" style={{ padding: '1rem 0', width: '100%' }}>
+          <h2 className="glow-text mb-2">📺 MULTIPLEX LIVE SCREENING PANEL</h2>
+          <p className="muted mb-8" style={{ fontSize: '0.9rem' }}>Real-time spectator multiplex. Click on any game card to expand full tactical statistics, pitch configurations, and live timeline events.</p>
+          
+          {matches.filter(m => m.status === 'LIVE').length > 0 ? (
+            <div className="screening-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '20px', width: '100%' }}>
+              {matches.filter(m => m.status === 'LIVE').map(m => {
+                const isFootball = m.sport === 'FOOTBALL';
+                const timeStr = isFootball ? getFootballTimeDisplay(m) : `${Math.max(0, Math.floor(((m.start_time || 0) + m.duration - currentTime) / 60))}:${String(Math.max(0, ((m.start_time || 0) + m.duration - currentTime) % 60)).padStart(2, '0')}`;
+                
+                return (
+                  <div key={m.id} className="glass-morphism screening-card hover-glow animate-in" style={{ padding: '24px', borderRadius: '12px', background: 'rgba(9, 9, 22, 0.45)', border: '1px solid rgba(255,255,255,0.06)', position: 'relative' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                      <span className="live-pill" style={{ fontSize: '0.7rem', padding: '2px 8px' }}>
+                        <span className="live-pulse"></span> LIVE
+                      </span>
+                      <span className="sport-badge" style={{ background: isFootball ? 'rgba(16, 185, 129, 0.1)' : 'rgba(59, 130, 246, 0.1)', color: isFootball ? '#10b981' : '#3b82f6', fontSize: '0.75rem', padding: '2px 8px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.05)', fontWeight: 'bold' }}>
+                        {isFootball ? '⚽ FOOTBALL' : '🎱 8-BALL'}
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center', margin: '20px 0' }}>
+                      <div style={{ textAlign: 'center', flex: 1 }}>
+                        <div style={{ fontSize: '1rem', fontWeight: 'bold', color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{getTeamName(m.team_a_id)}</div>
+                        <div style={{ fontSize: '3rem', fontWeight: 900, color: 'var(--red)', marginTop: '8px' }}>{m.score_team_a}</div>
+                      </div>
+                      <div style={{ fontSize: '1.2rem', color: '#555', fontWeight: 'bold', margin: '0 15px' }}>VS</div>
+                      <div style={{ textAlign: 'center', flex: 1 }}>
+                        <div style={{ fontSize: '1rem', fontWeight: 'bold', color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{getTeamName(m.team_b_id)}</div>
+                        <div style={{ fontSize: '3rem', fontWeight: 900, color: 'var(--blue)', marginTop: '8px' }}>{m.score_team_b}</div>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(255,255,255,0.04)', paddingTop: '15px' }}>
+                      <span className="time-val" style={{ fontFamily: 'monospace', color: 'var(--gold)', fontWeight: 'bold', fontSize: '1.1rem' }}>⏱️ {timeStr}</span>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button 
+                          className="button button-gold button-sm" 
+                          style={{ padding: '6px 12px', fontSize: '0.8rem' }}
+                          onClick={() => {
+                            const specLink = `${window.location.origin}/arena/${arenaId}?matchId=${m.id}`;
+                            navigator.clipboard.writeText(specLink);
+                            alert("Copied specific live match spectator link to clipboard!");
+                          }}
+                        >
+                          🔗 SHARE
+                        </button>
+                        <button 
+                          className="button button-secondary button-sm" 
+                          style={{ padding: '6px 12px', fontSize: '0.8rem' }}
+                          onClick={() => {
+                            setActiveLiveMatchId(m.id);
+                            setActiveSubTab('arena');
+                          }}
+                        >
+                          🔍 CONTROL
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="phase-transition-overlay animate-in" style={{ padding: '4rem 0', width: '100%' }}>
+              <div className="phase-card glass-morphism text-center" style={{ width: '100%', maxWidth: '500px', margin: '0 auto' }}>
+                <div className="p-icon" style={{ fontSize: '3rem' }}>📺</div>
+                <h3>NO ONGOING MATCHES</h3>
+                <p className="muted">Launch a tournament match from the Arena tab to start live multiplex screening!</p>
+              </div>
+            </div>
+          )}
+        </div>
       ) : (
         <div className="premium-standings">
           {teams.length > 0 && (() => {
-            const allPlayers = teams.flatMap(t => t.players.map(p => ({ 
-              ...p, 
-              teamName: t.name,
-              rating: (p.total_balls_potted * 10) - (p.total_fouls * 5)
-            })));
-            const topPlayer = [...allPlayers].sort((a, b) => b.rating - a.rating || b.total_balls_potted - a.total_balls_potted)[0];
+            let topPlayerName = "TBD";
+            let topPlayerRating = 0;
+            let topPlayerTeam = "";
+            
+            let bestGkName = "TBD";
+            let bestGkSaves = 0;
+            let bestGkTeam = "";
+
+            if (selectedSport === 'FOOTBALL') {
+              // Aggregate football stats
+              const playerMap: Record<string, {
+                id: string;
+                name: string;
+                teamName: string;
+                goals: number;
+                saves: number;
+                attempts: number;
+                yellows: number;
+                reds: number;
+              }> = {};
+
+              teams.forEach(t => {
+                t.players.forEach(p => {
+                  playerMap[p.id] = {
+                    id: p.id,
+                    name: p.name,
+                    teamName: t.name,
+                    goals: 0,
+                    saves: 0,
+                    attempts: 0,
+                    yellows: 0,
+                    reds: 0
+                  };
+                });
+              });
+
+              matches.forEach(m => {
+                if (m.footballData) {
+                  const fd = m.footballData;
+                  const atts = fd.attempts || [];
+                  atts.forEach(a => {
+                    if (playerMap[a.playerId]) {
+                      playerMap[a.playerId].attempts++;
+                      if (a.outcome === 'SCORED') playerMap[a.playerId].goals++;
+                    }
+                    if (a.outcome === 'SAVED' && a.goalkeeperId && playerMap[a.goalkeeperId]) {
+                      playerMap[a.goalkeeperId].saves++;
+                    }
+                  });
+                  const crds = fd.cards || [];
+                  crds.forEach(c => {
+                    if (playerMap[c.playerId]) {
+                      if (c.type === 'YELLOW') playerMap[c.playerId].yellows++;
+                      else playerMap[c.playerId].reds++;
+                    }
+                  });
+                }
+              });
+
+              const allFbPlayers = Object.values(playerMap).map(p => ({
+                ...p,
+                rating: (p.goals * 10) + (p.saves * 3) - (p.yellows * 2) - (p.reds * 5)
+              }));
+
+              const sortedFbPlayers = [...allFbPlayers].sort((a, b) => b.rating - a.rating || b.goals - a.goals);
+              if (sortedFbPlayers.length > 0) {
+                topPlayerName = sortedFbPlayers[0].name;
+                topPlayerRating = sortedFbPlayers[0].rating;
+                topPlayerTeam = sortedFbPlayers[0].teamName;
+              }
+
+              const sortedGks = [...allFbPlayers].sort((a, b) => b.saves - a.saves);
+              if (sortedGks.length > 0 && sortedGks[0].saves > 0) {
+                bestGkName = sortedGks[0].name;
+                bestGkSaves = sortedGks[0].saves;
+                bestGkTeam = sortedGks[0].teamName;
+              }
+            } else {
+              const allPlayers = teams.flatMap(t => t.players.map(p => ({ 
+                ...p, 
+                teamName: t.name,
+                rating: (p.total_balls_potted * 10) - (p.total_fouls * 5)
+              })));
+              const topPlayer = [...allPlayers].sort((a, b) => b.rating - a.rating || b.total_balls_potted - a.total_balls_potted)[0];
+              if (topPlayer) {
+                topPlayerName = topPlayer.name;
+                topPlayerRating = topPlayer.rating;
+                topPlayerTeam = topPlayer.teamName;
+              }
+            }
+
             const tournamentWinner = [...teams].sort((a, b) => b.group_points - a.group_points || b.total_score - a.total_score)[0];
 
             return (
-              <div className="tournament-awards-row">
+              <div className="tournament-awards-row" style={{ display: 'grid', gridTemplateColumns: selectedSport === 'FOOTBALL' ? '1fr 1fr 1fr' : '1fr 1fr', gap: '20px', marginBottom: '30px' }}>
                 <div className="award-card glass-morphism gold-glow">
                   <div className="award-icon">🏆</div>
                   <div className="award-content">
                     <div className="award-label">MAN OF THE TOURNAMENT</div>
                     <div className="award-winner glow-text-gold">
-                      {topPlayer?.name || "TBD"}
+                      {topPlayerName}
                     </div>
                     <div className="award-meta">
-                      {topPlayer?.rating || 0} RATING • {topPlayer?.teamName || ""}
+                      {topPlayerRating} RATING • {topPlayerTeam || "N/A"}
                     </div>
                   </div>
                 </div>
+                
+                {selectedSport === 'FOOTBALL' && (
+                  <div className="award-card glass-morphism green-glow">
+                    <div className="award-icon">🧤</div>
+                    <div className="award-content">
+                      <div className="award-label">GOLDEN GLOVE (BEST GK)</div>
+                      <div className="award-winner glow-text" style={{ color: '#10b981' }}>
+                        {bestGkName}
+                      </div>
+                      <div className="award-meta">
+                        {bestGkSaves} SAVES • {bestGkTeam || "N/A"}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <div className="award-card glass-morphism blue-glow">
                   <div className="award-icon">👑</div>
                   <div className="award-content">
@@ -1613,11 +2355,49 @@ export function QuickTournament() {
                           const matchesPlayed = matches.filter(m => m.status === 'COMPLETED' && (m.team_a_id === t.id || m.team_b_id === t.id));
                           const gf = matchesPlayed.reduce((acc, m) => acc + (m.team_a_id === t.id ? m.score_team_a : m.score_team_b), 0);
                           const ga = matchesPlayed.reduce((acc, m) => acc + (m.team_a_id === t.id ? m.score_team_b : m.score_team_a), 0);
+                          
+                          let totalAttempts = 0;
+                          let totalSaves = 0;
+                          let totalYellows = 0;
+                          let totalReds = 0;
+                          
+                          matches.forEach(m => {
+                            if (m.footballData) {
+                              const fd = m.footballData;
+                              const atts = fd.attempts || [];
+                              atts.forEach(a => {
+                                const isScorerFromThisTeam = t.players.some(p => p.id === a.playerId);
+                                if (isScorerFromThisTeam) {
+                                  totalAttempts++;
+                                }
+                                if (a.outcome === 'SAVED' && a.goalkeeperId && t.players.some(p => p.id === a.goalkeeperId)) {
+                                  totalSaves++;
+                                }
+                              });
+                              
+                              const crds = fd.cards || [];
+                              crds.forEach(c => {
+                                if (t.players.some(p => p.id === c.playerId)) {
+                                  if (c.type === 'YELLOW') totalYellows++;
+                                  else totalReds++;
+                                }
+                              });
+                            }
+                          });
+                          
+                          const teamRating = (gf * 12) + (totalSaves * 6) + (totalAttempts * 2) - (ga * 6) - (totalYellows * 3) - (totalReds * 7);
+                          
                           return (
                             <>
                               <div className="stat"><div className="stat-label">GF</div><div className="stat-val">{gf}</div></div>
                               <div className="stat"><div className="stat-label">GA</div><div className="stat-val">{ga}</div></div>
                               <div className="stat"><div className="stat-label">GD</div><div className="stat-val">{gf - ga >= 0 ? `+${gf - ga}` : gf - ga}</div></div>
+                              <div className="stat"><div className="stat-label">ATT</div><div className="stat-val">{totalAttempts}</div></div>
+                              <div className="stat"><div className="stat-label">SV</div><div className="stat-val" style={{ color: '#10b981' }}>{totalSaves}</div></div>
+                              <div className="stat" style={{ borderLeft: '1px solid rgba(255,255,255,0.08)', paddingLeft: '8px' }}>
+                                <div className="stat-label" style={{ color: 'var(--gold)' }}>RATING</div>
+                                <div className="stat-val" style={{ color: 'var(--gold)', fontWeight: 900 }}>{teamRating}</div>
+                              </div>
                             </>
                           );
                         })()}
@@ -1631,17 +2411,40 @@ export function QuickTournament() {
                       <div className="breakdown-grid">
                         {t.players.map(p => {
                           const isFootball = selectedSport === 'FOOTBALL';
-                          const rating = isFootball 
-                            ? (p.total_balls_potted * 5) // Use total_balls_potted for goals in football if we want, but actually we should use real goals
-                            : (p.total_balls_potted * 10) - (p.total_fouls * 5);
+                          let actualGoals = 0;
+                          let actualSaves = 0;
+                          let actualAttempts = 0;
+                          let actualYellows = 0;
+                          let actualReds = 0;
                           
-                          // In football, we should ideally use the actual goals recorded in footballData
-                          const actualGoals = isFootball ? matches.reduce((acc, m) => {
-                            if (m.sport !== 'FOOTBALL' || !m.footballData) return acc;
-                            return acc + m.footballData.goals.filter(g => g.scorerId === p.id).length;
-                          }, 0) : 0;
+                          if (isFootball) {
+                            matches.forEach(m => {
+                              if (m.footballData) {
+                                const fd = m.footballData;
+                                const atts = fd.attempts || [];
+                                atts.forEach(a => {
+                                  if (a.playerId === p.id) {
+                                    actualAttempts++;
+                                    if (a.outcome === 'SCORED') actualGoals++;
+                                  }
+                                  if (a.outcome === 'SAVED' && a.goalkeeperId === p.id) {
+                                    actualSaves++;
+                                  }
+                                });
+                                const crds = fd.cards || [];
+                                crds.forEach(c => {
+                                  if (c.playerId === p.id) {
+                                    if (c.type === 'YELLOW') actualYellows++;
+                                    else actualReds++;
+                                  }
+                                });
+                              }
+                            });
+                          }
 
-                          const footballRating = actualGoals * 10;
+                          const rating = isFootball 
+                            ? (actualGoals * 10) + (actualSaves * 3) - (actualYellows * 2) - (actualReds * 5)
+                            : (p.total_balls_potted * 10) - (p.total_fouls * 5);
 
                           return (
                             <div key={p.id} className="p-breakdown-row">
@@ -1653,9 +2456,13 @@ export function QuickTournament() {
                                       <span className="p-b-label">GOALS</span>
                                       <span className="p-b-val">⚽ {actualGoals}</span>
                                     </div>
+                                    <div className="p-b-stat-item">
+                                      <span className="p-b-label">SAVES</span>
+                                      <span className="p-b-val">🧤 {actualSaves}</span>
+                                    </div>
                                     <div className="p-b-stat-item" style={{ marginLeft: 'auto', textAlign: 'right' }}>
                                       <span className="p-b-label" style={{ color: 'var(--gold)' }}>RATING</span>
-                                      <span className="p-b-val" style={{ color: 'var(--gold)' }}>{footballRating}</span>
+                                      <span className="p-b-val" style={{ color: 'var(--gold)' }}>{rating}</span>
                                     </div>
                                   </>
                                 ) : (

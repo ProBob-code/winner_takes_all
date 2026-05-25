@@ -96,36 +96,104 @@ export const FootballScoreboard = ({
   </div>
 );
 
-export const FootballPossessionPitch = ({ posA, posB, teamAName, teamBName }: { posA: number, posB: number, teamAName: string, teamBName: string }) => (
-  <div className="possession-pitch-premium">
-    <div className="pitch-surface">
-      <div className="pitch-markings">
-        <div className="m-center-circle" />
-        <div className="m-center-line" />
-        <div className="m-penalty-area left" />
-        <div className="m-penalty-area right" />
+const getFormationPositions = (count: number, isTeamB: boolean) => {
+  const positions: { left: string, top: string }[] = [];
+  
+  if (count === 1) {
+    positions.push({ left: '25%', top: '50%' });
+  } else if (count === 2) {
+    positions.push({ left: '10%', top: '50%' }); // GK
+    positions.push({ left: '40%', top: '50%' }); // ST
+  } else if (count === 3) {
+    positions.push({ left: '10%', top: '50%' }); // GK
+    positions.push({ left: '25%', top: '50%' }); // MID
+    positions.push({ left: '40%', top: '50%' }); // ST
+  } else if (count === 4) {
+    positions.push({ left: '10%', top: '50%' }); // GK
+    positions.push({ left: '25%', top: '30%' }); // MID L
+    positions.push({ left: '25%', top: '70%' }); // MID R
+    positions.push({ left: '40%', top: '50%' }); // ST
+  } else {
+    for (let i = 0; i < count; i++) {
+      positions.push({ 
+        left: `${10 + (i * 30 / count)}%`, 
+        top: `${20 + (i * 60 / count)}%` 
+      });
+    }
+  }
+  
+  if (isTeamB) {
+    return positions.map(p => ({
+      left: `${100 - parseFloat(p.left)}%`,
+      top: p.top
+    }));
+  }
+  
+  return positions;
+};
+
+export const FootballPossessionPitch = ({ 
+  posA, posB, teamAName, teamBName, onPossessionChange
+}: { 
+  posA: number, posB: number, teamAName: string, teamBName: string, onPossessionChange?: (value: number) => void
+}) => {
+  return (
+    <div className="possession-pitch-premium" style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+      <div className="pitch-surface" style={{ position: 'relative', overflow: 'hidden', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)', background: 'linear-gradient(135deg, #0b1a0e, #050d07)' }}>
+        <div className="pitch-markings">
+          <div className="m-center-circle" />
+          <div className="m-center-line" />
+          <div className="m-penalty-area left" />
+          <div className="m-penalty-area right" />
+        </div>
+        
+        <div className="pos-overlay">
+          <div className="pos-segment segment-a" style={{ width: `${posA}%` }}>
+            <div className="pos-label">{posA}%</div>
+          </div>
+          <div className="pos-ball-tracker" style={{ left: `${posA}%` }}>
+            <div className="ball-sprite">⚽</div>
+            <div className="ball-flare" />
+          </div>
+          <div className="pos-segment segment-b" style={{ width: `${posB}%` }}>
+            <div className="pos-label">{posB}%</div>
+          </div>
+        </div>
       </div>
-      
-      <div className="pos-overlay">
-        <div className="pos-segment segment-a" style={{ width: `${posA}%` }}>
-          <div className="pos-label">{posA}%</div>
+
+      {onPossessionChange && (
+        <div className="possession-slider-control" style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '0 10px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: '#888' }}>
+            <span>{teamAName} Possession</span>
+            <span>{teamBName} Possession</span>
+          </div>
+          <input 
+            type="range" 
+            min="0" 
+            max="100" 
+            value={posA} 
+            onChange={(e) => onPossessionChange(Number(e.target.value))}
+            style={{
+              width: '100%',
+              height: '6px',
+              borderRadius: '3px',
+              outline: 'none',
+              cursor: 'pointer',
+              background: `linear-gradient(to right, #ef4444 0%, #ef4444 ${posA}%, #3b82f6 ${posA}%, #3b82f6 100%)`,
+              WebkitAppearance: 'none'
+            }}
+          />
         </div>
-        <div className="pos-ball-tracker" style={{ left: `${posA}%` }}>
-          <div className="ball-sprite">⚽</div>
-          <div className="ball-flare" />
-        </div>
-        <div className="pos-segment segment-b" style={{ width: `${posB}%` }}>
-          <div className="pos-label">{posB}%</div>
-        </div>
+      )}
+
+      <div className="pitch-footer">
+        <span className="p-team">{teamAName}</span>
+        <span className="p-title">FIELD DOMINANCE</span>
+        <span className="p-team">{teamBName}</span>
       </div>
     </div>
-    <div className="pitch-footer">
-      <span className="p-team">{teamAName}</span>
-      <span className="p-title">FIELD DOMINANCE</span>
-      <span className="p-team">{teamBName}</span>
-    </div>
-  </div>
-);
+  );
+};
 
 interface TeamPodProps {
   teamName: string;
@@ -236,9 +304,13 @@ interface FootballTeamPodProps {
   possession: number;
   passing: number;
   goals: any[];
+  subs?: any[];
+  cards?: any[];
   teamId: string;
-  onGoalClick?: () => void;
-  onUndoGoal?: () => void;
+  players?: any[];
+  captainId?: string;
+  onSubClick?: (playerId: string) => void;
+  onCardClick?: (playerId: string, cardType: 'YELLOW' | 'RED') => void;
   isLocked?: boolean;
   onClick?: () => void;
 }
@@ -251,9 +323,13 @@ export const FootballTeamPod = ({
   possession,
   passing,
   goals,
+  subs = [],
+  cards = [],
   teamId,
-  onGoalClick,
-  onUndoGoal,
+  players = [],
+  captainId,
+  onSubClick,
+  onCardClick,
   isLocked,
   onClick
 }: FootballTeamPodProps) => {
@@ -268,7 +344,7 @@ export const FootballTeamPod = ({
         </div>
         <div className="team-info">
           <h3 className="team-name">{teamName}</h3>
-          <span className="team-tag">FIRST XI</span>
+          <span className="team-tag">SQUAD: {players?.length || 0} ON FIELD</span>
         </div>
       </div>
 
@@ -279,9 +355,9 @@ export const FootballTeamPod = ({
 
       <div className="stats-dashboard">
         <div className="dashboard-item">
-          <div className="d-label">PASSING</div>
-          <div className="d-val">{passing}%</div>
-          <div className="d-progress"><div className="d-fill" style={{ width: `${passing}%`, background: hexColor }} /></div>
+          <div className="d-label">POSSESSION</div>
+          <div className="d-val">{possession}%</div>
+          <div className="d-progress"><div className="d-fill" style={{ width: `${possession}%`, background: hexColor }} /></div>
         </div>
         <div className="dashboard-item">
           <div className="d-label">THREAT</div>
@@ -290,20 +366,90 @@ export const FootballTeamPod = ({
         </div>
       </div>
 
-      <ScorersList goals={goals} teamId={teamId} compact />
-
-      {!isLocked && (
-        <div className="card-actions">
-          <button className="goal-trigger" onClick={(e) => { e.stopPropagation(); onGoalClick?.(); }}>
-            <span className="icon">⚽</span> RECORD GOAL
-          </button>
-          {score > 0 && (
-            <button className="undo-trigger" onClick={(e) => { e.stopPropagation(); onUndoGoal?.(); }}>
-              UNDO
-            </button>
-          )}
+      <div className="player-list-section mt-4" style={{ background: 'rgba(0,0,0,0.2)', padding: '10px', borderRadius: '8px' }}>
+        <label className="section-label-v2">PLAYERS</label>
+        <div className="player-list">
+          {players.map(p => {
+            const playerCards = cards.filter(c => c.playerId === p.id);
+            return (
+              <div key={p.id} className="player-item" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '5px 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                <div className="player-name-wrapper" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <span className="player-name" style={{ color: '#fff', fontWeight: 500 }}>{p.name}</span>
+                  {p.id === captainId && <span className="captain-badge" style={{ color: '#f59e0b', fontSize: '0.8rem', fontWeight: 'bold' }}>[C]</span>}
+                  <div className="player-cards" style={{ display: 'flex', gap: '2px', marginLeft: '4px' }}>
+                    {playerCards.map((c, i) => (
+                      <span key={i} title={c.type} style={{ fontSize: '0.75rem' }}>
+                        {c.type === 'YELLOW' ? '🟨' : '🟥'}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                {!isLocked && (
+                  <div className="player-actions" style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                    {onCardClick && (
+                      <>
+                        <button 
+                          style={{ background: 'rgba(234, 179, 8, 0.1)', border: '1px solid rgba(234, 179, 8, 0.3)', borderRadius: '4px', width: '22px', height: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', cursor: 'pointer' }}
+                          onClick={(e) => { e.stopPropagation(); onCardClick(p.id, 'YELLOW'); }}
+                          title="Yellow Card"
+                        >
+                          🟨
+                        </button>
+                        <button 
+                          style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '4px', width: '22px', height: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', cursor: 'pointer' }}
+                          onClick={(e) => { e.stopPropagation(); onCardClick(p.id, 'RED'); }}
+                          title="Red Card"
+                        >
+                          🟥
+                        </button>
+                      </>
+                    )}
+                    {onSubClick && (
+                      <button 
+                        className="sub-btn" 
+                        style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '4px', padding: '2px 6px', fontSize: '0.75rem', color: '#aaa', cursor: 'pointer' }}
+                        onClick={(e) => { e.stopPropagation(); onSubClick(p.id); }}
+                      >
+                        SUB
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
-      )}
+      </div>
+      <div className="subs-list-section mt-4" style={{ background: 'rgba(0,0,0,0.1)', padding: '10px', borderRadius: '8px' }}>
+        <label className="section-label-v2">SUBSTITUTIONS</label>
+        <div className="subs-list">
+          {subs
+            .filter(s => s.teamId === teamId)
+            .map(s => (
+              <div key={s.id} className="sub-item" style={{ fontSize: '0.8rem', color: '#aaa', padding: '2px 0' }}>
+                <span className="sub-time" style={{ color: '#f59e0b', fontWeight: 'bold' }}>{s.minute}'</span> 
+                {s.playerOutName ? (
+                  <>
+                    <span className="sub-out" style={{ color: '#ef4444' }}>{s.playerOutName}</span> 
+                    {s.playerInName && (
+                      <>
+                        <span className="sub-arrow"> ➔ </span> 
+                        <span className="sub-in" style={{ color: '#10b981' }}>{s.playerInName}</span>
+                      </>
+                    )}
+                  </>
+                ) : (
+                  <span style={{ color: '#ef4444', fontStyle: 'italic' }}>Sent Off</span>
+                )}
+              </div>
+            ))}
+        </div>
+      </div>
+
+      <div className="mt-4">
+        <ScorersList goals={goals} teamId={teamId} compact />
+      </div>
+
       <div className="card-pitch-texture" />
     </div>
   );

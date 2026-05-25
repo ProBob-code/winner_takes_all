@@ -27,3 +27,4 @@ apps/api/data/
 *_tunnel.txt
 lt_*.txt
 web_startup_logs.txt
+.wrangler
