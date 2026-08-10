@@ -2,12 +2,13 @@ import { Metadata, ResolvingMetadata } from 'next';
 import { ArenaClient } from './ArenaClient';
 
 type Props = {
-  params: { id: string }
+  params: Promise<{ id: string }>
 };
 
 export const dynamic = 'force-dynamic';
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { id } = await params;
   const name = "Stadium Arena";
   const ogImageUrl = "https://winner-takes-all.pages.dev/og-image.jpg";
 
@@ -17,7 +18,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     openGraph: {
       title: `🏟️ ${name} is LIVE on Stadium Arena!`,
       description: `⚔️ WITNESS THE LEGEND! Don't miss a second of the elite action. Click to join the professional spectator stream!`,
-      url: `https://winner-takes-all.pages.dev/arena/${params.id}`,
+      url: `https://winner-takes-all.pages.dev/arena/${id}`,
       siteName: "Stadium Arena",
       images: [
         {
@@ -39,6 +40,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default function Page({ params }: Props) {
-  return <ArenaClient id={params.id} />;
+export default async function Page({ params }: Props) {
+  const { id } = await params;
+  return <ArenaClient id={id} />;
 }

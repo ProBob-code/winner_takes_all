@@ -1,71 +1,29 @@
-# Phase 2 Checklist
+# Phase 2 — Status
 
-This checklist tracks the next production-critical layer after the current auth, wallet, and tournament core.
+This checklist originally tracked "replace fake wallet-only tournament funding with a real payment-to-wallet flow" against a planned FastAPI + Hyperswitch backend. That backend was never built; the actual implementation is the Hono/Cloudflare Workers API in `apps/api/src`, using Razorpay instead of Hyperswitch. This document now reflects what that implementation actually does, and what's still open.
 
-## Phase 2 Goal
+## Payment-to-wallet flow — done
 
-Replace fake wallet-only tournament funding with a real payment-to-wallet flow backed by Hyperswitch.
+The target journey from the original plan is implemented in `apps/api/src/index.ts` and `apps/api/src/lib/d1-store.ts`:
 
-Target journey:
+1. `POST /api/payments/create-order` creates a Razorpay order (idempotency key supported so client retries don't create duplicate orders).
+2. The frontend completes payment through Razorpay's checkout.
+3. `POST /api/payments/verify` verifies the HMAC signature and checks the payment belongs to the calling user before crediting.
+4. `POST /api/payments/webhook` is the authoritative path — signature-verified (**fails closed** if `RAZORPAY_WEBHOOK_SECRET` is unset), and independent of the client-side verify call.
+5. `D1Store.markPaymentSuccess` makes the `pending → success` transition a single conditional `UPDATE ... WHERE status = 'pending'`, so whichever of {verify, webhook} arrives first wins the credit and the other becomes a no-op — the wallet is credited exactly once even if both fire concurrently.
+6. Wallet credits are a relative, balance-gated SQL update inside the same transaction as the ledger insert (`d1-store.ts`), not a JS read-modify-write.
 
-1. User clicks join on a paid tournament.
-2. Backend checks wallet balance.
-3. If balance is insufficient, backend creates a payment intent.
-4. Frontend completes payment through the payment UI.
-5. Webhook verifies the result.
-6. Wallet is credited exactly once.
-7. Tournament join is retried safely.
+## Security checklist — done
 
-## Backend Work
+- Webhook signatures verified, fail closed on missing secret (`apps/api/src/lib/razorpay.ts`)
+- Frontend payment success is never trusted directly — `/verify` still checks the signature and the order's stored status
+- `create-order` accepts an idempotency key
+- `/payments/verify` checks `payment.user_id === caller.id` before crediting
+- Payment idempotency key and provider order ID are both unique-indexed (`migrations/0003_integrity_constraints.sql`)
 
-- Create `apps/api/app/payments/service.py`
-- Create `apps/api/app/payments/routes.py`
-- Create `apps/api/app/payments/webhook.py`
-- Add payment service wiring in `apps/api/app/main.py`
-- Keep business rules in `apps/api/app/service.py` and let the payment module support that flow
+## Still open
 
-## API Checklist
-
-- `POST /payments/create-intent`
-- `POST /payments/webhook`
-- `POST /wallet/topup`
-- `GET /payments/{id}`
-
-## Data Checklist
-
-- Persist payment intents and provider references
-- Persist payment status transitions
-- Persist wallet top-up transactions separately from tournament deductions
-- Add idempotency support for payment creation and webhook processing
-- Track provider event ids to ignore duplicates
-
-## Security Checklist
-
-- Verify webhook signatures
-- Never trust frontend payment success
-- Require idempotency keys for create-intent operations
-- Validate user ownership before wallet credit or tournament retry
-- Log and reject inconsistent payment state transitions
-
-## Frontend Checklist
-
-- Add wallet top-up action on `/wallet`
-- Show payment pending, success, and failure states
-- Retry tournament join after wallet credit
-- Add transaction history and status UI
-
-## Infra Checklist
-
-- Add Hyperswitch service notes to local Docker setup
-- Document required payment env vars
-- Add local webhook testing instructions
-
-## Exit Criteria
-
-Phase 2 is complete when:
-
-- Paid tournament join can trigger a real payment path
-- Payment success is verified by webhook
-- Wallet credit is idempotent
-- Tournament join can complete after a verified top-up
-- Failed or duplicate webhooks do not corrupt wallet state
+- **Real-time updates**: matches and tournament state are polled, not pushed. A WebSocket or Durable Object layer for live match rooms and bracket updates is not built.
+- **D1 integration tests**: the current API test suite (`apps/api/tests/`) covers pure logic — money math, password hashing, the tournament-scoring engine, Zod validation, and Razorpay signature verification including the fail-closed webhook case. It does not yet run the SQL transaction logic in `d1-store.ts` against a real D1/Miniflare instance. Adding `@cloudflare/vitest-pool-workers` to exercise `deductWallet`/`creditWallet`/`transferCredits`/`joinTournament` under concurrent calls is the natural next step to close that gap.
+- **Refunds**: there is no refund/reversal endpoint yet. The architecture notes (`docs/architecture.md`) call for refunds as explicit reversing ledger entries, not silent balance rewrites — that still needs to be built.
+- **KYC/AML enforcement**: the compliance pages (`/kyc-aml`, `/responsible-gaming`, `/skill-based-policy`) are informational only; there's no backend enforcement gating real-money play on verified identity. This matters for a skill-gaming product handling real money in India — treat it as a blocker for production launch, not a nice-to-have.

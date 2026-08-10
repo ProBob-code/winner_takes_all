@@ -1,58 +1,151 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-import type { Env } from "./types";
-import { D1Store } from "./lib/d1-store";
+import type { Context } from "hono";
+import type { AppContext, Env } from "./types";
+import { D1Store, InsufficientFundsError, type TournamentRecord } from "./lib/d1-store";
 import {
   createSessionTokens,
   getRefreshSession,
   deleteRefreshSession,
+  deleteAccessSession,
   buildSessionCookies,
   buildLogoutCookies,
+  parseCookies,
 } from "./lib/kv-sessions";
-import { hashPassword, verifyPassword, createId } from "./lib/crypto";
+import { hashPassword, verifyPassword, createId, sha256Hex, timingSafeEqual } from "./lib/crypto";
 import { createRazorpayOrder, verifyPaymentSignature, verifyWebhookSignature } from "./lib/razorpay";
-import { authMiddleware, requireUser, serializeUser } from "./middleware/auth";
-import { centsToMoney, moneyToCents } from "./lib/money";
-
-
-
-import { EngineStore } from "./lib/engine-store";
+import { authMiddleware, requireUser, requireAdmin, serializeUser, extractAccessToken } from "./middleware/auth";
+import { centsToMoney } from "./lib/money";
+import { checkRateLimit, clientKey } from "./lib/rate-limit";
 import * as Engine from "./lib/tournament-engine";
+import {
+  ValidationError,
+  parseBody,
+  signupSchema,
+  loginSchema,
+  createOrderSchema,
+  verifyPaymentSchema,
+  transferSchema,
+  createTournamentSchema,
+  joinTournamentSchema,
+  submitScoreSchema,
+  addTeamSchema,
+  engineScoreSchema,
+  highlightSchema,
+  reorderSchema,
+  upsertArenaSchema,
+} from "./lib/validation";
 
-const app = new Hono<{ Bindings: Env; Variables: { store: D1Store; user?: any } }>();
+const app = new Hono<AppContext>();
 
-// Inject Store
+const DEFAULT_ORIGINS = ["https://winner-takes-all.pages.dev", "http://localhost:3000"];
+
+function allowedOrigins(env: Env): string[] {
+  return env.ALLOWED_ORIGINS
+    ? env.ALLOWED_ORIGINS.split(",").map((o) => o.trim()).filter(Boolean)
+    : DEFAULT_ORIGINS;
+}
+
+// Inject store
 app.use("/api/*", async (c, next) => {
   c.set("store", new D1Store(c.env.DB));
   await next();
 });
 
-// Enable CORS
-app.use(
-  "/api/*",
-  cors({
-    origin: ["https://winner-takes-all.pages.dev", "http://localhost:3000"],
+// CORS
+app.use("/api/*", async (c, next) => {
+  const handler = cors({
+    origin: allowedOrigins(c.env),
     allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowHeaders: ["Content-Type", "Authorization"],
     credentials: true,
-  })
-);
+  });
+  return handler(c, next);
+});
 
-// Apply auth middleware to all /api/ routes
+// CSRF defense: cookies are SameSite=None, so reject browser-originated
+// mutations from origins we don't recognize. Requests without an Origin
+// header (curl, server-to-server) pass through — they can't ride a victim's
+// browser cookies. The Razorpay webhook is signature-verified instead.
+app.use("/api/*", async (c, next) => {
+  const method = c.req.method.toUpperCase();
+  if (method === "GET" || method === "HEAD" || method === "OPTIONS") return next();
+  if (c.req.path === "/api/payments/webhook") return next();
+
+  const origin = c.req.header("Origin");
+  if (origin && !allowedOrigins(c.env).includes(origin)) {
+    return c.json({ ok: false, message: "Origin not allowed" }, 403);
+  }
+  return next();
+});
+
+// Attach user (if any) to every request
 app.use("/api/*", authMiddleware);
 
-// --- Health / Test ---
+// Centralized error handling: safe messages out, details to logs.
+app.onError((err, c) => {
+  if (err instanceof ValidationError) {
+    return c.json({ ok: false, message: err.message }, 400);
+  }
+  if (err instanceof InsufficientFundsError) {
+    return c.json({ ok: false, message: err.message }, 400);
+  }
+  console.error(`Unhandled error on ${c.req.method} ${c.req.path}:`, err);
+  return c.json({ ok: false, message: "Internal server error" }, 500);
+});
+
+async function readJson(c: Context<AppContext>): Promise<unknown> {
+  try {
+    return await c.req.json();
+  } catch {
+    throw new ValidationError("Request body must be valid JSON");
+  }
+}
+
+async function rateLimit(
+  c: Context<AppContext>,
+  bucket: string,
+  limit: number,
+  windowSeconds: number
+): Promise<Response | null> {
+  const key = `${bucket}:${clientKey(c.req.raw)}`;
+  const result = await checkRateLimit(c.env.SESSIONS, key, limit, windowSeconds);
+  if (!result.allowed) {
+    return c.json({ ok: false, message: "Too many requests, please try again later" }, 429);
+  }
+  return null;
+}
+
+/** Public representation of a tournament — never leaks the join password. */
+function serializeTournament(t: TournamentRecord) {
+  return {
+    id: t.id,
+    name: t.name,
+    entryFee: centsToMoney(t.entry_fee_cents),
+    prizePool: centsToMoney(t.prize_pool_cents),
+    maxPlayers: t.max_players,
+    joinedPlayers: t.participant_ids.length,
+    status: t.status,
+    bracketType: t.bracket_type,
+    bracketState: t.bracket_state,
+    teamSize: t.team_size,
+    tournamentType: t.tournament_type,
+    hostId: t.host_id,
+    winnerId: t.winner_id,
+    hasPassword: !!t.password,
+  };
+}
+
+// --- Health ---
 app.get("/api/health", (c) => c.json({ ok: true, service: "api", timestamp: new Date().toISOString() }));
-app.get("/api/test", (c) => c.json({ message: "API working (Hono + D1)" }));
 
 // --- Auth ---
 app.post("/api/auth/signup", async (c) => {
+  const limited = await rateLimit(c, "signup", 10, 300);
+  if (limited) return limited;
+
   const store = c.get("store");
-  const body = await c.req.json();
-  
-  if (!body.email || !body.password || !body.name) {
-    return c.json({ ok: false, message: "Missing required fields" }, 400);
-  }
+  const body = parseBody(signupSchema, await readJson(c));
 
   const existing = await store.getUserByEmail(body.email);
   if (existing) {
@@ -60,7 +153,7 @@ app.post("/api/auth/signup", async (c) => {
   }
 
   const hashed = await hashPassword(body.password);
-  const user = await store.createUserWithBonus(body.name, body.email, hashed, 100000); // 1000 Rs bonus
+  const user = await store.createUserWithBonus(body.name, body.email, hashed, 100000); // ₹1000 signup bonus
 
   const tokens = await createSessionTokens(c.env.SESSIONS, user.id);
   const [access, refresh] = buildSessionCookies(tokens);
@@ -71,12 +164,11 @@ app.post("/api/auth/signup", async (c) => {
 });
 
 app.post("/api/auth/login", async (c) => {
-  const store = c.get("store");
-  const body = await c.req.json();
+  const limited = await rateLimit(c, "login", 10, 300);
+  if (limited) return limited;
 
-  if (!body.email || !body.password) {
-    return c.json({ ok: false, message: "Missing required fields" }, 400);
-  }
+  const store = c.get("store");
+  const body = parseBody(loginSchema, await readJson(c));
 
   const user = await store.getUserByEmail(body.email);
   if (!user || !(await verifyPassword(body.password, user.password_hash))) {
@@ -94,18 +186,14 @@ app.post("/api/auth/login", async (c) => {
 app.post("/api/auth/refresh", async (c) => {
   // Try body or cookie
   let refreshToken: string | undefined;
-  
+
   try {
     const body = await c.req.json();
-    refreshToken = body.refreshToken;
-  } catch {}
+    if (typeof body?.refreshToken === "string") refreshToken = body.refreshToken;
+  } catch { /* body optional */ }
 
   if (!refreshToken) {
-    const cookies = c.req.header("Cookie");
-    if (cookies) {
-      const match = cookies.match(/wta_refresh_token=([^;]+)/);
-      if (match) refreshToken = decodeURIComponent(match[1]);
-    }
+    refreshToken = parseCookies(c.req.header("Cookie"))["wta_refresh_token"];
   }
 
   if (!refreshToken) {
@@ -134,62 +222,84 @@ app.post("/api/auth/refresh", async (c) => {
 });
 
 app.post("/api/auth/logout", async (c) => {
+  // Revoke server-side sessions, not just cookies.
+  const accessToken = extractAccessToken(c);
+  const refreshToken = parseCookies(c.req.header("Cookie"))["wta_refresh_token"];
+  await Promise.all([
+    accessToken ? deleteAccessSession(c.env.SESSIONS, accessToken) : Promise.resolve(),
+    refreshToken ? deleteRefreshSession(c.env.SESSIONS, refreshToken) : Promise.resolve(),
+  ]);
+
   const [access, refresh] = buildLogoutCookies();
   c.header("Set-Cookie", access, { append: true });
   c.header("Set-Cookie", refresh, { append: true });
   return c.json({ ok: true, message: "Logged out successfully" });
 });
 
-
 app.get("/api/user/profile", async (c) => {
   const user = requireUser(c);
   if (!user) return c.json({ ok: false, message: "Authentication required" }, 401);
-  
+
   const store = c.get("store");
   const stats = await store.getUserMatchStats(user.id);
   const totalMatches = stats.wins + stats.losses;
   const winRate = totalMatches > 0 ? Math.round((stats.wins / totalMatches) * 100) : 0;
-  
-  const serialized: any = serializeUser(user);
-  serialized.stats = {
-    ...stats,
-    winRate,
-    tournamentWins: stats.tournament_wins
-  };
 
-  return c.json({ ok: true, user: serialized });
+  return c.json({
+    ok: true,
+    user: {
+      ...serializeUser(user),
+      stats: { ...stats, winRate, tournamentWins: stats.tournament_wins },
+    },
+  });
 });
 
 // --- Payments ---
 app.post("/api/payments/create-order", async (c) => {
   const user = requireUser(c);
   if (!user) return c.json({ ok: false, message: "Authentication required" }, 401);
-  const body = await c.req.json();
-  if (!body.amount) return c.json({ ok: false, message: "Amount required" }, 400);
 
-  const amountCents = Math.round(Number(body.amount) * 100);
-  if (isNaN(amountCents) || amountCents <= 0) return c.json({ ok: false, message: "Invalid amount" }, 400);
-  
+  const limited = await rateLimit(c, `order:${user.id}`, 10, 60);
+  if (limited) return limited;
+
+  const body = parseBody(createOrderSchema, await readJson(c));
+  const amountCents = Math.round(body.amount * 100);
+
   if (!c.env.RAZORPAY_KEY_ID || !c.env.RAZORPAY_KEY_SECRET) {
     console.error("Missing RAZORPAY_KEY_ID or RAZORPAY_KEY_SECRET in worker environment");
     return c.json({ ok: false, message: "Payment gateway is not configured on the server" }, 500);
   }
-  
+
+  const store = c.get("store");
+
+  // Idempotency: if the client retries with the same key, return the same order.
+  if (body.idempotencyKey) {
+    const existing = await store.getPaymentByIdempotencyKey(body.idempotencyKey);
+    if (existing && existing.user_id === user.id && existing.status === "pending" && existing.provider_order_id) {
+      return c.json({
+        ok: true,
+        razorpayOrderId: existing.provider_order_id,
+        amount: existing.amount_cents,
+        currency: existing.currency,
+        keyId: c.env.RAZORPAY_KEY_ID,
+      });
+    }
+  }
+
   try {
     const order = await createRazorpayOrder(
-      c.env.RAZORPAY_KEY_ID, 
-      c.env.RAZORPAY_KEY_SECRET, 
-      amountCents, 
-      "INR", 
+      c.env.RAZORPAY_KEY_ID,
+      c.env.RAZORPAY_KEY_SECRET,
+      amountCents,
+      "INR",
       { userId: user.id }
     );
-    
-    const store = c.get("store");
+
     await store.createPayment({
       userId: user.id,
       amountCents,
       providerOrderId: order.id,
-      idempotencyKey: createId("idempotency"),
+      idempotencyKey: body.idempotencyKey ?? createId("idempotency"),
     });
 
     return c.json({
@@ -197,46 +307,48 @@ app.post("/api/payments/create-order", async (c) => {
       razorpayOrderId: order.id,
       amount: amountCents,
       currency: "INR",
-      keyId: c.env.RAZORPAY_KEY_ID
+      keyId: c.env.RAZORPAY_KEY_ID,
     });
-  } catch (err: any) {
-    console.error("Razorpay order creation error:", err.message);
-    return c.json({ ok: false, message: `Payment gateway error: ${err.message}` }, 500);
+  } catch (err) {
+    console.error("Razorpay order creation error:", err instanceof Error ? err.message : err);
+    return c.json({ ok: false, message: "Payment gateway error, please try again" }, 502);
   }
 });
 
 app.post("/api/payments/verify", async (c) => {
   const user = requireUser(c);
   if (!user) return c.json({ ok: false, message: "Authentication required" }, 401);
-  const body = await c.req.json();
-  
-  if (!body.razorpayOrderId || !body.razorpayPaymentId || !body.razorpaySignature) {
-    return c.json({ ok: false, message: "Missing payment parameters" }, 400);
-  }
+
+  const body = parseBody(verifyPaymentSchema, await readJson(c));
 
   const isValid = await verifyPaymentSignature(
-    c.env.RAZORPAY_KEY_SECRET, 
-    body.razorpayOrderId, 
-    body.razorpayPaymentId, 
+    c.env.RAZORPAY_KEY_SECRET ?? "",
+    body.razorpayOrderId,
+    body.razorpayPaymentId,
     body.razorpaySignature
   );
-  
   if (!isValid) return c.json({ ok: false, message: "Invalid payment signature" }, 400);
 
   const store = c.get("store");
   const payment = await store.getPaymentByOrderId(body.razorpayOrderId);
-  
   if (!payment) return c.json({ ok: false, message: "Payment not found" }, 404);
-  
-  // If webhook already processed it, return success to the frontend
+
+  // The payment must belong to the caller — verifying someone else's order
+  // must never credit your own wallet.
+  if (payment.user_id !== user.id) {
+    return c.json({ ok: false, message: "Payment does not belong to this account" }, 403);
+  }
+
+  // If webhook already processed it, report success without double-crediting.
   if (payment.status === "success") return c.json({ ok: true, already_processed: true });
-  
   if (payment.status !== "pending") return c.json({ ok: false, message: "Payment already processed" }, 400);
 
-  // Mark success and add funds to wallet
-  await store.updatePayment(payment.id, { status: "success", provider_payment_id: body.razorpayPaymentId });
-  await store.creditWallet(user.id, payment.amount_cents, "wallet_topup", payment.id);
+  // Only the single caller that wins the pending→success transition credits
+  // the wallet; a concurrent webhook sees `claimed === false`.
+  const claimed = await store.markPaymentSuccess(payment.id, body.razorpayPaymentId);
+  if (!claimed) return c.json({ ok: true, already_processed: true });
 
+  await store.creditWallet(payment.user_id, payment.amount_cents, "wallet_topup", payment.id, "deposit", payment.id);
   return c.json({ ok: true });
 });
 
@@ -245,27 +357,26 @@ app.post("/api/payments/webhook", async (c) => {
   if (!signature) return c.json({ ok: false, message: "Missing signature" }, 400);
 
   const rawBody = await c.req.arrayBuffer();
-  const webhookSecret = c.env.RAZORPAY_WEBHOOK_SECRET || "";
-  
-  const isValid = await verifyWebhookSignature(webhookSecret, rawBody, signature);
+  // Fail closed: without a configured webhook secret no webhook is accepted.
+  const isValid = await verifyWebhookSignature(c.env.RAZORPAY_WEBHOOK_SECRET ?? "", rawBody, signature);
   if (!isValid) return c.json({ ok: false, message: "Invalid signature" }, 400);
 
   const body = JSON.parse(new TextDecoder().decode(rawBody));
-  console.log("Razorpay Webhook Event:", body.event);
 
   if (body.event === "payment.captured") {
-    const payload = body.payload.payment.entity;
-    const orderId = payload.order_id;
-    const paymentId = payload.id;
+    const payload = body.payload?.payment?.entity;
+    const orderId = payload?.order_id;
+    const paymentId = payload?.id;
+    if (!orderId || !paymentId) return c.json({ ok: false, message: "Malformed payload" }, 400);
 
     const store = c.get("store");
     const payment = await store.getPaymentByOrderId(orderId);
-    
-    if (payment && payment.status === "pending") {
-      // Mark success and add funds to wallet
-      await store.updatePayment(payment.id, { status: "success", provider_payment_id: paymentId });
-      await store.creditWallet(payment.user_id, payment.amount_cents, "wallet_topup", payment.id);
-      console.log(`Successfully processed payment via webhook for user ${payment.user_id}`);
+
+    if (payment) {
+      const claimed = await store.markPaymentSuccess(payment.id, paymentId);
+      if (claimed) {
+        await store.creditWallet(payment.user_id, payment.amount_cents, "wallet_topup", payment.id, "deposit", payment.id);
+      }
     }
   }
 
@@ -276,91 +387,191 @@ app.post("/api/payments/webhook", async (c) => {
 app.get("/api/tournaments", async (c) => {
   const store = c.get("store");
   const tournaments = await store.listTournaments();
-  
-  const formatted = tournaments.map((t) => ({
-    id: t.id,
-    name: t.name,
-    entryFee: centsToMoney(t.entry_fee_cents),
-    maxPlayers: t.max_players,
-    joinedPlayers: t.participant_ids.length,
-    status: t.status,
-  }));
-
-  return c.json({ ok: true, tournaments: formatted });
+  return c.json({ ok: true, tournaments: tournaments.map(serializeTournament) });
 });
 
 app.get("/api/tournaments/:id", async (c) => {
   const store = c.get("store");
-  const tournamentId = c.req.param("id");
-  const tournament = await store.getTournament(tournamentId);
-
+  const tournament = await store.getTournament(c.req.param("id"));
   if (!tournament) {
     return c.json({ ok: false, message: "Tournament not found" }, 404);
   }
-
-  return c.json({
-    ok: true,
-    tournament: {
-      id: tournament.id,
-      name: tournament.name,
-      entryFee: centsToMoney(tournament.entry_fee_cents),
-      prizePool: centsToMoney(tournament.prize_pool_cents),
-      maxPlayers: tournament.max_players,
-      joinedPlayers: tournament.participant_ids.length,
-      status: tournament.status,
-      bracketType: tournament.bracket_type,
-      bracketState: tournament.bracket_state,
-    },
-  });
+  return c.json({ ok: true, tournament: serializeTournament(tournament) });
 });
 
 app.post("/api/tournaments/create", async (c) => {
   const user = requireUser(c);
   if (!user) return c.json({ ok: false, message: "Authentication required" }, 401);
-  
-  const store = c.get("store");
-  const body = await c.req.json();
 
-  const entryFeeCents = body.entryFee ? body.entryFee * 100 : 0; // assuming input was dollars/credits, simplified
+  const store = c.get("store");
+  const body = parseBody(createTournamentSchema, await readJson(c));
 
   const tournament = await store.createTournament({
-    name: body.name || "Custom Tournament",
-    entryFeeCents,
-    maxPlayers: body.maxPlayers || 8,
+    name: body.name,
+    entryFeeCents: Math.round(body.entryFee * 100),
+    maxPlayers: body.maxPlayers,
     hostId: user.id,
-    teamSize: body.teamSize || 1,
-    tournamentType: body.tournamentType || "online",
-    bracketType: body.bracketType || "single_elimination",
-    password: body.password || null
+    teamSize: body.teamSize,
+    tournamentType: body.tournamentType,
+    bracketType: body.bracketType,
+    password: body.password ?? null,
   });
 
-  return c.json({ ok: true, tournament });
+  return c.json({ ok: true, tournament: serializeTournament(tournament) });
 });
 
 app.post("/api/tournaments/:id/join", async (c) => {
   const user = requireUser(c);
   if (!user) return c.json({ ok: false, message: "Authentication required" }, 401);
-  
+
   const store = c.get("store");
   const tournamentId = c.req.param("id");
+  const body = parseBody(joinTournamentSchema, await readJson(c).catch(() => ({})));
+
+  const tournament = await store.getTournament(tournamentId);
+  if (!tournament) return c.json({ ok: false, message: "Tournament not found" }, 404);
+
+  if (tournament.password && !timingSafeEqual(tournament.password, body.password ?? "")) {
+    return c.json({ ok: false, message: "Incorrect tournament password" }, 403);
+  }
 
   try {
     const result = await store.joinTournament(user.id, tournamentId);
     return c.json({
       ok: true,
-      tournament: {
-        id: result.tournament.id,
-        name: result.tournament.name,
-        joinedPlayers: result.tournament.participant_ids.length,
-        status: result.tournament.status
-      },
-      wallet: {
-        balance: centsToMoney(result.user.wallet_balance_cents)
-      }
+      tournament: serializeTournament(result.tournament),
+      wallet: { balance: centsToMoney(result.user.wallet_balance_cents) },
     });
-  } catch (e: any) {
-    return c.json({ ok: false, message: e.message }, 409);
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "Unable to join tournament";
+    return c.json({ ok: false, message }, 409);
   }
+});
+
+app.get("/api/tournaments/:id/participants", async (c) => {
+  const store = c.get("store");
+  const tournamentId = c.req.param("id");
+  const tournament = await store.getTournament(tournamentId);
+  if (!tournament) return c.json({ ok: false, message: "Tournament not found" }, 404);
+
+  const participants = await store.getParticipants(tournamentId);
+  return c.json({
+    ok: true,
+    participants: participants.map((p) => ({
+      userId: p.user_id,
+      name: p.user_name,
+      teamId: p.team_id,
+      teamName: p.team_name,
+      status: p.status,
+      seed: p.seed,
+      wins: p.wins,
+      losses: p.losses,
+    })),
+  });
+});
+
+app.get("/api/tournaments/:id/bracket", async (c) => {
+  const store = c.get("store");
+  const tournamentId = c.req.param("id");
+  const tournament = await store.getTournament(tournamentId);
+  if (!tournament) return c.json({ ok: false, message: "Tournament not found" }, 404);
+
+  const matches = await store.listMatchesByTournament(tournamentId);
+  return c.json({
+    ok: true,
+    bracketType: tournament.bracket_type,
+    bracketState: tournament.bracket_state,
+    matches: matches.map((m) => ({
+      id: m.id,
+      round: m.round,
+      matchOrder: m.match_order,
+      player1Id: m.player1_id,
+      player2Id: m.player2_id,
+      winnerId: m.winner_id,
+      status: m.status,
+      player1Score: m.player1_score,
+      player2Score: m.player2_score,
+      scoresApproved: m.scores_approved,
+    })),
+  });
+});
+
+// --- Matches (bracket play) ---
+
+app.get("/api/matches/:id", async (c) => {
+  const store = c.get("store");
+  const match = await store.getMatch(c.req.param("id"));
+  if (!match) return c.json({ ok: false, message: "Match not found" }, 404);
+  return c.json({ ok: true, match });
+});
+
+app.post("/api/matches/:id/submit-score", async (c) => {
+  const user = requireUser(c);
+  if (!user) return c.json({ ok: false, message: "Authentication required" }, 401);
+
+  const store = c.get("store");
+  const match = await store.getMatch(c.req.param("id"));
+  if (!match) return c.json({ ok: false, message: "Match not found" }, 404);
+  if (match.scores_approved) return c.json({ ok: false, message: "Scores already approved" }, 400);
+
+  const tournament = await store.getTournament(match.tournament_id);
+  const isHost = tournament?.host_id === user.id || user.role === "admin";
+  const isPlayer = match.player1_id === user.id || match.player2_id === user.id;
+  if (!isHost && !isPlayer) {
+    return c.json({ ok: false, message: "Only match players or the host can submit scores" }, 403);
+  }
+
+  const body = parseBody(submitScoreSchema, await readJson(c));
+
+  if ("score" in body) {
+    // A player reports their own score.
+    if (!isPlayer) return c.json({ ok: false, message: "Only match players can self-report a score" }, 403);
+    const field = match.player1_id === user.id ? "player1_submitted_score" : "player2_submitted_score";
+    await store.updateMatch(match.id, { [field]: body.score });
+  } else {
+    // The host (or tracker) reports the full result.
+    if (!isHost) return c.json({ ok: false, message: "Only the host can submit the full result" }, 403);
+    if (body.winnerId && body.winnerId !== match.player1_id && body.winnerId !== match.player2_id) {
+      return c.json({ ok: false, message: "winnerId must be one of the match players" }, 400);
+    }
+    await store.updateMatch(match.id, {
+      player1_submitted_score: body.player1Score,
+      player2_submitted_score: body.player2Score,
+      ...(body.winnerId ? { winner_id: body.winnerId } : {}),
+    });
+  }
+
+  return c.json({ ok: true });
+});
+
+app.post("/api/matches/:id/approve-scores", async (c) => {
+  const user = requireUser(c);
+  if (!user) return c.json({ ok: false, message: "Authentication required" }, 401);
+
+  const store = c.get("store");
+  const match = await store.getMatch(c.req.param("id"));
+  if (!match) return c.json({ ok: false, message: "Match not found" }, 404);
+  if (match.scores_approved) return c.json({ ok: false, message: "Scores already approved" }, 400);
+
+  const tournament = await store.getTournament(match.tournament_id);
+  if (tournament?.host_id !== user.id && user.role !== "admin") {
+    return c.json({ ok: false, message: "Only the tournament host can approve scores" }, 403);
+  }
+
+  const p1 = match.player1_submitted_score ?? match.player1_score;
+  const p2 = match.player2_submitted_score ?? match.player2_score;
+  const winnerId = match.winner_id ?? (p1 === p2 ? null : p1 > p2 ? match.player1_id : match.player2_id);
+
+  await store.updateMatch(match.id, {
+    player1_score: p1,
+    player2_score: p2,
+    winner_id: winnerId,
+    scores_approved: 1,
+    status: "completed",
+    completed_at: new Date().toISOString(),
+  });
+
+  return c.json({ ok: true });
 });
 
 // --- Wallet ---
@@ -370,22 +581,22 @@ app.get("/api/wallet", async (c) => {
 
   const store = c.get("store");
   const entries = await store.listWalletEntries(user.id);
-  
-  const transactions = entries.map(e => ({
+
+  const transactions = entries.map((e) => ({
     id: e.id,
     type: e.type,
     amount: centsToMoney(e.amount_cents),
     createdAt: e.created_at,
     referenceType: e.reference_type,
-    referenceId: e.reference_id
+    referenceId: e.reference_id,
   }));
 
   return c.json({
     ok: true,
     wallet: {
       balance: centsToMoney(user.wallet_balance_cents),
-      transactions
-    }
+      transactions,
+    },
   });
 });
 
@@ -393,89 +604,121 @@ app.post("/api/wallet/transfer", async (c) => {
   const user = requireUser(c);
   if (!user) return c.json({ ok: false, message: "Authentication required" }, 401);
 
-  const body = await c.req.json();
-  const { recipientId, amount } = body;
+  const limited = await rateLimit(c, `transfer:${user.id}`, 20, 60);
+  if (limited) return limited;
 
-  if (!recipientId || !amount) {
-    return c.json({ ok: false, message: "Recipient and amount are required" }, 400);
-  }
+  const body = parseBody(transferSchema, await readJson(c));
+  const amountCents = Math.round(body.amount * 100);
 
-  const amountCents = Math.round(Number(amount) * 100);
-  if (isNaN(amountCents) || amountCents <= 0) {
-    return c.json({ ok: false, message: "Invalid amount" }, 400);
-  }
-
-  if (recipientId === user.id) {
+  if (body.recipientId === user.id) {
     return c.json({ ok: false, message: "You cannot transfer credits to yourself" }, 400);
   }
 
   const store = c.get("store");
   try {
-    const updatedUser = await store.transferCredits(user.id, recipientId, amountCents);
+    const updatedUser = await store.transferCredits(user.id, body.recipientId, amountCents);
     return c.json({
       ok: true,
       message: "Transfer successful",
-      newBalance: centsToMoney(updatedUser.wallet_balance_cents)
+      newBalance: centsToMoney(updatedUser.wallet_balance_cents),
     });
-  } catch (err: any) {
-    return c.json({ ok: false, message: err.message }, 400);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Transfer failed";
+    return c.json({ ok: false, message }, 400);
   }
 });
 
+// --- Notifications ---
+app.get("/api/notifications", async (c) => {
+  const user = requireUser(c);
+  if (!user) return c.json({ ok: false, message: "Authentication required" }, 401);
+
+  const store = c.get("store");
+  const [notifications, unreadCount] = await Promise.all([
+    store.listNotifications(user.id),
+    store.countUnreadNotifications(user.id),
+  ]);
+
+  return c.json({ ok: true, notifications, unreadCount });
+});
+
+app.post("/api/notifications/:id/read", async (c) => {
+  const user = requireUser(c);
+  if (!user) return c.json({ ok: false, message: "Authentication required" }, 401);
+
+  const store = c.get("store");
+  const updated = await store.markNotificationRead(c.req.param("id"), user.id);
+  if (!updated) return c.json({ ok: false, message: "Notification not found" }, 404);
+  return c.json({ ok: true });
+});
 
 // --- Leaderboard ---
 app.get("/api/leaderboard/global", async (c) => {
   const store = c.get("store");
-  const users = await store.listUsers();
-  
-  const entries = users.map((u) => ({
-    userId: u.id,
-    displayName: u.name,
-    wins: 0, // In a real app we'd aggregate these with getUserMatchStats
-    losses: 0,
-    earnings: {
-      amount: "0.00",
-      currency: "USD"
-    }
+  const rows = await store.getGlobalLeaderboard();
+
+  const entries = rows.map((r) => ({
+    userId: r.user_id,
+    displayName: r.name,
+    wins: r.wins,
+    losses: r.losses,
+    tournamentWins: r.tournament_wins,
+    earnings: centsToMoney(r.earnings_cents),
   }));
 
   return c.json({ ok: true, entries });
 });
 
-// --- Admin (Stubbed for UI demo) ---
+// --- Admin ---
 app.get("/api/admin/overview", async (c) => {
-  // In a real app we'd enforce admin role
+  const admin = requireAdmin(c);
+  if (!admin) return c.json({ ok: false, message: "Admin access required" }, 403);
+
   const store = c.get("store");
   const tournaments = await store.listTournaments();
-  
+
   return c.json({
     ok: true,
     totalTournaments: tournaments.length,
-    activeTournaments: tournaments.filter(t => t.status === "open" || t.status === "in_progress").length,
-    completedTournaments: tournaments.filter(t => t.status === "completed").length,
-    totalMatches: 0,
-    activeMatches: 0,
-    pendingApprovals: [],
-    tournaments: tournaments.map(t => ({
+    activeTournaments: tournaments.filter((t) => t.status === "open" || t.status === "in_progress").length,
+    completedTournaments: tournaments.filter((t) => t.status === "completed").length,
+    tournaments: tournaments.map((t) => ({
       id: t.id,
       name: t.name,
       status: t.status,
       joinedPlayers: t.participant_ids.length,
-      maxPlayers: t.max_players
-    }))
+      maxPlayers: t.max_players,
+    })),
   });
 });
 
-// --- Tournament Engine Routes ---
+// --- Tournament Engine ---
+
+/** Load a tournament and confirm the caller may manage it (host or admin). */
+async function requireTournamentManager(
+  c: Context<AppContext>,
+  tournamentId: string
+): Promise<{ tournament: TournamentRecord } | { error: Response }> {
+  const user = requireUser(c);
+  if (!user) return { error: c.json({ ok: false, message: "Authentication required" }, 401) };
+
+  const tournament = await c.get("store").getTournament(tournamentId);
+  if (!tournament) return { error: c.json({ ok: false, message: "Tournament not found" }, 404) };
+
+  if (tournament.host_id !== user.id && user.role !== "admin") {
+    return { error: c.json({ ok: false, message: "Only the tournament host can manage matches" }, 403) };
+  }
+  return { tournament };
+}
 
 app.get("/api/engine/tournaments/:id/state", async (c) => {
   const store = c.get("store");
   const tournamentId = c.req.param("id");
-  
+
   const [teams, matches, tournament] = await Promise.all([
     store.getEngineTeams(tournamentId),
     store.getEngineMatches(tournamentId),
-    store.getTournament(tournamentId)
+    store.getTournament(tournamentId),
   ]);
 
   if (!tournament) return c.json({ ok: false, message: "Tournament not found" }, 404);
@@ -484,38 +727,43 @@ app.get("/api/engine/tournaments/:id/state", async (c) => {
     ok: true,
     phase: tournament.status as Engine.TournamentPhase,
     teams,
-    matches
+    matches,
   });
 });
 
 app.post("/api/engine/tournaments/:id/add-team", async (c) => {
-  const store = c.get("store");
   const tournamentId = c.req.param("id");
-  const body = await c.req.json();
-  
-  const tournament = await store.getTournament(tournamentId);
-  if (!tournament) return c.json({ ok: false, message: "Tournament not found" }, 404);
-  
-  if (tournament.status !== 'GROUP' && tournament.status !== 'open') {
+  const access = await requireTournamentManager(c, tournamentId);
+  if ("error" in access) return access.error;
+  const { tournament } = access;
+
+  const store = c.get("store");
+  const body = parseBody(addTeamSchema, await readJson(c).catch(() => ({})));
+
+  if (tournament.status !== "GROUP" && tournament.status !== "open") {
     return c.json({ ok: false, message: "Can only add teams during GROUP or SETUP phase" }, 400);
   }
 
-  const team = await store.createEngineTeam(tournamentId, body.name || `Team ${Math.floor(Math.random()*1000)}`);
-  
-  // THE BRAIN: Run a generation pass specifically to match the newcomer if anyone is waiting
+  const team = await store.createEngineTeam(
+    tournamentId,
+    body.name || `Team ${Math.floor(Math.random() * 1000)}`
+  );
+
+  // Run a generation pass so the newcomer gets matched if anyone is waiting.
   const [allTeams, matchups, matches] = await Promise.all([
     store.getEngineTeams(tournamentId),
     store.getEngineMatchups(tournamentId),
-    store.getEngineMatches(tournamentId)
+    store.getEngineMatches(tournamentId),
   ]);
 
   if (matches.length > 0) {
-    const limit = tournament?.max_matches_per_team || 2;
-    const { matches: nextMatches } = Engine.generateNextMatches(allTeams, matchups, 'GROUP', limit);
-    
-    const relevantMatches = nextMatches.filter(m => m.team_a_id === team.id || m.team_b_id === team.id);
+    const limit = tournament.max_matches_per_team || 2;
+    const { matches: nextMatches } = Engine.generateNextMatches(allTeams, matchups, "GROUP", limit);
+
+    const relevantMatches = nextMatches.filter((m) => m.team_a_id === team.id || m.team_b_id === team.id);
     for (const nm of relevantMatches) {
-      await store.createEngineMatch(tournamentId, nm.phase!, nm.team_a_id!, nm.team_b_id!, nm.explanation!);
+      const match = await store.createEngineMatch(tournamentId, nm);
+      await store.createEngineMatchup(tournamentId, match.team_a_id, match.team_b_id, match.id);
     }
   }
 
@@ -523,43 +771,46 @@ app.post("/api/engine/tournaments/:id/add-team", async (c) => {
 });
 
 app.post("/api/engine/tournaments/:id/start", async (c) => {
-  const store = c.get("store");
   const tournamentId = c.req.param("id");
-  
-  await store.updateTournamentPhase(tournamentId, 'GROUP');
+  const access = await requireTournamentManager(c, tournamentId);
+  if ("error" in access) return access.error;
+
+  await c.get("store").updateTournamentStatus(tournamentId, "GROUP");
   return c.json({ ok: true });
 });
 
 app.post("/api/engine/tournaments/:id/generate", async (c) => {
-  const store = c.get("store");
   const tournamentId = c.req.param("id");
-  
-  const [teams, matchups, matches, tournament] = await Promise.all([
+  const access = await requireTournamentManager(c, tournamentId);
+  if ("error" in access) return access.error;
+  const { tournament } = access;
+
+  const store = c.get("store");
+  const [teams, matchups, matches] = await Promise.all([
     store.getEngineTeams(tournamentId),
     store.getEngineMatchups(tournamentId),
     store.getEngineMatches(tournamentId),
-    store.getTournament(tournamentId)
   ]);
 
-  if (matches.some(m => m.status === 'LIVE')) {
+  if (matches.some((m) => m.status === "LIVE")) {
     return c.json({ ok: false, message: "Cannot generate matches while a match is LIVE" }, 400);
   }
 
-  const limit = tournament?.max_matches_per_team || 2;
-  const { matches: nextMatches, byeTeamId } = Engine.generateNextMatches(teams, matchups, 'GROUP', limit);
-  
+  const limit = tournament.max_matches_per_team || 2;
+  const { matches: nextMatches, byeTeamId } = Engine.generateNextMatches(teams, matchups, "GROUP", limit);
+
   for (const mData of nextMatches) {
     const match = await store.createEngineMatch(tournamentId, mData);
     await store.createEngineMatchup(tournamentId, match.team_a_id, match.team_b_id, match.id);
   }
 
   if (byeTeamId) {
-    const team = teams.find(t => t.id === byeTeamId);
+    const team = teams.find((t) => t.id === byeTeamId);
     if (team) {
       await store.updateEngineTeam(byeTeamId, {
         matches_played: team.matches_played + 1,
         group_points: team.group_points + 1,
-        bye_assigned: true
+        bye_assigned: true,
       });
     }
   }
@@ -569,19 +820,20 @@ app.post("/api/engine/tournaments/:id/generate", async (c) => {
 
 app.post("/api/engine/matches/:id/start", async (c) => {
   const store = c.get("store");
-  const matchId = c.req.param("id");
-  
-  const match = await store.getEngineMatch(matchId);
+  const match = await store.getEngineMatch(c.req.param("id"));
   if (!match) return c.json({ ok: false, message: "Match not found" }, 404);
 
-  const allMatches = await store.getEngineMatches(match.tournamentId);
-  if (allMatches.some(m => m.status === 'LIVE')) {
+  const access = await requireTournamentManager(c, match.tournament_id);
+  if ("error" in access) return access.error;
+
+  const allMatches = await store.getEngineMatches(match.tournament_id);
+  if (allMatches.some((m) => m.status === "LIVE")) {
     return c.json({ ok: false, message: "Another match is already LIVE" }, 400);
   }
 
-  await store.updateEngineMatch(matchId, {
-    status: 'LIVE',
-    start_time: Math.floor(Date.now() / 1000)
+  await store.updateEngineMatch(match.id, {
+    status: "LIVE",
+    start_time: Math.floor(Date.now() / 1000),
   });
 
   return c.json({ ok: true });
@@ -589,25 +841,32 @@ app.post("/api/engine/matches/:id/start", async (c) => {
 
 app.post("/api/engine/matches/:id/extra-time", async (c) => {
   const store = c.get("store");
-  const matchId = c.req.param("id");
-  const match = await store.getEngineMatch(matchId);
+  const match = await store.getEngineMatch(c.req.param("id"));
   if (!match) return c.json({ ok: false, message: "Match not found" }, 404);
 
-  await store.updateEngineMatch(matchId, {
-    duration: match.duration + 60
-  });
+  const access = await requireTournamentManager(c, match.tournament_id);
+  if ("error" in access) return access.error;
+
+  await store.updateEngineMatch(match.id, { duration: match.duration + 60 });
   return c.json({ ok: true });
 });
 
 app.post("/api/engine/tournaments/:id/reorder", async (c) => {
-  const store = c.get("store");
-  const body = await c.req.json();
-  const { matchIds } = body; // Array of IDs in order
-  
-  if (!Array.isArray(matchIds)) return c.json({ ok: false, message: "Invalid matchIds" }, 400);
+  const tournamentId = c.req.param("id");
+  const access = await requireTournamentManager(c, tournamentId);
+  if ("error" in access) return access.error;
 
-  for (let i = 0; i < matchIds.length; i++) {
-    await store.updateMatchOrder(matchIds[i], i);
+  const store = c.get("store");
+  const body = parseBody(reorderSchema, await readJson(c));
+
+  // Only reorder matches that belong to this tournament.
+  const matches = await store.getEngineMatches(tournamentId);
+  const owned = new Set(matches.map((m) => m.id));
+
+  for (let i = 0; i < body.matchIds.length; i++) {
+    if (owned.has(body.matchIds[i])) {
+      await store.updateEngineMatch(body.matchIds[i], { match_order: i });
+    }
   }
 
   return c.json({ ok: true });
@@ -615,30 +874,37 @@ app.post("/api/engine/tournaments/:id/reorder", async (c) => {
 
 app.post("/api/engine/matches/:id/highlight", async (c) => {
   const store = c.get("store");
-  const matchId = c.req.param("id");
-  const body = await c.req.json();
-  const { teamId } = body;
-  
-  await engineStore.updateMatch(matchId, { active_team_id: teamId });
+  const match = await store.getEngineMatch(c.req.param("id"));
+  if (!match) return c.json({ ok: false, message: "Match not found" }, 404);
+
+  const access = await requireTournamentManager(c, match.tournament_id);
+  if ("error" in access) return access.error;
+
+  const body = parseBody(highlightSchema, await readJson(c));
+  await store.updateEngineMatch(match.id, { active_team_id: body.teamId });
   return c.json({ ok: true });
 });
 
 app.post("/api/engine/matches/:id/score", async (c) => {
   const store = c.get("store");
-  const matchId = c.req.param("id");
-  const body = await c.req.json();
-  const { teamId, type } = body; // type: 'BALL' | 'BLACK' | 'MISTAKE'
-
-  let match = await store.getEngineMatch(matchId);
+  let match = await store.getEngineMatch(c.req.param("id"));
   if (!match) return c.json({ ok: false, message: "Match not found" }, 404);
 
-  // Check timer first
+  const access = await requireTournamentManager(c, match.tournament_id);
+  if ("error" in access) return access.error;
+
+  const body = parseBody(engineScoreSchema, await readJson(c));
+  if (body.teamId !== match.team_a_id && body.teamId !== match.team_b_id) {
+    return c.json({ ok: false, message: "teamId is not part of this match" }, 400);
+  }
+
+  // Check timer first, then apply the score event.
   const { updatedMatch: timedMatch, matchEnded: timerEnded } = Engine.checkTimer(match, Math.floor(Date.now() / 1000));
   match = timedMatch;
 
-  const { updatedMatch: finalMatch, matchEnded: scoreEnded } = Engine.processScoreUpdate(match, teamId, type);
-  
-  await store.updateEngineMatch(matchId, {
+  const { updatedMatch: finalMatch, matchEnded: scoreEnded } = Engine.processScoreUpdate(match, body.teamId, body.type);
+
+  await store.updateEngineMatch(finalMatch.id, {
     score_team_a: finalMatch.score_team_a,
     score_team_b: finalMatch.score_team_b,
     balls_potted_a: finalMatch.balls_potted_a,
@@ -648,78 +914,107 @@ app.post("/api/engine/matches/:id/score", async (c) => {
     status: finalMatch.status,
     winner_id: finalMatch.winner_id,
     sudden_death: finalMatch.sudden_death,
-    ended_by: scoreEnded ? 'SCORE' : (timerEnded ? 'TIME' : null)
+    ended_by: scoreEnded ? "SCORE" : timerEnded ? "TIME" : null,
   });
 
   if (timerEnded || scoreEnded) {
-    // Finalize team stats
-    const teams = await store.getEngineTeams(finalMatch.tournamentId);
-    const teamA = teams.find(t => t.id === finalMatch.team_a_id)!;
-    const teamB = teams.find(t => t.id === finalMatch.team_b_id)!;
+    // Finalize team stats.
+    const teams = await store.getEngineTeams(finalMatch.tournament_id);
+    const teamA = teams.find((t) => t.id === finalMatch.team_a_id);
+    const teamB = teams.find((t) => t.id === finalMatch.team_b_id);
 
-    await engineStore.updateTeam(teamA.id, {
-      matches_played: teamA.matches_played + 1,
-      total_score: teamA.total_score + finalMatch.score_team_a,
-      group_points: teamA.group_points + (finalMatch.winner_id === teamA.id ? 1 : 0)
-    });
-    await engineStore.updateTeam(teamB.id, {
-      matches_played: teamB.matches_played + 1,
-      total_score: teamB.total_score + finalMatch.score_team_b,
-      group_points: teamB.group_points + (finalMatch.winner_id === teamB.id ? 1 : 0)
-    });
+    if (teamA) {
+      await store.updateEngineTeam(teamA.id, {
+        matches_played: teamA.matches_played + 1,
+        total_score: teamA.total_score + finalMatch.score_team_a,
+        group_points: teamA.group_points + (finalMatch.winner_id === teamA.id ? 1 : 0),
+      });
+    }
+    if (teamB) {
+      await store.updateEngineTeam(teamB.id, {
+        matches_played: teamB.matches_played + 1,
+        total_score: teamB.total_score + finalMatch.score_team_b,
+        group_points: teamB.group_points + (finalMatch.winner_id === teamB.id ? 1 : 0),
+      });
+    }
   }
 
   return c.json({ ok: true, match: finalMatch });
 });
 
-// --- Public Arena Routes ---
+// --- Public Arenas ---
 
 app.get("/api/public-arenas", async (c) => {
-  const arenas = await c.env.DB.prepare(`SELECT * FROM public_arenas ORDER BY updated_at DESC LIMIT 50`).all<any>();
-  const results = (arenas.results || []).map((r: any) => ({
-    id: r.id,
-    name: r.name,
-    state: JSON.parse(r.state_json),
-    isLocked: !!r.pin,
-    updatedAt: r.updated_at
-  }));
-  return c.json({ ok: true, arenas: results });
+  const arenas = await c.get("store").listArenas();
+  return c.json({
+    ok: true,
+    arenas: arenas.map((a) => ({
+      id: a.id,
+      name: a.name,
+      state: a.state,
+      isLocked: !!a.pin,
+      updatedAt: a.updated_at,
+    })),
+  });
 });
 
 app.post("/api/public-arenas", async (c) => {
-  const body = await c.req.json();
-  const { id, name, state, pin } = body;
-  
-  const existing = await c.env.DB.prepare(`SELECT pin FROM public_arenas WHERE id = ?`).bind(id).first<any>();
-  
-  if (existing && existing.pin && existing.pin !== pin) {
-    return c.json({ ok: false, message: "Invalid PIN. This arena is locked." }, 403);
+  const user = requireUser(c);
+  if (!user) return c.json({ ok: false, message: "Authentication required" }, 401);
+
+  const limited = await rateLimit(c, `arena:${user.id}`, 30, 60);
+  if (limited) return limited;
+
+  const store = c.get("store");
+  const body = parseBody(upsertArenaSchema, await readJson(c));
+
+  const existing = await store.getArena(body.id);
+
+  if (existing) {
+    // Locked arenas may only be updated by the owner or with the correct PIN.
+    if (existing.pin) {
+      const suppliedHash = body.pin ? await sha256Hex(body.pin) : "";
+      const pinMatches =
+        !!body.pin &&
+        (timingSafeEqual(existing.pin, suppliedHash) ||
+          // Legacy rows stored the PIN in plaintext.
+          timingSafeEqual(existing.pin, body.pin));
+      const isOwner = existing.owner_id === user.id || user.role === "admin";
+      if (!pinMatches && !isOwner) {
+        return c.json({ ok: false, message: "Invalid PIN. This arena is locked." }, 403);
+      }
+    }
   }
 
-  const finalPin = pin || (existing ? existing.pin : null);
+  const newPinHash = body.pin ? await sha256Hex(body.pin) : existing?.pin ?? null;
 
-  await c.env.DB.prepare(`INSERT OR REPLACE INTO public_arenas (id, name, state_json, pin, updated_at) VALUES (?, ?, ?, ?, ?)`)
-    .bind(id, name, JSON.stringify(state), finalPin, new Date().toISOString()).run();
-    
-  return c.json({ ok: true, id });
+  await store.upsertArena({
+    id: body.id,
+    name: body.name,
+    state: body.state,
+    pin: newPinHash,
+    ownerId: existing?.owner_id ?? user.id,
+  });
+
+  return c.json({ ok: true, id: body.id });
 });
 
 app.get("/api/public-arenas/:id", async (c) => {
-  const id = c.req.param("id");
-  const r = await c.env.DB.prepare(`SELECT * FROM public_arenas WHERE id = ?`).bind(id).first<any>();
-  if (!r) return c.json({ ok: false, message: "Arena not found" }, 404);
-  
-  return c.json({ ok: true, arena: { 
-    id: r.id, 
-    name: r.name, 
-    state: JSON.parse(r.state_json),
-    isLocked: !!r.pin
-  } });
+  const arena = await c.get("store").getArena(c.req.param("id"));
+  if (!arena) return c.json({ ok: false, message: "Arena not found" }, 404);
+
+  return c.json({
+    ok: true,
+    arena: {
+      id: arena.id,
+      name: arena.name,
+      state: arena.state,
+      isLocked: !!arena.pin,
+    },
+  });
 });
 
-// --- Original Routes ---
-app.all("*", (c) => {
-  return c.json({ ok: false, message: "Not Found" }, 404);
-});
+// --- Fallback ---
+app.all("*", (c) => c.json({ ok: false, message: "Not Found" }, 404));
 
 export default app;

@@ -5,8 +5,7 @@
 
 import type { Context, Next } from "hono";
 import { getAccessSession, parseCookies } from "../lib/kv-sessions";
-import { D1Store } from "../lib/d1-store";
-import type { Env } from "../types";
+import type { AppContext } from "../types";
 
 export interface AuthUser {
   id: string;
@@ -16,25 +15,22 @@ export interface AuthUser {
   wallet_balance_cents: number;
 }
 
-/** Middleware: attach `user` to context if valid session exists. */
-export async function authMiddleware(c: Context<{ Bindings: Env }>, next: Next) {
-  const store = new D1Store(c.env.DB);
-  c.set("store", store);
-
-  // Try Bearer token first, then cookie
+/** Extract the bearer/cookie access token from a request, if present. */
+export function extractAccessToken(c: Context<AppContext>): string | undefined {
   const authHeader = c.req.header("Authorization");
-  let token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : undefined;
+  if (authHeader?.startsWith("Bearer ")) return authHeader.slice(7);
+  const cookies = parseCookies(c.req.header("Cookie"));
+  return cookies["wta_access_token"];
+}
 
-  if (!token) {
-    const cookieHeader = c.req.header("Cookie");
-    const cookies = parseCookies(cookieHeader);
-    token = cookies["wta_access_token"];
-  }
+/** Middleware: attach `user` to context if a valid session exists. */
+export async function authMiddleware(c: Context<AppContext>, next: Next) {
+  const token = extractAccessToken(c);
 
   if (token && c.env.SESSIONS) {
     const userId = await getAccessSession(c.env.SESSIONS, token);
     if (userId) {
-      const user = await store.getUserById(userId);
+      const user = await c.get("store").getUserById(userId);
       if (user) {
         c.set("user", user as AuthUser);
       }
@@ -44,17 +40,20 @@ export async function authMiddleware(c: Context<{ Bindings: Env }>, next: Next) 
   await next();
 }
 
-/** Helper: get user from context or return 401. */
-export function requireUser(c: Context): AuthUser | null {
-  const user = c.get("user") as AuthUser | undefined;
-  if (!user) {
-    return null;
-  }
+/** Helper: get user from context, or null (route returns 401). */
+export function requireUser(c: Context<AppContext>): AuthUser | null {
+  return c.get("user") ?? null;
+}
+
+/** Helper: get user only if they hold the admin role. */
+export function requireAdmin(c: Context<AppContext>): AuthUser | null {
+  const user = c.get("user");
+  if (!user || user.role !== "admin") return null;
   return user;
 }
 
-/** Serialize user for API responses (hide password hash). */
-export function serializeUser(user: any) {
+/** Serialize user for API responses (hide password hash and internals). */
+export function serializeUser(user: AuthUser) {
   return {
     id: user.id,
     name: user.name,

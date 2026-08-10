@@ -1,330 +1,148 @@
 # Winner Takes All (WTA)
 
-[![Status](https://img.shields.io/badge/status-production_core_layer-0a7ea4)](https://github.com/ProBob-code/winner_takes_all)
-[![Backend](https://img.shields.io/badge/backend-FastAPI-059669)](https://fastapi.tiangolo.com/)
-[![Frontend](https://img.shields.io/badge/frontend-Next.js-111827)](https://nextjs.org/)
-[![Database](https://img.shields.io/badge/database-SQLAlchemy%20%2B%20Alembic-7c3aed)](https://www.sqlalchemy.org/)
+[![CI](https://img.shields.io/badge/ci-typecheck%20%2B%20tests-0a7ea4)](.github/workflows/ci.yml)
+[![Backend](https://img.shields.io/badge/backend-Hono%20on%20Cloudflare%20Workers-f38020)](https://hono.dev/)
+[![Frontend](https://img.shields.io/badge/frontend-Next.js%2015%20%2B%20React%2019-111827)](https://nextjs.org/)
+[![Database](https://img.shields.io/badge/database-Cloudflare%20D1%20(SQLite)-7c3aed)](https://developers.cloudflare.com/d1/)
 
-Winner Takes All is a multiplayer tournament platform for paid and free 8-ball competitions. The long-term goal is a production-ready system where players can sign in, join tournaments, pay entry fees, get matched automatically, play live games, and move through a bracket until prizes are settled safely.
+Winner Takes All is a multiplayer tournament platform for paid and free skill-based competitions (8-ball pool and a football/turn-based scoring engine). Players sign in, join tournaments, pay entry fees via Razorpay, get matched, play, and move through brackets until prizes are settled.
 
-This repo already contains the product foundation, a working FastAPI backend, a connected Next.js frontend, a real repository layer with migrations, and pinned vendor snapshots for the game, bracket, and payment stack.
+## Current Stack
 
-## Quick View
+- **Frontend**: Next.js 15 (App Router) + React 19 + TypeScript, deployed to Vercel and/or Cloudflare Pages (via OpenNext).
+- **API**: [Hono](https://hono.dev/) running on **Cloudflare Workers** — not FastAPI/Python. There is no Python backend in this repo.
+- **Data**: **Cloudflare D1** (serverless SQLite) via `apps/api/schema.sql` + `apps/api/migrations/`.
+- **Sessions**: **Cloudflare KV**, opaque 256-bit tokens (short-lived access token + rotating refresh token), HttpOnly cookies.
+- **Payments**: **Razorpay**, order creation + webhook, INR.
+- **Validation**: [Zod](https://zod.dev/) schemas for every mutating endpoint (`apps/api/src/lib/validation.ts`).
+- **Shared types**: `packages/contracts` — Zod schemas shared between frontend and API.
 
-- Repo: [github.com/ProBob-code/winner_takes_all](https://github.com/ProBob-code/winner_takes_all)
-- Architecture notes: `docs/architecture.md`
-- Vendor integration notes: `docs/external-integrations.md`
-- Next execution plan: `docs/phase-2-checklist.md`
-- Pinned vendor commits: `vendor/manifest.json`
-
-## What It Does
-
-WTA is built around this player flow:
-
-1. A player signs up or logs in.
-2. The backend creates secure cookie-based sessions.
-3. The player browses tournaments and wallet state.
-4. The player joins a free or paid tournament.
-5. The backend records the join and wallet ledger updates.
-6. The next layers add payments, brackets, live matches, and payouts.
-
-The project is currently at the production core layer:
-
-- Working auth and refresh cookies
-- Working wallet ledger and balance deduction
-- Working tournament list and join flow
-- Working frontend-to-backend bridge
-- SQLAlchemy repository layer with Alembic migrations
-- Automated backend tests and live HTTP smoke coverage
-
-Still ahead:
-
-- Hyperswitch payment orchestration
-- Real PostgreSQL runtime verification in this environment
-- Bracket generation and tournament progression
-- 8-ball match embedding
-- WebSockets, Redis, and live state sync
-
-## Core Languages
-
-- Backend: Python with FastAPI
-- Frontend: TypeScript with Next.js and React
-- Shared browser/server contracts: TypeScript
-- Vendor payment engine: Rust in the imported Hyperswitch snapshot
-
-The active backend is Python-first. Older Node scaffold output is not part of the active runtime path anymore.
+If you're looking for the FastAPI/SQLAlchemy/Postgres/Redis backend described in older versions of this README: it was an earlier design that was superseded by the Workers/D1 implementation actually in this repo. Nothing in `apps/api/src` depends on Python, Postgres, or Redis.
 
 ## Repository Structure
 
 ```text
 apps/
-  api/                 FastAPI backend, DB layer, tests, migrations
-  web/                 Next.js frontend
+  api/                 Hono API on Cloudflare Workers, D1 schema + migrations, vitest suite
+  frontend/            Next.js App Router frontend
 packages/
-  contracts/           Shared TypeScript contracts
+  contracts/           Shared Zod schemas/types
 infra/
-  docker/              Local compose setup for future postgres + redis runs
+  docker/              Local compose setup (optional, not required to run the app)
 docs/
   architecture.md
   external-integrations.md
-  phase-2-checklist.md
-vendor/
-  8Ball-Pool-HTML5/    Game engine snapshot
-  bracket/             Bracket engine snapshot
-  hyperswitch/         Slimmed payment sidecar snapshot
+.github/workflows/
+  ci.yml               Typecheck + test gate, runs on every PR and push
+  deploy-api.yml        Deploys apps/api to Cloudflare Workers (gated on the same checks)
 ```
 
-## Current Stack
+## Implemented Endpoints (`apps/api/src/index.ts`)
 
-- Frontend: Next.js App Router with React and TypeScript
-- Backend: FastAPI with Python
-- Data access: SQLAlchemy
-- Migrations: Alembic
-- Local fallback DB for tests and bootstrap: SQLite
-- Intended production DB: PostgreSQL
-- Intended realtime/cache layer: Redis
+**Auth** — `POST /api/auth/signup`, `/login`, `/refresh`, `/logout`, `GET /api/user/profile`
 
-## Imported Vendor Repositories
+**Payments** (Razorpay) — `POST /api/payments/create-order`, `/verify`, `/webhook`
 
-The repo includes pinned source snapshots under `vendor/`:
+**Tournaments** — `GET /api/tournaments`, `GET /api/tournaments/:id`, `POST /api/tournaments/create`, `POST /api/tournaments/:id/join`, `GET /api/tournaments/:id/participants`, `GET /api/tournaments/:id/bracket`
 
-- `vendor/8Ball-Pool-HTML5`
-  Purpose: browser game engine candidate for `/match/[id]`
-- `vendor/bracket`
-  Purpose: tournament bracket reference and engine source
-- `vendor/hyperswitch`
-  Purpose: payment orchestration sidecar
+**Matches** — `GET /api/matches/:id`, `POST /api/matches/:id/submit-score`, `POST /api/matches/:id/approve-scores`
 
-The Hyperswitch snapshot has been trimmed to the integration-relevant source, config, Docker, and scripts so the repo avoids Windows path-length problems from unrelated fixtures and migration archives.
+**Wallet** — `GET /api/wallet`, `POST /api/wallet/transfer`
 
-## Current Features
+**Notifications** — `GET /api/notifications`, `POST /api/notifications/:id/read`
 
-### Backend
+**Leaderboard** — `GET /api/leaderboard/global` (real SQL aggregation, not a stub)
 
-The active backend lives in `apps/api/app/`.
+**Admin** — `GET /api/admin/overview` (requires `role = admin`)
 
-Implemented endpoints:
+**Dynamic tournament engine** (group stage + live scoring for the football/pool mini-engine) — `GET /api/engine/tournaments/:id/state`, `POST /api/engine/tournaments/:id/{add-team,start,generate,reorder}`, `POST /api/engine/matches/:id/{start,extra-time,highlight,score}`. All mutating engine routes require the caller to be the tournament host or an admin.
 
-- `POST /auth/signup`
-- `POST /auth/login`
-- `POST /auth/refresh`
-- `GET /user/profile`
-- `GET /wallet`
-- `POST /wallet/deduct`
-- `GET /tournaments`
-- `GET /tournaments/{id}`
-- `POST /tournaments/{id}/join`
-- `GET /leaderboard/global`
-- `GET /leaderboard/tournaments/{id}`
+**Public arenas** (shareable local score trackers) — `GET /api/public-arenas`, `POST /api/public-arenas`, `GET /api/public-arenas/:id`. PINs are hashed (SHA-256) before storage, and updates to a locked arena require the owner or the correct PIN.
 
-Scaffolded but not implemented yet:
+## Security Model
 
-- payments
-- live matches
-- admin operations
-
-### Frontend
-
-The Next.js app lives in `apps/web/`.
-
-Implemented pages:
-
-- `/login`
-- `/signup`
-- `/dashboard`
-- `/tournaments`
-- `/tournaments/[id]`
-- `/wallet`
-- `/leaderboard`
-- `/match/[id]`
-- `/admin`
-
-The frontend already reads real backend data through a same-origin proxy/helper layer.
-
-## How The Current App Works
-
-### Auth Flow
-
-1. A user signs up or logs in from the frontend.
-2. FastAPI creates access and refresh sessions.
-3. The backend sets HTTP-only cookies.
-4. Protected routes like `/user/profile` and `/wallet` validate those cookies.
-
-### Wallet And Tournament Flow
-
-1. New users receive a seeded wallet balance.
-2. Tournaments can be free or paid.
-3. Joining a paid tournament deducts the entry fee from the wallet.
-4. The wallet transaction is stored in the ledger.
-5. The participant record is added to the tournament.
-
-### Current Playable Loop
-
-Today's playable loop is a product-flow demo rather than the final real-time pool experience:
-
-1. Sign up
-2. Log in
-3. Browse tournaments
-4. Join a tournament
-5. See wallet balance change
-6. View leaderboard and tournament participant state
-
-## Prerequisites
-
-Required:
-
-- Python 3.12+
-- Node.js 20+
-- npm
-
-Useful for production-like local runs:
-
-- PostgreSQL 16+
-- Redis 7+
-- Docker Desktop for `infra/docker/docker-compose.yml`
+- **Passwords**: PBKDF2-SHA256, 100k iterations, per-user random salt, versioned hash format (`v2:<iterations>:<salt>:<hash>`), constant-time verification.
+- **Sessions**: opaque 256-bit random tokens in KV (not JWTs) — access tokens expire in 15 minutes, refresh tokens in 7 days and rotate on use; logout revokes both server-side, not just the cookie.
+- **CSRF**: cookies are `SameSite=None; Secure` (required for the cross-origin frontend/API split), so every mutating `/api/*` request is checked against an explicit `Origin` allowlist (`ALLOWED_ORIGINS` in `wrangler.toml`).
+- **Money**: every wallet mutation (`deductWallet`, `creditWallet`, `transferCredits`, `joinTournament`) is a single-transaction, balance-gated relative SQL update (`balance_cents = balance_cents - ? WHERE balance_cents >= ?`) — never a JS read-modify-write — so concurrent requests cannot overdraw a wallet. A `CHECK (balance_cents >= 0)` constraint on the `wallets` table is the second line of defense.
+- **Payments**: Razorpay webhook signatures are verified and **fail closed** — an unset `RAZORPAY_WEBHOOK_SECRET` rejects every webhook rather than accepting all of them. Payment state transitions (`pending → success`) are conditional updates so a concurrent `verify` call and webhook delivery can only credit the wallet once. `/api/payments/verify` checks that the payment belongs to the calling user.
+- **Input validation**: every mutating endpoint parses its body through a Zod schema (`apps/api/src/lib/validation.ts`) before touching the database.
+- **Rate limiting**: KV-backed fixed-window limiter on signup, login, wallet transfer, order creation, and arena writes (`apps/api/src/lib/rate-limit.ts`). This is a soft limit (KV is eventually consistent) — for hard guarantees, pair it with Cloudflare's own WAF rate-limiting rules.
+- **Secrets**: `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, and `RAZORPAY_WEBHOOK_SECRET` must be set with `wrangler secret put <NAME>` (or as GitHub Actions repository secrets for CI/CD) — never committed to `wrangler.toml`.
 
 ## Environment Variables
 
-Copy `.env.example` to `.env.local` or export what you need in your shell.
+Copy `.env.example` and fill in what you need.
 
-Key values:
+**Frontend** (`apps/frontend/.env.local`):
+- `NEXT_PUBLIC_API_URL` — base URL of the deployed/local Worker API.
+- `NEXT_PUBLIC_LANDING_URL` — where the logo/brand link points (defaults to `/`).
 
-- `WTA_API_URL`
-- `DATABASE_URL`
-- `WTA_AUTO_INIT_DB`
-- `REDIS_URL`
-- `JWT_ACCESS_SECRET`
-- `JWT_REFRESH_SECRET`
+**API** (`apps/api/.dev.vars` for local dev, `wrangler secret put` for deployed environments):
+- `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`
 
-If PostgreSQL is not available yet, the backend can still bootstrap locally through the SQLite fallback path.
+**API** (`apps/api/wrangler.toml` `[vars]`, non-secret):
+- `ALLOWED_ORIGINS` — comma-separated list of origins allowed to make cross-site cookie requests.
+
+## Prerequisites
+
+- Node.js 20+
+- pnpm 9+ (`corepack enable` or `npm i -g pnpm`)
+- A Cloudflare account with a D1 database and KV namespace (for real deploys) — for local development, `wrangler dev` provides a local D1/KV emulation automatically.
 
 ## Run It
 
-### 1. Create the Python virtual environment
+```bash
+pnpm install
 
-From the repository root:
-
-```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-```
-
-### 2. Install backend dependencies
-
-```powershell
-.\.venv\Scripts\python.exe -m pip install -r apps/api/requirements.txt
-```
-
-### 3. Run backend migrations
-
-If you have PostgreSQL available, point `DATABASE_URL` to it first:
-
-```powershell
-$env:DATABASE_URL="postgresql+psycopg://postgres:postgres@localhost:5432/wta"
+# Apply the schema to your local D1 emulation (schema.sql is the full
+# current schema — do NOT also run migrations/0003_*.sql on a fresh
+# database, it's only for upgrading a pre-existing deployed database;
+# see the comment at the top of that file)
 cd apps/api
-..\..\.venv\Scripts\python.exe -m alembic upgrade head
+npx wrangler d1 execute winner-takes-all-db --local --file=./schema.sql
+cd ../..
+
+# Start both the API (Workers, local) and the frontend (Next.js dev server)
+pnpm dev
 ```
 
-If PostgreSQL is not available, the backend can still start with SQLite fallback for local work.
-
-### 4. Start the FastAPI backend
-
-From `apps/api`:
-
-```powershell
-..\..\.venv\Scripts\python.exe -m uvicorn app.main:app --reload --host 127.0.0.1 --port 4000
-```
-
-### 5. Start the Next.js frontend
-
-From the repository root:
-
-```powershell
-npm install
-npm run dev:web
-```
-
-The frontend will call the API at `http://127.0.0.1:4000` unless you override `WTA_API_URL`.
+The frontend calls the API at `NEXT_PUBLIC_API_URL` (default `http://127.0.0.1:8787`, wrangler's default local port).
 
 ## Test It
 
-### Backend tests
+```bash
+# Typecheck everything
+pnpm typecheck
 
-From the repository root:
+# Run the API test suite (money math, password hashing, tournament-engine
+# scoring/pairing logic, Zod validation, Razorpay signature verification
+# including the fail-closed webhook case, and the rate limiter)
+pnpm test
 
-```powershell
-$env:PYTHONPATH="$PWD\\apps\\api"
-.\.venv\Scripts\python.exe -m pytest apps/api/tests/test_api.py -q
+# Build the frontend
+pnpm --filter frontend build
 ```
 
-Verified coverage today:
+All three are required checks in `.github/workflows/ci.yml` on every PR, and the first two also gate `.github/workflows/deploy-api.yml` before it will deploy to Cloudflare Workers.
 
-- health endpoint
-- signup and session cookie creation
-- protected profile access
-- tournament join and wallet deduction
-- refresh flow
-- duplicate join rejection
-- unauthenticated access rejection
+## What's Implemented vs. Still Ahead
 
-### Frontend typecheck
+Implemented and tested:
+- Auth (signup/login/refresh/logout) with server-revocable sessions
+- Wallet ledger with atomic, race-safe balance mutations
+- Tournament creation, joining (with optional password), and a real leaderboard
+- Razorpay order creation, payment verification, and webhook handling
+- A dynamic group-stage tournament engine with live scoring, timers, and sudden death
+- Shareable "public arena" score trackers with PIN protection
+- CI-gated typecheck + test suite before any deploy
 
-```powershell
-npm run typecheck
-```
-
-## How To Play The Current Build
-
-Once both services are running:
-
-1. Open the frontend in your browser.
-2. Visit `/signup`.
-3. Create a new account.
-4. Open `/dashboard` to confirm the session.
-5. Open `/wallet` to inspect the balance.
-6. Open `/tournaments`.
-7. Join a free or paid tournament.
-8. Return to `/wallet` and `/tournaments/[id]` to confirm the updated state.
-9. Open `/leaderboard` to inspect the current leaderboard output.
-
-What "play" means today:
-
-- It is a working auth, wallet, and tournament-flow demo.
-- The actual pool match screen is still waiting for the 8-ball engine integration.
-
-## Ready Vs Not Ready
-
-Ready now:
-
-- Monorepo structure
-- Connected frontend shell
-- FastAPI backend
-- DB-backed repository layer
-- Alembic initial schema
-- Local backend tests
-- Imported vendor references
-
-Not ready yet:
-
-- Real Hyperswitch payment flow
-- Real bracket generation inside WTA
-- Embedded 8-ball gameplay
-- WebSocket multiplayer
-- Redis-backed realtime updates
-- Admin controls
-- Tournament completion and payouts
-
-## Recommended Next Steps
-
-1. Run the backend against a real PostgreSQL instance and repeat the smoke test.
-2. Build the `payments/` module around Hyperswitch.
-3. Add wallet top-up and verified payment webhooks.
-4. Integrate bracket generation into the tournament engine.
-5. Embed the 8-ball game into the match page.
-6. Add Redis and WebSocket realtime infrastructure.
+Still ahead:
+- Real-time updates (the frontend currently polls; no WebSocket/Durable Object layer)
+- A `d1-store` integration test suite running against an actual D1/Miniflare instance (current tests cover the pure logic — money math, crypto, the scoring engine, validation, signature verification — the SQL transaction logic in `d1-store.ts` is exercised manually and via the atomic-update patterns documented above, not yet under automated integration test)
+- Formal KYC/AML enforcement to back the existing compliance pages (`/kyc-aml`, `/responsible-gaming`, `/skill-based-policy`) — this is a **real-money skill-gaming product targeting India**; the compliance pages are currently informational only and are not backed by enforcement logic. Do not take this to production in a regulated market without legal review.
 
 ## Notes
 
-- The vendor trees are source snapshots, not nested Git repos or submodules.
-- Some Windows and OneDrive filesystem behavior required safer local fallback paths and a slimmer Hyperswitch snapshot.
-- The current build is a strong product foundation with a verified backend core, not the finished multiplayer tournament platform yet.
+- The `vendor/` directory (Hyperswitch, a third-party bracket engine, and an 8-ball game snapshot) that appeared in earlier versions of this repo has been removed — none of it was wired into the running application, and it added ~50MB of unused source to the repository. The actual 8-ball game assets that the frontend serves live in `apps/frontend/public/8ball/`.
+- `docs/architecture.md` and `docs/external-integrations.md` have been updated to match the system as it actually exists in this repo.

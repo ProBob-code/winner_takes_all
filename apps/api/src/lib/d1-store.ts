@@ -1,9 +1,30 @@
 /**
- * D1 database adapter — replaces SQLAlchemy repository.
- * All queries use D1's prepared statements.
+ * D1 database adapter.
+ *
+ * Money invariants:
+ * - All balance mutations are relative SQL updates (`balance_cents = balance_cents - ?`)
+ *   executed inside `db.batch()` (a single transaction), never read-modify-write in JS.
+ * - Debits are gated with `AND balance_cents >= ?` so concurrent spends cannot
+ *   overdraw; migration 0003 adds a `CHECK (balance_cents >= 0)` as a second line
+ *   of defense.
+ * - Every mutation writes a ledger row whose `balance_after_cents` is read from
+ *   the wallet row inside the same transaction.
  */
 
 import { createId } from "./crypto";
+import type {
+  EngineTeam,
+  EngineMatch as EngineMatchCore,
+  MatchPhase,
+} from "./tournament-engine";
+
+export type { EngineTeam };
+
+/** Engine match as stored — core engine shape plus persistence fields. */
+export interface EngineMatch extends EngineMatchCore {
+  tournament_id: string;
+  ended_by: "SCORE" | "TIME" | null;
+}
 
 // ── Record types ──
 
@@ -63,34 +84,19 @@ export interface TeamRecord {
   code: string | null; member_ids: string[];
 }
 
-export interface EngineTeam {
-  id: string;
-  name: string;
-  matches_played: number;
-  group_points: number; // wins count
-  total_score: number;  // tie-breaker
-  bye_assigned: boolean;
+export interface LeaderboardRow {
+  user_id: string; name: string;
+  wins: number; losses: number;
+  tournament_wins: number; earnings_cents: number;
 }
 
-export interface EngineMatch {
-  id: string;
-  phase: string;
-  team_a_id: string;
-  team_b_id: string;
-  status: string;
-  sudden_death: boolean;
-  active_team_id: string | null;
-  balls_potted_a: number;
-  balls_potted_b: number;
-  black_potted_a: boolean;
-  black_potted_b: boolean;
-  start_time: number | null;
-  duration: number;
-  score_team_a: number;
-  score_team_b: number;
-  winner_id: string | null;
-  explanation: string;
-  match_order: number;
+export interface ArenaRecord {
+  id: string; name: string; state: unknown;
+  pin: string | null; owner_id: string | null; updated_at: string;
+}
+
+export class InsufficientFundsError extends Error {
+  constructor() { super("Insufficient wallet balance"); }
 }
 
 // ── D1 Store ──
@@ -114,14 +120,6 @@ export class D1Store {
        FROM users u LEFT JOIN wallets w ON w.user_id = u.id WHERE u.id = ?`
     ).bind(userId).first<any>();
     return u ? { ...u, wallet_balance_cents: u.wallet_balance_cents ?? 0 } : null;
-  }
-
-  async listUsers(): Promise<UserRecord[]> {
-    const { results } = await this.db.prepare(
-      `SELECT u.*, COALESCE(w.balance_cents, 0) as wallet_balance_cents
-       FROM users u LEFT JOIN wallets w ON w.user_id = u.id ORDER BY LOWER(u.name)`
-    ).all<any>();
-    return results.map((u: any) => ({ ...u, wallet_balance_cents: u.wallet_balance_cents ?? 0 }));
   }
 
   async createUserWithBonus(name: string, email: string, passwordHash: string, bonusCents: number): Promise<UserRecord> {
@@ -155,77 +153,101 @@ export class D1Store {
 
   async listWalletEntries(userId: string): Promise<WalletEntryRecord[]> {
     const { results } = await this.db.prepare(
-      `SELECT * FROM wallet_transactions WHERE user_id = ? ORDER BY created_at DESC`
+      `SELECT * FROM wallet_transactions WHERE user_id = ? ORDER BY created_at DESC LIMIT 200`
     ).bind(userId).all<any>();
     return results.map((r: any) => ({ ...r, is_test: !!r.is_test }));
   }
 
+  /**
+   * Atomically debit a wallet. The ledger insert and the balance update are
+   * both gated on `balance_cents >= amount`, run in one transaction, and
+   * either both apply or neither does.
+   */
   async deductWallet(userId: string, amountCents: number, refType: string, refId: string): Promise<UserRecord> {
-    const user = await this.getUserById(userId);
-    if (!user) throw new Error("User not found");
-    if (user.wallet_balance_cents < amountCents) throw new Error("Insufficient wallet balance");
-
-    const newBalance = user.wallet_balance_cents - amountCents;
-    const txnId = createId("wallettxn");
+    if (!Number.isInteger(amountCents) || amountCents <= 0) throw new Error("Invalid amount");
     const now = new Date().toISOString();
 
-    await this.db.batch([
-      this.db.prepare(`UPDATE wallets SET balance_cents = ?, updated_at = ? WHERE user_id = ?`)
-        .bind(newBalance, now, userId),
+    const results = await this.db.batch([
       this.db.prepare(
         `INSERT INTO wallet_transactions (id, wallet_id, user_id, type, amount_cents, balance_after_cents, reference_type, reference_id, created_at)
-         VALUES (?, (SELECT id FROM wallets WHERE user_id = ?), ?, 'entry_fee_debit', ?, ?, ?, ?, ?)`
-      ).bind(txnId, userId, userId, amountCents, newBalance, refType, refId, now),
+         SELECT ?, w.id, ?, 'entry_fee_debit', ?, w.balance_cents - ?, ?, ?, ?
+         FROM wallets w WHERE w.user_id = ? AND w.balance_cents >= ?`
+      ).bind(createId("wallettxn"), userId, amountCents, amountCents, refType, refId, now, userId, amountCents),
+      this.db.prepare(
+        `UPDATE wallets SET balance_cents = balance_cents - ?, updated_at = ?
+         WHERE user_id = ? AND balance_cents >= ?`
+      ).bind(amountCents, now, userId, amountCents),
     ]);
 
-    return { ...user, wallet_balance_cents: newBalance };
-  }
+    if ((results[1].meta.changes ?? 0) === 0) throw new InsufficientFundsError();
 
-  async creditWallet(userId: string, amountCents: number, refType: string, refId: string, txnType = "deposit", paymentId: string | null = null, isTest = false): Promise<UserRecord> {
     const user = await this.getUserById(userId);
     if (!user) throw new Error("User not found");
+    return user;
+  }
 
-    const newBalance = user.wallet_balance_cents + amountCents;
-    const txnId = createId("wallettxn");
+  /** Atomically credit a wallet (relative update, single transaction). */
+  async creditWallet(userId: string, amountCents: number, refType: string, refId: string, txnType = "deposit", paymentId: string | null = null, isTest = false): Promise<UserRecord> {
+    if (!Number.isInteger(amountCents) || amountCents <= 0) throw new Error("Invalid amount");
     const now = new Date().toISOString();
 
-    await this.db.batch([
-      this.db.prepare(`UPDATE wallets SET balance_cents = ?, updated_at = ? WHERE user_id = ?`)
-        .bind(newBalance, now, userId),
+    const results = await this.db.batch([
+      this.db.prepare(
+        `UPDATE wallets SET balance_cents = balance_cents + ?, updated_at = ? WHERE user_id = ?`
+      ).bind(amountCents, now, userId),
       this.db.prepare(
         `INSERT INTO wallet_transactions (id, wallet_id, user_id, payment_id, type, amount_cents, balance_after_cents, reference_type, reference_id, is_test, created_at)
-         VALUES (?, (SELECT id FROM wallets WHERE user_id = ?), ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-      ).bind(txnId, userId, userId, paymentId, txnType, amountCents, newBalance, refType, refId, isTest ? 1 : 0, now),
+         SELECT ?, w.id, ?, ?, ?, ?, w.balance_cents, ?, ?, ?, ?
+         FROM wallets w WHERE w.user_id = ?`
+      ).bind(createId("wallettxn"), userId, paymentId, txnType, amountCents, refType, refId, isTest ? 1 : 0, now, userId),
     ]);
 
-    return { ...user, wallet_balance_cents: newBalance };
+    if ((results[0].meta.changes ?? 0) === 0) throw new Error("User not found");
+
+    const user = await this.getUserById(userId);
+    if (!user) throw new Error("User not found");
+    return user;
   }
 
+  /**
+   * Atomic P2P transfer. Every statement is gated on the sender having funds
+   * *before* any balance changes, and all statements run in one transaction.
+   */
   async transferCredits(senderId: string, recipientId: string, amountCents: number): Promise<UserRecord> {
-    const sender = await this.getUserById(senderId);
+    if (!Number.isInteger(amountCents) || amountCents <= 0) throw new Error("Invalid amount");
     const recipient = await this.getUserById(recipientId);
-    if (!sender) throw new Error("Sender not found");
     if (!recipient) throw new Error("Recipient not found");
-    if (sender.wallet_balance_cents < amountCents) throw new Error("Insufficient wallet balance");
-
-    const sNewBal = sender.wallet_balance_cents - amountCents;
-    const rNewBal = recipient.wallet_balance_cents + amountCents;
     const now = new Date().toISOString();
 
-    await this.db.batch([
-      this.db.prepare(`UPDATE wallets SET balance_cents = ?, updated_at = ? WHERE user_id = ?`).bind(sNewBal, now, senderId),
-      this.db.prepare(`UPDATE wallets SET balance_cents = ?, updated_at = ? WHERE user_id = ?`).bind(rNewBal, now, recipientId),
+    // Ledger inserts run first (guards still see pre-transfer balances),
+    // balance updates run last. All-or-nothing via batch transaction.
+    const guard = `EXISTS (SELECT 1 FROM wallets g WHERE g.user_id = ? AND g.balance_cents >= ?)`;
+    const results = await this.db.batch([
       this.db.prepare(
         `INSERT INTO wallet_transactions (id, wallet_id, user_id, type, amount_cents, balance_after_cents, reference_type, reference_id, created_at)
-         VALUES (?, (SELECT id FROM wallets WHERE user_id = ?), ?, 'manual_adjustment', ?, ?, 'p2p_transfer_out', ?, ?)`
-      ).bind(createId("wallettxn"), senderId, senderId, amountCents, sNewBal, recipientId, now),
+         SELECT ?, w.id, ?, 'manual_adjustment', ?, w.balance_cents - ?, 'p2p_transfer_out', ?, ?
+         FROM wallets w WHERE w.user_id = ? AND w.balance_cents >= ?`
+      ).bind(createId("wallettxn"), senderId, amountCents, amountCents, recipientId, now, senderId, amountCents),
       this.db.prepare(
         `INSERT INTO wallet_transactions (id, wallet_id, user_id, type, amount_cents, balance_after_cents, reference_type, reference_id, created_at)
-         VALUES (?, (SELECT id FROM wallets WHERE user_id = ?), ?, 'deposit', ?, ?, 'p2p_transfer_in', ?, ?)`
-      ).bind(createId("wallettxn"), recipientId, recipientId, amountCents, rNewBal, senderId, now),
+         SELECT ?, w.id, ?, 'deposit', ?, w.balance_cents + ?, 'p2p_transfer_in', ?, ?
+         FROM wallets w WHERE w.user_id = ? AND ${guard}`
+      ).bind(createId("wallettxn"), recipientId, amountCents, amountCents, senderId, now, recipientId, senderId, amountCents),
+      this.db.prepare(
+        `UPDATE wallets SET balance_cents = balance_cents + ?, updated_at = ?
+         WHERE user_id = ? AND ${guard}`
+      ).bind(amountCents, now, recipientId, senderId, amountCents),
+      this.db.prepare(
+        `UPDATE wallets SET balance_cents = balance_cents - ?, updated_at = ?
+         WHERE user_id = ? AND balance_cents >= ?`
+      ).bind(amountCents, now, senderId, amountCents),
     ]);
 
-    return { ...sender, wallet_balance_cents: sNewBal };
+    if ((results[3].meta.changes ?? 0) === 0) throw new InsufficientFundsError();
+
+    const sender = await this.getUserById(senderId);
+    if (!sender) throw new Error("Sender not found");
+    return sender;
   }
 
   // ── Tournaments ──
@@ -248,16 +270,8 @@ export class D1Store {
 
   async listTournaments(): Promise<TournamentRecord[]> {
     const { results } = await this.db.prepare(
-      `SELECT * FROM tournaments ORDER BY name`
+      `SELECT * FROM tournaments ORDER BY created_at DESC LIMIT 100`
     ).all<any>();
-    return Promise.all(results.map((r: any) => this.rowToTournament(r)));
-  }
-
-  async listTournamentsByUser(userId: string): Promise<TournamentRecord[]> {
-    const { results } = await this.db.prepare(
-      `SELECT t.* FROM tournaments t JOIN participants p ON p.tournament_id = t.id
-       WHERE p.user_id = ? ORDER BY t.created_at DESC`
-    ).bind(userId).all<any>();
     return Promise.all(results.map((r: any) => this.rowToTournament(r)));
   }
 
@@ -302,6 +316,12 @@ export class D1Store {
     await this.db.prepare(`DELETE FROM tournaments WHERE id = ?`).bind(id).run();
   }
 
+  /**
+   * Join a tournament. Entry-fee debit, participant insert, and prize-pool
+   * update run in one transaction; the debit is balance-gated so a concurrent
+   * spend cannot overdraw, and the unique (tournament_id, user_id) index
+   * (migration 0003) rejects double joins under race.
+   */
   async joinTournament(userId: string, tournamentId: string, teamId: string | null = null): Promise<{ user: UserRecord; tournament: TournamentRecord }> {
     const user = await this.getUserById(userId);
     const tournament = await this.getTournament(tournamentId);
@@ -311,20 +331,25 @@ export class D1Store {
     if (tournament.status !== "open") throw new Error("Tournament is not open for new entries");
     if (tournament.participant_ids.length >= tournament.max_players) throw new Error("Tournament is already full");
 
+    const fee = tournament.entry_fee_cents;
+    if (fee > 0 && user.wallet_balance_cents < fee) {
+      throw new InsufficientFundsError();
+    }
+
     const stmts: D1PreparedStatement[] = [];
     const now = new Date().toISOString();
-    let newBalance = user.wallet_balance_cents;
 
-    if (tournament.entry_fee_cents > 0) {
-      if (user.wallet_balance_cents < tournament.entry_fee_cents) throw new Error("Insufficient wallet balance for tournament entry");
-      newBalance -= tournament.entry_fee_cents;
+    if (fee > 0) {
       stmts.push(
-        this.db.prepare(`UPDATE wallets SET balance_cents = ?, updated_at = ? WHERE user_id = ?`)
-          .bind(newBalance, now, userId),
         this.db.prepare(
           `INSERT INTO wallet_transactions (id, wallet_id, user_id, type, amount_cents, balance_after_cents, reference_type, reference_id, created_at)
-           VALUES (?, (SELECT id FROM wallets WHERE user_id = ?), ?, 'entry_fee_debit', ?, ?, 'tournament_entry', ?, ?)`
-        ).bind(createId("wallettxn"), userId, userId, tournament.entry_fee_cents, newBalance, tournamentId, now),
+           SELECT ?, w.id, ?, 'entry_fee_debit', ?, w.balance_cents - ?, 'tournament_entry', ?, ?
+           FROM wallets w WHERE w.user_id = ? AND w.balance_cents >= ?`
+        ).bind(createId("wallettxn"), userId, fee, fee, tournamentId, now, userId, fee),
+        this.db.prepare(
+          `UPDATE wallets SET balance_cents = balance_cents - ?, updated_at = ?
+           WHERE user_id = ? AND balance_cents >= ?`
+        ).bind(fee, now, userId, fee),
       );
     }
 
@@ -333,22 +358,30 @@ export class D1Store {
       this.db.prepare(
         `INSERT INTO participants (id, tournament_id, user_id, team_id, status, seed, joined_at) VALUES (?, ?, ?, ?, 'registered', ?, ?)`
       ).bind(createId("participant"), tournamentId, userId, teamId, seed, now),
+      this.db.prepare(
+        `UPDATE tournaments SET prize_pool_cents = prize_pool_cents + ?, updated_at = ? WHERE id = ?`
+      ).bind(fee, now, tournamentId),
+      this.db.prepare(
+        `UPDATE tournaments SET status = 'full', updated_at = ? WHERE id = ?
+         AND (SELECT COUNT(*) FROM participants WHERE tournament_id = ?) >= max_players`
+      ).bind(now, tournamentId, tournamentId),
     );
 
-    const newCount = tournament.participant_ids.length + 1;
-    if (newCount >= tournament.max_players) {
-      stmts.push(
-        this.db.prepare(`UPDATE tournaments SET status = 'full', updated_at = ? WHERE id = ?`).bind(now, tournamentId),
-      );
+    const results = await this.db.batch(stmts);
+    if (fee > 0 && (results[1].meta.changes ?? 0) === 0) {
+      // Debit guard failed (concurrent spend drained the wallet between the
+      // pre-check and the batch): the wallet was untouched, but the participant
+      // insert and prize-pool bump still ran — revert both atomically.
+      await this.db.batch([
+        this.db.prepare(
+          `DELETE FROM participants WHERE tournament_id = ? AND user_id = ?`
+        ).bind(tournamentId, userId),
+        this.db.prepare(
+          `UPDATE tournaments SET prize_pool_cents = prize_pool_cents - ?, status = 'open', updated_at = ? WHERE id = ?`
+        ).bind(fee, now, tournamentId),
+      ]);
+      throw new InsufficientFundsError();
     }
-
-    // Update prize pool
-    stmts.push(
-      this.db.prepare(`UPDATE tournaments SET prize_pool_cents = prize_pool_cents + ?, updated_at = ? WHERE id = ?`)
-        .bind(tournament.entry_fee_cents, now, tournamentId),
-    );
-
-    await this.db.batch(stmts);
 
     const updatedUser = await this.getUserById(userId);
     const updatedTournament = await this.getTournament(tournamentId);
@@ -367,33 +400,7 @@ export class D1Store {
     return results.map((r: any) => ({ ...r, eliminated_in_round: r.eliminated_in_round ?? null }));
   }
 
-  async updateParticipant(tournamentId: string, userId: string, updates: Record<string, any>): Promise<void> {
-    const sets = Object.keys(updates).map(k => `${k} = ?`);
-    const vals = [...Object.values(updates), tournamentId, userId];
-    await this.db.prepare(
-      `UPDATE participants SET ${sets.join(", ")} WHERE tournament_id = ? AND user_id = ?`
-    ).bind(...vals).run();
-  }
-
   // ── Matches ──
-
-  async createMatch(data: {
-    tournamentId: string; roundNum: number; matchOrder: number;
-    player1Id?: string | null; player2Id?: string | null;
-    scoreThreshold?: number; scheduledAt?: string | null;
-  }): Promise<MatchRecord> {
-    const id = createId("match");
-    const roomCode = createId("room");
-    const status = data.player1Id && data.player2Id ? "pending" : "waiting";
-    const now = new Date().toISOString();
-    await this.db.prepare(
-      `INSERT INTO matches (id, tournament_id, round, match_order, player1_id, player2_id, room_code, status, score_threshold, scheduled_at, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-    ).bind(id, data.tournamentId, data.roundNum, data.matchOrder,
-      data.player1Id ?? null, data.player2Id ?? null, roomCode, status,
-      data.scoreThreshold ?? 40, data.scheduledAt ?? null, now).run();
-    return (await this.getMatch(id))!;
-  }
 
   async getMatch(matchId: string): Promise<MatchRecord | null> {
     const r = await this.db.prepare(`SELECT * FROM matches WHERE id = ?`).bind(matchId).first<any>();
@@ -446,11 +453,17 @@ export class D1Store {
     return r ? { ...r, is_test: !!r.is_test } : null;
   }
 
-  async updatePayment(id: string, updates: Record<string, any>): Promise<void> {
-    updates.updated_at = new Date().toISOString();
-    const sets = Object.keys(updates).map(k => `${k} = ?`);
-    const vals = [...Object.values(updates), id];
-    await this.db.prepare(`UPDATE payments SET ${sets.join(", ")} WHERE id = ?`).bind(...vals).run();
+  /**
+   * Conditionally flip a payment from pending → success.
+   * Returns true only for the single caller that wins the transition, which is
+   * what makes concurrent verify/webhook processing credit the wallet once.
+   */
+  async markPaymentSuccess(paymentId: string, providerPaymentId: string): Promise<boolean> {
+    const result = await this.db.prepare(
+      `UPDATE payments SET status = 'success', provider_payment_id = ?, updated_at = ?
+       WHERE id = ? AND status = 'pending'`
+    ).bind(providerPaymentId, new Date().toISOString(), paymentId).run();
+    return (result.meta.changes ?? 0) > 0;
   }
 
   // ── Notifications ──
@@ -482,11 +495,15 @@ export class D1Store {
     return r?.cnt ?? 0;
   }
 
-  async markNotificationRead(id: string): Promise<void> {
-    await this.db.prepare(`UPDATE notifications SET read = 1 WHERE id = ?`).bind(id).run();
+  /** Mark a notification read — scoped to its owner. Returns false if not owned. */
+  async markNotificationRead(id: string, userId: string): Promise<boolean> {
+    const result = await this.db.prepare(
+      `UPDATE notifications SET read = 1 WHERE id = ? AND user_id = ?`
+    ).bind(id, userId).run();
+    return (result.meta.changes ?? 0) > 0;
   }
 
-  // ── Stats ──
+  // ── Stats / Leaderboard ──
 
   async getUserMatchStats(userId: string): Promise<{
     tournament_wins: number; wins: number; losses: number;
@@ -517,26 +534,45 @@ export class D1Store {
     };
   }
 
-  // ── Teams ──
-
-  async getTeamByCode(code: string): Promise<TeamRecord | null> {
-    const r = await this.db.prepare(`SELECT * FROM teams WHERE code = ?`).bind(code).first<any>();
-    if (!r) return null;
-    const { results } = await this.db.prepare(`SELECT user_id FROM participants WHERE team_id = ?`).bind(r.id).all<any>();
-    return { ...r, member_ids: results.map((p: any) => p.user_id) };
+  /** Real leaderboard: aggregated in SQL, only players who have played. */
+  async getGlobalLeaderboard(limit = 100): Promise<LeaderboardRow[]> {
+    const { results } = await this.db.prepare(
+      `WITH played AS (
+         SELECT player1_id AS uid FROM matches WHERE scores_approved = 1 AND player1_id IS NOT NULL
+         UNION ALL
+         SELECT player2_id FROM matches WHERE scores_approved = 1 AND player2_id IS NOT NULL
+       ),
+       totals AS (SELECT uid, COUNT(*) AS games FROM played GROUP BY uid),
+       winners AS (
+         SELECT winner_id AS uid, COUNT(*) AS wins FROM matches
+         WHERE scores_approved = 1 AND winner_id IS NOT NULL GROUP BY winner_id
+       ),
+       tw AS (
+         SELECT winner_id AS uid, COUNT(*) AS twins FROM tournaments
+         WHERE status = 'completed' AND winner_id IS NOT NULL GROUP BY winner_id
+       ),
+       earn AS (
+         SELECT user_id AS uid, COALESCE(SUM(amount_cents),0) AS cents
+         FROM wallet_transactions WHERE type = 'tournament_payout' GROUP BY user_id
+       )
+       SELECT u.id AS user_id, u.name,
+              COALESCE(w.wins, 0) AS wins,
+              COALESCE(t.games, 0) - COALESCE(w.wins, 0) AS losses,
+              COALESCE(tw.twins, 0) AS tournament_wins,
+              COALESCE(e.cents, 0) AS earnings_cents
+       FROM users u
+       LEFT JOIN totals t ON t.uid = u.id
+       LEFT JOIN winners w ON w.uid = u.id
+       LEFT JOIN tw ON tw.uid = u.id
+       LEFT JOIN earn e ON e.uid = u.id
+       WHERE COALESCE(t.games, 0) > 0 OR COALESCE(tw.twins, 0) > 0
+       ORDER BY wins DESC, earnings_cents DESC, u.name
+       LIMIT ?`
+    ).bind(limit).all<any>();
+    return results as LeaderboardRow[];
   }
 
-  async listTeamsByTournament(tournamentId: string): Promise<TeamRecord[]> {
-    const { results } = await this.db.prepare(`SELECT * FROM teams WHERE tournament_id = ?`).bind(tournamentId).all<any>();
-    const teams: TeamRecord[] = [];
-    for (const r of results) {
-      const { results: members } = await this.db.prepare(`SELECT user_id FROM participants WHERE team_id = ?`).bind(r.id).all<any>();
-      teams.push({ ...r, member_ids: members.map((p: any) => p.user_id) });
-    }
-    return teams;
-  }
-
-  // --- Engine Unification ---
+  // ── Engine (dynamic tournament) ──
 
   async createEngineTeam(tournamentId: string, name: string): Promise<EngineTeam> {
     const id = createId("eteam");
@@ -570,8 +606,8 @@ export class D1Store {
     const now = new Date().toISOString();
     await this.db.prepare(
       `INSERT INTO engine_matches (id, tournament_id, phase, team_a_id, team_b_id, status, sudden_death, duration, explanation, match_order, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-    ).bind(id, tournamentId, data.phase || 'GROUP', data.team_a_id, data.team_b_id, 'CREATED', 0, data.duration || 600, data.explanation || '', data.match_order || 0, now).run();
+       VALUES (?, ?, ?, ?, ?, 'CREATED', 0, ?, ?, ?, ?)`
+    ).bind(id, tournamentId, data.phase || 'GROUP', data.team_a_id, data.team_b_id, data.duration || 600, data.explanation || '', data.match_order || 0, now).run();
     return (await this.getEngineMatch(id))!;
   }
 
@@ -590,7 +626,7 @@ export class D1Store {
     const sets: string[] = [];
     const vals: any[] = [];
     for (const [k, v] of Object.entries(updates)) {
-      if (k === 'id') continue;
+      if (k === 'id' || k === 'tournament_id') continue;
       sets.push(`${k} = ?`);
       if (['sudden_death', 'black_potted_a', 'black_potted_b'].includes(k)) {
         vals.push(v ? 1 : 0);
@@ -607,8 +643,40 @@ export class D1Store {
     await this.db.prepare(`INSERT INTO engine_matchups (id, tournament_id, team1_id, team2_id, match_id) VALUES (?, ?, ?, ?, ?)`).bind(createId("emup"), tournamentId, team1Id, team2Id, matchId).run();
   }
 
-  async getEngineMatchups(tournamentId: string): Promise<any[]> {
+  async getEngineMatchups(tournamentId: string): Promise<{ team1_id: string; team2_id: string }[]> {
     const { results } = await this.db.prepare(`SELECT team1_id, team2_id FROM engine_matchups WHERE tournament_id = ?`).bind(tournamentId).all<any>();
-    return results;
+    return results as { team1_id: string; team2_id: string }[];
+  }
+
+  // ── Public arenas ──
+
+  async listArenas(limit = 50): Promise<ArenaRecord[]> {
+    const { results } = await this.db.prepare(
+      `SELECT * FROM public_arenas ORDER BY updated_at DESC LIMIT ?`
+    ).bind(limit).all<any>();
+    return results.map((r: any) => ({
+      id: r.id, name: r.name, state: JSON.parse(r.state_json),
+      pin: r.pin ?? null, owner_id: r.owner_id ?? null, updated_at: r.updated_at,
+    }));
+  }
+
+  async getArena(id: string): Promise<ArenaRecord | null> {
+    const r = await this.db.prepare(`SELECT * FROM public_arenas WHERE id = ?`).bind(id).first<any>();
+    if (!r) return null;
+    return {
+      id: r.id, name: r.name, state: JSON.parse(r.state_json),
+      pin: r.pin ?? null, owner_id: r.owner_id ?? null, updated_at: r.updated_at,
+    };
+  }
+
+  async upsertArena(data: { id: string; name: string; state: unknown; pin: string | null; ownerId: string | null }): Promise<void> {
+    const now = new Date().toISOString();
+    await this.db.prepare(
+      `INSERT INTO public_arenas (id, name, state_json, pin, owner_id, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?)
+       ON CONFLICT(id) DO UPDATE SET
+         name = excluded.name, state_json = excluded.state_json,
+         pin = excluded.pin, updated_at = excluded.updated_at`
+    ).bind(data.id, data.name, JSON.stringify(data.state), data.pin, data.ownerId, now).run();
   }
 }

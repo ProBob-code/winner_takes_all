@@ -4,7 +4,7 @@
  * Refresh tokens: 7 days TTL
  */
 
-import { createId } from "./crypto";
+import { createSessionToken } from "./crypto";
 
 const ACCESS_TTL = 15 * 60; // seconds
 const REFRESH_TTL = 7 * 24 * 60 * 60; // seconds
@@ -24,8 +24,8 @@ export async function createSessionTokens(
   kv: KVNamespace,
   userId: string
 ): Promise<SessionTokens> {
-  const accessToken = createId("access");
-  const refreshToken = createId("refresh");
+  const accessToken = createSessionToken();
+  const refreshToken = createSessionToken();
   const now = new Date().toISOString();
 
   const data: SessionData = { userId, createdAt: now };
@@ -78,6 +78,14 @@ export async function deleteRefreshSession(
   token: string
 ): Promise<void> {
   await kv.delete(`refresh:${token}`);
+}
+
+/** Delete an access token (on logout, so the session is revoked server-side). */
+export async function deleteAccessSession(
+  kv: KVNamespace,
+  token: string
+): Promise<void> {
+  await kv.delete(`access:${token}`);
 }
 
 /** Build Set-Cookie headers for session cookies. */

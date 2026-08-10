@@ -116,11 +116,11 @@ export function generateNextMatches(
 /**
  * PHASE 4 — Scoring Engine
  */
-export function processScoreUpdate(
-  match: EngineMatch,
+export function processScoreUpdate<M extends EngineMatch>(
+  match: M,
   scoringTeamId: string,
   type: 'BALL' | 'BLACK' | 'MISTAKE'
-): { updatedMatch: EngineMatch, matchEnded: boolean } {
+): { updatedMatch: M, matchEnded: boolean } {
   
   const updatedMatch = { ...match };
   
@@ -175,10 +175,10 @@ export function processScoreUpdate(
 /**
  * PHASE 5 — Timer Engine
  */
-export function checkTimer(
-  match: EngineMatch,
+export function checkTimer<M extends EngineMatch>(
+  match: M,
   currentTime: number // unix seconds
-): { updatedMatch: EngineMatch, matchEnded: boolean, suddenDeathStarted: boolean } {
+): { updatedMatch: M, matchEnded: boolean, suddenDeathStarted: boolean } {
   
   if (match.status !== 'LIVE' || !match.start_time) {
     return { updatedMatch: match, matchEnded: false, suddenDeathStarted: false };

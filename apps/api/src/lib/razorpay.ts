@@ -1,6 +1,6 @@
 /** Razorpay payment helpers — uses fetch (no SDK needed on Workers). */
 
-import { hmacSha256, hmacSha256Bytes } from "./crypto";
+import { hmacSha256, hmacSha256Bytes, timingSafeEqual } from "./crypto";
 
 export async function createRazorpayOrder(
   keyId: string, keySecret: string,
@@ -29,23 +29,20 @@ export async function createRazorpayOrder(
 export async function verifyPaymentSignature(
   keySecret: string, orderId: string, paymentId: string, signature: string
 ): Promise<boolean> {
+  if (!keySecret) return false;
   const expected = await hmacSha256(keySecret, `${orderId}|${paymentId}`);
-  return timingSafeCompare(expected, signature);
+  return timingSafeEqual(expected, signature);
 }
 
+/**
+ * Fail closed: a webhook that credits wallets must never be accepted when the
+ * secret is missing — an unset secret would otherwise let anyone forge
+ * `payment.captured` events and mint balance.
+ */
 export async function verifyWebhookSignature(
   webhookSecret: string, body: ArrayBuffer, signature: string
 ): Promise<boolean> {
-  if (!webhookSecret) return true; // Skip in dev
+  if (!webhookSecret) return false;
   const expected = await hmacSha256Bytes(webhookSecret, body);
-  return timingSafeCompare(expected, signature);
-}
-
-function timingSafeCompare(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
-  let mismatch = 0;
-  for (let i = 0; i < a.length; i++) {
-    mismatch |= a.charCodeAt(i) ^ b.charCodeAt(i);
-  }
-  return mismatch === 0;
+  return timingSafeEqual(expected, signature);
 }

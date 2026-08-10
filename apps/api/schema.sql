@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS wallets (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL UNIQUE,
-  balance_cents INTEGER NOT NULL DEFAULT 0,
+  balance_cents INTEGER NOT NULL DEFAULT 0 CHECK (balance_cents >= 0),
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
   FOREIGN KEY (user_id) REFERENCES users(id)
@@ -53,6 +53,7 @@ CREATE TABLE IF NOT EXISTS tournaments (
   winner_id TEXT,
   started_at TEXT,
   completed_at TEXT,
+  max_matches_per_team INTEGER DEFAULT 2,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
   FOREIGN KEY (host_id) REFERENCES users(id)
@@ -146,4 +147,73 @@ CREATE INDEX IF NOT EXISTS idx_matches_tournament ON matches(tournament_id);
 CREATE INDEX IF NOT EXISTS idx_matches_players ON matches(player1_id, player2_id);
 CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id);
 CREATE INDEX IF NOT EXISTS idx_payments_user ON payments(user_id);
-CREATE INDEX IF NOT EXISTS idx_payments_order ON payments(provider_order_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_payments_provider_order ON payments(provider_order_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_participants_unique ON participants(tournament_id, user_id);
+CREATE INDEX IF NOT EXISTS idx_wallet_txns_user ON wallet_transactions(user_id, created_at DESC);
+
+-- ── Dynamic tournament engine ──
+
+CREATE TABLE IF NOT EXISTS engine_teams (
+  id TEXT PRIMARY KEY,
+  tournament_id TEXT NOT NULL,
+  name TEXT NOT NULL,
+  matches_played INTEGER DEFAULT 0,
+  group_points INTEGER DEFAULT 0,
+  total_score INTEGER DEFAULT 0,
+  bye_assigned INTEGER DEFAULT 0,
+  created_at TEXT NOT NULL,
+  FOREIGN KEY (tournament_id) REFERENCES tournaments(id)
+);
+
+CREATE TABLE IF NOT EXISTS engine_matches (
+  id TEXT PRIMARY KEY,
+  tournament_id TEXT NOT NULL,
+  phase TEXT NOT NULL DEFAULT 'GROUP',
+  team_a_id TEXT NOT NULL,
+  team_b_id TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'CREATED',
+  sudden_death INTEGER DEFAULT 0,
+  active_team_id TEXT,
+  balls_potted_a INTEGER DEFAULT 0,
+  balls_potted_b INTEGER DEFAULT 0,
+  black_potted_a INTEGER DEFAULT 0,
+  black_potted_b INTEGER DEFAULT 0,
+  start_time INTEGER,
+  duration INTEGER DEFAULT 600,
+  score_team_a INTEGER DEFAULT 0,
+  score_team_b INTEGER DEFAULT 0,
+  winner_id TEXT,
+  ended_by TEXT,
+  explanation TEXT,
+  match_order INTEGER DEFAULT 0,
+  created_at TEXT NOT NULL,
+  FOREIGN KEY (tournament_id) REFERENCES tournaments(id),
+  FOREIGN KEY (team_a_id) REFERENCES engine_teams(id),
+  FOREIGN KEY (team_b_id) REFERENCES engine_teams(id)
+);
+
+CREATE TABLE IF NOT EXISTS engine_matchups (
+  id TEXT PRIMARY KEY,
+  tournament_id TEXT NOT NULL,
+  team1_id TEXT NOT NULL,
+  team2_id TEXT NOT NULL,
+  match_id TEXT NOT NULL,
+  FOREIGN KEY (tournament_id) REFERENCES tournaments(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_engine_teams_tournament ON engine_teams(tournament_id);
+CREATE INDEX IF NOT EXISTS idx_engine_matches_tournament ON engine_matches(tournament_id);
+CREATE INDEX IF NOT EXISTS idx_engine_matches_order ON engine_matches(tournament_id, match_order);
+CREATE INDEX IF NOT EXISTS idx_engine_matchups_tournament ON engine_matchups(tournament_id);
+
+-- ── Public arenas (shareable local score trackers) ──
+
+CREATE TABLE IF NOT EXISTS public_arenas (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  state_json TEXT NOT NULL,
+  pin TEXT,
+  owner_id TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);

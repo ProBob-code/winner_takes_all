@@ -2,6 +2,12 @@ packages:
   - "apps/*"
   - "packages/*"
 
+# Explicit allowlist of dependencies permitted to run install scripts.
+# (Previously this file also had a placeholder `allowBuilds` block whose
+# values were literally the string "set this to true or false" — never
+# filled in — which made every non-interactive `pnpm install`/`pnpm -r`
+# invocation stop and prompt for approval. This list is the actual
+# mechanism pnpm uses; the broken block has been removed.)
 onlyBuiltDependencies:
   - esbuild
   - sharp
