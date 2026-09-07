@@ -193,3 +193,74 @@ export async function fetchFeeds(arenaId: string, matchId: string): Promise<Stre
     return [];
   }
 }
+
+// --- Data usage ---
+//
+// Cloudflare Realtime bills on egress, so it is worth showing people how much
+// their stream is actually moving. These numbers come from the browser's own
+// WebRTC counters; nothing is reported to or stored on the server.
+
+export type TransportStats = {
+  /** Total bytes moved by this peer connection so far. */
+  bytes: number;
+  /** Instantaneous rate over the last sampling window. */
+  kbps: number;
+};
+
+export function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+}
+
+/**
+ * Poll a peer connection's byte counters. Returns an unsubscribe function.
+ * `direction` picks outbound (broadcaster) or inbound (viewer) RTP streams.
+ */
+export function watchTransportStats(
+  pc: RTCPeerConnection,
+  direction: "outbound" | "inbound",
+  onUpdate: (stats: TransportStats) => void,
+  intervalMs = 2000
+): () => void {
+  const wanted = direction === "outbound" ? "outbound-rtp" : "inbound-rtp";
+  const field = direction === "outbound" ? "bytesSent" : "bytesReceived";
+
+  let lastBytes = 0;
+  let lastAt = Date.now();
+  let stopped = false;
+
+  const sample = async () => {
+    if (stopped || pc.connectionState === "closed") return;
+
+    let total = 0;
+    try {
+      const report = await pc.getStats();
+      report.forEach((entry: any) => {
+        if (entry.type === wanted && typeof entry[field] === "number") {
+          total += entry[field];
+        }
+      });
+    } catch {
+      return; // stats are best-effort
+    }
+
+    const now = Date.now();
+    const elapsed = (now - lastAt) / 1000;
+    // Guard the first sample and any clock oddity so we never emit Infinity.
+    const kbps = elapsed > 0 && lastBytes > 0 ? ((total - lastBytes) * 8) / 1000 / elapsed : 0;
+
+    lastBytes = total;
+    lastAt = now;
+    onUpdate({ bytes: total, kbps: Math.max(0, Math.round(kbps)) });
+  };
+
+  sample();
+  const id = setInterval(sample, intervalMs);
+
+  return () => {
+    stopped = true;
+    clearInterval(id);
+  };
+}

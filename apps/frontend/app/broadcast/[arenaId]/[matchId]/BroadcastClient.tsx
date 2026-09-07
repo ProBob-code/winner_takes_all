@@ -7,7 +7,10 @@ import {
   publishStream,
   registerFeed,
   endFeed,
+  watchTransportStats,
+  formatBytes,
   type StreamFeed,
+  type TransportStats,
 } from "@/lib/stream-client";
 import "@/components/tournament-engine.css";
 
@@ -32,16 +35,21 @@ export function BroadcastClient({ arenaId, matchId, token }: Props) {
   const [label, setLabel] = useState("Main camera");
   const [feed, setFeed] = useState<StreamFeed | null>(null);
   const [matchName, setMatchName] = useState<string | null>(null);
+  const [usage, setUsage] = useState<TransportStats | null>(null);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const feedRef = useRef<StreamFeed | null>(null);
+  const stopStatsRef = useRef<(() => void) | null>(null);
 
   feedRef.current = feed;
 
   const teardown = useCallback(
     async (nextPhase: Phase) => {
+      stopStatsRef.current?.();
+      stopStatsRef.current = null;
+
       streamRef.current?.getTracks().forEach((t) => t.stop());
       streamRef.current = null;
 
@@ -94,6 +102,7 @@ export function BroadcastClient({ arenaId, matchId, token }: Props) {
       const { sessionId, trackNames } = await publishStream(pc, stream);
       const registered = await registerFeed({ token, sessionId, trackNames, label });
 
+      stopStatsRef.current = watchTransportStats(pc, "outbound", setUsage);
       setFeed(registered);
       setPhase("live");
     } catch (err: any) {
@@ -168,6 +177,7 @@ export function BroadcastClient({ arenaId, matchId, token }: Props) {
   // Release the camera if the page goes away.
   useEffect(() => {
     return () => {
+      stopStatsRef.current?.();
       streamRef.current?.getTracks().forEach((t) => t.stop());
       pcRef.current?.close();
     };
@@ -250,6 +260,23 @@ export function BroadcastClient({ arenaId, matchId, token }: Props) {
               <p style={{ color: "#10b981", fontWeight: "bold", fontSize: "0.9rem" }}>
                 You are live as “{feed?.label}”.
               </p>
+              {usage && (
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    marginTop: "12px",
+                    padding: "10px 14px",
+                    borderRadius: "8px",
+                    background: "rgba(255,255,255,0.03)",
+                    fontSize: "0.78rem",
+                    fontFamily: "monospace",
+                  }}
+                >
+                  <span className="muted">↑ UPLOADED {formatBytes(usage.bytes)}</span>
+                  <span style={{ color: "var(--gold)" }}>{usage.kbps} kbps</span>
+                </div>
+              )}
               <button
                 className="button button-secondary mt-4"
                 style={{ width: "100%" }}

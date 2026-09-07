@@ -5,7 +5,10 @@ import {
   createPeerConnection,
   subscribeToFeed,
   fetchFeeds,
+  watchTransportStats,
+  formatBytes,
   type StreamFeed,
+  type TransportStats,
 } from "@/lib/stream-client";
 
 type Props = {
@@ -27,13 +30,18 @@ export function LiveFeedViewer({ arenaId, matchId, isLive }: Props) {
   const [activeFeedId, setActiveFeedId] = useState<string | null>(null);
   const [connecting, setConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [usage, setUsage] = useState<TransportStats | null>(null);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const pcRef = useRef<RTCPeerConnection | null>(null);
+  const stopStatsRef = useRef<(() => void) | null>(null);
 
   const closePeer = useCallback(() => {
+    stopStatsRef.current?.();
+    stopStatsRef.current = null;
     pcRef.current?.close();
     pcRef.current = null;
+    setUsage(null);
     if (videoRef.current) videoRef.current.srcObject = null;
   }, []);
 
@@ -88,6 +96,7 @@ export function LiveFeedViewer({ arenaId, matchId, isLive }: Props) {
         pcRef.current = pc;
         const stream = await subscribeToFeed(pc, feed);
         if (videoRef.current) videoRef.current.srcObject = stream;
+        stopStatsRef.current = watchTransportStats(pc, "inbound", setUsage);
       } catch (err: any) {
         setError(err?.message || "Could not connect to this camera.");
         setActiveFeedId(null);
@@ -159,6 +168,24 @@ export function LiveFeedViewer({ arenaId, matchId, isLive }: Props) {
 
       {error && (
         <p style={{ color: "#ef4444", fontSize: "0.8rem", marginBottom: "8px" }}>{error}</p>
+      )}
+
+      {usage && (
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            marginBottom: "12px",
+            padding: "8px 12px",
+            borderRadius: "8px",
+            background: "rgba(255,255,255,0.03)",
+            fontSize: "0.74rem",
+            fontFamily: "monospace",
+          }}
+        >
+          <span className="muted">↓ RECEIVED {formatBytes(usage.bytes)}</span>
+          <span style={{ color: "var(--gold)" }}>{usage.kbps} kbps</span>
+        </div>
       )}
 
       <div className="section-label-v2 mb-2" style={{ fontSize: "0.7rem" }}>
