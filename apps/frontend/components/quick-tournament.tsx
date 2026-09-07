@@ -187,6 +187,7 @@ export function QuickTournament() {
   const [victoryMatch, setVictoryMatch] = useState<Match | null>(null);
   const [extraTimePromptId, setExtraTimePromptId] = useState<string | null>(null);
   const [showResetModal, setShowResetModal] = useState(false);
+  const [showCloseModal, setShowCloseModal] = useState(false);
   const [showAddTeamInline, setShowAddTeamInline] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [modalConfig, setModalConfig] = useState<ModalConfig | null>(null);
@@ -850,6 +851,43 @@ export function QuickTournament() {
     setShowResetModal(false);
   };
 
+  /**
+   * End the tournament without erasing it: results stay on screen for the
+   * host, but the arena stops broadcasting. Every unfinished match is marked
+   * COMPLETED so Live Screening drops the arena and any phone streaming it
+   * tears down on its next status poll.
+   */
+  const closeTournament = async () => {
+    const closedMatches = matches.map((m) =>
+      m.status === 'COMPLETED'
+        ? m
+        : { ...m, status: 'COMPLETED' as const, active_team_id: null }
+    );
+
+    setMatches(closedMatches);
+    setIsStarted(false);
+    setShowCloseModal(false);
+
+    // The background sync only runs while isStarted is true, so the closing
+    // state has to be pushed explicitly or the arena would linger on the
+    // spectator network until its entry went stale.
+    if (!arenaId) return;
+    try {
+      const res = await backendFetch("/public-arenas", {
+        method: "POST",
+        body: JSON.stringify({
+          id: arenaId,
+          name: arenaName,
+          state: { teams, matches: closedMatches, isStarted: false, selectedSport },
+          pin: arenaPin,
+        }),
+      });
+      setSyncError(res.ok ? null : `Closed locally, but the server returned HTTP ${res.status}.`);
+    } catch {
+      setSyncError("Closed locally, but the spectator network could not be reached.");
+    }
+  };
+
   const restartMatch = (matchId: string) => {
     setMatches(matches.map(m => m.id === matchId ? { 
       ...m, 
@@ -1493,6 +1531,24 @@ export function QuickTournament() {
         document.body
       )}
 
+      {showCloseModal && isMounted && createPortal(
+        <div className="custom-modal-overlay">
+          <div className="custom-modal">
+            <div className="modal-icon">🏁</div>
+            <h2>Close Tournament?</h2>
+            <p className="muted">
+              Any match still in progress will be marked complete, the arena will stop appearing in
+              Live Screening, and any live camera feeds will end. Teams and results stay on screen.
+            </p>
+            <div className="modal-actions">
+              <button className="button button-secondary" onClick={() => setShowCloseModal(false)}>CANCEL</button>
+              <button className="button button-danger" onClick={closeTournament}>CLOSE TOURNAMENT</button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
       {confirmRestartMatchId && isMounted && createPortal(
         <div className="custom-modal-overlay">
           <div className="custom-modal">
@@ -1845,6 +1901,16 @@ export function QuickTournament() {
           }}>
             <span className="icon">{isLocked ? '🔒' : '🔓'}</span>
           </button>
+          {isStarted && (
+            <button
+              className="close-tournament-trigger"
+              onClick={() => !isLocked && setShowCloseModal(true)}
+              disabled={isLocked}
+              title={isLocked ? "Unlock the arena to close it" : "End this tournament and stop broadcasting"}
+            >
+              CLOSE TOURNAMENT
+            </button>
+          )}
           <button className="reset-trigger" onClick={() => !isLocked && setShowResetModal(true)} disabled={isLocked}><span className="icon">↺</span></button>
         </div>
       </div>

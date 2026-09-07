@@ -639,6 +639,27 @@ select.premium-input-v2 option {
 .share-btn:hover { background: #8b5cf6; color: white; }
 .share-btn.shared { background: var(--gold); color: black; border-color: transparent; }
 
+/* Ends the tournament rather than erasing it; sits beside the reset control. */
+.close-tournament-trigger {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.28);
+  color: #ef4444;
+  padding: 0.6rem 1.1rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 900;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: 0.3s;
+}
+
+.close-tournament-trigger:hover:not(:disabled) { background: #ef4444; color: white; }
+
+.close-tournament-trigger:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .reset-trigger {
   width: 40px;
   height: 40px;
