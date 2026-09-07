@@ -183,6 +183,7 @@ export function QuickTournament() {
   const [tournamentType, setTournamentType] = useState<'GROUP' | 'KNOCKOUT' | 'FINALS'>('GROUP');
   const [arenaName, setArenaName] = useState("Stadium Arena Showdown");
   const [isPublishing, setIsPublishing] = useState(false);
+  const [syncError, setSyncError] = useState<string | null>(null);
   const [victoryMatch, setVictoryMatch] = useState<Match | null>(null);
   const [extraTimePromptId, setExtraTimePromptId] = useState<string | null>(null);
   const [showResetModal, setShowResetModal] = useState(false);
@@ -249,7 +250,21 @@ export function QuickTournament() {
           id: arenaId, name: arenaName, state: { teams, matches, isStarted, selectedSport },
           pin: arenaPin 
         }) 
-      }).catch(() => { });
+      })
+        .then((res) => {
+          // Silently dropping these left the arena live locally but absent from
+          // Live Screening, with nothing on screen to explain the difference.
+          if (!res.ok) {
+            setSyncError(
+              res.status === 401
+                ? "Not synced: log in to publish this arena to the spectator network."
+                : `Not synced: the server returned HTTP ${res.status}.`
+            );
+          } else {
+            setSyncError(null);
+          }
+        })
+        .catch(() => setSyncError("Not synced: the spectator network is unreachable."));
     }
   }, [teams, matches, isStarted, arenaId, matchesPerTeam, defaultDuration, tournamentType, arenaName, arenaPin, isLocked, selectedSport]);
 
@@ -509,17 +524,46 @@ export function QuickTournament() {
     setIsPublishing(true);
     const id = arenaId || Math.random().toString(36).substr(2, 8).toUpperCase();
     try {
-      await backendFetch("/public-arenas", {
+      const res = await backendFetch("/public-arenas", {
         method: "POST",
         body: JSON.stringify({ id, name: arenaName, state: { teams, matches, isStarted }, pin: arenaPin })
       });
+
+      // fetch only rejects on network failure, so a 401 or 403 arrives here as
+      // a perfectly ordinary Response. Without this check the arena was never
+      // stored and the share modal still claimed success.
+      let payload: any = {};
+      try {
+        payload = await res.json();
+      } catch {
+        /* non-JSON error body */
+      }
+
+      if (!res.ok || payload.ok === false) {
+        const reason =
+          res.status === 401
+            ? "You need to be logged in to publish an arena to the spectator network."
+            : payload.message || `The server rejected the arena (HTTP ${res.status}).`;
+        setSyncError(reason);
+        setModalConfig({
+          icon: "❌",
+          title: "SYNC FAILED",
+          message: reason,
+          onConfirm: () => setModalConfig(null)
+        });
+        return;
+      }
+
+      setSyncError(null);
       setArenaId(id);
       setShowShareModal(true);
     } catch (e) {
+      const reason = "Failed to publish arena to the network. Please check your connection.";
+      setSyncError(reason);
       setModalConfig({
         icon: "❌",
         title: "SYNC FAILED",
-        message: "Failed to publish arena to the network. Please check your connection.",
+        message: reason,
         onConfirm: () => setModalConfig(null)
       });
     } finally {
@@ -1775,8 +1819,19 @@ export function QuickTournament() {
             <button className={`sub-tab ${activeSubTab === 'arena' ? 'active' : ''}`} onClick={() => setActiveSubTab('arena')}>ARENA</button>
             <button className={`sub-tab ${activeSubTab === 'standings' ? 'active' : ''}`} onClick={() => setActiveSubTab('standings')}>STANDINGS</button>
           </div>
-          <button className={`share-btn ${arenaId ? 'shared' : ''}`} onClick={publishArena} disabled={isPublishing}>
-            {isPublishing ? 'SYNCING...' : arenaId ? '✓ LINK SHARED' : '🔗 SHARE ARENA'}
+          <button
+            className={`share-btn ${arenaId && !syncError ? 'shared' : ''}`}
+            onClick={publishArena}
+            disabled={isPublishing}
+            title={syncError || undefined}
+          >
+            {isPublishing
+              ? 'SYNCING...'
+              : syncError
+                ? '⚠ NOT SYNCED'
+                : arenaId
+                  ? '✓ LINK SHARED'
+                  : '🔗 SHARE ARENA'}
           </button>
           <button className={`lock-trigger ${isLocked ? 'locked' : ''}`} onClick={() => {
             if (isLocked) {

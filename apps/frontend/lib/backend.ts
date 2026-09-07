@@ -31,6 +31,9 @@ export async function backendFetch(path: string, init: RequestInit = {}) {
   return fetch(fullUrl, {
     ...init,
     headers,
+    // The API sets SameSite=None session cookies and allows credentialed CORS.
+    // Without this every authenticated endpoint answers 401.
+    credentials: "include",
     // Removed cache: "no-store" to avoid dynamic rendering errors in static export
     // Next.js static export handles this correctly via "use client" logic
   });
