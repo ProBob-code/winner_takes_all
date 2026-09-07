@@ -72,6 +72,42 @@ export default function ScreeningPage() {
     };
   }, []);
 
+  // Live Screening must only ever show matches that are genuinely in progress.
+  // Two things go stale on their own: a host closes their tab mid-match so the
+  // status never flips to COMPLETED, and an arena's unplayed CREATED matches
+  // would otherwise sit here forever.
+  const LIVE_OVERRUN_GRACE = 30 * 60; // half-time + stoppage before we call it dead
+  const ARENA_ACTIVE_WINDOW = 30 * 60; // host still pushing state to the server
+
+  /** SQLite CURRENT_TIMESTAMP is "YYYY-MM-DD HH:MM:SS" in UTC — not ISO-parseable as-is. */
+  const parseUpdatedAt = (value?: string): number => {
+    if (!value) return 0;
+    const iso = value.includes("T") ? value : `${value.replace(" ", "T")}Z`;
+    const ms = Date.parse(iso);
+    return Number.isNaN(ms) ? 0 : Math.floor(ms / 1000);
+  };
+
+  const isMatchOver = (m: any, now: number): boolean => {
+    if (m.status === "COMPLETED") return true;
+    if (m.status !== "LIVE") return false;
+
+    const start = m.start_time || 0;
+    if (!start) return false;
+
+    const fd = m.footballData;
+    if (fd) {
+      // Football runs its own clock and pauses at half-time, so trust that first.
+      const halfDuration = Math.floor(m.duration / 2);
+      if (fd.half === 2 && halfDuration + fd.timerSeconds >= m.duration) return true;
+    } else if (now >= start + m.duration) {
+      return true;
+    }
+
+    // Backstop for a frozen clock: the host went away and nothing will ever
+    // advance this match again.
+    return now > start + m.duration + LIVE_OVERRUN_GRACE;
+  };
+
   const getFootballTimeDisplay = (match: any) => {
     if (!match.footballData) return "0:00";
     const fd = match.footballData;
@@ -114,7 +150,16 @@ export default function ScreeningPage() {
     const isArenaStarted = arena.state?.isStarted;
     if (!isArenaStarted) return;
     
-    const activeMatches = matches.filter((m: any) => m.status === 'LIVE' || m.status === 'CREATED');
+    // An arena whose host stopped pushing state is no longer broadcasting; its
+    // not-yet-played matches must not linger in the multiplex.
+    const arenaUpdatedAt = parseUpdatedAt(arena.updatedAt);
+    const arenaIsActive = arenaUpdatedAt === 0 || currentTime - arenaUpdatedAt <= ARENA_ACTIVE_WINDOW;
+
+    const activeMatches = matches.filter((m: any) => {
+      if (isMatchOver(m, currentTime)) return false;
+      if (m.status === 'LIVE') return true;
+      return m.status === 'CREATED' && arenaIsActive;
+    });
     
     activeMatches.forEach((m: any) => {
       const getTeamName = (tid: string) => teams.find((t: any) => t.id === tid)?.name || "Unknown Team";
@@ -153,7 +198,7 @@ export default function ScreeningPage() {
             </div>
             <div style={{ display: "flex", gap: "10px" }}>
               <span className="live-pill" style={{ padding: "6px 14px", fontSize: "0.85rem" }}>
-                <span className="live-pulse"></span> {allLiveMatches.length} ONGOING GAMES
+                <span className="live-pulse"></span> {allLiveMatches.filter((m: any) => m.status === 'LIVE').length} ONGOING GAMES
               </span>
             </div>
           </div>
