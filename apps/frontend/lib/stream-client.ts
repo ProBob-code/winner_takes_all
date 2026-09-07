@@ -7,7 +7,7 @@
  * disappears from the registry as soon as heartbeats stop.
  */
 
-import { getApiUrl } from "./api-config";
+import { getApiUrl, readJsonResponse } from "./api-config";
 
 export type StreamFeed = {
   feedId: string;
@@ -32,7 +32,7 @@ async function post(path: string, body: unknown): Promise<any> {
     credentials: "include",
     body: JSON.stringify(body),
   });
-  const data = await res.json().catch(() => ({}));
+  const data = await readJsonResponse(res);
   if (!res.ok || data.ok === false) {
     throw new Error(data.message || `Request to ${path} failed (${res.status})`);
   }
@@ -185,6 +185,11 @@ export async function fetchFeeds(arenaId: string, matchId: string): Promise<Stre
     { cache: "no-store", credentials: "include" }
   );
   if (!res.ok) return [];
-  const data = await res.json().catch(() => ({}));
-  return data.ok ? (data.feeds as StreamFeed[]) : [];
+  try {
+    const data = await readJsonResponse(res);
+    return data.ok ? (data.feeds as StreamFeed[]) : [];
+  } catch {
+    // A misconfigured API should not spam the viewer with errors every poll.
+    return [];
+  }
 }

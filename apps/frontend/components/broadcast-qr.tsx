@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { getApiUrl } from "@/lib/api-config";
+import { getApiUrl, readJsonResponse } from "@/lib/api-config";
 import { qrToSvg } from "@/lib/qr";
 
 type Props = {
@@ -34,7 +34,7 @@ export function BroadcastQr({ arenaId, matchId, pin, onClose }: Props) {
           credentials: "include",
           body: JSON.stringify({ arenaId, matchId, pin: pin || undefined }),
         });
-        const data = await res.json().catch(() => ({}));
+        const data = await readJsonResponse(res);
         if (cancelled) return;
 
         if (!res.ok || !data.ok) {
@@ -42,8 +42,10 @@ export function BroadcastQr({ arenaId, matchId, pin, onClose }: Props) {
         } else {
           setUrl(data.url);
         }
-      } catch {
-        if (!cancelled) setError("Could not reach the server to create a broadcast link.");
+      } catch (err: any) {
+        if (!cancelled) {
+          setError(err?.message || "Could not reach the server to create a broadcast link.");
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }

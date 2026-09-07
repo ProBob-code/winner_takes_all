@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getApiUrl } from "@/lib/api-config";
+import { getApiUrl, readJsonResponse } from "@/lib/api-config";
 import Link from "next/link";
 import { LiveFeedViewer } from "@/components/live-feed-viewer";
 import { BroadcastQr } from "@/components/broadcast-qr";
@@ -23,9 +23,12 @@ export default function ScreeningPage() {
         cache: "no-store",
         credentials: "include"
       });
-      const data = await res.json();
+      const data = await readJsonResponse(res);
       if (data.ok) {
         setArenas(data.arenas || []);
+        setError(null);
+      } else {
+        setError(data.message || "Failed to load ongoing multiplex screening");
       }
     } catch (err: any) {
       console.error("Screening fetch error:", err);
@@ -337,9 +340,11 @@ export default function ScreeningPage() {
         ) : (
           <div className="phase-transition-overlay animate-in" style={{ padding: '6rem 0', width: '100%' }}>
             <div className="phase-card glass-morphism text-center" style={{ width: '100%', maxWidth: '550px', margin: '0 auto', padding: "3rem" }}>
-              <div className="p-icon" style={{ fontSize: '4rem', marginBottom: "1rem" }}>📺</div>
-              <h3 className="glow-text">NO MATCHES LIVE CURRENTLY</h3>
-              <p className="muted mt-2">There are no ongoing active tournament stadium broadcasts matches that match your filters.</p>
+              <div className="p-icon" style={{ fontSize: '4rem', marginBottom: "1rem" }}>{error ? "⚠️" : "📺"}</div>
+              <h3 className="glow-text">{error ? "BROADCAST FEED UNAVAILABLE" : "NO MATCHES LIVE CURRENTLY"}</h3>
+              <p className="muted mt-2">
+                {error || "There are no ongoing active tournament stadium broadcasts matches that match your filters."}
+              </p>
             </div>
           </div>
         )}
