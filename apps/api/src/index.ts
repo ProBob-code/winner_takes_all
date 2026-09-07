@@ -14,6 +14,17 @@ import {
 } from "./lib/kv-sessions";
 import { hashPassword, verifyPassword, createId, sha256Hex, timingSafeEqual } from "./lib/crypto";
 import { createRazorpayOrder, verifyPaymentSignature, verifyWebhookSignature } from "./lib/razorpay";
+import {
+  signBroadcastToken,
+  verifyBroadcastToken,
+  realtimeConfig,
+  callRealtime,
+  putFeed,
+  listFeeds,
+  deleteFeed,
+  BROADCAST_TOKEN_TTL_SECONDS,
+  type StreamFeed,
+} from "./lib/realtime";
 import { authMiddleware, requireUser, requireAdmin, serializeUser, extractAccessToken } from "./middleware/auth";
 import { centsToMoney } from "./lib/money";
 import { checkRateLimit, clientKey } from "./lib/rate-limit";
@@ -34,6 +45,11 @@ import {
   highlightSchema,
   reorderSchema,
   upsertArenaSchema,
+  broadcastTokenSchema,
+  streamSessionSchema,
+  streamTracksSchema,
+  streamRenegotiateSchema,
+  registerFeedSchema,
 } from "./lib/validation";
 
 const app = new Hono<AppContext>();
@@ -1014,7 +1030,193 @@ app.get("/api/public-arenas/:id", async (c) => {
   });
 });
 
+// --- Live Match Streaming (Cloudflare Realtime SFU) ---
+//
+// Media is relayed by the SFU and never recorded. This Worker only signs
+// broadcast grants, proxies SDP so the app secret stays server-side, and keeps
+// a short-lived list of who is currently streaming.
+
+function nowSeconds(): number {
+  return Math.floor(Date.now() / 1000);
+}
+
+function requireRealtime(c: Context<AppContext>) {
+  const config = realtimeConfig(c.env);
+  if (!config) {
+    return {
+      config: null,
+      error: c.json(
+        { ok: false, message: "Live streaming is not configured on this deployment." },
+        503
+      ),
+    };
+  }
+  return { config, error: null };
+}
+
+/** Host mints the QR payload for one match. Owner or arena PIN only. */
+app.post("/api/stream/broadcast-token", async (c) => {
+  const user = requireUser(c);
+  if (!user) return c.json({ ok: false, message: "Authentication required" }, 401);
+
+  const secret = c.env.BROADCAST_TOKEN_SECRET;
+  if (!secret) {
+    return c.json({ ok: false, message: "Live streaming is not configured on this deployment." }, 503);
+  }
+
+  const limited = await rateLimit(c, `broadcast-token:${user.id}`, 60, 60);
+  if (limited) return limited;
+
+  const body = parseBody(broadcastTokenSchema, await readJson(c));
+  const arena = await c.get("store").getArena(body.arenaId);
+  if (!arena) return c.json({ ok: false, message: "Arena not found" }, 404);
+
+  const isOwner = arena.owner_id === user.id || user.role === "admin";
+  if (!isOwner) {
+    // Non-owners must present the arena PIN, matching the arena update rules.
+    const suppliedHash = body.pin ? await sha256Hex(body.pin) : "";
+    const pinMatches =
+      !!body.pin &&
+      (timingSafeEqual(arena.pin ?? "", suppliedHash) || timingSafeEqual(arena.pin ?? "", body.pin));
+    if (!arena.pin || !pinMatches) {
+      return c.json({ ok: false, message: "Only the arena host can start a broadcast." }, 403);
+    }
+  }
+
+  const exp = nowSeconds() + BROADCAST_TOKEN_TTL_SECONDS;
+  const token = await signBroadcastToken(secret, {
+    arenaId: body.arenaId,
+    matchId: body.matchId,
+    exp,
+  });
+
+  const origin = c.env.PUBLIC_APP_ORIGIN || allowedOrigins(c.env)[0];
+  const url = `${origin}/broadcast/${encodeURIComponent(body.arenaId)}/${encodeURIComponent(
+    body.matchId
+  )}?t=${encodeURIComponent(token)}`;
+
+  return c.json({ ok: true, token, url, expiresAt: exp });
+});
+
+/** Open a WebRTC session against the SFU. */
+app.post("/api/stream/session", async (c) => {
+  const { config, error } = requireRealtime(c);
+  if (!config) return error;
+
+  const limited = await rateLimit(c, `stream-session:${clientKey(c)}`, 60, 60);
+  if (limited) return limited;
+
+  const body = parseBody(streamSessionSchema, await readJson(c));
+  const result = await callRealtime(config, "/sessions/new", {
+    method: "POST",
+    body: body.sessionDescription ? { sessionDescription: body.sessionDescription } : {},
+  });
+
+  if (result.status >= 400) {
+    return c.json({ ok: false, message: "Could not open a streaming session.", detail: result.body }, 502);
+  }
+  return c.json({ ok: true, ...result.body });
+});
+
+/** Publish local tracks or subscribe to remote ones. */
+app.post("/api/stream/tracks", async (c) => {
+  const { config, error } = requireRealtime(c);
+  if (!config) return error;
+
+  const limited = await rateLimit(c, `stream-tracks:${clientKey(c)}`, 120, 60);
+  if (limited) return limited;
+
+  const body = parseBody(streamTracksSchema, await readJson(c));
+  const payload: Record<string, unknown> = { tracks: body.tracks };
+  if (body.sessionDescription) payload.sessionDescription = body.sessionDescription;
+
+  const result = await callRealtime(config, `/sessions/${encodeURIComponent(body.sessionId)}/tracks/new`, {
+    method: "POST",
+    body: payload,
+  });
+
+  if (result.status >= 400) {
+    return c.json({ ok: false, message: "Could not update tracks.", detail: result.body }, 502);
+  }
+  return c.json({ ok: true, ...result.body });
+});
+
+app.put("/api/stream/renegotiate", async (c) => {
+  const { config, error } = requireRealtime(c);
+  if (!config) return error;
+
+  const body = parseBody(streamRenegotiateSchema, await readJson(c));
+  const result = await callRealtime(
+    config,
+    `/sessions/${encodeURIComponent(body.sessionId)}/renegotiate`,
+    { method: "PUT", body: { sessionDescription: body.sessionDescription } }
+  );
+
+  if (result.status >= 400) {
+    return c.json({ ok: false, message: "Renegotiation failed.", detail: result.body }, 502);
+  }
+  return c.json({ ok: true, ...result.body });
+});
+
+/**
+ * Register or heartbeat a feed. The KV entry carries a short TTL, so a
+ * broadcaster that stops heartbeating disappears without any cleanup job.
+ */
+app.post("/api/stream/feeds", async (c) => {
+  const secret = c.env.BROADCAST_TOKEN_SECRET;
+  if (!secret) return c.json({ ok: false, message: "Live streaming is not configured." }, 503);
+
+  const limited = await rateLimit(c, `stream-feed:${clientKey(c)}`, 120, 60);
+  if (limited) return limited;
+
+  const body = parseBody(registerFeedSchema, await readJson(c));
+  const claims = await verifyBroadcastToken(secret, body.token, nowSeconds());
+  if (!claims) {
+    return c.json({ ok: false, message: "This broadcast link is invalid or has expired." }, 403);
+  }
+
+  const feed: StreamFeed = {
+    feedId: body.feedId || createId("feed"),
+    arenaId: claims.arenaId,
+    matchId: claims.matchId,
+    sessionId: body.sessionId,
+    trackNames: body.trackNames,
+    label: body.label,
+    startedAt: nowSeconds(),
+  };
+
+  await putFeed(c.env.SESSIONS, feed);
+  return c.json({ ok: true, feed });
+});
+
+/** Viewers poll this to see which camera angles are live right now. */
+app.get("/api/stream/feeds", async (c) => {
+  const arenaId = c.req.query("arenaId");
+  const matchId = c.req.query("matchId");
+  if (!arenaId || !matchId) {
+    return c.json({ ok: false, message: "arenaId and matchId are required" }, 400);
+  }
+
+  const feeds = await listFeeds(c.env.SESSIONS, arenaId, matchId);
+  return c.json({ ok: true, feeds });
+});
+
+app.post("/api/stream/feeds/end", async (c) => {
+  const secret = c.env.BROADCAST_TOKEN_SECRET;
+  if (!secret) return c.json({ ok: false, message: "Live streaming is not configured." }, 503);
+
+  const body = parseBody(registerFeedSchema, await readJson(c));
+  const claims = await verifyBroadcastToken(secret, body.token, nowSeconds());
+  if (!claims || !body.feedId) {
+    return c.json({ ok: false, message: "This broadcast link is invalid or has expired." }, 403);
+  }
+
+  await deleteFeed(c.env.SESSIONS, claims.arenaId, claims.matchId, body.feedId);
+  return c.json({ ok: true });
+});
+
 // --- Fallback ---
+
 app.all("*", (c) => c.json({ ok: false, message: "Not Found" }, 404));
 
 export default app;

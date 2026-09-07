@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { getApiUrl } from "@/lib/api-config";
 import Link from "next/link";
+import { LiveFeedViewer } from "@/components/live-feed-viewer";
+import { BroadcastQr } from "@/components/broadcast-qr";
 import "@/components/tournament-engine.css";
 
 export default function ScreeningPage() {
@@ -12,6 +14,7 @@ export default function ScreeningPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sportFilter, setSportFilter] = useState<"ALL" | "FOOTBALL" | "8BALL">("ALL");
   const [currentTime, setCurrentTime] = useState(Math.floor(Date.now() / 1000));
+  const [qrMatchId, setQrMatchId] = useState<string | null>(null);
 
   const fetchArenas = async () => {
     try {
@@ -293,6 +296,15 @@ export default function ScreeningPage() {
                       >
                         🔗 SHARE
                       </button>
+                      {isLive && (
+                        <button
+                          className="button button-secondary button-sm"
+                          style={{ padding: '6px 12px', fontSize: '0.8rem' }}
+                          onClick={() => setQrMatchId(qrMatchId === m.id ? null : m.id)}
+                        >
+                          📷 STREAM
+                        </button>
+                      )}
                       <Link 
                         href={`/arena/${m.arenaId}?matchId=${m.id}`}
                         className="button button-secondary button-sm" 
@@ -302,6 +314,22 @@ export default function ScreeningPage() {
                       </Link>
                     </div>
                   </div>
+
+                  {isLive && qrMatchId === m.id && (
+                    <div style={{ marginTop: '18px', paddingTop: '18px', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+                      <BroadcastQr
+                        arenaId={m.arenaId}
+                        matchId={m.id}
+                        onClose={() => setQrMatchId(null)}
+                      />
+                    </div>
+                  )}
+
+                  {isLive && (
+                    <div style={{ marginTop: '18px', paddingTop: '18px', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+                      <LiveFeedViewer arenaId={m.arenaId} matchId={m.id} isLive={isLive} />
+                    </div>
+                  )}
                 </div>
               );
             })}

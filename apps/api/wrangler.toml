@@ -16,6 +16,14 @@ id = "788ab68ad9454e4ea7f2519b32792722"
 #   wrangler secret put RAZORPAY_KEY_ID
 #   wrangler secret put RAZORPAY_KEY_SECRET
 #   wrangler secret put RAZORPAY_WEBHOOK_SECRET
+#   wrangler secret put REALTIME_APP_ID
+#   wrangler secret put REALTIME_APP_SECRET
+#   wrangler secret put BROADCAST_TOKEN_SECRET
 # Never put credentials in [vars] — this file is committed to git.
 [vars]
 ALLOWED_ORIGINS = "https://winner-takes-all.pages.dev,http://localhost:3000"
+# Cloudflare Realtime SFU host. Override if your deployment uses a different
+# origin; the app id is appended as /apps/<REALTIME_APP_ID>.
+REALTIME_API_BASE = "https://rtc.live.cloudflare.com/v1"
+# Origin used to build the scannable broadcast URL placed in match QR codes.
+PUBLIC_APP_ORIGIN = "https://winner-takes-all.pages.dev"

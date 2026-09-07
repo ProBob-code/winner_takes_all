@@ -110,6 +110,50 @@ export const reorderSchema = z.object({
 
 // ── Public arenas ──
 
+const sdpSchema = z.object({
+  sdp: z.string().min(1).max(200_000),
+  type: z.enum(["offer", "answer"]),
+});
+
+export const broadcastTokenSchema = z.object({
+  arenaId: z.string().trim().min(3).max(64),
+  matchId: z.string().trim().min(1).max(64),
+  pin: z.string().trim().min(4).max(32).optional(),
+});
+
+export const streamSessionSchema = z.object({
+  sessionDescription: sdpSchema.optional(),
+});
+
+export const streamTracksSchema = z.object({
+  sessionId: z.string().trim().min(1).max(200),
+  sessionDescription: sdpSchema.optional(),
+  tracks: z
+    .array(
+      z.object({
+        location: z.enum(["local", "remote"]),
+        trackName: z.string().trim().min(1).max(200),
+        mid: z.string().trim().max(50).optional(),
+        sessionId: z.string().trim().min(1).max(200).optional(),
+      })
+    )
+    .min(1)
+    .max(8),
+});
+
+export const streamRenegotiateSchema = z.object({
+  sessionId: z.string().trim().min(1).max(200),
+  sessionDescription: sdpSchema,
+});
+
+export const registerFeedSchema = z.object({
+  token: z.string().trim().min(1).max(2000),
+  sessionId: z.string().trim().min(1).max(200),
+  trackNames: z.array(z.string().trim().min(1).max(200)).min(1).max(4),
+  label: z.string().trim().min(1).max(40),
+  feedId: z.string().trim().min(1).max(64).optional(),
+});
+
 export const upsertArenaSchema = z.object({
   id: z
     .string()
