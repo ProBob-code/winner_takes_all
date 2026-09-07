@@ -45,17 +45,19 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           workingDirectory: 'apps/api'
           command: deploy
+          # Only list secrets that exist as GitHub repository secrets. Anything
+          # named here is overwritten on every deploy, so a name without a
+          # matching repository secret would blank a working credential.
+          #
+          # The RAZORPAY_* secrets are deliberately absent: they are managed
+          # directly in the Cloudflare dashboard, and listing them here pushed
+          # empty values over them on each deploy. To move them into this flow,
+          # add them as repository secrets first, then add their names back.
           secrets: |
-            RAZORPAY_KEY_ID
-            RAZORPAY_KEY_SECRET
-            RAZORPAY_WEBHOOK_SECRET
             REALTIME_APP_ID
             REALTIME_APP_SECRET
             BROADCAST_TOKEN_SECRET
         env:
-          RAZORPAY_KEY_ID: ${{ secrets.RAZORPAY_KEY_ID }}
-          RAZORPAY_KEY_SECRET: ${{ secrets.RAZORPAY_KEY_SECRET }}
-          RAZORPAY_WEBHOOK_SECRET: ${{ secrets.RAZORPAY_WEBHOOK_SECRET }}
           # Cloudflare Realtime SFU credentials for live match streaming.
           REALTIME_APP_ID: ${{ secrets.REALTIME_APP_ID }}
           REALTIME_APP_SECRET: ${{ secrets.REALTIME_APP_SECRET }}
