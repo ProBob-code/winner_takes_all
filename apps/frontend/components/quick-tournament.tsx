@@ -449,12 +449,13 @@ export function QuickTournament() {
     } else {
       players = teamPlayersInput
         .filter(p => p.name.trim())
-        .map(p => ({
+        .map((p, i) => ({
           id: Math.random().toString(36).substr(2, 9),
           name: p.name.trim(),
           total_balls_potted: 0,
           total_fouls: 0,
-          role: p.role
+          // 8-ball has no positional roles; keep a captain so lineup logic still resolves one.
+          role: selectedSport === 'FOOTBALL' ? p.role : (i === 0 ? 'CAPTAIN' as const : 'PLAYER' as const)
         }));
       if (players.length < 2) {
         setModalConfig({
@@ -1276,21 +1277,23 @@ export function QuickTournament() {
                             setTeamPlayersInput(next);
                           }}
                         />
-                        <select
-                          className="premium-input-v2-sm"
-                          style={{ maxWidth: '120px', background: '#070714', border: '1px solid #1e293b', color: '#fff', borderRadius: '6px', padding: '6px 10px', fontSize: '0.8rem', cursor: 'pointer' }}
-                          value={p.role}
-                          onChange={e => {
-                            const next = [...teamPlayersInput];
-                            next[i] = { ...next[i], role: e.target.value as any };
-                            setTeamPlayersInput(next);
-                          }}
-                        >
-                          <option value="CAPTAIN">Captain</option>
-                          <option value="GOALKEEPER">Goalkeeper</option>
-                          <option value="PLAYER">Playing</option>
-                          <option value="SUB">Sub</option>
-                        </select>
+                        {selectedSport === 'FOOTBALL' && (
+                          <select
+                            className="premium-input-v2-sm"
+                            style={{ maxWidth: '120px', background: '#070714', border: '1px solid #1e293b', color: '#fff', borderRadius: '6px', padding: '6px 10px', fontSize: '0.8rem', cursor: 'pointer' }}
+                            value={p.role}
+                            onChange={e => {
+                              const next = [...teamPlayersInput];
+                              next[i] = { ...next[i], role: e.target.value as any };
+                              setTeamPlayersInput(next);
+                            }}
+                          >
+                            <option value="CAPTAIN">Captain</option>
+                            <option value="GOALKEEPER">Goalkeeper</option>
+                            <option value="PLAYER">Playing</option>
+                            <option value="SUB">Sub</option>
+                          </select>
+                        )}
                         {teamPlayersInput.length > 2 && (
                           <button className="remove-member-btn" onClick={() => setTeamPlayersInput(teamPlayersInput.filter((_, idx) => idx !== i))}>×</button>
                         )}
