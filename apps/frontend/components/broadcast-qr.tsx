@@ -56,7 +56,19 @@ export function BroadcastQr({ arenaId, matchId, pin, onClose }: Props) {
     };
   }, [arenaId, matchId, pin]);
 
-  const svg = useMemo(() => (url ? qrToSvg(url, { size: 220 }) : null), [url]);
+  // Encoding runs during render, so an overflowing payload would otherwise
+  // throw straight into the page's error boundary and blank the whole arena.
+  const { svg, encodeError } = useMemo(() => {
+    if (!url) return { svg: null, encodeError: null as string | null };
+    try {
+      return { svg: qrToSvg(url, { size: 220 }), encodeError: null as string | null };
+    } catch (err: any) {
+      return {
+        svg: null,
+        encodeError: err?.message || "This broadcast link could not be encoded as a QR code.",
+      };
+    }
+  }, [url]);
 
   return (
     <div className="broadcast-qr-panel" style={{ textAlign: "center" }}>
@@ -66,8 +78,30 @@ export function BroadcastQr({ arenaId, matchId, pin, onClose }: Props) {
 
       {loading && <p className="muted" style={{ fontSize: "0.85rem" }}>Generating secure link…</p>}
 
-      {error && (
-        <p style={{ color: "#ef4444", fontSize: "0.85rem", margin: "12px 0" }}>{error}</p>
+      {(error || encodeError) && (
+        <p style={{ color: "#ef4444", fontSize: "0.85rem", margin: "12px 0" }}>
+          {error || encodeError}
+        </p>
+      )}
+
+      {encodeError && url && (
+        <>
+          <p className="muted" style={{ fontSize: "0.75rem", marginBottom: "6px" }}>
+            Share this link instead:
+          </p>
+          <code
+            style={{
+              display: "block",
+              wordBreak: "break-all",
+              fontSize: "0.7rem",
+              padding: "8px",
+              borderRadius: "6px",
+              background: "rgba(255,255,255,0.04)",
+            }}
+          >
+            {url}
+          </code>
+        </>
       )}
 
       {svg && (

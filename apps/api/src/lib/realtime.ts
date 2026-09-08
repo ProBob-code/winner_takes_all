@@ -33,17 +33,22 @@ export type StreamFeed = {
   startedAt: number;
 };
 
-// --- base64url helpers (no padding, URL-safe) ---
+/**
+ * Tokens travel inside a QR code, so every byte counts: the whole broadcast
+ * URL has to stay inside the QR encoder's capacity. A JSON+base64 envelope
+ * with a full hex HMAC pushed it to 213 bytes, exactly the limit, which made
+ * the code fail to render for any slightly longer arena or match id.
+ *
+ * Format: `<arenaId>.<matchId>.<exp>.<sig>` — arena ids and match ids are
+ * restricted to letters, digits, - and _, so "." is an unambiguous separator.
+ * The signature is HMAC-SHA256 truncated to 128 bits, which is ample for a
+ * capability that expires in hours and is the standard HMAC-SHA256-128
+ * construction.
+ */
+const SIGNATURE_HEX_CHARS = 32;
 
-function toBase64Url(input: string): string {
-  const b64 = btoa(input);
-  return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-}
-
-function fromBase64Url(input: string): string {
-  const b64 = input.replace(/-/g, "+").replace(/_/g, "/");
-  const padded = b64 + "=".repeat((4 - (b64.length % 4)) % 4);
-  return atob(padded);
+function claimsMessage(arenaId: string, matchId: string, exp: number): string {
+  return `${arenaId}.${matchId}.${exp}`;
 }
 
 /**
@@ -55,9 +60,9 @@ export async function signBroadcastToken(
   secret: string,
   claims: BroadcastClaims
 ): Promise<string> {
-  const payload = toBase64Url(JSON.stringify(claims));
-  const signature = await hmacSha256(secret, payload);
-  return `${payload}.${signature}`;
+  const message = claimsMessage(claims.arenaId, claims.matchId, claims.exp);
+  const signature = (await hmacSha256(secret, message)).slice(0, SIGNATURE_HEX_CHARS);
+  return `${message}.${signature}`;
 }
 
 /** Returns the claims when the token is authentic and unexpired, else null. */
@@ -67,22 +72,22 @@ export async function verifyBroadcastToken(
   nowSeconds: number
 ): Promise<BroadcastClaims | null> {
   const parts = token.split(".");
-  if (parts.length !== 2) return null;
+  if (parts.length !== 4) return null;
 
-  const [payload, signature] = parts;
-  const expected = await hmacSha256(secret, payload);
+  const [arenaId, matchId, expRaw, signature] = parts;
+  if (!arenaId || !matchId) return null;
+
+  const exp = Number(expRaw);
+  if (!Number.isInteger(exp)) return null;
+
+  const expected = (await hmacSha256(secret, claimsMessage(arenaId, matchId, exp))).slice(
+    0,
+    SIGNATURE_HEX_CHARS
+  );
   if (!timingSafeEqual(expected, signature)) return null;
 
-  let claims: BroadcastClaims;
-  try {
-    claims = JSON.parse(fromBase64Url(payload));
-  } catch {
-    return null;
-  }
-
-  if (typeof claims.exp !== "number" || claims.exp <= nowSeconds) return null;
-  if (!claims.arenaId || !claims.matchId) return null;
-  return claims;
+  if (exp <= nowSeconds) return null;
+  return { arenaId, matchId, exp };
 }
 
 // --- Cloudflare Realtime SFU ---
