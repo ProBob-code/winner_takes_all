@@ -1005,13 +1005,32 @@ app.post("/api/public-arenas", async (c) => {
 
   const newPinHash = body.pin ? await sha256Hex(body.pin) : existing?.pin ?? null;
 
-  await store.upsertArena({
-    id: body.id,
-    name: body.name,
-    state: body.state,
-    pin: newPinHash,
-    ownerId: existing?.owner_id ?? user.id,
-  });
+  try {
+    await store.upsertArena({
+      id: body.id,
+      name: body.name,
+      state: body.state,
+      pin: newPinHash,
+      ownerId: existing?.owner_id ?? user.id,
+    });
+  } catch (err) {
+    // A database created before owner_id/updated_at existed fails here with
+    // "no such column". Surfacing that beats a generic 500, because the fix is
+    // a migration the operator has to run by hand.
+    const detail = err instanceof Error ? err.message : String(err);
+    if (/no such column/i.test(detail)) {
+      return c.json(
+        {
+          ok: false,
+          message:
+            "Arena storage is out of date and is missing a column. Run migrations/0004_arena_columns.sql against the D1 database.",
+          detail,
+        },
+        500
+      );
+    }
+    throw err;
+  }
 
   return c.json({ ok: true, id: body.id });
 });
