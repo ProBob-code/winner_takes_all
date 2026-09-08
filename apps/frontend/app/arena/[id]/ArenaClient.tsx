@@ -4,6 +4,8 @@ import { useEffect, useState, useCallback } from "react";
 import { readBackendJson } from "@/lib/backend";
 import { FootballMatchEngine } from "@/components/football-match-engine";
 import { PoolMatchEngine } from "@/components/pool-match-engine";
+import { LiveFeedViewer } from "@/components/live-feed-viewer";
+import { BroadcastQr } from "@/components/broadcast-qr";
 import "@/components/tournament-engine.css";
 
 interface ArenaState {
@@ -20,6 +22,7 @@ export function ArenaClient({ id }: { id: string }) {
   const [showVictory, setShowVictory] = useState<any>(null);
   const [activeMatchId, setActiveMatchId] = useState<string | null>(null);
   const [qPage, setQPage] = useState(0);
+  const [qrMatchId, setQrMatchId] = useState<string | null>(null);
   const qSize = 5;
 
   const fetchArena = useCallback(async () => {
@@ -248,6 +251,28 @@ export function ArenaClient({ id }: { id: string }) {
               onSetActiveTeam={() => {}}
             />
           )}
+
+          <div className="mt-8" style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '20px' }}>
+            {arena.isOwner && (
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
+                <button
+                  className="button button-secondary button-sm"
+                  style={{ padding: '6px 12px', fontSize: '0.8rem' }}
+                  onClick={() => setQrMatchId(qrMatchId === liveMatch.id ? null : liveMatch.id)}
+                >
+                  📷 {qrMatchId === liveMatch.id ? 'HIDE QR' : 'STREAM THIS MATCH'}
+                </button>
+              </div>
+            )}
+
+            {qrMatchId === liveMatch.id && (
+              <div style={{ marginBottom: '20px' }}>
+                <BroadcastQr arenaId={id} matchId={liveMatch.id} onClose={() => setQrMatchId(null)} />
+              </div>
+            )}
+
+            <LiveFeedViewer arenaId={id} matchId={liveMatch.id} isLive={true} />
+          </div>
         </div>
       ) : liveMatches.length > 0 ? (
         <div className="live-screening-panel animate-in mt-6" style={{ width: '100%' }}>
@@ -307,6 +332,28 @@ export function ArenaClient({ id }: { id: string }) {
                         🔍 EXPAND VIEW
                       </button>
                     </div>
+                  </div>
+
+                  <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+                    {arena.isOwner && (
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '12px' }}>
+                        <button
+                          className="button button-secondary button-sm"
+                          style={{ padding: '6px 12px', fontSize: '0.78rem' }}
+                          onClick={() => setQrMatchId(qrMatchId === m.id ? null : m.id)}
+                        >
+                          📷 {qrMatchId === m.id ? 'HIDE QR' : 'STREAM'}
+                        </button>
+                      </div>
+                    )}
+
+                    {qrMatchId === m.id && (
+                      <div style={{ marginBottom: '16px' }}>
+                        <BroadcastQr arenaId={id} matchId={m.id} onClose={() => setQrMatchId(null)} />
+                      </div>
+                    )}
+
+                    <LiveFeedViewer arenaId={id} matchId={m.id} isLive={true} />
                   </div>
                 </div>
               );
