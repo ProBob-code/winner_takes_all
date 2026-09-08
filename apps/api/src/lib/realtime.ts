@@ -169,6 +169,53 @@ export async function callRealtime(
   return { status: res.status, body };
 }
 
+// --- Short broadcast codes ---
+//
+// The QR carries the URL, and a shorter URL is a smaller, far more scannable
+// symbol: the full signed link is a 49x49 version 8 code, while a short code
+// fits in roughly 29x29. The code is a lookup key for the real token, stored
+// with the same lifetime as the token itself, and is written once per QR
+// rather than on any repeating cadence.
+
+const BROADCAST_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no I,O,0,1
+
+export function createBroadcastCode(): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(8));
+  return Array.from(bytes, (b) => BROADCAST_CODE_ALPHABET[b % BROADCAST_CODE_ALPHABET.length]).join("");
+}
+
+export type BroadcastCodeRecord = {
+  arenaId: string;
+  matchId: string;
+  token: string;
+};
+
+const codeKey = (code: string) => `bcode:${code}`;
+
+export async function putBroadcastCode(
+  kv: KVNamespace,
+  code: string,
+  record: BroadcastCodeRecord,
+  ttlSeconds: number
+): Promise<void> {
+  await kv.put(codeKey(code), JSON.stringify(record), {
+    expirationTtl: Math.max(ttlSeconds, 60),
+  });
+}
+
+export async function getBroadcastCode(
+  kv: KVNamespace,
+  code: string
+): Promise<BroadcastCodeRecord | null> {
+  const raw = await kv.get(codeKey(code));
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as BroadcastCodeRecord;
+  } catch {
+    return null;
+  }
+}
+
 // --- Ephemeral feed registry (KV, TTL-expiring) ---
 
 const feedKey = (arenaId: string, matchId: string, feedId: string) =>

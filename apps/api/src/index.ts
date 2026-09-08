@@ -23,6 +23,9 @@ import {
   listFeeds,
   deleteFeed,
   BROADCAST_TOKEN_TTL_SECONDS,
+  createBroadcastCode,
+  putBroadcastCode,
+  getBroadcastCode,
   type StreamFeed,
   type RealtimeConfig,
 } from "./lib/realtime";
@@ -1124,7 +1127,27 @@ app.post("/api/stream/broadcast-token", async (c) => {
     body.matchId
   )}?t=${encodeURIComponent(token)}`;
 
-  return c.json({ ok: true, token, url, expiresAt: exp });
+  // A short code keeps the QR small enough to scan reliably. One write per
+  // QR, expiring with the token it stands for.
+  const code = createBroadcastCode();
+  await putBroadcastCode(
+    c.env.SESSIONS,
+    code,
+    { arenaId: body.arenaId, matchId: body.matchId, token },
+    BROADCAST_TOKEN_TTL_SECONDS
+  );
+  const shortUrl = `${origin}/b/${code}`;
+
+  return c.json({ ok: true, token, url, shortUrl, code, expiresAt: exp });
+});
+
+/** Resolve a short broadcast code back to its arena, match and token. */
+app.get("/api/stream/broadcast-code/:code", async (c) => {
+  const record = await getBroadcastCode(c.env.SESSIONS, c.req.param("code"));
+  if (!record) {
+    return c.json({ ok: false, message: "This broadcast link has expired." }, 404);
+  }
+  return c.json({ ok: true, ...record });
 });
 
 /** Open a WebRTC session against the SFU. */

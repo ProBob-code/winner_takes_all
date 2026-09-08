@@ -18,7 +18,10 @@ type Props = {
  * cannot be forwarded and reused after the match.
  */
 export function BroadcastQr({ arenaId, matchId, pin, onClose }: Props) {
+  // The QR carries the short URL because a smaller symbol scans far more
+  // reliably; sharing hands over whichever the server produced.
   const [url, setUrl] = useState<string | null>(null);
+  const [qrUrl, setQrUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
@@ -42,7 +45,8 @@ export function BroadcastQr({ arenaId, matchId, pin, onClose }: Props) {
         if (!res.ok || !data.ok) {
           setError(data.message || "Could not create a broadcast link.");
         } else {
-          setUrl(data.url);
+          setUrl(data.shortUrl || data.url);
+          setQrUrl(data.shortUrl || data.url);
         }
       } catch (err: any) {
         if (!cancelled) {
@@ -61,16 +65,16 @@ export function BroadcastQr({ arenaId, matchId, pin, onClose }: Props) {
   // Encoding runs during render, so an overflowing payload would otherwise
   // throw straight into the page's error boundary and blank the whole arena.
   const { svg, encodeError } = useMemo(() => {
-    if (!url) return { svg: null, encodeError: null as string | null };
+    if (!qrUrl) return { svg: null, encodeError: null as string | null };
     try {
-      return { svg: qrToSvg(url, { size: 340 }), encodeError: null as string | null };
+      return { svg: qrToSvg(qrUrl, { size: 340 }), encodeError: null as string | null };
     } catch (err: any) {
       return {
         svg: null,
         encodeError: err?.message || "This broadcast link could not be encoded as a QR code.",
       };
     }
-  }, [url]);
+  }, [qrUrl]);
 
   return (
     <div className="broadcast-qr-panel" style={{ textAlign: "center" }}>
