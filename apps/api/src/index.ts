@@ -24,6 +24,7 @@ import {
   deleteFeed,
   BROADCAST_TOKEN_TTL_SECONDS,
   type StreamFeed,
+  type RealtimeConfig,
 } from "./lib/realtime";
 import { authMiddleware, requireUser, requireAdmin, serializeUser, extractAccessToken } from "./middleware/auth";
 import { centsToMoney } from "./lib/money";
@@ -1040,18 +1041,20 @@ function nowSeconds(): number {
   return Math.floor(Date.now() / 1000);
 }
 
-function requireRealtime(c: Context<AppContext>) {
+/**
+ * Returns the SFU config, or the 503 to send when streaming is not set up.
+ * Returning a union rather than a pair keeps the caller's narrowing simple:
+ * `if (x instanceof Response) return x;`
+ */
+function requireRealtime(c: Context<AppContext>): RealtimeConfig | Response {
   const config = realtimeConfig(c.env);
   if (!config) {
-    return {
-      config: null,
-      error: c.json(
-        { ok: false, message: "Live streaming is not configured on this deployment." },
-        503
-      ),
-    };
+    return c.json(
+      { ok: false, message: "Live streaming is not configured on this deployment." },
+      503
+    );
   }
-  return { config, error: null };
+  return config;
 }
 
 /** Host mints the QR payload for one match. Owner or arena PIN only. */
@@ -1100,10 +1103,10 @@ app.post("/api/stream/broadcast-token", async (c) => {
 
 /** Open a WebRTC session against the SFU. */
 app.post("/api/stream/session", async (c) => {
-  const { config, error } = requireRealtime(c);
-  if (!config) return error;
+  const config = requireRealtime(c);
+  if (config instanceof Response) return config;
 
-  const limited = await rateLimit(c, `stream-session:${clientKey(c)}`, 60, 60);
+  const limited = await rateLimit(c, "stream-session", 60, 60);
   if (limited) return limited;
 
   const body = parseBody(streamSessionSchema, await readJson(c));
@@ -1120,10 +1123,10 @@ app.post("/api/stream/session", async (c) => {
 
 /** Publish local tracks or subscribe to remote ones. */
 app.post("/api/stream/tracks", async (c) => {
-  const { config, error } = requireRealtime(c);
-  if (!config) return error;
+  const config = requireRealtime(c);
+  if (config instanceof Response) return config;
 
-  const limited = await rateLimit(c, `stream-tracks:${clientKey(c)}`, 120, 60);
+  const limited = await rateLimit(c, "stream-tracks", 120, 60);
   if (limited) return limited;
 
   const body = parseBody(streamTracksSchema, await readJson(c));
@@ -1142,8 +1145,8 @@ app.post("/api/stream/tracks", async (c) => {
 });
 
 app.put("/api/stream/renegotiate", async (c) => {
-  const { config, error } = requireRealtime(c);
-  if (!config) return error;
+  const config = requireRealtime(c);
+  if (config instanceof Response) return config;
 
   const body = parseBody(streamRenegotiateSchema, await readJson(c));
   const result = await callRealtime(
@@ -1166,7 +1169,7 @@ app.post("/api/stream/feeds", async (c) => {
   const secret = c.env.BROADCAST_TOKEN_SECRET;
   if (!secret) return c.json({ ok: false, message: "Live streaming is not configured." }, 503);
 
-  const limited = await rateLimit(c, `stream-feed:${clientKey(c)}`, 120, 60);
+  const limited = await rateLimit(c, "stream-feed", 120, 60);
   if (limited) return limited;
 
   const body = parseBody(registerFeedSchema, await readJson(c));

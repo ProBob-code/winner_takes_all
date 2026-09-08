@@ -249,7 +249,7 @@ export function QuickTournament() {
         method: "POST", 
         body: JSON.stringify({ 
           id: arenaId, name: arenaName, state: { teams, matches, isStarted, selectedSport },
-          pin: arenaPin 
+          pin: arenaPin ?? undefined 
         }) 
       })
         .then((res) => {
@@ -527,7 +527,7 @@ export function QuickTournament() {
     try {
       const res = await backendFetch("/public-arenas", {
         method: "POST",
-        body: JSON.stringify({ id, name: arenaName, state: { teams, matches, isStarted }, pin: arenaPin })
+        body: JSON.stringify({ id, name: arenaName, state: { teams, matches, isStarted }, pin: arenaPin ?? undefined })
       });
 
       // fetch only rejects on network failure, so a 401 or 403 arrives here as
@@ -879,7 +879,7 @@ export function QuickTournament() {
           id: arenaId,
           name: arenaName,
           state: { teams, matches: closedMatches, isStarted: false, selectedSport },
-          pin: arenaPin,
+          pin: arenaPin ?? undefined,
         }),
       });
       setSyncError(res.ok ? null : `Closed locally, but the server returned HTTP ${res.status}.`);

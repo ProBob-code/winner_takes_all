@@ -163,5 +163,6 @@ export const upsertArenaSchema = z.object({
     .regex(/^[a-zA-Z0-9_-]+$/, "Arena id may only contain letters, numbers, - and _"),
   name: z.string().trim().min(1).max(80),
   state: z.unknown(),
-  pin: z.string().trim().min(4).max(32).optional(),
+  // Unlocked arenas send null, not undefined; treat both as "no PIN".
+  pin: z.string().trim().min(4).max(32).nullish(),
 });
