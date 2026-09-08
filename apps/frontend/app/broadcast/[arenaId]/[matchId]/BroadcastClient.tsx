@@ -44,6 +44,7 @@ export function BroadcastClient({ arenaId, matchId, token }: Props) {
   const [matchName, setMatchName] = useState<string | null>(null);
   const [usage, setUsage] = useState<TransportStats | null>(null);
   const [warning, setWarning] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const pcRef = useRef<RTCPeerConnection | null>(null);
@@ -100,6 +101,19 @@ export function BroadcastClient({ arenaId, matchId, token }: Props) {
 
     setPhase("starting");
     setError(null);
+
+    // QR scanners usually open links inside their own in-app webview rather
+    // than the real browser, and those webviews commonly expose no
+    // mediaDevices at all. That is why a scanned code fails where the same
+    // link pasted into Chrome or Safari works.
+    if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
+      setError(
+        "This page opened inside an app's built-in browser, which cannot use the camera. " +
+          "Use the menu to choose “Open in browser”, or paste the link into Chrome or Safari."
+      );
+      setPhase("error");
+      return;
+    }
 
     try {
       // Rear camera is the sensible default for filming a match.
@@ -412,6 +426,24 @@ export function BroadcastClient({ arenaId, matchId, token }: Props) {
               <button className="button button-gold" style={{ width: "100%" }} onClick={goLive}>
                 TRY AGAIN
               </button>
+              <button
+                className="button button-secondary mt-4"
+                style={{ width: "100%" }}
+                onClick={async () => {
+                  try {
+                    await navigator.clipboard.writeText(window.location.href);
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 2000);
+                  } catch {
+                    setCopied(false);
+                  }
+                }}
+              >
+                {copied ? "COPIED - NOW PASTE IN CHROME" : "COPY THIS LINK"}
+              </button>
+              <p className="muted mt-4" style={{ fontSize: "0.75rem" }}>
+                Paste it into Chrome or Safari to start the camera.
+              </p>
             </>
           )}
         </div>

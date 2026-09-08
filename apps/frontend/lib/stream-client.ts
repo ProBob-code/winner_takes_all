@@ -21,6 +21,9 @@ export type StreamFeed = {
 
 const ICE_SERVERS: RTCIceServer[] = [{ urls: "stun:stun.cloudflare.com:3478" }];
 
+/** How long a viewer waits for media before giving up. */
+const SUBSCRIBE_TIMEOUT_MS = 20_000;
+
 function apiBase(): string {
   return process.env.NEXT_PUBLIC_API_URL || getApiUrl();
 }
@@ -126,14 +129,26 @@ export async function subscribeToFeed(
 ): Promise<MediaStream> {
   const remoteStream = new MediaStream();
 
-  const streamReady = new Promise<MediaStream>((resolve) => {
-    let resolved = false;
+  // Without a deadline this promise can hang forever — the viewer sits on
+  // "Connecting..." with no way to tell whether media is coming.
+  const streamReady = new Promise<MediaStream>((resolve, reject) => {
+    let settled = false;
+    const timer = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      reject(
+        new Error(
+          "No video arrived from this camera. The broadcaster may have stopped or lost connection."
+        )
+      );
+    }, SUBSCRIBE_TIMEOUT_MS);
+
     pc.ontrack = (event) => {
       remoteStream.addTrack(event.track);
-      if (!resolved) {
-        resolved = true;
-        resolve(remoteStream);
-      }
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      resolve(remoteStream);
     };
   });
 
@@ -149,8 +164,14 @@ export async function subscribeToFeed(
     })),
   });
 
-  // Subscribing yields a server offer that we must answer.
-  if (result.sessionDescription) {
+  // Subscribing yields a server offer that we must answer. Without one there
+  // is nothing to negotiate against and no media will ever arrive, so fail
+  // loudly instead of waiting on a promise that cannot resolve.
+  if (!result.sessionDescription) {
+    throw new Error("The media server did not return a connection offer for this camera.");
+  }
+
+  {
     await pc.setRemoteDescription(result.sessionDescription);
     const answer = await pc.createAnswer();
     await pc.setLocalDescription(answer);
