@@ -26,9 +26,15 @@
 -- A statement for a column that already exists fails with
 -- "duplicate column name: ..." and is safe to ignore — nothing is modified.
 
+-- APPLIED TO PRODUCTION 2026-09-08. PRAGMA table_info(public_arenas) showed
+-- id, name, state_json, created_at, updated_at, pin -- owner_id was the only
+-- column missing, and adding it fixed the 500 on publishing an arena.
+
 -- Owner of the arena, used to authorize updates without a PIN.
 ALTER TABLE public_arenas ADD COLUMN owner_id TEXT;
 
 -- Last write time. listArenas orders by it, and Live Screening uses it to
--- decide whether an arena is still actively being hosted.
+-- decide whether an arena is still actively being hosted. This one already
+-- existed in production; the statement is kept for databases that predate it
+-- and simply errors with "duplicate column name" where it is already present.
 ALTER TABLE public_arenas ADD COLUMN updated_at DATETIME;
