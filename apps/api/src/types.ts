@@ -10,6 +10,10 @@ export interface Env {
   // KV Namespace for sessions + rate limiting
   SESSIONS: KVNamespace;
 
+  // Per-match live camera feed registry. Deliberately not KV: heartbeats are
+  // frequent and would exhaust the daily KV write budget.
+  MATCH_FEEDS: DurableObjectNamespace;
+
   // Secrets (set via `wrangler secret put`, never in wrangler.toml [vars])
   RAZORPAY_KEY_ID?: string;
   RAZORPAY_KEY_SECRET?: string;

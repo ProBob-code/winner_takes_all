@@ -20,11 +20,12 @@ import "@/components/tournament-engine.css";
 type Phase = "idle" | "starting" | "live" | "ended" | "error";
 
 /**
- * Re-registering on this cadence keeps the feed inside its server-side TTL.
- * Each heartbeat is a KV write against a 1000/day free-tier budget, so this
- * stays well inside FEED_TTL_SECONDS (300s) without writing every few seconds.
+ * Re-registering on this cadence keeps the feed alive server-side. Feed state
+ * lives in a Durable Object rather than KV, so heartbeats no longer consume a
+ * daily write budget and can be frequent enough that a camera which drops out
+ * disappears from the viewer's list promptly.
  */
-const HEARTBEAT_MS = 120_000;
+const HEARTBEAT_MS = 20_000;
 /** How often we re-check whether the match itself is still running. */
 const MATCH_POLL_MS = 15_000;
 

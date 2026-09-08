@@ -216,44 +216,50 @@ export async function getBroadcastCode(
   }
 }
 
-// --- Ephemeral feed registry (KV, TTL-expiring) ---
+// --- Feed registry (Durable Object, one per match) ---
+//
+// Heartbeats and viewer polling are far too frequent for KV's daily write
+// budget, so this state lives in a Durable Object instead. Nothing stored here
+// is media; it is only the session and track ids a viewer needs to subscribe.
 
-const feedKey = (arenaId: string, matchId: string, feedId: string) =>
-  `feed:${arenaId}:${matchId}:${feedId}`;
+function matchFeedsStub(ns: DurableObjectNamespace, arenaId: string, matchId: string) {
+  return ns.get(ns.idFromName(`${arenaId}:${matchId}`));
+}
 
-const feedPrefix = (arenaId: string, matchId: string) => `feed:${arenaId}:${matchId}:`;
-
-export async function putFeed(kv: KVNamespace, feed: StreamFeed): Promise<void> {
-  await kv.put(feedKey(feed.arenaId, feed.matchId, feed.feedId), JSON.stringify(feed), {
-    expirationTtl: FEED_TTL_SECONDS,
+async function callFeeds(
+  ns: DurableObjectNamespace,
+  arenaId: string,
+  matchId: string,
+  path: string,
+  init?: { method: "GET" | "POST"; body?: unknown }
+): Promise<any> {
+  const stub = matchFeedsStub(ns, arenaId, matchId);
+  const res = await stub.fetch(`https://match-feeds${path}`, {
+    method: init?.method ?? "GET",
+    headers: init?.body === undefined ? undefined : { "Content-Type": "application/json" },
+    body: init?.body === undefined ? undefined : JSON.stringify(init.body),
   });
+  return res.json();
+}
+
+export async function putFeed(ns: DurableObjectNamespace, feed: StreamFeed): Promise<void> {
+  await callFeeds(ns, feed.arenaId, feed.matchId, "/put", { method: "POST", body: feed });
 }
 
 export async function listFeeds(
-  kv: KVNamespace,
+  ns: DurableObjectNamespace,
   arenaId: string,
   matchId: string
 ): Promise<StreamFeed[]> {
-  const { keys } = await kv.list({ prefix: feedPrefix(arenaId, matchId) });
-  const feeds = await Promise.all(
-    keys.map(async (k) => {
-      const value = await kv.get(k.name);
-      if (!value) return null;
-      try {
-        return JSON.parse(value) as StreamFeed;
-      } catch {
-        return null;
-      }
-    })
-  );
-  return feeds.filter((f): f is StreamFeed => f !== null).sort((a, b) => a.startedAt - b.startedAt);
+  const data = await callFeeds(ns, arenaId, matchId, "/list");
+  return data?.ok ? (data.feeds as StreamFeed[]) : [];
 }
 
 export async function deleteFeed(
-  kv: KVNamespace,
+  ns: DurableObjectNamespace,
   arenaId: string,
   matchId: string,
   feedId: string
 ): Promise<void> {
-  await kv.delete(feedKey(arenaId, matchId, feedId));
+  await callFeeds(ns, arenaId, matchId, "/delete", { method: "POST", body: { feedId } });
 }

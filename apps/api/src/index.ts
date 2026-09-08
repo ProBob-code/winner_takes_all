@@ -1293,7 +1293,7 @@ app.post("/api/stream/feeds", async (c) => {
     startedAt: nowSeconds(),
   };
 
-  await putFeed(c.env.SESSIONS, feed);
+  await putFeed(c.env.MATCH_FEEDS, feed);
   return c.json({ ok: true, feed });
 });
 
@@ -1305,7 +1305,7 @@ app.get("/api/stream/feeds", async (c) => {
     return c.json({ ok: false, message: "arenaId and matchId are required" }, 400);
   }
 
-  const feeds = await listFeeds(c.env.SESSIONS, arenaId, matchId);
+  const feeds = await listFeeds(c.env.MATCH_FEEDS, arenaId, matchId);
   return c.json({ ok: true, feeds });
 });
 
@@ -1319,7 +1319,7 @@ app.post("/api/stream/feeds/end", async (c) => {
     return c.json({ ok: false, message: "This broadcast link is invalid or has expired." }, 403);
   }
 
-  await deleteFeed(c.env.SESSIONS, claims.arenaId, claims.matchId, body.feedId);
+  await deleteFeed(c.env.MATCH_FEEDS, claims.arenaId, claims.matchId, body.feedId);
   return c.json({ ok: true });
 });
 
@@ -1328,3 +1328,7 @@ app.post("/api/stream/feeds/end", async (c) => {
 app.all("*", (c) => c.json({ ok: false, message: "Not Found" }, 404));
 
 export default app;
+
+// The Durable Object class must be exported from the Worker entry point for
+// the MATCH_FEEDS binding to resolve.
+export { MatchFeeds } from "./durable-objects/match-feeds";

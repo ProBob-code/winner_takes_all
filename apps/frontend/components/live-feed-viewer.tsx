@@ -90,8 +90,12 @@ export function LiveFeedViewer({ arenaId, matchId, isLive }: Props) {
 
   const watch = useCallback(
     async (feed: StreamFeed) => {
-      const attempt = ++attemptRef.current;
+      // Tear the previous connection down first: closePeer bumps the attempt
+      // counter to invalidate anything already in flight, so this attempt has
+      // to be numbered after it, not before, or it invalidates itself.
       closePeer();
+      const attempt = ++attemptRef.current;
+
       setConnecting(true);
       setError(null);
       setActiveFeedId(feed.feedId);

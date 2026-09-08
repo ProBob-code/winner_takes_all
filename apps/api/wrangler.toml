@@ -8,6 +8,17 @@ binding = "DB"
 database_name = "winner-takes-all-db"
 database_id = "789d6ae3-5715-499c-b6b5-b069ec5eee51"
 
+# Live camera feed registry, one instance per match. Durable Object storage is
+# used instead of KV because broadcaster heartbeats and viewer polling are far
+# too frequent for KV's daily write allowance.
+[[durable_objects.bindings]]
+name = "MATCH_FEEDS"
+class_name = "MatchFeeds"
+
+[[migrations]]
+tag = "v1-match-feeds"
+new_sqlite_classes = ["MatchFeeds"]
+
 [[kv_namespaces]]
 binding = "SESSIONS"
 id = "788ab68ad9454e4ea7f2519b32792722"
