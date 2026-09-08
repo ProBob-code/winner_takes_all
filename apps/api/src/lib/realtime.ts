@@ -39,8 +39,13 @@ export type StreamFeed = {
  * with a full hex HMAC pushed it to 213 bytes, exactly the limit, which made
  * the code fail to render for any slightly longer arena or match id.
  *
- * Format: `<arenaId>.<matchId>.<exp>.<sig>` — arena ids and match ids are
- * restricted to letters, digits, - and _, so "." is an unambiguous separator.
+ * Format: `<arenaId>.<matchId>.<exp>.<sig>`. Match ids are generated with
+ * Math.random() and therefore *do* contain dots, so the parts are read
+ * positionally from both ends rather than by splitting into a fixed count:
+ * arena id first, signature and expiry last, match id whatever lies between.
+ * Arena ids are restricted to letters, digits, - and _, so the first segment
+ * is never ambiguous.
+ *
  * The signature is HMAC-SHA256 truncated to 128 bits, which is ample for a
  * capability that expires in hours and is the standard HMAC-SHA256-128
  * construction.
@@ -72,9 +77,14 @@ export async function verifyBroadcastToken(
   nowSeconds: number
 ): Promise<BroadcastClaims | null> {
   const parts = token.split(".");
-  if (parts.length !== 4) return null;
+  // At least arenaId, one match-id segment, exp and sig. A match id containing
+  // dots simply yields more segments in the middle.
+  if (parts.length < 4) return null;
 
-  const [arenaId, matchId, expRaw, signature] = parts;
+  const arenaId = parts[0];
+  const signature = parts[parts.length - 1];
+  const expRaw = parts[parts.length - 2];
+  const matchId = parts.slice(1, -2).join(".");
   if (!arenaId || !matchId) return null;
 
   const exp = Number(expRaw);

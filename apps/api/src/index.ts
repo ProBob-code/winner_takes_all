@@ -1141,7 +1141,14 @@ app.post("/api/stream/session", async (c) => {
   });
 
   if (result.status >= 400) {
-    return c.json({ ok: false, message: "Could not open a streaming session.", detail: result.body }, 502);
+    return c.json(
+      {
+        ok: false,
+        message: `Could not open a streaming session — the media server returned ${result.status}.`,
+        detail: result.body,
+      },
+      502
+    );
   }
   return c.json({ ok: true, ...result.body });
 });
@@ -1164,7 +1171,14 @@ app.post("/api/stream/tracks", async (c) => {
   });
 
   if (result.status >= 400) {
-    return c.json({ ok: false, message: "Could not update tracks.", detail: result.body }, 502);
+    return c.json(
+      {
+        ok: false,
+        message: `Could not update tracks — the media server returned ${result.status}.`,
+        detail: result.body,
+      },
+      502
+    );
   }
   return c.json({ ok: true, ...result.body });
 });
@@ -1181,7 +1195,14 @@ app.put("/api/stream/renegotiate", async (c) => {
   );
 
   if (result.status >= 400) {
-    return c.json({ ok: false, message: "Renegotiation failed.", detail: result.body }, 502);
+    return c.json(
+      {
+        ok: false,
+        message: `Renegotiation failed — the media server returned ${result.status}.`,
+        detail: result.body,
+      },
+      502
+    );
   }
   return c.json({ ok: true, ...result.body });
 });
