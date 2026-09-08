@@ -16,8 +16,12 @@ import "@/components/tournament-engine.css";
 
 type Phase = "idle" | "starting" | "live" | "ended" | "error";
 
-/** Re-registering on this cadence keeps the feed inside its server-side TTL. */
-const HEARTBEAT_MS = 30_000;
+/**
+ * Re-registering on this cadence keeps the feed inside its server-side TTL.
+ * Each heartbeat is a KV write against a 1000/day free-tier budget, so this
+ * stays well inside FEED_TTL_SECONDS (300s) without writing every few seconds.
+ */
+const HEARTBEAT_MS = 120_000;
 /** How often we re-check whether the match itself is still running. */
 const MATCH_POLL_MS = 15_000;
 

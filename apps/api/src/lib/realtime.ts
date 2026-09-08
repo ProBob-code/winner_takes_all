@@ -12,8 +12,15 @@ import { hmacSha256, timingSafeEqual } from "./crypto";
 /** Broadcast links die quickly; a match-long link that leaks is a liability. */
 export const BROADCAST_TOKEN_TTL_SECONDS = 3 * 60 * 60;
 
-/** A feed is dropped this long after its last heartbeat. */
-export const FEED_TTL_SECONDS = 90;
+/**
+ * A feed is dropped this long after its last heartbeat.
+ *
+ * Every heartbeat is a KV write, and the free tier allows 1000 writes a day,
+ * so this window is deliberately generous: it trades a few minutes of a dead
+ * feed lingering in the list for an order of magnitude fewer writes. The
+ * viewer side already drops a feed whose media stops arriving.
+ */
+export const FEED_TTL_SECONDS = 300;
 
 export type BroadcastClaims = {
   arenaId: string;

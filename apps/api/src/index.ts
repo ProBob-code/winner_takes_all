@@ -1217,10 +1217,16 @@ app.post("/api/stream/feeds", async (c) => {
   const secret = c.env.BROADCAST_TOKEN_SECRET;
   if (!secret) return c.json({ ok: false, message: "Live streaming is not configured." }, 503);
 
-  const limited = await rateLimit(c, "stream-feed", 120, 60);
-  if (limited) return limited;
-
   const body = parseBody(registerFeedSchema, await readJson(c));
+
+  // Rate limiting costs a KV write of its own, which would double the cost of
+  // every heartbeat. Registrations create new feeds and are worth guarding;
+  // heartbeats carry an existing feedId, are already gated by a signed token,
+  // and only refresh a TTL, so they skip it.
+  if (!body.feedId) {
+    const limited = await rateLimit(c, "stream-feed", 60, 60);
+    if (limited) return limited;
+  }
   const claims = await verifyBroadcastToken(secret, body.token, nowSeconds());
   if (!claims) {
     return c.json({ ok: false, message: "This broadcast link is invalid or has expired." }, 403);
