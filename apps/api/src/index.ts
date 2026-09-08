@@ -1137,7 +1137,9 @@ app.post("/api/stream/session", async (c) => {
   const body = parseBody(streamSessionSchema, await readJson(c));
   const result = await callRealtime(config, "/sessions/new", {
     method: "POST",
-    body: body.sessionDescription ? { sessionDescription: body.sessionDescription } : {},
+    // Omitted entirely when the caller has no SDP to offer; the SFU rejects an
+    // empty JSON object here.
+    body: body.sessionDescription ? { sessionDescription: body.sessionDescription } : undefined,
   });
 
   if (result.status >= 400) {

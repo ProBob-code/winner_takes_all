@@ -34,7 +34,14 @@ async function post(path: string, body: unknown): Promise<any> {
   });
   const data = await readJsonResponse(res);
   if (!res.ok || data.ok === false) {
-    throw new Error(data.message || `Request to ${path} failed (${res.status})`);
+    // The media server's own explanation is the useful part when a call is
+    // rejected; without it the message says only that something failed.
+    const upstream =
+      data.detail && typeof data.detail === "object"
+        ? (data.detail.errorDescription || data.detail.error || JSON.stringify(data.detail))
+        : data.detail;
+    const base = data.message || `Request to ${path} failed (${res.status})`;
+    throw new Error(upstream ? `${base} ${String(upstream).slice(0, 300)}` : base);
   }
   return data;
 }

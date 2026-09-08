@@ -137,12 +137,18 @@ export async function callRealtime(
   init: { method: "GET" | "POST" | "PUT"; body?: unknown }
 ): Promise<{ status: number; body: any }> {
   const url = `${config.apiBase}/apps/${config.appId}${path}`;
+
+  // Send no body — and no JSON content type — when there is nothing to send.
+  // sessions/new takes no payload, and posting an empty object with a JSON
+  // content type makes the SFU answer 400.
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${config.appSecret}`,
+  };
+  if (init.body !== undefined) headers["Content-Type"] = "application/json";
+
   const res = await fetch(url, {
     method: init.method,
-    headers: {
-      Authorization: `Bearer ${config.appSecret}`,
-      "Content-Type": "application/json",
-    },
+    headers,
     body: init.body === undefined ? undefined : JSON.stringify(init.body),
   });
 
