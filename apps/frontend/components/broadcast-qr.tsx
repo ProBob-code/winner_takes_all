@@ -21,6 +21,8 @@ export function BroadcastQr({ arenaId, matchId, pin, onClose }: Props) {
   const [url, setUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [copied, setCopied] = useState(false);
+  const canShare = typeof navigator !== "undefined" && typeof navigator.share === "function";
 
   useEffect(() => {
     let cancelled = false;
@@ -61,7 +63,7 @@ export function BroadcastQr({ arenaId, matchId, pin, onClose }: Props) {
   const { svg, encodeError } = useMemo(() => {
     if (!url) return { svg: null, encodeError: null as string | null };
     try {
-      return { svg: qrToSvg(url, { size: 220 }), encodeError: null as string | null };
+      return { svg: qrToSvg(url, { size: 340 }), encodeError: null as string | null };
     } catch (err: any) {
       return {
         svg: null,
@@ -109,15 +111,47 @@ export function BroadcastQr({ arenaId, matchId, pin, onClose }: Props) {
           <div
             style={{
               display: "inline-block",
-              padding: "10px",
+              padding: "16px",
               background: "#fff",
               borderRadius: "12px",
               lineHeight: 0,
+              maxWidth: "100%",
             }}
             dangerouslySetInnerHTML={{ __html: svg }}
           />
+          <div style={{ display: "flex", gap: "8px", justifyContent: "center", marginTop: "14px", flexWrap: "wrap" }}>
+            <button
+              className="button button-gold button-sm"
+              style={{ padding: "8px 14px", fontSize: "0.78rem" }}
+              onClick={async () => {
+                try {
+                  await navigator.clipboard.writeText(url!);
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2000);
+                } catch {
+                  setCopied(false);
+                }
+              }}
+            >
+              {copied ? "✓ COPIED" : "🔗 COPY LINK"}
+            </button>
+            {canShare && (
+              <button
+                className="button button-secondary button-sm"
+                style={{ padding: "8px 14px", fontSize: "0.78rem" }}
+                onClick={() => {
+                  navigator
+                    .share({ title: "Stream this match", url: url! })
+                    .catch(() => { /* dismissed */ });
+                }}
+              >
+                📤 SEND LINK
+              </button>
+            )}
+          </div>
+
           <p className="muted" style={{ fontSize: "0.78rem", marginTop: "12px", lineHeight: 1.5 }}>
-            Scan with a phone at the ground to open the camera and go live.
+            Scan with a phone at the ground, or send the link to whoever is filming.
             <br />
             Anyone can stream their own angle — viewers pick which one to watch.
           </p>
