@@ -35,8 +35,12 @@ export function LiveFeedViewer({ arenaId, matchId, isLive }: Props) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const stopStatsRef = useRef<(() => void) | null>(null);
+  // Subscribing is async; this discards results from a feed the viewer has
+  // already switched away from, which would otherwise attach a stale stream.
+  const attemptRef = useRef(0);
 
   const closePeer = useCallback(() => {
+    attemptRef.current += 1;
     stopStatsRef.current?.();
     stopStatsRef.current = null;
     pcRef.current?.close();
@@ -86,23 +90,33 @@ export function LiveFeedViewer({ arenaId, matchId, isLive }: Props) {
 
   const watch = useCallback(
     async (feed: StreamFeed) => {
+      const attempt = ++attemptRef.current;
       closePeer();
       setConnecting(true);
       setError(null);
       setActiveFeedId(feed.feedId);
 
+      let pc: RTCPeerConnection | null = null;
       try {
-        const pc = createPeerConnection();
+        pc = createPeerConnection();
         pcRef.current = pc;
         const stream = await subscribeToFeed(pc, feed);
+
+        // The viewer picked a different angle while this was in flight.
+        if (attempt !== attemptRef.current) {
+          pc.close();
+          return;
+        }
+
         if (videoRef.current) videoRef.current.srcObject = stream;
         stopStatsRef.current = watchTransportStats(pc, "inbound", setUsage);
       } catch (err: any) {
+        if (attempt !== attemptRef.current) return;
         setError(err?.message || "Could not connect to this camera.");
         setActiveFeedId(null);
         closePeer();
       } finally {
-        setConnecting(false);
+        if (attempt === attemptRef.current) setConnecting(false);
       }
     },
     [closePeer]

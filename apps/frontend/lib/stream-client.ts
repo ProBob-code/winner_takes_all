@@ -186,6 +186,55 @@ export async function endFeed(input: {
   await post("/api/stream/feeds/end", input);
 }
 
+/**
+ * Release published tracks at the SFU. Never throws: this runs during
+ * teardown, often while the page is going away, and a failure changes
+ * nothing the caller can act on.
+ */
+export async function closeTracks(sessionId: string, trackNames: string[]): Promise<void> {
+  try {
+    await post("/api/stream/tracks/close", { sessionId, trackNames });
+  } catch {
+    /* best effort */
+  }
+}
+
+/**
+ * Fire-and-forget cleanup for a page that is being closed. Normal fetches are
+ * cancelled when the document unloads, so the feed would linger until its TTL;
+ * sendBeacon is delivered by the browser after the page is gone.
+ */
+export function beaconEndFeed(input: {
+  token: string;
+  sessionId: string;
+  trackNames: string[];
+  label: string;
+  feedId: string;
+}): void {
+  try {
+    const body = new Blob([JSON.stringify(input)], { type: "application/json" });
+    navigator.sendBeacon?.(`${apiBase()}/api/stream/feeds/end`, body);
+  } catch {
+    /* best effort */
+  }
+}
+
+/**
+ * Recover a connection whose ICE has failed — switching between wifi and
+ * mobile data mid-match is routine at a ground, and without a restart the
+ * stream simply stops with no visible cause.
+ */
+export async function restartIce(pc: RTCPeerConnection, sessionId: string): Promise<void> {
+  const offer = await pc.createOffer({ iceRestart: true });
+  await pc.setLocalDescription(offer);
+  await waitForIceGathering(pc);
+
+  await post("/api/stream/renegotiate", {
+    sessionId,
+    sessionDescription: { sdp: pc.localDescription!.sdp, type: "offer" },
+  });
+}
+
 export async function fetchFeeds(arenaId: string, matchId: string): Promise<StreamFeed[]> {
   const res = await fetch(
     `${apiBase()}/api/stream/feeds?arenaId=${encodeURIComponent(arenaId)}&matchId=${encodeURIComponent(matchId)}`,

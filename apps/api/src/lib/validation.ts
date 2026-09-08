@@ -146,6 +146,11 @@ export const streamRenegotiateSchema = z.object({
   sessionDescription: sdpSchema,
 });
 
+export const streamCloseSchema = z.object({
+  sessionId: z.string().trim().min(1).max(200),
+  trackNames: z.array(z.string().trim().min(1).max(200)).min(1).max(8),
+});
+
 export const registerFeedSchema = z.object({
   token: z.string().trim().min(1).max(2000),
   sessionId: z.string().trim().min(1).max(200),

@@ -50,6 +50,7 @@ import {
   streamSessionSchema,
   streamTracksSchema,
   streamRenegotiateSchema,
+  streamCloseSchema,
   registerFeedSchema,
 } from "./lib/validation";
 
@@ -1207,6 +1208,33 @@ app.put("/api/stream/renegotiate", async (c) => {
     );
   }
   return c.json({ ok: true, ...result.body });
+});
+
+/**
+ * Release published tracks at the SFU. Closing the PeerConnection already
+ * stops media, but the documented lifecycle closes tracks explicitly, and
+ * doing so releases the session's resources immediately rather than when the
+ * SFU notices the peer is gone.
+ *
+ * Best effort by design: teardown must never be blocked by a cleanup call.
+ */
+app.post("/api/stream/tracks/close", async (c) => {
+  const config = requireRealtime(c);
+  if (config instanceof Response) return config;
+
+  const body = parseBody(streamCloseSchema, await readJson(c));
+  const result = await callRealtime(
+    config,
+    `/sessions/${encodeURIComponent(body.sessionId)}/tracks/close`,
+    {
+      method: "PUT",
+      // force skips the renegotiation round trip; the peer is going away.
+      body: { tracks: body.trackNames.map((trackName) => ({ trackName })), force: true },
+    }
+  );
+
+  // A failure here is not actionable for the client, which is already leaving.
+  return c.json({ ok: true, closed: result.status < 400, status: result.status });
 });
 
 /**

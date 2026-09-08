@@ -9,6 +9,9 @@ import {
   endFeed,
   watchTransportStats,
   formatBytes,
+  closeTracks,
+  beaconEndFeed,
+  restartIce,
   type StreamFeed,
   type TransportStats,
 } from "@/lib/stream-client";
@@ -40,12 +43,14 @@ export function BroadcastClient({ arenaId, matchId, token }: Props) {
   const [feed, setFeed] = useState<StreamFeed | null>(null);
   const [matchName, setMatchName] = useState<string | null>(null);
   const [usage, setUsage] = useState<TransportStats | null>(null);
+  const [warning, setWarning] = useState<string | null>(null);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const feedRef = useRef<StreamFeed | null>(null);
   const stopStatsRef = useRef<(() => void) | null>(null);
+  const missedBeatsRef = useRef(0);
 
   feedRef.current = feed;
 
@@ -57,12 +62,17 @@ export function BroadcastClient({ arenaId, matchId, token }: Props) {
       streamRef.current?.getTracks().forEach((t) => t.stop());
       streamRef.current = null;
 
+      const current = feedRef.current;
+
+      // Release the tracks at the SFU before dropping the peer connection, so
+      // the session's resources go immediately rather than on a timeout.
+      if (current) await closeTracks(current.sessionId, current.trackNames);
+
       pcRef.current?.close();
       pcRef.current = null;
 
-      const current = feedRef.current;
       if (current && token) {
-        // Best effort: the TTL would drop it anyway within 90s.
+        // Best effort: the TTL would drop it anyway.
         try {
           await endFeed({
             token,
@@ -107,13 +117,21 @@ export function BroadcastClient({ arenaId, matchId, token }: Props) {
       const registered = await registerFeed({ token, sessionId, trackNames, label });
 
       stopStatsRef.current = watchTransportStats(pc, "outbound", setUsage);
+      missedBeatsRef.current = 0;
+      setWarning(null);
       setFeed(registered);
       setPhase("live");
     } catch (err: any) {
       const message =
         err?.name === "NotAllowedError"
           ? "Camera access was blocked. Allow camera and microphone access, then try again."
-          : err?.message || "Could not start the broadcast.";
+          : err?.name === "NotFoundError"
+            ? "No camera was found on this device."
+            : err?.name === "NotReadableError"
+              ? "The camera is already in use by another app. Close it and try again."
+              : err?.name === "OverconstrainedError"
+                ? "This device has no camera matching the requested settings."
+                : err?.message || "Could not start the broadcast.";
       setError(message);
       setPhase("error");
       streamRef.current?.getTracks().forEach((t) => t.stop());
@@ -134,9 +152,16 @@ export function BroadcastClient({ arenaId, matchId, token }: Props) {
         trackNames: feed.trackNames,
         label: feed.label,
         feedId: feed.feedId,
-      }).catch(() => {
-        /* a missed heartbeat is recoverable; the next one will re-register */
-      });
+      })
+        .then(() => setWarning(null))
+        .catch(() => {
+          // One miss is recoverable, but repeated failures mean the feed will
+          // expire and viewers will lose the stream with no explanation.
+          missedBeatsRef.current += 1;
+          if (missedBeatsRef.current >= 2) {
+            setWarning("Losing contact with the server — viewers may stop seeing this feed.");
+          }
+        });
     }, HEARTBEAT_MS);
 
     return () => clearInterval(id);
@@ -177,6 +202,81 @@ export function BroadcastClient({ arenaId, matchId, token }: Props) {
       clearInterval(id);
     };
   }, [phase, arenaId, matchId, matchName, teardown]);
+
+  // Recover from a dropped connection. Walking out of wifi range onto mobile
+  // data mid-match kills ICE, and without a restart the stream just stops.
+  useEffect(() => {
+    const pc = pcRef.current;
+    if (phase !== "live" || !pc || !feed) return;
+
+    let disposed = false;
+
+    const attemptRestart = async () => {
+      if (disposed || pc.iceConnectionState !== "failed") return;
+      setWarning("Connection dropped — reconnecting…");
+      try {
+        await restartIce(pc, feed.sessionId);
+        if (!disposed) setWarning(null);
+      } catch {
+        if (!disposed) setWarning("Could not reconnect. Stop and start the broadcast again.");
+      }
+    };
+
+    const onIceChange = () => {
+      if (pc.iceConnectionState === "failed") void attemptRestart();
+      else if (pc.iceConnectionState === "connected" && !disposed) setWarning(null);
+    };
+
+    pc.addEventListener("iceconnectionstatechange", onIceChange);
+    const connection = (navigator as any).connection;
+    connection?.addEventListener?.("change", attemptRestart);
+
+    return () => {
+      disposed = true;
+      pc.removeEventListener("iceconnectionstatechange", onIceChange);
+      connection?.removeEventListener?.("change", attemptRestart);
+    };
+  }, [phase, feed]);
+
+  // Phones stop camera tracks when the tab is backgrounded or the screen
+  // locks. The peer connection stays up, so viewers would see a frozen frame
+  // with nothing here to explain it.
+  useEffect(() => {
+    if (phase !== "live") return;
+    const stream = streamRef.current;
+    if (!stream) return;
+
+    const onEnded = () => {
+      setWarning("The camera stopped — keep this tab open and the screen awake, then restart.");
+    };
+    const tracks = stream.getTracks();
+    tracks.forEach((t) => t.addEventListener("ended", onEnded));
+    return () => tracks.forEach((t) => t.removeEventListener("ended", onEnded));
+  }, [phase, feed]);
+
+  // Closing the tab cancels in-flight fetches, so a normal teardown would not
+  // reach the server. sendBeacon survives the unload.
+  useEffect(() => {
+    if (phase !== "live") return;
+
+    const onPageHide = () => {
+      streamRef.current?.getTracks().forEach((t) => t.stop());
+      const current = feedRef.current;
+      if (current && token) {
+        beaconEndFeed({
+          token,
+          sessionId: current.sessionId,
+          trackNames: current.trackNames,
+          label: current.label,
+          feedId: current.feedId,
+        });
+      }
+      pcRef.current?.close();
+    };
+
+    window.addEventListener("pagehide", onPageHide);
+    return () => window.removeEventListener("pagehide", onPageHide);
+  }, [phase, token]);
 
   // Release the camera if the page goes away.
   useEffect(() => {
@@ -264,6 +364,11 @@ export function BroadcastClient({ arenaId, matchId, token }: Props) {
               <p style={{ color: "#10b981", fontWeight: "bold", fontSize: "0.9rem" }}>
                 You are live as “{feed?.label}”.
               </p>
+              {warning && (
+                <p style={{ color: "#f59e0b", fontSize: "0.8rem", marginTop: "10px" }}>
+                  ⚠ {warning}
+                </p>
+              )}
               {usage && (
                 <div
                   style={{
