@@ -1005,20 +1005,16 @@ app.post("/api/public-arenas", async (c) => {
 
   const existing = await store.getArena(body.id);
 
-  if (existing) {
-    // Locked arenas may only be updated by the owner or with the correct PIN.
-    if (existing.pin) {
-      const suppliedHash = body.pin ? await sha256Hex(body.pin) : "";
-      const pinMatches =
-        !!body.pin &&
-        (timingSafeEqual(existing.pin, suppliedHash) ||
-          // Legacy rows stored the PIN in plaintext.
-          timingSafeEqual(existing.pin, body.pin));
-      const isOwner = existing.owner_id === user.id || user.role === "admin";
-      if (!pinMatches && !isOwner) {
-        return c.json({ ok: false, message: "Invalid PIN. This arena is locked." }, 403);
-      }
-    }
+  if (existing && !(await mayManageArena(existing, user, body.pin))) {
+    return c.json(
+      {
+        ok: false,
+        message: existing.pin
+          ? "Invalid PIN. This arena belongs to another host."
+          : "This arena belongs to another host.",
+      },
+      403
+    );
   }
 
   const newPinHash = body.pin ? await sha256Hex(body.pin) : existing?.pin ?? null;
@@ -1075,6 +1071,34 @@ app.get("/api/public-arenas/:id", async (c) => {
 // Media is relayed by the SFU and never recorded. This Worker only signs
 // broadcast grants, proxies SDP so the app secret stays server-side, and keeps
 // a short-lived list of who is currently streaming.
+
+/**
+ * Who may write to, or broadcast from, an arena.
+ *
+ * An arena belongs to the account that created it. Previously any signed-in
+ * user could overwrite an arena that had no PIN, so one person's Quick
+ * Tournament could be replaced by another's; drafts are now per-account, so
+ * that latitude is no longer needed and is closed.
+ *
+ * Arenas created before ownership was recorded have no owner. The first
+ * account to write to one claims it, which is what upsertArena already does.
+ */
+async function mayManageArena(
+  arena: { owner_id: string | null; pin: string | null },
+  user: { id: string; role: string },
+  suppliedPin?: string
+): Promise<boolean> {
+  if (user.role === "admin") return true;
+  if (!arena.owner_id) return true; // unclaimed, predates ownership
+  if (arena.owner_id === user.id) return true;
+
+  if (arena.pin && suppliedPin) {
+    const hash = await sha256Hex(suppliedPin);
+    // Legacy rows stored the PIN in plaintext.
+    return timingSafeEqual(arena.pin, hash) || timingSafeEqual(arena.pin, suppliedPin);
+  }
+  return false;
+}
 
 /**
  * A broadcast grant is only meaningful while the match is actually being
@@ -1152,27 +1176,18 @@ app.post("/api/stream/broadcast-token", async (c) => {
   const arena = await c.get("store").getArena(body.arenaId);
   if (!arena) return c.json({ ok: false, message: "Arena not found" }, 404);
 
-  // Mirror the arena update rules exactly. An arena with no PIN is open: any
-  // signed-in user may already push state to it, so refusing them a broadcast
-  // protected nothing while locking out a host running the tournament from a
-  // different account than the one that first created the arena. A PIN is what
-  // makes an arena private, and it is enforced here as it is on update.
-  const isOwner = arena.owner_id === user.id || user.role === "admin";
-  if (!isOwner && arena.pin) {
-    const suppliedHash = body.pin ? await sha256Hex(body.pin) : "";
-    const pinMatches =
-      !!body.pin &&
-      (timingSafeEqual(arena.pin, suppliedHash) || timingSafeEqual(arena.pin, body.pin));
-    if (!pinMatches) {
-      return c.json(
-        {
-          ok: false,
-          message:
-            "This arena is locked. Enter its PIN to start a broadcast, or ask the host who locked it.",
-        },
-        403
-      );
-    }
+  // Same rule as updating the arena: broadcasting from someone else's
+  // tournament is exactly as much of an intrusion as overwriting it.
+  if (!(await mayManageArena(arena, user, body.pin))) {
+    return c.json(
+      {
+        ok: false,
+        message: arena.pin
+          ? "This arena is locked. Enter its PIN to start a broadcast."
+          : "Only the host who created this arena can start a broadcast.",
+      },
+      403
+    );
   }
 
   if (!(await matchIsLive(c, body.arenaId, body.matchId))) {

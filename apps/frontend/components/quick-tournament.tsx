@@ -220,29 +220,79 @@ export function QuickTournament() {
   } | null>(null);
 
   const [isMounted, setIsMounted] = useState(false);
+  /** Draft storage key, scoped to the signed-in account; null until resolved. */
+  const [storageKey, setStorageKey] = useState<string | null>(null);
 
-  // Sync with LocalStorage
+  /**
+   * Restore the draft belonging to whoever is signed in.
+   *
+   * The draft used to live under one fixed key, which made it a property of
+   * the browser rather than the account: sign out, sign in as someone else,
+   * and their Quick Tournament was already populated with the previous
+   * person's teams, arena id and PIN. Resolving the account first and keying
+   * the draft by it keeps them separate, and a signed-out visitor gets their
+   * own scratch space rather than sharing anyone's.
+   */
   useEffect(() => {
     setIsMounted(true);
-    const saved = localStorage.getItem("wta_arena_quick_v11");
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      setTeams(parsed.teams || []);
-      setMatches(parsed.matches || []);
-      setIsStarted(parsed.isStarted || false);
-      setArenaId(parsed.arenaId || "");
-      setMatchesPerTeam(parsed.matchesPerTeam || 3);
-      setDefaultDuration(parsed.defaultDuration || 600);
-       setTournamentType(parsed.tournamentType || 'GROUP');
-      setArenaName(parsed.arenaName || "Stadium Arena Showdown");
-      setArenaPin(parsed.arenaPin || null);
-      setIsLocked(parsed.isLocked || false);
-      setSelectedSport(parsed.selectedSport || '8BALL');
-    }
+    let cancelled = false;
+
+    (async () => {
+      let owner = "guest";
+      try {
+        const res = await backendFetch("/user/profile");
+        if (res.ok) {
+          const data: any = await res.json();
+          if (data?.user?.id) owner = String(data.user.id);
+        }
+      } catch {
+        /* treated as a signed-out visitor */
+      }
+      if (cancelled) return;
+
+      // The old shared draft cannot be attributed to an account, so it is
+      // discarded rather than shown to whoever opens the page next.
+      try {
+        localStorage.removeItem("wta_arena_quick_v11");
+      } catch {
+        /* storage unavailable */
+      }
+
+      const key = `wta_arena_quick_v12:${owner}`;
+      try {
+        const saved = localStorage.getItem(key);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          setTeams(parsed.teams || []);
+          setMatches(parsed.matches || []);
+          setIsStarted(parsed.isStarted || false);
+          setArenaId(parsed.arenaId || "");
+          setMatchesPerTeam(parsed.matchesPerTeam || 3);
+          setDefaultDuration(parsed.defaultDuration || 600);
+          setTournamentType(parsed.tournamentType || 'GROUP');
+          setArenaName(parsed.arenaName || "Stadium Arena Showdown");
+          setArenaPin(parsed.arenaPin || null);
+          setIsLocked(parsed.isLocked || false);
+          setSelectedSport(parsed.selectedSport || '8BALL');
+        }
+      } catch {
+        /* a corrupt draft should not block the page */
+      }
+
+      setStorageKey(key);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
-    localStorage.setItem("wta_arena_quick_v11", JSON.stringify({ 
+    // Nothing is persisted until the owning account is known, or the first
+    // render would write an empty draft over the stored one.
+    if (!storageKey) return;
+
+    localStorage.setItem(storageKey, JSON.stringify({ 
       teams, matches, isStarted, arenaId, matchesPerTeam, defaultDuration, 
       tournamentType, arenaName, arenaPin, isLocked, selectedSport 
     }));
@@ -269,7 +319,7 @@ export function QuickTournament() {
         })
         .catch(() => setSyncError("Not synced: the spectator network is unreachable."));
     }
-  }, [teams, matches, isStarted, arenaId, matchesPerTeam, defaultDuration, tournamentType, arenaName, arenaPin, isLocked, selectedSport]);
+  }, [storageKey, teams, matches, isStarted, arenaId, matchesPerTeam, defaultDuration, tournamentType, arenaName, arenaPin, isLocked, selectedSport]);
 
   useEffect(() => {
     if (teams.length >= 2) {
