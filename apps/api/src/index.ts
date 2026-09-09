@@ -24,6 +24,7 @@ import {
   deleteFeed,
   BROADCAST_TOKEN_TTL_SECONDS,
   createBroadcastCode,
+  normaliseBroadcastCode,
   putBroadcastCode,
   getBroadcastCode,
   checkStreamRateLimit,
@@ -1225,7 +1226,12 @@ app.post("/api/stream/broadcast-token", async (c) => {
 
 /** Resolve a short broadcast code back to its arena, match and token. */
 app.get("/api/stream/broadcast-code/:code", async (c) => {
-  const record = await getBroadcastCode(c.env.MATCH_FEEDS, c.req.param("code"));
+  // The code is the only credential, so guessing must be rate limited.
+  const limited = await streamRateLimit(c, "broadcast-code", 20, 60);
+  if (limited) return limited;
+
+  const code = normaliseBroadcastCode(c.req.param("code"));
+  const record = await getBroadcastCode(c.env.MATCH_FEEDS, code);
   if (!record) {
     return c.json({ ok: false, message: "This broadcast link has expired." }, 404);
   }
@@ -1365,13 +1371,10 @@ app.post("/api/stream/feeds", async (c) => {
     return c.json({ ok: false, message: "This broadcast link is invalid or has expired." }, 403);
   }
 
-  // Only signed-in people may put a camera on air. Checked when a feed is
-  // claimed rather than on every heartbeat, so the steady state costs no
-  // session lookup; thereafter the feed is bound to a signed, expiring token.
+  // No account required: the signed broadcast token, obtained by scanning the
+  // QR or entering the stream code, is the authorisation. Someone handed a
+  // phone at the ground should not have to sign up first.
   const broadcaster = c.get("user");
-  if (!body.feedId && !broadcaster) {
-    return c.json({ ok: false, message: "Please log in to stream this match." }, 401);
-  }
 
   // Checked on every heartbeat, not just registration: a match that ends
   // mid-broadcast must stop the feed even if the page never noticed.

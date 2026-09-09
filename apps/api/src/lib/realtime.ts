@@ -181,9 +181,20 @@ export async function callRealtime(
 
 const BROADCAST_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no I,O,0,1
 
+/** Length is a trade: short enough to read off a screen and type, long
+ *  enough that guessing is hopeless. Six characters of this 32-symbol
+ *  alphabet is about a billion combinations, and codes expire with the
+ *  broadcast grant they stand for. */
+export const BROADCAST_CODE_LENGTH = 6;
+
 export function createBroadcastCode(): string {
-  const bytes = crypto.getRandomValues(new Uint8Array(8));
+  const bytes = crypto.getRandomValues(new Uint8Array(BROADCAST_CODE_LENGTH));
   return Array.from(bytes, (b) => BROADCAST_CODE_ALPHABET[b % BROADCAST_CODE_ALPHABET.length]).join("");
+}
+
+/** Accept what someone typed: any case, with spaces or dashes ignored. */
+export function normaliseBroadcastCode(input: string): string {
+  return input.toUpperCase().replace(/[^A-Z0-9]/g, "");
 }
 
 export type BroadcastCodeRecord = {

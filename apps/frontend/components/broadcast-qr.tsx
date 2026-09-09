@@ -18,6 +18,7 @@ type Props = {
  * cannot be forwarded and reused after the match.
  */
 export function BroadcastQr({ arenaId, matchId, pin, onClose }: Props) {
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
   // The QR carries the short URL because a smaller symbol scans far more
   // reliably; sharing hands over whichever the server produced.
   const [url, setUrl] = useState<string | null>(null);
@@ -26,6 +27,7 @@ export function BroadcastQr({ arenaId, matchId, pin, onClose }: Props) {
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
   const [enlarged, setEnlarged] = useState(false);
+  const [code, setCode] = useState<string | null>(null);
   const canShare = typeof navigator !== "undefined" && typeof navigator.share === "function";
 
   useEffect(() => {
@@ -48,6 +50,7 @@ export function BroadcastQr({ arenaId, matchId, pin, onClose }: Props) {
         } else {
           setUrl(data.shortUrl || data.url);
           setQrUrl(data.shortUrl || data.url);
+          setCode(data.code || null);
         }
       } catch (err: any) {
         if (!cancelled) {
@@ -146,6 +149,38 @@ export function BroadcastQr({ arenaId, matchId, pin, onClose }: Props) {
           <p className="muted" style={{ fontSize: "0.7rem", marginTop: "6px" }}>
             Tap the code to enlarge it
           </p>
+
+          {/* The typed route matters as much as the scanned one: a camera that
+              will not read the QR should not stop someone filming. */}
+          {code && (
+            <div
+              style={{
+                marginTop: "14px",
+                padding: "12px",
+                borderRadius: "10px",
+                background: "rgba(255,255,255,0.03)",
+                border: "1px solid rgba(255,255,255,0.08)",
+              }}
+            >
+              <p className="muted" style={{ fontSize: "0.7rem", marginBottom: "6px" }}>
+                Can't scan? Go to <strong>{origin}/b</strong> and enter
+              </p>
+              <div
+                style={{
+                  fontSize: "1.9rem",
+                  fontWeight: 900,
+                  letterSpacing: "0.45rem",
+                  fontFamily: "monospace",
+                  color: "var(--gold)",
+                }}
+              >
+                {code}
+              </div>
+              <p className="muted" style={{ fontSize: "0.68rem", marginTop: "4px" }}>
+                No account needed
+              </p>
+            </div>
+          )}
           <div style={{ display: "flex", gap: "8px", justifyContent: "center", marginTop: "14px", flexWrap: "wrap" }}>
             <button
               className="button button-gold button-sm"
@@ -214,6 +249,15 @@ export function BroadcastQr({ arenaId, matchId, pin, onClose }: Props) {
           <p style={{ color: "#111", fontSize: "0.85rem", fontWeight: 700 }}>
             Point a phone camera at this code
           </p>
+          {code && (
+            <p style={{ color: "#111", fontSize: "1rem", fontWeight: 700, textAlign: "center" }}>
+              or go to {origin.replace(/^https?:\/\//, "")}/b and enter
+              <br />
+              <span style={{ fontSize: "2rem", letterSpacing: "0.4rem", fontFamily: "monospace" }}>
+                {code}
+              </span>
+            </p>
+          )}
           <p style={{ color: "#555", fontSize: "0.75rem" }}>Tap anywhere to close</p>
         </div>
       )}
