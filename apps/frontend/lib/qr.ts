@@ -254,6 +254,37 @@ function placeTimingAndDark(m: Matrix, version: number) {
   setModule(m, 4 * version + 9, 8, true);
 }
 
+/**
+ * 18-bit BCH version information, required from version 7 upward.
+ *
+ * Omitting these two blocks is not cosmetic: the modules they occupy are not
+ * available to data, so leaving them out both shifts every subsequent data bit
+ * and denies the scanner the version it needs. A symbol missing them cannot be
+ * decoded at all.
+ */
+function versionBits(version: number): number {
+  let value = version << 12;
+  for (let i = 17; i >= 12; i--) {
+    if ((value >>> i) & 1) value ^= 0x1f25 << (i - 12);
+  }
+  return (version << 12) | value;
+}
+
+/** Version info occupies a 6x3 block by the top-right and bottom-left finders. */
+function placeVersionInfo(m: Matrix, version: number) {
+  if (version < 7) return;
+
+  const bits = versionBits(version);
+  for (let i = 0; i < 18; i++) {
+    const bit = ((bits >>> i) & 1) === 1;
+    const a = Math.floor(i / 3);
+    const b = i % 3;
+
+    setModule(m, m.size - 11 + b, a, bit); // bottom-left block
+    setModule(m, a, m.size - 11 + b, bit); // top-right block
+  }
+}
+
 function reserveFormatAreas(m: Matrix) {
   for (let i = 0; i < 9; i++) {
     if (!m.reserved[8 * m.size + i]) setModule(m, 8, i, false);
@@ -421,6 +452,7 @@ export function encodeQr(text: string): QrMatrix {
   placeFinder(base, base.size - 7, 0);
   placeAlignment(base, version);
   placeTimingAndDark(base, version);
+  placeVersionInfo(base, version);
   reserveFormatAreas(base);
   placeData(base, finalCodewords);
 
@@ -484,6 +516,7 @@ export function qrToSvg(text: string, options: { margin?: number; size?: number 
 
 /** Internals exposed for the round-trip test only. */
 export const __qrInternals = {
+  versionBits,
   buildDataCodewords,
   interleave,
   chooseVersion,
