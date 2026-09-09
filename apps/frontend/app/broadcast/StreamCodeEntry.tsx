@@ -43,7 +43,7 @@ export function StreamCodeEntry() {
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              if (ready) router.push(`/b/${code}`);
+              if (ready) router.push(`/broadcast/${code}`);
             }}
             style={{ marginTop: "24px" }}
           >

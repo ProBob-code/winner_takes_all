@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { getApiUrl, readJsonResponse } from "@/lib/api-config";
-import { qrToSvg } from "@/lib/qr";
+import { qrToSvg, qrToPngDataUrl } from "@/lib/qr";
 
 type Props = {
   arenaId: string;
@@ -68,13 +68,20 @@ export function BroadcastQr({ arenaId, matchId, pin, onClose }: Props) {
 
   // Encoding runs during render, so an overflowing payload would otherwise
   // throw straight into the page's error boundary and blank the whole arena.
-  const { svg, encodeError } = useMemo(() => {
-    if (!qrUrl) return { svg: null, encodeError: null as string | null };
+  const { png, svg, encodeError } = useMemo(() => {
+    const empty = { png: null as string | null, svg: null as string | null, encodeError: null as string | null };
+    if (!qrUrl) return empty;
     try {
-      return { svg: qrToSvg(qrUrl, { size: 340 }), encodeError: null as string | null };
+      // Prefer the canvas rendering; the SVG is the fallback where there is no
+      // canvas, such as during server rendering.
+      return {
+        png: qrToPngDataUrl(qrUrl, { scale: 10 }),
+        svg: qrToSvg(qrUrl, { size: 340 }),
+        encodeError: null as string | null,
+      };
     } catch (err: any) {
       return {
-        svg: null,
+        ...empty,
         encodeError: err?.message || "This broadcast link could not be encoded as a QR code.",
       };
     }
@@ -82,10 +89,10 @@ export function BroadcastQr({ arenaId, matchId, pin, onClose }: Props) {
 
   // Physical size on screen is the biggest factor in whether a phone can read
   // a code, so offer a fullscreen rendering rather than only the inline one.
-  const bigSvg = useMemo(() => {
+  const bigQr = useMemo(() => {
     if (!qrUrl || !enlarged) return null;
     try {
-      return qrToSvg(qrUrl, { size: 640 });
+      return { png: qrToPngDataUrl(qrUrl, { scale: 18 }), svg: qrToSvg(qrUrl, { size: 640 }) };
     } catch {
       return null;
     }
@@ -125,7 +132,7 @@ export function BroadcastQr({ arenaId, matchId, pin, onClose }: Props) {
         </>
       )}
 
-      {svg && (
+      {(png || svg) && (
         <>
           <div
             role="button"
@@ -144,8 +151,19 @@ export function BroadcastQr({ arenaId, matchId, pin, onClose }: Props) {
               maxWidth: "100%",
               cursor: "zoom-in",
             }}
-            dangerouslySetInnerHTML={{ __html: svg }}
-          />
+          >
+            {png ? (
+              <img
+                src={png}
+                alt="Scan to stream this match"
+                width={340}
+                height={340}
+                style={{ display: "block", width: "340px", maxWidth: "100%", height: "auto" }}
+              />
+            ) : (
+              <span dangerouslySetInnerHTML={{ __html: svg ?? "" }} />
+            )}
+          </div>
           <p className="muted" style={{ fontSize: "0.7rem", marginTop: "6px" }}>
             Tap the code to enlarge it
           </p>
@@ -163,7 +181,7 @@ export function BroadcastQr({ arenaId, matchId, pin, onClose }: Props) {
               }}
             >
               <p className="muted" style={{ fontSize: "0.7rem", marginBottom: "6px" }}>
-                Can't scan? Go to <strong>{origin}/b</strong> and enter
+                Can't scan? Go to <strong>{origin.replace(/^https?:\/\//, "")}/broadcast</strong> and enter
               </p>
               <div
                 style={{
@@ -229,7 +247,7 @@ export function BroadcastQr({ arenaId, matchId, pin, onClose }: Props) {
         </button>
       )}
 
-      {enlarged && bigSvg && (
+      {enlarged && bigQr && (
         <div
           onClick={() => setEnlarged(false)}
           style={{
@@ -245,13 +263,21 @@ export function BroadcastQr({ arenaId, matchId, pin, onClose }: Props) {
             cursor: "zoom-out",
           }}
         >
-          <div dangerouslySetInnerHTML={{ __html: bigSvg }} />
+          {bigQr.png ? (
+            <img
+              src={bigQr.png}
+              alt="Scan to stream this match"
+              style={{ display: "block", maxWidth: "92vw", maxHeight: "70vh", height: "auto" }}
+            />
+          ) : (
+            <div dangerouslySetInnerHTML={{ __html: bigQr.svg ?? "" }} />
+          )}
           <p style={{ color: "#111", fontSize: "0.85rem", fontWeight: 700 }}>
             Point a phone camera at this code
           </p>
           {code && (
             <p style={{ color: "#111", fontSize: "1rem", fontWeight: 700, textAlign: "center" }}>
-              or go to {origin.replace(/^https?:\/\//, "")}/b and enter
+              or go to {origin.replace(/^https?:\/\//, "")}/broadcast and enter
               <br />
               <span style={{ fontSize: "2rem", letterSpacing: "0.4rem", fontFamily: "monospace" }}>
                 {code}

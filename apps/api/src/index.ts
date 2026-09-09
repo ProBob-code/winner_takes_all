@@ -1202,12 +1202,10 @@ app.post("/api/stream/broadcast-token", async (c) => {
   });
 
   const origin = c.env.PUBLIC_APP_ORIGIN || allowedOrigins(c.env)[0];
-  const url = `${origin}/broadcast/${encodeURIComponent(body.arenaId)}/${encodeURIComponent(
-    body.matchId
-  )}?t=${encodeURIComponent(token)}`;
 
-  // A short code keeps the QR small enough to scan reliably. One write per
-  // QR, expiring with the token it stands for.
+  // Everything points at the short code route: it is what the QR encodes, what
+  // gets shared, and what someone types. The long signed URL it replaced made
+  // a far denser symbol for no benefit.
   const code = createBroadcastCode();
   await putBroadcastCode(
     c.env.MATCH_FEEDS,
@@ -1215,9 +1213,9 @@ app.post("/api/stream/broadcast-token", async (c) => {
     { arenaId: body.arenaId, matchId: body.matchId, token },
     BROADCAST_TOKEN_TTL_SECONDS
   );
-  const shortUrl = `${origin}/b/${code}`;
+  const url = `${origin}/broadcast/${code}`;
 
-  return c.json({ ok: true, token, url, shortUrl, code, expiresAt: exp });
+  return c.json({ ok: true, token, url, shortUrl: url, code, expiresAt: exp });
 });
 
 /** Resolve a short broadcast code back to its arena, match and token. */

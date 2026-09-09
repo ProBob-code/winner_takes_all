@@ -526,6 +526,57 @@ export function qrToSvg(text: string, options: { margin?: number; size?: number 
   ].join("");
 }
 
+
+/**
+ * Render the symbol as a PNG data URL by drawing each module as a block of
+ * whole pixels on a canvas.
+ *
+ * The SVG path is mathematically identical, but it leaves rasterisation to
+ * the browser, and how a vector path lands on a pixel grid varies between
+ * renderers — especially inside the in-app webviews QR scanners use. Drawing
+ * the modules directly removes that variable: every module is exactly `scale`
+ * pixels, with hard edges and no interpolation.
+ *
+ * Returns null where there is no canvas (server rendering), so callers can
+ * fall back to the SVG.
+ */
+export function qrToPngDataUrl(
+  text: string,
+  options: { margin?: number; scale?: number } = {}
+): string | null {
+  if (typeof document === "undefined") return null;
+
+  const { margin = 4, scale = 10 } = options;
+  const qr = encodeQr(text);
+  const total = qr.size + margin * 2;
+
+  const canvas = document.createElement("canvas");
+  canvas.width = total * scale;
+  canvas.height = total * scale;
+
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null;
+
+  // A quiet zone of light modules is part of the symbol, not decoration.
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  ctx.fillStyle = "#000000";
+  for (let r = 0; r < qr.size; r++) {
+    for (let c = 0; c < qr.size; c++) {
+      if (qr.get(r, c)) {
+        ctx.fillRect((c + margin) * scale, (r + margin) * scale, scale, scale);
+      }
+    }
+  }
+
+  try {
+    return canvas.toDataURL("image/png");
+  } catch {
+    return null;
+  }
+}
+
 /** Internals exposed for the round-trip test only. */
 export const __qrInternals = {
   versionBits,

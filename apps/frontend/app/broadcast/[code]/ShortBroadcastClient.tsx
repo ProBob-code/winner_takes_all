@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { getApiUrl, readJsonResponse } from "@/lib/api-config";
-import { BroadcastClient } from "../../broadcast/[arenaId]/[matchId]/BroadcastClient";
+import { BroadcastClient } from "@/components/broadcast-client";
 import "@/components/tournament-engine.css";
 
 type Resolved = {
@@ -38,7 +38,7 @@ export function ShortBroadcastClient({ code }: { code: string }) {
         // A camera should go back on air deliberately, not because someone
         // pulled to refresh.
         try {
-          window.history.replaceState({}, "", "/b");
+          window.history.replaceState({}, "", "/broadcast");
         } catch {
           /* history unavailable */
         }
@@ -73,7 +73,7 @@ export function ShortBroadcastClient({ code }: { code: string }) {
               {error}
             </p>
             <a
-              href="/b"
+              href="/broadcast"
               className="button button-gold mt-6"
               style={{ display: "inline-block" }}
             >

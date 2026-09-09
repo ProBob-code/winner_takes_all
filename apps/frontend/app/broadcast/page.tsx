@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 
 /**
  * Typed entry point for the stream code. Scanning the QR jumps straight to
- * /b/<code>; this is the same door for anyone whose camera will not read it.
+ * /broadcast/<code>; this is the same door for anyone whose camera will not read it.
  */
 export default function StreamCodePage() {
   return <StreamCodeEntry />;
