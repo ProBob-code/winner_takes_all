@@ -1081,7 +1081,9 @@ app.get("/api/public-arenas/:id", async (c) => {
 async function mayManageArena(
   arena: { owner_id: string | null; pin: string | null },
   user: { id: string; role: string },
-  suppliedPin?: string
+  // upsertArenaSchema accepts null for an unlocked arena, so this has to as
+  // well; the truthiness check below treats null and undefined alike.
+  suppliedPin?: string | null
 ): Promise<boolean> {
   if (user.role === "admin") return true;
   if (!arena.owner_id) return true; // unclaimed, predates ownership
