@@ -300,7 +300,7 @@ export default function ScreeningPage() {
                       >
                         🔗 SHARE
                       </button>
-                      {isLive && m.arenaIsOwner && (
+                      {isLive && (
                         <button
                           className="button button-secondary button-sm"
                           style={{ padding: '6px 12px', fontSize: '0.8rem' }}

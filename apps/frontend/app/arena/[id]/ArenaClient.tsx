@@ -253,17 +253,19 @@ export function ArenaClient({ id }: { id: string }) {
           )}
 
           <div className="mt-8" style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '20px' }}>
-            {arena.isOwner && (
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
-                <button
-                  className="button button-secondary button-sm"
-                  style={{ padding: '6px 12px', fontSize: '0.8rem' }}
-                  onClick={() => setQrMatchId(qrMatchId === liveMatch.id ? null : liveMatch.id)}
-                >
-                  📷 {qrMatchId === liveMatch.id ? 'HIDE QR' : 'STREAM THIS MATCH'}
-                </button>
-              </div>
-            )}
+            {/* Shown to everyone: the server decides who may actually mint a
+                broadcast token, and says so plainly if they may not. Hiding the
+                control instead made the feature vanish silently whenever
+                ownership could not be resolved. */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
+              <button
+                className="button button-secondary button-sm"
+                style={{ padding: '6px 12px', fontSize: '0.8rem' }}
+                onClick={() => setQrMatchId(qrMatchId === liveMatch.id ? null : liveMatch.id)}
+              >
+                📷 {qrMatchId === liveMatch.id ? 'HIDE QR' : 'STREAM THIS MATCH'}
+              </button>
+            </div>
 
             {qrMatchId === liveMatch.id && (
               <div style={{ marginBottom: '20px' }}>
@@ -335,17 +337,15 @@ export function ArenaClient({ id }: { id: string }) {
                   </div>
 
                   <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
-                    {arena.isOwner && (
-                      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '12px' }}>
-                        <button
-                          className="button button-secondary button-sm"
-                          style={{ padding: '6px 12px', fontSize: '0.78rem' }}
-                          onClick={() => setQrMatchId(qrMatchId === m.id ? null : m.id)}
-                        >
-                          📷 {qrMatchId === m.id ? 'HIDE QR' : 'STREAM'}
-                        </button>
-                      </div>
-                    )}
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '12px' }}>
+                      <button
+                        className="button button-secondary button-sm"
+                        style={{ padding: '6px 12px', fontSize: '0.78rem' }}
+                        onClick={() => setQrMatchId(qrMatchId === m.id ? null : m.id)}
+                      >
+                        📷 {qrMatchId === m.id ? 'HIDE QR' : 'STREAM'}
+                      </button>
+                    </div>
 
                     {qrMatchId === m.id && (
                       <div style={{ marginBottom: '16px' }}>

@@ -1139,7 +1139,14 @@ app.post("/api/stream/broadcast-token", async (c) => {
       !!body.pin &&
       (timingSafeEqual(arena.pin ?? "", suppliedHash) || timingSafeEqual(arena.pin ?? "", body.pin));
     if (!arena.pin || !pinMatches) {
-      return c.json({ ok: false, message: "Only the arena host can start a broadcast." }, 403);
+      return c.json(
+        {
+          ok: false,
+          message:
+            "Only the arena host can start a broadcast. If this is your arena, open it in Tournaments and press SHARE ARENA once to claim it, then try again.",
+        },
+        403
+      );
     }
   }
 
