@@ -492,11 +492,22 @@ export function encodeQr(text: string): QrMatrix {
   };
 }
 
-/** Render an encoded symbol as a standalone SVG string. */
+/**
+ * Render an encoded symbol as a standalone SVG string.
+ *
+ * The requested size is rounded to a whole number of pixels per module. At a
+ * fractional scale some modules land a pixel wider than their neighbours,
+ * which distorts the grid a camera is trying to sample — the symbol is then
+ * mathematically valid but harder to read. Snapping keeps every module
+ * identical, so the rendered size may differ slightly from what was asked.
+ */
 export function qrToSvg(text: string, options: { margin?: number; size?: number } = {}): string {
   const { margin = 4, size = 240 } = options;
   const qr = encodeQr(text);
   const total = qr.size + margin * 2;
+
+  const scale = Math.max(2, Math.round(size / total));
+  const pixels = total * scale;
 
   let path = "";
   for (let r = 0; r < qr.size; r++) {
@@ -506,8 +517,9 @@ export function qrToSvg(text: string, options: { margin?: number; size?: number 
   }
 
   return [
-    `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"`,
-    ` viewBox="0 0 ${total} ${total}" shape-rendering="crispEdges" role="img">`,
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${pixels}" height="${pixels}"`,
+    ` viewBox="0 0 ${total} ${total}" shape-rendering="crispEdges" role="img"`,
+    ` style="display:block;max-width:100%;height:auto">`,
     `<rect width="${total}" height="${total}" fill="#ffffff"/>`,
     `<path d="${path}" fill="#000000"/>`,
     `</svg>`,

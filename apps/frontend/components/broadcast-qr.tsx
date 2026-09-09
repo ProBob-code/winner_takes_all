@@ -25,6 +25,7 @@ export function BroadcastQr({ arenaId, matchId, pin, onClose }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [enlarged, setEnlarged] = useState(false);
   const canShare = typeof navigator !== "undefined" && typeof navigator.share === "function";
 
   useEffect(() => {
@@ -76,6 +77,17 @@ export function BroadcastQr({ arenaId, matchId, pin, onClose }: Props) {
     }
   }, [qrUrl]);
 
+  // Physical size on screen is the biggest factor in whether a phone can read
+  // a code, so offer a fullscreen rendering rather than only the inline one.
+  const bigSvg = useMemo(() => {
+    if (!qrUrl || !enlarged) return null;
+    try {
+      return qrToSvg(qrUrl, { size: 640 });
+    } catch {
+      return null;
+    }
+  }, [qrUrl, enlarged]);
+
   return (
     <div className="broadcast-qr-panel" style={{ textAlign: "center" }}>
       <div className="section-label-v2 mb-2" style={{ letterSpacing: "2px" }}>
@@ -113,6 +125,13 @@ export function BroadcastQr({ arenaId, matchId, pin, onClose }: Props) {
       {svg && (
         <>
           <div
+            role="button"
+            tabIndex={0}
+            title="Tap to enlarge for easier scanning"
+            onClick={() => setEnlarged(true)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") setEnlarged(true);
+            }}
             style={{
               display: "inline-block",
               padding: "16px",
@@ -120,9 +139,13 @@ export function BroadcastQr({ arenaId, matchId, pin, onClose }: Props) {
               borderRadius: "12px",
               lineHeight: 0,
               maxWidth: "100%",
+              cursor: "zoom-in",
             }}
             dangerouslySetInnerHTML={{ __html: svg }}
           />
+          <p className="muted" style={{ fontSize: "0.7rem", marginTop: "6px" }}>
+            Tap the code to enlarge it
+          </p>
           <div style={{ display: "flex", gap: "8px", justifyContent: "center", marginTop: "14px", flexWrap: "wrap" }}>
             <button
               className="button button-gold button-sm"
@@ -169,6 +192,30 @@ export function BroadcastQr({ arenaId, matchId, pin, onClose }: Props) {
         <button className="button button-secondary button-sm mt-4" onClick={onClose}>
           CLOSE
         </button>
+      )}
+
+      {enlarged && bigSvg && (
+        <div
+          onClick={() => setEnlarged(false)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 100001,
+            background: "#ffffff",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "16px",
+            cursor: "zoom-out",
+          }}
+        >
+          <div dangerouslySetInnerHTML={{ __html: bigSvg }} />
+          <p style={{ color: "#111", fontSize: "0.85rem", fontWeight: 700 }}>
+            Point a phone camera at this code
+          </p>
+          <p style={{ color: "#555", fontSize: "0.75rem" }}>Tap anywhere to close</p>
+        </div>
       )}
     </div>
   );
