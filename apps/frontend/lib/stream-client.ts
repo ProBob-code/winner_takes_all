@@ -45,7 +45,10 @@ async function post(path: string, body: unknown): Promise<any> {
         ? (data.detail.errorDescription || data.detail.error || JSON.stringify(data.detail))
         : data.detail;
     const base = data.message || `Request to ${path} failed (${res.status})`;
-    throw new Error(upstream ? `${base} ${String(upstream).slice(0, 300)}` : base);
+    const error: any = new Error(upstream ? `${base} ${String(upstream).slice(0, 300)}` : base);
+    // Callers need to tell "the match is over" apart from a dropped request.
+    error.status = res.status;
+    throw error;
   }
   return data;
 }

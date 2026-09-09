@@ -33,6 +33,16 @@ export function ShortBroadcastClient({ code }: { code: string }) {
           setError(data.message || "This broadcast link is no longer valid.");
           return;
         }
+        // Drop the code from the address bar once it has been redeemed, so a
+        // reload lands on the entry form rather than silently re-authorising.
+        // A camera should go back on air deliberately, not because someone
+        // pulled to refresh.
+        try {
+          window.history.replaceState({}, "", "/b");
+        } catch {
+          /* history unavailable */
+        }
+
         setResolved({ arenaId: data.arenaId, matchId: data.matchId, token: data.token });
       } catch (err: any) {
         if (!cancelled) setError(err?.message || "Could not reach the server.");
@@ -58,13 +68,17 @@ export function ShortBroadcastClient({ code }: { code: string }) {
             }}
           >
             <div style={{ fontSize: "2.5rem" }}>⚠️</div>
-            <h2 className="glow-text mt-2">LINK EXPIRED</h2>
+            <h2 className="glow-text mt-2">CAN'T START THIS STREAM</h2>
             <p className="muted mt-2" style={{ fontSize: "0.9rem" }}>
               {error}
             </p>
-            <p className="muted mt-4" style={{ fontSize: "0.8rem" }}>
-              Ask the host to show the code again.
-            </p>
+            <a
+              href="/b"
+              className="button button-gold mt-6"
+              style={{ display: "inline-block" }}
+            >
+              ENTER A STREAM CODE
+            </a>
           </div>
         </div>
       </main>

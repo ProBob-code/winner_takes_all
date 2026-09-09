@@ -1229,8 +1229,19 @@ app.get("/api/stream/broadcast-code/:code", async (c) => {
   const code = normaliseBroadcastCode(c.req.param("code"));
   const record = await getBroadcastCode(c.env.MATCH_FEEDS, code);
   if (!record) {
-    return c.json({ ok: false, message: "This broadcast link has expired." }, 404);
+    return c.json({ ok: false, message: "This stream code is not valid." }, 404);
   }
+
+  // A code outlives the fixture it was minted for, so redeeming it has to be
+  // refused once the match is over — otherwise reloading the page would put a
+  // camera back on a finished match.
+  if (!(await matchIsLive(c, record.arenaId, record.matchId))) {
+    return c.json(
+      { ok: false, message: "This match has finished, so it can no longer be streamed." },
+      409
+    );
+  }
+
   return c.json({ ok: true, ...record });
 });
 

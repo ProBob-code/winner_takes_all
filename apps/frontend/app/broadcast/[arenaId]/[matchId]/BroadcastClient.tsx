@@ -46,6 +46,7 @@ export function BroadcastClient({ arenaId, matchId, token }: Props) {
   const [usage, setUsage] = useState<TransportStats | null>(null);
   const [warning, setWarning] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [endedReason, setEndedReason] = useState<string | null>(null);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const pcRef = useRef<RTCPeerConnection | null>(null);
@@ -168,8 +169,23 @@ export function BroadcastClient({ arenaId, matchId, token }: Props) {
         label: feed.label,
         feedId: feed.feedId,
       })
-        .then(() => setWarning(null))
-        .catch(() => {
+        .then(() => {
+          missedBeatsRef.current = 0;
+          setWarning(null);
+        })
+        .catch((err: any) => {
+          // The server refuses a heartbeat once the match is no longer live.
+          // That is not a network problem to retry through — the camera must
+          // come off air immediately, which is the whole point of closing a
+          // tournament.
+          if (err?.status === 409 || err?.status === 403) {
+            setEndedReason(
+              err?.message || "The match has ended, so this broadcast has stopped."
+            );
+            void teardown("ended");
+            return;
+          }
+
           // One miss is recoverable, but repeated failures mean the feed will
           // expire and viewers will lose the stream with no explanation.
           missedBeatsRef.current += 1;
@@ -196,13 +212,23 @@ export function BroadcastClient({ arenaId, matchId, token }: Props) {
         const data = await res.json().catch(() => ({}));
         if (cancelled || !data.ok) return;
 
-        const match = (data.arena?.state?.matches || []).find((m: any) => m.id === matchId);
+        const state = data.arena?.state;
+        const match = (state?.matches || []).find((m: any) => m.id === matchId);
         if (match && matchName === null) {
-          const teams = data.arena?.state?.teams || [];
+          const teams = state?.teams || [];
           const name = (id: string) => teams.find((t: any) => t.id === id)?.name || "Team";
           setMatchName(`${name(match.team_a_id)} vs ${name(match.team_b_id)}`);
         }
-        if (match && match.status === "COMPLETED") {
+
+        // Anything other than a running match ends the broadcast: completed,
+        // removed from the schedule, or the whole tournament closed.
+        const stillRunning = !!match && match.status === "LIVE" && !!state?.isStarted;
+        if (!stillRunning) {
+          setEndedReason(
+            match && match.status !== "LIVE"
+              ? "The match has ended, so this broadcast has stopped."
+              : "This tournament has closed, so this broadcast has stopped."
+          );
           await teardown("ended");
         }
       } catch {
@@ -416,7 +442,10 @@ export function BroadcastClient({ arenaId, matchId, token }: Props) {
               <div style={{ fontSize: "2.5rem" }}>✅</div>
               <h3 className="glow-text mt-2">BROADCAST ENDED</h3>
               <p className="muted mt-2" style={{ fontSize: "0.85rem" }}>
-                The camera has been released and your feed is no longer listed.
+                {endedReason || "The camera has been released and your feed is no longer listed."}
+              </p>
+              <p className="muted mt-4" style={{ fontSize: "0.75rem" }}>
+                To film another match, ask the host for a new stream code.
               </p>
             </div>
           )}
