@@ -24,6 +24,7 @@ export type StoredFeed = {
   sessionId: string;
   trackNames: string[];
   label: string;
+  broadcasterName?: string;
   startedAt: number;
   /** Unix seconds of the last heartbeat; drives expiry. */
   lastSeen: number;

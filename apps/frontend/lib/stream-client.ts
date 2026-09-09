@@ -16,6 +16,7 @@ export type StreamFeed = {
   sessionId: string;
   trackNames: string[];
   label: string;
+  broadcasterName?: string;
   startedAt: number;
 };
 

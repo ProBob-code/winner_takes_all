@@ -1076,6 +1076,27 @@ app.get("/api/public-arenas/:id", async (c) => {
 // broadcast grants, proxies SDP so the app secret stays server-side, and keeps
 // a short-lived list of who is currently streaming.
 
+/**
+ * A broadcast grant is only meaningful while the match is actually being
+ * played. The token itself lasts hours, so without this check a broadcaster
+ * could reload the page after the tournament closed and start streaming
+ * again on an expired fixture.
+ */
+async function matchIsLive(
+  c: Context<AppContext>,
+  arenaId: string,
+  matchId: string
+): Promise<boolean> {
+  const arena = await c.get("store").getArena(arenaId);
+  if (!arena) return false;
+
+  const state: any = arena.state;
+  if (!state?.isStarted) return false;
+
+  const match = (state.matches || []).find((m: any) => m.id === matchId);
+  return !!match && match.status === "LIVE";
+}
+
 /** Rate limit a streaming request in a Durable Object, so KV is untouched. */
 async function streamRateLimit(
   c: Context<AppContext>,
@@ -1152,6 +1173,13 @@ app.post("/api/stream/broadcast-token", async (c) => {
         403
       );
     }
+  }
+
+  if (!(await matchIsLive(c, body.arenaId, body.matchId))) {
+    return c.json(
+      { ok: false, message: "This match is not currently live, so it cannot be broadcast." },
+      409
+    );
   }
 
   const exp = nowSeconds() + BROADCAST_TOKEN_TTL_SECONDS;
@@ -1322,6 +1350,23 @@ app.post("/api/stream/feeds", async (c) => {
     return c.json({ ok: false, message: "This broadcast link is invalid or has expired." }, 403);
   }
 
+  // Only signed-in people may put a camera on air. Checked when a feed is
+  // claimed rather than on every heartbeat, so the steady state costs no
+  // session lookup; thereafter the feed is bound to a signed, expiring token.
+  const broadcaster = c.get("user");
+  if (!body.feedId && !broadcaster) {
+    return c.json({ ok: false, message: "Please log in to stream this match." }, 401);
+  }
+
+  // Checked on every heartbeat, not just registration: a match that ends
+  // mid-broadcast must stop the feed even if the page never noticed.
+  if (!(await matchIsLive(c, claims.arenaId, claims.matchId))) {
+    return c.json(
+      { ok: false, message: "This match has ended, so streaming has stopped." },
+      409
+    );
+  }
+
   const feed: StreamFeed = {
     feedId: body.feedId || createId("feed"),
     arenaId: claims.arenaId,
@@ -1329,6 +1374,8 @@ app.post("/api/stream/feeds", async (c) => {
     sessionId: body.sessionId,
     trackNames: body.trackNames,
     label: body.label,
+    // Recorded so viewers can see whose camera they are watching.
+    broadcasterName: broadcaster?.name,
     startedAt: nowSeconds(),
   };
 

@@ -37,6 +37,8 @@ export type StreamFeed = {
   trackNames: string[];
   /** Viewer-facing name, e.g. "Behind the goal". */
   label: string;
+  /** Who put this camera on air. */
+  broadcasterName?: string;
   startedAt: number;
 };
 
