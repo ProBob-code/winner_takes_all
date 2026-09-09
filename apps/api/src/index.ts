@@ -1131,19 +1131,23 @@ app.post("/api/stream/broadcast-token", async (c) => {
   const arena = await c.get("store").getArena(body.arenaId);
   if (!arena) return c.json({ ok: false, message: "Arena not found" }, 404);
 
+  // Mirror the arena update rules exactly. An arena with no PIN is open: any
+  // signed-in user may already push state to it, so refusing them a broadcast
+  // protected nothing while locking out a host running the tournament from a
+  // different account than the one that first created the arena. A PIN is what
+  // makes an arena private, and it is enforced here as it is on update.
   const isOwner = arena.owner_id === user.id || user.role === "admin";
-  if (!isOwner) {
-    // Non-owners must present the arena PIN, matching the arena update rules.
+  if (!isOwner && arena.pin) {
     const suppliedHash = body.pin ? await sha256Hex(body.pin) : "";
     const pinMatches =
       !!body.pin &&
-      (timingSafeEqual(arena.pin ?? "", suppliedHash) || timingSafeEqual(arena.pin ?? "", body.pin));
-    if (!arena.pin || !pinMatches) {
+      (timingSafeEqual(arena.pin, suppliedHash) || timingSafeEqual(arena.pin, body.pin));
+    if (!pinMatches) {
       return c.json(
         {
           ok: false,
           message:
-            "Only the arena host can start a broadcast. If this is your arena, open it in Tournaments and press SHARE ARENA once to claim it, then try again.",
+            "This arena is locked. Enter its PIN to start a broadcast, or ask the host who locked it.",
         },
         403
       );

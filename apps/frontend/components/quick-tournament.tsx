@@ -6,6 +6,7 @@ import { backendFetch } from "@/lib/backend";
 import { FootballTeamPod, ScorersList, FootballScoreboard, FootballPossessionPitch } from "@/components/match-components";
 import { FootballMatchEngine } from "./football-match-engine";
 import { PoolMatchEngine } from "./pool-match-engine";
+import { BroadcastQr } from "@/components/broadcast-qr";
 import "@/components/tournament-engine.css";
 
 type Player = {
@@ -188,6 +189,7 @@ export function QuickTournament() {
   const [extraTimePromptId, setExtraTimePromptId] = useState<string | null>(null);
   const [showResetModal, setShowResetModal] = useState(false);
   const [showCloseModal, setShowCloseModal] = useState(false);
+  const [showBroadcastQr, setShowBroadcastQr] = useState(false);
   const [showAddTeamInline, setShowAddTeamInline] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [modalConfig, setModalConfig] = useState<ModalConfig | null>(null);
@@ -1970,6 +1972,16 @@ export function QuickTournament() {
                 )}
                 <button className="extra-time-btn" style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)' }} onClick={() => setConfirmRestartMatchId(liveMatch.id)}>RESTART</button>
                 <button className="extra-time-btn" onClick={() => adjustDuration(liveMatch.id, 60)}>+1 MIN</button>
+                {arenaId && (
+                  <button
+                    className="extra-time-btn"
+                    style={{ background: 'rgba(139, 92, 246, 0.12)', color: '#a78bfa', border: '1px solid rgba(139, 92, 246, 0.3)' }}
+                    onClick={() => setShowBroadcastQr(!showBroadcastQr)}
+                    title={syncError ? "Share the arena first so it exists on the spectator network" : undefined}
+                  >
+                    {showBroadcastQr ? 'HIDE QR' : 'STREAM'}
+                  </button>
+                )}
                 {extraTimePromptId === liveMatch.id && (
                   <div className="extra-time-toast animate-in">
                     <div className="toast-content">
@@ -1980,6 +1992,29 @@ export function QuickTournament() {
                   </div>
                 )}
               </div>
+
+              {/* The host runs the match from here, so this is where the code to
+                  hand a camera operator belongs. The arena must be shared first,
+                  since a broadcast is authorised against the stored arena. */}
+              {showBroadcastQr && arenaId && (
+                <div
+                  className="animate-in"
+                  style={{
+                    margin: '16px 0',
+                    padding: '20px',
+                    borderRadius: '12px',
+                    background: 'rgba(255,255,255,0.02)',
+                    border: '1px solid rgba(255,255,255,0.06)',
+                  }}
+                >
+                  <BroadcastQr
+                    arenaId={arenaId}
+                    matchId={liveMatch.id}
+                    pin={arenaPin}
+                    onClose={() => setShowBroadcastQr(false)}
+                  />
+                </div>
+              )}
 
               {/* Modular Engines */}
               {liveMatch.sport === 'FOOTBALL' ? (
