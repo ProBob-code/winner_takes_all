@@ -26,6 +26,7 @@ import {
   createBroadcastCode,
   putBroadcastCode,
   getBroadcastCode,
+  checkStreamRateLimit,
   type StreamFeed,
   type RealtimeConfig,
 } from "./lib/realtime";
@@ -101,7 +102,16 @@ app.use("/api/*", async (c, next) => {
 });
 
 // Attach user (if any) to every request
-app.use("/api/*", authMiddleware);
+app.use("/api/*", async (c, next) => {
+  // Streaming endpoints are authorised by a signed broadcast token, not a
+  // session, so resolving a user would only add a KV read per request. The
+  // one exception mints the token and does need the host's identity.
+  const path = c.req.path;
+  if (path.startsWith("/api/stream/") && path !== "/api/stream/broadcast-token") {
+    return next();
+  }
+  return authMiddleware(c, next);
+});
 
 // Centralized error handling: safe messages out, details to logs.
 app.onError((err, c) => {
@@ -1066,6 +1076,24 @@ app.get("/api/public-arenas/:id", async (c) => {
 // broadcast grants, proxies SDP so the app secret stays server-side, and keeps
 // a short-lived list of who is currently streaming.
 
+/** Rate limit a streaming request in a Durable Object, so KV is untouched. */
+async function streamRateLimit(
+  c: Context<AppContext>,
+  bucket: string,
+  limit: number,
+  windowSeconds: number
+): Promise<Response | null> {
+  const allowed = await checkStreamRateLimit(
+    c.env.MATCH_FEEDS,
+    clientKey(c.req.raw),
+    bucket,
+    limit,
+    windowSeconds
+  );
+  if (allowed) return null;
+  return c.json({ ok: false, message: "Too many requests, please try again later" }, 429);
+}
+
 function nowSeconds(): number {
   return Math.floor(Date.now() / 1000);
 }
@@ -1096,7 +1124,7 @@ app.post("/api/stream/broadcast-token", async (c) => {
     return c.json({ ok: false, message: "Live streaming is not configured on this deployment." }, 503);
   }
 
-  const limited = await rateLimit(c, `broadcast-token:${user.id}`, 60, 60);
+  const limited = await streamRateLimit(c, "broadcast-token", 60, 60);
   if (limited) return limited;
 
   const body = parseBody(broadcastTokenSchema, await readJson(c));
@@ -1131,7 +1159,7 @@ app.post("/api/stream/broadcast-token", async (c) => {
   // QR, expiring with the token it stands for.
   const code = createBroadcastCode();
   await putBroadcastCode(
-    c.env.SESSIONS,
+    c.env.MATCH_FEEDS,
     code,
     { arenaId: body.arenaId, matchId: body.matchId, token },
     BROADCAST_TOKEN_TTL_SECONDS
@@ -1143,7 +1171,7 @@ app.post("/api/stream/broadcast-token", async (c) => {
 
 /** Resolve a short broadcast code back to its arena, match and token. */
 app.get("/api/stream/broadcast-code/:code", async (c) => {
-  const record = await getBroadcastCode(c.env.SESSIONS, c.req.param("code"));
+  const record = await getBroadcastCode(c.env.MATCH_FEEDS, c.req.param("code"));
   if (!record) {
     return c.json({ ok: false, message: "This broadcast link has expired." }, 404);
   }
@@ -1155,7 +1183,7 @@ app.post("/api/stream/session", async (c) => {
   const config = requireRealtime(c);
   if (config instanceof Response) return config;
 
-  const limited = await rateLimit(c, "stream-session", 60, 60);
+  const limited = await streamRateLimit(c, "stream-session", 60, 60);
   if (limited) return limited;
 
   const body = parseBody(streamSessionSchema, await readJson(c));
@@ -1184,7 +1212,7 @@ app.post("/api/stream/tracks", async (c) => {
   const config = requireRealtime(c);
   if (config instanceof Response) return config;
 
-  const limited = await rateLimit(c, "stream-tracks", 120, 60);
+  const limited = await streamRateLimit(c, "stream-tracks", 120, 60);
   if (limited) return limited;
 
   const body = parseBody(streamTracksSchema, await readJson(c));
@@ -1275,7 +1303,7 @@ app.post("/api/stream/feeds", async (c) => {
   // heartbeats carry an existing feedId, are already gated by a signed token,
   // and only refresh a TTL, so they skip it.
   if (!body.feedId) {
-    const limited = await rateLimit(c, "stream-feed", 60, 60);
+    const limited = await streamRateLimit(c, "stream-feed", 60, 60);
     if (limited) return limited;
   }
   const claims = await verifyBroadcastToken(secret, body.token, nowSeconds());

@@ -190,30 +190,51 @@ export type BroadcastCodeRecord = {
   token: string;
 };
 
-const codeKey = (code: string) => `bcode:${code}`;
+function codeStub(ns: DurableObjectNamespace, code: string) {
+  return ns.get(ns.idFromName(`code:${code}`));
+}
 
 export async function putBroadcastCode(
-  kv: KVNamespace,
+  ns: DurableObjectNamespace,
   code: string,
   record: BroadcastCodeRecord,
   ttlSeconds: number
 ): Promise<void> {
-  await kv.put(codeKey(code), JSON.stringify(record), {
-    expirationTtl: Math.max(ttlSeconds, 60),
+  await codeStub(ns, code).fetch("https://match-feeds/code/put", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ record, ttlSeconds }),
   });
 }
 
 export async function getBroadcastCode(
-  kv: KVNamespace,
+  ns: DurableObjectNamespace,
   code: string
 ): Promise<BroadcastCodeRecord | null> {
-  const raw = await kv.get(codeKey(code));
-  if (!raw) return null;
-  try {
-    return JSON.parse(raw) as BroadcastCodeRecord;
-  } catch {
-    return null;
-  }
+  const res = await codeStub(ns, code).fetch("https://match-feeds/code/get");
+  const data: any = await res.json();
+  return data?.ok ? (data.record as BroadcastCodeRecord) : null;
+}
+
+/**
+ * Rate limit without touching KV. Counters live in the Durable Object's
+ * memory, so limiting a streaming request costs no write at all.
+ */
+export async function checkStreamRateLimit(
+  ns: DurableObjectNamespace,
+  clientKey: string,
+  bucket: string,
+  limit: number,
+  windowSeconds: number
+): Promise<boolean> {
+  const stub = ns.get(ns.idFromName(`rate:${clientKey}`));
+  const res = await stub.fetch("https://match-feeds/rate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ bucket, limit, windowSeconds }),
+  });
+  const data: any = await res.json();
+  return data?.allowed !== false;
 }
 
 // --- Feed registry (Durable Object, one per match) ---
