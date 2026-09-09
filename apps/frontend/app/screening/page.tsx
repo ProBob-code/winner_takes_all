@@ -174,7 +174,6 @@ export default function ScreeningPage() {
         arenaId: arena.id,
         arenaName: arena.name,
         arenaSport: arena.state?.selectedSport || m.sport,
-        arenaIsOwner: !!arena.isOwner,
         teamAName: getTeamName(m.team_a_id),
         teamBName: getTeamName(m.team_b_id),
         teams

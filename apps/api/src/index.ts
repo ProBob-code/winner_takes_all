@@ -978,7 +978,6 @@ app.post("/api/engine/matches/:id/score", async (c) => {
 
 app.get("/api/public-arenas", async (c) => {
   const arenas = await c.get("store").listArenas();
-  const viewer = c.get("user");
   return c.json({
     ok: true,
     arenas: arenas.map((a) => ({
@@ -987,9 +986,6 @@ app.get("/api/public-arenas", async (c) => {
       state: a.state,
       isLocked: !!a.pin,
       updatedAt: a.updated_at,
-      // Lets the UI offer broadcasting only to whoever can actually mint a
-      // broadcast token for this arena.
-      isOwner: !!viewer && (a.owner_id === viewer.id || viewer.role === "admin"),
     })),
   });
 });
@@ -998,7 +994,7 @@ app.post("/api/public-arenas", async (c) => {
   const user = requireUser(c);
   if (!user) return c.json({ ok: false, message: "Authentication required" }, 401);
 
-  const limited = await rateLimit(c, `arena:${user.id}`, 30, 60);
+  const limited = await streamRateLimit(c, "arena", 120, 60);
   if (limited) return limited;
 
   const store = c.get("store");
@@ -1054,7 +1050,6 @@ app.get("/api/public-arenas/:id", async (c) => {
   const arena = await c.get("store").getArena(c.req.param("id"));
   if (!arena) return c.json({ ok: false, message: "Arena not found" }, 404);
 
-  const viewer = c.get("user");
   return c.json({
     ok: true,
     arena: {
@@ -1062,7 +1057,6 @@ app.get("/api/public-arenas/:id", async (c) => {
       name: arena.name,
       state: arena.state,
       isLocked: !!arena.pin,
-      isOwner: !!viewer && (arena.owner_id === viewer.id || viewer.role === "admin"),
     },
   });
 });

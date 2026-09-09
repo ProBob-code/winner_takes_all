@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { backendFetch } from "@/lib/backend";
 import { FootballTeamPod, ScorersList, FootballScoreboard, FootballPossessionPitch } from "@/components/match-components";
@@ -223,6 +223,50 @@ export function QuickTournament() {
   /** Draft storage key, scoped to the signed-in account; null until resolved. */
   const [storageKey, setStorageKey] = useState<string | null>(null);
 
+  /** Fastest cadence at which arena state is published to spectators. */
+  const SYNC_INTERVAL_MS = 5000;
+  const pendingSyncRef = useRef<any>(null);
+  const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastSyncAtRef = useRef(0);
+
+  const flushSync = useCallback(async () => {
+    const payload = pendingSyncRef.current;
+    if (!payload) return;
+    pendingSyncRef.current = null;
+    lastSyncAtRef.current = Date.now();
+
+    try {
+      const res = await backendFetch("/public-arenas", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+      // Silently dropping these left the arena live locally but absent from
+      // Live Screening, with nothing on screen to explain the difference.
+      if (!res.ok) {
+        setSyncError(
+          res.status === 401
+            ? "Not synced: log in to publish this arena to the spectator network."
+            : `Not synced: the server returned HTTP ${res.status}.`
+        );
+      } else {
+        setSyncError(null);
+      }
+    } catch {
+      setSyncError("Not synced: the spectator network is unreachable.");
+    }
+  }, []);
+
+  /** Trailing throttle: the newest state always lands, at most one call per interval. */
+  const scheduleSync = useCallback(() => {
+    if (syncTimerRef.current) return;
+    const wait = Math.max(0, SYNC_INTERVAL_MS - (Date.now() - lastSyncAtRef.current));
+    syncTimerRef.current = setTimeout(() => {
+      syncTimerRef.current = null;
+      void flushSync();
+    }, wait);
+  }, [flushSync]);
+
+
   /**
    * Restore the draft belonging to whoever is signed in.
    *
@@ -297,27 +341,18 @@ export function QuickTournament() {
       tournamentType, arenaName, arenaPin, isLocked, selectedSport 
     }));
     if (arenaId && isStarted) {
-      backendFetch("/public-arenas", { 
-        method: "POST", 
-        body: JSON.stringify({ 
-          id: arenaId, name: arenaName, state: { teams, matches, isStarted, selectedSport },
-          pin: arenaPin ?? undefined 
-        }) 
-      })
-        .then((res) => {
-          // Silently dropping these left the arena live locally but absent from
-          // Live Screening, with nothing on screen to explain the difference.
-          if (!res.ok) {
-            setSyncError(
-              res.status === 401
-                ? "Not synced: log in to publish this arena to the spectator network."
-                : `Not synced: the server returned HTTP ${res.status}.`
-            );
-          } else {
-            setSyncError(null);
-          }
-        })
-        .catch(() => setSyncError("Not synced: the spectator network is unreachable."));
+      // A football match ticks its clock into `matches` once a second, so this
+      // effect fires every second. Publishing that directly meant a request
+      // per second for the whole match. Keep only the latest state and send it
+      // at a fixed cadence instead; spectators are watching a scoreboard, not
+      // trading on it.
+      pendingSyncRef.current = {
+        id: arenaId,
+        name: arenaName,
+        state: { teams, matches, isStarted, selectedSport },
+        pin: arenaPin ?? undefined,
+      };
+      scheduleSync();
     }
   }, [storageKey, teams, matches, isStarted, arenaId, matchesPerTeam, defaultDuration, tournamentType, arenaName, arenaPin, isLocked, selectedSport]);
 
