@@ -292,13 +292,32 @@ export class D1Store {
   }): Promise<TournamentRecord> {
     const id = createId("tournament");
     const now = new Date().toISOString();
-    await this.db.prepare(
-      `INSERT INTO tournaments (id, name, entry_fee_cents, max_players, host_id, team_size, tournament_type, bracket_type, sport, password, status, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'open', ?, ?)`
-    ).bind(id, data.name, data.entryFeeCents, data.maxPlayers, data.hostId,
+
+    const common = [
+      id, data.name, data.entryFeeCents, data.maxPlayers, data.hostId,
       data.teamSize ?? 1, data.tournamentType ?? "online",
-      data.bracketType ?? "single_elimination", data.sport ?? "8BALL",
-      data.password ?? null, now, now).run();
+      data.bracketType ?? "single_elimination",
+    ];
+
+    try {
+      await this.db.prepare(
+        `INSERT INTO tournaments (id, name, entry_fee_cents, max_players, host_id, team_size, tournament_type, bracket_type, sport, password, status, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'open', ?, ?)`
+      ).bind(...common, data.sport ?? "8BALL", data.password ?? null, now, now).run();
+    } catch (err) {
+      // A database that predates the sport column would otherwise fail the
+      // whole insert, taking tournament creation down until the migration is
+      // applied. Fall back to the older shape: such tournaments were all
+      // 8-ball, which is exactly what rowToTournament reports for them.
+      const detail = err instanceof Error ? err.message : String(err);
+      if (!/no such column/i.test(detail)) throw err;
+
+      await this.db.prepare(
+        `INSERT INTO tournaments (id, name, entry_fee_cents, max_players, host_id, team_size, tournament_type, bracket_type, password, status, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'open', ?, ?)`
+      ).bind(...common, data.password ?? null, now, now).run();
+    }
+
     return (await this.getTournament(id))!;
   }
 

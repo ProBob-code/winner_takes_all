@@ -441,17 +441,36 @@ app.post("/api/tournaments/create", async (c) => {
   const store = c.get("store");
   const body = parseBody(createTournamentSchema, await readJson(c));
 
-  const tournament = await store.createTournament({
-    name: body.name,
-    entryFeeCents: Math.round(body.entryFee * 100),
-    maxPlayers: body.maxPlayers,
-    hostId: user.id,
-    teamSize: body.teamSize,
-    tournamentType: body.tournamentType,
-    bracketType: body.bracketType,
-    sport: body.sport,
-    password: body.password ?? null,
-  });
+  // Any remaining database-shape problem should name itself rather than reach
+  // the catch-all as "Internal server error", which says nothing actionable.
+  let tournament;
+  try {
+    tournament = await store.createTournament({
+      name: body.name,
+      entryFeeCents: Math.round(body.entryFee * 100),
+      maxPlayers: body.maxPlayers,
+      hostId: user.id,
+      teamSize: body.teamSize,
+      tournamentType: body.tournamentType,
+      bracketType: body.bracketType,
+      sport: body.sport,
+      password: body.password ?? null,
+    });
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : String(err);
+    if (/no such column/i.test(detail)) {
+      return c.json(
+        {
+          ok: false,
+          message:
+            "Tournament storage is out of date and is missing a column. Run the latest file in apps/api/migrations against the D1 database.",
+          detail,
+        },
+        500
+      );
+    }
+    throw err;
+  }
 
   return c.json({ ok: true, tournament: serializeTournament(tournament) });
 });
