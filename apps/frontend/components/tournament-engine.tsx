@@ -1,7 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { readBackendJson, backendFetch } from "@/lib/backend";
+import { BroadcastCode } from "@/components/broadcast-code";
+import { LiveFeedViewer } from "@/components/live-feed-viewer";
 import "./tournament-engine.css";
 
 interface Team {
@@ -42,12 +44,38 @@ interface TournamentState {
   matches: Match[];
 }
 
-export function TournamentEngine({ tournamentId }: { tournamentId: string }) {
+export function TournamentEngine({
+  tournamentId,
+  tournamentName,
+}: {
+  tournamentId: string;
+  tournamentName?: string;
+}) {
   const [state, setState] = useState<TournamentState | null>(null);
   const [newTeamName, setNewTeamName] = useState("");
   const [loading, setLoading] = useState(true);
   const [currentTime, setCurrentTime] = useState(Math.floor(Date.now() / 1000));
   const [reordering, setReordering] = useState(false);
+
+  // --- Spectators and streaming (opt in) ---
+  //
+  // A hosted tournament is private until its host says otherwise. Publishing
+  // mirrors it into the arena system, which is what Live Screening lists and
+  // what cameras attach to; nothing here is visible to anyone until then.
+
+  const [published, setPublished] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+  const [publishError, setPublishError] = useState<string | null>(null);
+  const [showStreamCode, setShowStreamCode] = useState(false);
+
+  // Derived from the tournament so republishing after a reload keeps the same
+  // spectator link rather than stranding the old one.
+  const arenaId = useMemo(
+    () => `T${tournamentId.replace(/[^a-zA-Z0-9]/g, "").slice(0, 24).toUpperCase()}`,
+    [tournamentId]
+  );
+
+  const arenaName = tournamentName?.trim() || "Hosted Tournament";
 
   const fetchState = useCallback(async () => {
     try {
@@ -61,6 +89,117 @@ export function TournamentEngine({ tournamentId }: { tournamentId: string }) {
       setLoading(false);
     }
   }, [tournamentId]);
+
+  /**
+   * The tournament as the arena system understands it. Live Screening and the
+   * streaming endpoints are keyed on arena + match, so a hosted tournament has
+   * to present itself in that shape to be spectatable at all.
+   */
+  const arenaState = useCallback(
+    (current: TournamentState, isStarted: boolean) => ({
+      isStarted,
+      selectedSport: "8BALL" as const,
+      teams: current.teams.map((t) => ({ ...t, is_team: false, players: [] })),
+      matches: current.matches.map((m) => ({ ...m, sport: "8BALL" as const })),
+    }),
+    []
+  );
+
+  const pushArena = useCallback(
+    async (current: TournamentState, isStarted: boolean) => {
+      const res = await backendFetch("/public-arenas", {
+        method: "POST",
+        body: JSON.stringify({ id: arenaId, name: arenaName, state: arenaState(current, isStarted) }),
+      });
+      if (!res.ok) {
+        let message = `The server returned HTTP ${res.status}.`;
+        try {
+          const body: any = await res.json();
+          if (body?.message) message = body.message;
+        } catch {
+          /* non-JSON error */
+        }
+        throw new Error(message);
+      }
+    },
+    [arenaId, arenaName, arenaState]
+  );
+
+  // Reflect whether this tournament is already being spectated, so the control
+  // reads correctly after a reload rather than defaulting to unpublished.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await backendFetch(`/public-arenas/${arenaId}`);
+        if (!res.ok || cancelled) return;
+        const data: any = await res.json();
+        if (!cancelled && data?.ok) setPublished(!!data.arena?.state?.isStarted);
+      } catch {
+        /* not published */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [arenaId]);
+
+  const publishToSpectators = useCallback(async () => {
+    if (!state) return;
+    setPublishing(true);
+    setPublishError(null);
+    try {
+      await pushArena(state, true);
+      setPublished(true);
+    } catch (err: any) {
+      setPublishError(err?.message || "Could not publish to spectators.");
+    } finally {
+      setPublishing(false);
+    }
+  }, [state, pushArena]);
+
+  const stopSpectating = useCallback(async () => {
+    if (!state) return;
+    setPublishing(true);
+    setPublishError(null);
+    try {
+      // Clearing isStarted removes it from Live Screening and stops every
+      // camera attached to it, the same way closing a quick tournament does.
+      await pushArena(state, false);
+      setPublished(false);
+      setShowStreamCode(false);
+    } catch (err: any) {
+      setPublishError(err?.message || "Could not stop spectating.");
+    } finally {
+      setPublishing(false);
+    }
+  }, [state, pushArena]);
+
+  // Keep spectators current while published, at a fixed cadence rather than on
+  // every score change, so a busy match does not become a request per tap.
+  const lastPushRef = useRef(0);
+  const pushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (!published || !state) return;
+    if (pushTimerRef.current) return;
+
+    const wait = Math.max(0, 5000 - (Date.now() - lastPushRef.current));
+    pushTimerRef.current = setTimeout(() => {
+      pushTimerRef.current = null;
+      lastPushRef.current = Date.now();
+      pushArena(state, true).catch(() => {
+        setPublishError("Spectators are not receiving updates.");
+      });
+    }, wait);
+
+    return () => {
+      if (pushTimerRef.current) {
+        clearTimeout(pushTimerRef.current);
+        pushTimerRef.current = null;
+      }
+    };
+  }, [published, state, pushArena]);
 
   useEffect(() => {
     fetchState();
@@ -170,8 +309,39 @@ export function TournamentEngine({ tournamentId }: { tournamentId: string }) {
           <h1 className="glow-text">Stadium Arena Manager</h1>
           <p className="muted">Host Perspective & Real-time Scoring</p>
         </div>
-        <div className="phase-badge">{state.phase.toUpperCase()}</div>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+          {/* Private until the host chooses otherwise. */}
+          {state.phase !== "open" && state.phase !== "SETUP" && (
+            <button
+              className={published ? "close-tournament-trigger" : "share-btn"}
+              onClick={published ? stopSpectating : publishToSpectators}
+              disabled={publishing}
+              title={
+                published
+                  ? "Remove from Live Screening and stop all cameras"
+                  : "Let people watch this tournament and add cameras"
+              }
+            >
+              {publishing
+                ? "WORKING…"
+                : published
+                  ? "STOP SPECTATING"
+                  : "PUBLISH TO SPECTATORS"}
+            </button>
+          )}
+          <div className="phase-badge">{state.phase.toUpperCase()}</div>
+        </div>
       </div>
+
+      {publishError && (
+        <p style={{ color: "#ef4444", fontSize: "0.85rem", marginTop: "8px" }}>{publishError}</p>
+      )}
+
+      {published && (
+        <p className="muted" style={{ fontSize: "0.78rem", marginTop: "8px" }}>
+          📺 Live on the spectator network — anyone can watch, and cameras can be added.
+        </p>
+      )}
 
       {state.phase === 'open' || state.phase === 'SETUP' ? (
         <div className="setup-view slide-in">
@@ -209,6 +379,40 @@ export function TournamentEngine({ tournamentId }: { tournamentId: string }) {
                   <div className="live-dot"></div>
                   LIVE MATCH • {formatTime(Math.max(0, (liveMatch.start_time || 0) + liveMatch.duration - currentTime))}
                 </div>
+
+                {published && (
+                  <div style={{ width: "100%", margin: "0 0 1.5rem" }}>
+                    <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "12px" }}>
+                      <button
+                        className="button button-secondary button-sm"
+                        style={{ padding: "6px 12px", fontSize: "0.78rem" }}
+                        onClick={() => setShowStreamCode(!showStreamCode)}
+                      >
+                        📷 {showStreamCode ? "HIDE CODE" : "STREAM THIS MATCH"}
+                      </button>
+                    </div>
+
+                    {showStreamCode && (
+                      <div
+                        style={{
+                          marginBottom: "16px",
+                          padding: "20px",
+                          borderRadius: "12px",
+                          background: "rgba(255,255,255,0.02)",
+                          border: "1px solid rgba(255,255,255,0.06)",
+                        }}
+                      >
+                        <BroadcastCode
+                          arenaId={arenaId}
+                          matchId={liveMatch.id}
+                          onClose={() => setShowStreamCode(false)}
+                        />
+                      </div>
+                    )}
+
+                    <LiveFeedViewer arenaId={arenaId} matchId={liveMatch.id} isLive={true} />
+                  </div>
+                )}
 
                 <div className="score-arena" style={{ width: '100%', gap: '2rem' }}>
                   {/* RED TEAM */}
