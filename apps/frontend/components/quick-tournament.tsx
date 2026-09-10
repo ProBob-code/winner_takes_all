@@ -376,18 +376,9 @@ export function QuickTournament() {
     }
   }, [storageKey, teams, matches, isStarted, arenaId, matchesPerTeam, defaultDuration, tournamentType, arenaName, arenaPin, isLocked, selectedSport, cancelPendingSync]);
 
-  useEffect(() => {
-    if (teams.length >= 2) {
-      const maxPossibleQuota = teams.length - 1;
-      if (matchesPerTeam > maxPossibleQuota) {
-        setMatchesPerTeam(maxPossibleQuota);
-      } else if (matchesPerTeam === 3 && maxPossibleQuota < 3) {
-        setMatchesPerTeam(maxPossibleQuota);
-      } else if (teams.length === 4) {
-        setMatchesPerTeam(3);
-      }
-    }
-  }, [teams.length]);
+  // The quota used to be forced down to teams.length - 1, because a pair could
+  // only ever meet once. Rematches are allowed now, so the host's choice
+  // stands: adding or removing a team no longer rewrites it.
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -504,17 +495,24 @@ export function QuickTournament() {
 
           if (pairedInThisPass.has(t1.id) || t1MatchCount >= matchesPerTeam) continue;
 
-          const t2 = sortedTeams.find(potential => {
-            if (potential.id === t1.id || pairedInThisPass.has(potential.id)) return false;
-            const t2MatchCount = currentMatches.filter(m => m.team_a_id === potential.id || m.team_b_id === potential.id).length;
-            if (t2MatchCount >= matchesPerTeam) return false;
+          // How many times these two have already met. Rematches are allowed —
+          // two teams playing a best of three is a perfectly ordinary format,
+          // and refusing them capped the quota at one match per team — but an
+          // unplayed pairing is always preferred, so a full round robin happens
+          // before anyone meets twice.
+          const meetings = (a: string, b: string) =>
+            currentMatches.filter(m =>
+              (m.team_a_id === a && m.team_b_id === b) ||
+              (m.team_a_id === b && m.team_b_id === a)
+            ).length;
 
-            const alreadyPlayed = currentMatches.some(m =>
-              (m.team_a_id === t1.id && m.team_b_id === potential.id) ||
-              (m.team_a_id === potential.id && m.team_b_id === t1.id)
-            );
-            return !alreadyPlayed;
-          });
+          const t2 = sortedTeams
+            .filter(potential => {
+              if (potential.id === t1.id || pairedInThisPass.has(potential.id)) return false;
+              const t2MatchCount = currentMatches.filter(m => m.team_a_id === potential.id || m.team_b_id === potential.id).length;
+              return t2MatchCount < matchesPerTeam;
+            })
+            .sort((a, b) => meetings(t1.id, a.id) - meetings(t1.id, b.id))[0];
 
           if (t2) {
             pairedInThisPass.add(t1.id); pairedInThisPass.add(t2.id);
@@ -1442,14 +1440,15 @@ export function QuickTournament() {
                       <span className="quota-unit">MATCHES</span>
                     </div>
                     <button className="step-btn" onClick={() => {
-                      const maxPossible = teams.length >= 2 ? teams.length - 1 : 10;
+                      // Only a sanity ceiling now; the arithmetic limit is gone.
+                      const maxPossible = 20;
                       if (matchesPerTeam < maxPossible) {
                         setMatchesPerTeam(matchesPerTeam + 1);
                       } else {
                         setModalConfig({
                           icon: "❗",
-                          title: "QUOTA EXCEEDED",
-                          message: `With ${teams.length} teams, each team can play a maximum of ${maxPossible} matches in a single round-robin group stage.`,
+                          title: "THAT IS A LOT OF MATCHES",
+                          message: `${maxPossible} matches per team is the most this arena will schedule.`,
                           onConfirm: () => setModalConfig(null),
                           showCancel: false
                         });
@@ -2314,22 +2313,14 @@ export function QuickTournament() {
                           <div className="p-selectors">
                             <div className="setting-box">
                               <label className="stat-label">MATCH QUOTA</label>
-                              <select className="premium-input-v2" value={matchesPerTeam} onChange={e => {
-                                const val = Number(e.target.value);
-                                const maxPossible = teams.length >= 2 ? teams.length - 1 : 10;
-                                if (val > maxPossible) {
-                                  setModalConfig({
-                                    icon: "❗",
-                                    title: "QUOTA EXCEEDED",
-                                    message: `With ${teams.length} teams, each team can play a maximum of ${maxPossible} matches in a single round-robin group stage.`,
-                                    onConfirm: () => setModalConfig(null),
-                                    showCancel: false
-                                  });
-                                } else {
-                                  setMatchesPerTeam(val);
-                                }
-                              }}>
-                                {[1,2,3,4,5].filter(v => teams.length < 2 || v < teams.length).map(v => <option key={v} value={v}>{v} matches/team</option>)}
+                              <select
+                                className="premium-input-v2"
+                                value={matchesPerTeam}
+                                onChange={e => setMatchesPerTeam(Number(e.target.value))}
+                              >
+                                {[1, 2, 3, 4, 5, 6, 8, 10].map(v => (
+                                  <option key={v} value={v}>{v} matches/team</option>
+                                ))}
                               </select>
                             </div>
                             <div className="setting-box">
