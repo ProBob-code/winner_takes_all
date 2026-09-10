@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import type { Context } from "hono";
 import type { AppContext, Env } from "./types";
-import { D1Store, InsufficientFundsError, type TournamentRecord } from "./lib/d1-store";
+import { D1Store, InsufficientFundsError, isMissingColumnError, type TournamentRecord } from "./lib/d1-store";
 import {
   createSessionTokens,
   getRefreshSession,
@@ -457,14 +457,13 @@ app.post("/api/tournaments/create", async (c) => {
       password: body.password ?? null,
     });
   } catch (err) {
-    const detail = err instanceof Error ? err.message : String(err);
-    if (/no such column/i.test(detail)) {
+    if (isMissingColumnError(err)) {
       return c.json(
         {
           ok: false,
           message:
             "Tournament storage is out of date and is missing a column. Run the latest file in apps/api/migrations against the D1 database.",
-          detail,
+          detail: err instanceof Error ? err.message : String(err),
         },
         500
       );
@@ -1052,14 +1051,13 @@ app.post("/api/public-arenas", async (c) => {
     // A database created before owner_id/updated_at existed fails here with
     // "no such column". Surfacing that beats a generic 500, because the fix is
     // a migration the operator has to run by hand.
-    const detail = err instanceof Error ? err.message : String(err);
-    if (/no such column/i.test(detail)) {
+    if (isMissingColumnError(err)) {
       return c.json(
         {
           ok: false,
           message:
             "Arena storage is out of date and is missing a column. Run migrations/0004_arena_columns.sql against the D1 database.",
-          detail,
+          detail: err instanceof Error ? err.message : String(err),
         },
         500
       );

@@ -38,6 +38,20 @@ export interface WalletEntryRecord {
   reference_type: string; reference_id: string; is_test: boolean; created_at: string;
 }
 
+/**
+ * Whether a database error is a column the schema does not have.
+ *
+ * SQLite words this differently depending on the statement: a SELECT gives
+ * "no such column: sport", while an INSERT naming an unknown column gives
+ * "table tournaments has no column named sport". Matching only the first
+ * phrasing meant the INSERT case fell through to the catch-all, which is
+ * exactly the case that matters when a migration has not been applied yet.
+ */
+export function isMissingColumnError(err: unknown): boolean {
+  const detail = err instanceof Error ? err.message : String(err);
+  return /no such column|has no column named/i.test(detail);
+}
+
 export interface TournamentRecord {
   id: string; name: string; entry_fee_cents: number; prize_pool_cents: number;
   max_players: number; status: string; bracket_type: string;
@@ -309,8 +323,7 @@ export class D1Store {
       // whole insert, taking tournament creation down until the migration is
       // applied. Fall back to the older shape: such tournaments were all
       // 8-ball, which is exactly what rowToTournament reports for them.
-      const detail = err instanceof Error ? err.message : String(err);
-      if (!/no such column/i.test(detail)) throw err;
+      if (!isMissingColumnError(err)) throw err;
 
       await this.db.prepare(
         `INSERT INTO tournaments (id, name, entry_fee_cents, max_players, host_id, team_size, tournament_type, bracket_type, password, status, created_at, updated_at)
