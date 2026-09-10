@@ -256,6 +256,22 @@ export function QuickTournament() {
     }
   }, []);
 
+  /**
+   * Drop anything queued for publication.
+   *
+   * The throttle holds the most recent state and sends it a moment later. When
+   * a tournament closes, that pending payload still says the match is live, so
+   * letting it fire would reopen the arena seconds after it was shut — which
+   * is exactly what kept cameras running after a close.
+   */
+  const cancelPendingSync = useCallback(() => {
+    if (syncTimerRef.current) {
+      clearTimeout(syncTimerRef.current);
+      syncTimerRef.current = null;
+    }
+    pendingSyncRef.current = null;
+  }, []);
+
   /** Trailing throttle: the newest state always lands, at most one call per interval. */
   const scheduleSync = useCallback(() => {
     if (syncTimerRef.current) return;
@@ -340,6 +356,10 @@ export function QuickTournament() {
       teams, matches, isStarted, arenaId, matchesPerTeam, defaultDuration, 
       tournamentType, arenaName, arenaPin, isLocked, selectedSport 
     }));
+    if (!(arenaId && isStarted)) {
+      cancelPendingSync();
+    }
+
     if (arenaId && isStarted) {
       // A football match ticks its clock into `matches` once a second, so this
       // effect fires every second. Publishing that directly meant a request
@@ -354,7 +374,7 @@ export function QuickTournament() {
       };
       scheduleSync();
     }
-  }, [storageKey, teams, matches, isStarted, arenaId, matchesPerTeam, defaultDuration, tournamentType, arenaName, arenaPin, isLocked, selectedSport]);
+  }, [storageKey, teams, matches, isStarted, arenaId, matchesPerTeam, defaultDuration, tournamentType, arenaName, arenaPin, isLocked, selectedSport, cancelPendingSync]);
 
   useEffect(() => {
     if (teams.length >= 2) {
@@ -931,6 +951,29 @@ export function QuickTournament() {
   };
 
   const reset = () => {
+    cancelPendingSync();
+
+    // Erasing locally is not enough: without telling the server, the arena
+    // stays live to spectators, and its cameras with it, until the entry goes
+    // stale. Close it on the way out.
+    const abandonedArenaId = arenaId;
+    if (abandonedArenaId) {
+      const closedMatches = matches.map((m) =>
+        m.status === 'COMPLETED' ? m : { ...m, status: 'COMPLETED' as const, active_team_id: null }
+      );
+      backendFetch("/public-arenas", {
+        method: "POST",
+        body: JSON.stringify({
+          id: abandonedArenaId,
+          name: arenaName,
+          state: { teams, matches: closedMatches, isStarted: false, selectedSport },
+          pin: arenaPin ?? undefined,
+        }),
+      }).catch(() => {
+        /* the arena will fall out on its own once it stops being updated */
+      });
+    }
+
     setTeams([]);
     setMatches([]);
     setIsStarted(false);
@@ -945,6 +988,10 @@ export function QuickTournament() {
    * tears down on its next status poll.
    */
   const closeTournament = async () => {
+    // Before anything else: a publish queued while the match was live would
+    // otherwise fire after this and put the arena straight back on air.
+    cancelPendingSync();
+
     const closedMatches = matches.map((m) =>
       m.status === 'COMPLETED'
         ? m
