@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { getApiUrl, readJsonResponse } from "@/lib/api-config";
 import Link from "next/link";
 import { LiveFeedViewer } from "@/components/live-feed-viewer";
-import { BroadcastQr } from "@/components/broadcast-qr";
+import { BroadcastCode } from "@/components/broadcast-code";
 import "@/components/tournament-engine.css";
 
 export default function ScreeningPage() {
@@ -95,6 +95,8 @@ export default function ScreeningPage() {
 
   const isMatchOver = (m: any, now: number): boolean => {
     if (m.status === "COMPLETED") return true;
+    // Anything not actively running is over for spectating purposes; only a
+    // LIVE match continues, and the clock below decides when that has lapsed.
     if (m.status !== "LIVE") return false;
 
     const start = m.start_time || 0;
@@ -250,7 +252,7 @@ export default function ScreeningPage() {
 
         {/* Live Grid */}
         {filteredMatches.length > 0 ? (
-          <div className="screening-grid animate-in" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(360px, 1fr))", gap: "24px" }}>
+          <div className="screening-grid animate-in" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(420px, 1fr))", gap: "20px" }}>
             {filteredMatches.map((m: any) => {
               const isFootball = (m.sport === 'FOOTBALL') || (m.arenaSport === 'FOOTBALL');
               const isLive = m.status === 'LIVE';
@@ -259,7 +261,19 @@ export default function ScreeningPage() {
                 : 'SCHEDULED';
               
               return (
-                <div key={m.id} className="glass-morphism screening-card hover-glow" style={{ padding: '26px', borderRadius: '16px', background: 'rgba(9, 9, 22, 0.45)', border: '1px solid rgba(255,255,255,0.06)', position: 'relative' }}>
+                <div
+                  key={m.id}
+                  className="glass-morphism screening-card hover-glow"
+                  style={{
+                    padding: '22px',
+                    borderRadius: '16px',
+                    background: 'rgba(9, 9, 22, 0.55)',
+                    // A live match gets a warm edge; a scheduled one stays quiet.
+                    border: isLive ? '1px solid rgba(239, 68, 68, 0.25)' : '1px solid rgba(255,255,255,0.06)',
+                    boxShadow: isLive ? '0 0 0 1px rgba(239,68,68,0.06), 0 12px 32px rgba(0,0,0,0.35)' : 'none',
+                    position: 'relative',
+                  }}
+                >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
                     <span className={isLive ? "live-pill" : ""} style={{ fontSize: '0.75rem', padding: '3px 10px', background: isLive ? 'rgba(239, 68, 68, 0.1)' : 'rgba(245, 158, 11, 0.1)', color: isLive ? '#ef4444' : '#f59e0b', border: `1px solid ${isLive ? 'rgba(239,68,68,0.2)' : 'rgba(245,158,11,0.2)'}`, borderRadius: '6px', fontWeight: 'bold' }}>
                       {isLive && <span className="live-pulse"></span>} {isLive ? 'LIVE' : 'UPCOMING'}
@@ -269,19 +283,19 @@ export default function ScreeningPage() {
                     </span>
                   </div>
 
-                  <div style={{ fontSize: "0.8rem", color: "#888", marginBottom: "15px", fontWeight: "bold" }}>
-                    🏟️ ARENA: <span style={{ color: "#fff" }}>{m.arenaName}</span>
+                  <div style={{ fontSize: "0.78rem", color: "#8b8b9a", marginBottom: "4px", fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    🏟️ {m.arenaName}
                   </div>
 
-                  <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center', margin: '24px 0' }}>
-                    <div style={{ textAlign: 'center', flex: 1 }}>
-                      <div style={{ fontSize: '1rem', fontWeight: 'bold', color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.teamAName}</div>
-                      <div style={{ fontSize: '3.2rem', fontWeight: 900, color: 'var(--red)', marginTop: '8px' }}>{m.score_team_a}</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: '12px', margin: '20px 0' }}>
+                    <div style={{ textAlign: 'right', minWidth: 0 }}>
+                      <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'rgba(255,255,255,0.75)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.teamAName}</div>
+                      <div style={{ fontSize: '2.8rem', fontWeight: 900, color: '#fff', lineHeight: 1.05, fontVariantNumeric: 'tabular-nums' }}>{m.score_team_a}</div>
                     </div>
-                    <div style={{ fontSize: '1.2rem', color: '#555', fontWeight: 'bold', margin: '0 15px' }}>VS</div>
-                    <div style={{ textAlign: 'center', flex: 1 }}>
-                      <div style={{ fontSize: '1rem', fontWeight: 'bold', color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.teamBName}</div>
-                      <div style={{ fontSize: '3.2rem', fontWeight: 900, color: 'var(--blue)', marginTop: '8px' }}>{m.score_team_b}</div>
+                    <div style={{ fontSize: '0.7rem', color: '#666', fontWeight: 800, letterSpacing: '1px' }}>VS</div>
+                    <div style={{ textAlign: 'left', minWidth: 0 }}>
+                      <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'rgba(255,255,255,0.75)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.teamBName}</div>
+                      <div style={{ fontSize: '2.8rem', fontWeight: 900, color: '#fff', lineHeight: 1.05, fontVariantNumeric: 'tabular-nums' }}>{m.score_team_b}</div>
                     </div>
                   </div>
 
@@ -320,7 +334,7 @@ export default function ScreeningPage() {
 
                   {isLive && qrMatchId === m.id && (
                     <div style={{ marginTop: '18px', paddingTop: '18px', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
-                      <BroadcastQr
+                      <BroadcastCode
                         arenaId={m.arenaId}
                         matchId={m.id}
                         onClose={() => setQrMatchId(null)}

@@ -23,6 +23,7 @@ import {
   listFeeds,
   deleteFeed,
   BROADCAST_TOKEN_TTL_SECONDS,
+  BROADCAST_CODE_TTL_SECONDS,
   createBroadcastCode,
   normaliseBroadcastCode,
   putBroadcastCode,
@@ -1211,11 +1212,19 @@ app.post("/api/stream/broadcast-token", async (c) => {
     c.env.MATCH_FEEDS,
     code,
     { arenaId: body.arenaId, matchId: body.matchId, token },
-    BROADCAST_TOKEN_TTL_SECONDS
+    BROADCAST_CODE_TTL_SECONDS
   );
   const url = `${origin}/broadcast/${code}`;
 
-  return c.json({ ok: true, token, url, shortUrl: url, code, expiresAt: exp });
+  return c.json({
+    ok: true,
+    token,
+    url,
+    shortUrl: url,
+    code,
+    expiresAt: exp,
+    codeExpiresIn: BROADCAST_CODE_TTL_SECONDS,
+  });
 });
 
 /** Resolve a short broadcast code back to its arena, match and token. */

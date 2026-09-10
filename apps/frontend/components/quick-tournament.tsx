@@ -6,7 +6,7 @@ import { backendFetch } from "@/lib/backend";
 import { FootballTeamPod, ScorersList, FootballScoreboard, FootballPossessionPitch } from "@/components/match-components";
 import { FootballMatchEngine } from "./football-match-engine";
 import { PoolMatchEngine } from "./pool-match-engine";
-import { BroadcastQr } from "@/components/broadcast-qr";
+import { BroadcastCode } from "@/components/broadcast-code";
 import "@/components/tournament-engine.css";
 
 type Player = {
@@ -189,7 +189,7 @@ export function QuickTournament() {
   const [extraTimePromptId, setExtraTimePromptId] = useState<string | null>(null);
   const [showResetModal, setShowResetModal] = useState(false);
   const [showCloseModal, setShowCloseModal] = useState(false);
-  const [showBroadcastQr, setShowBroadcastQr] = useState(false);
+  const [showBroadcastCode, setShowBroadcastCode] = useState(false);
   const [showAddTeamInline, setShowAddTeamInline] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [modalConfig, setModalConfig] = useState<ModalConfig | null>(null);
@@ -2061,10 +2061,10 @@ export function QuickTournament() {
                   <button
                     className="extra-time-btn"
                     style={{ background: 'rgba(139, 92, 246, 0.12)', color: '#a78bfa', border: '1px solid rgba(139, 92, 246, 0.3)' }}
-                    onClick={() => setShowBroadcastQr(!showBroadcastQr)}
+                    onClick={() => setShowBroadcastCode(!showBroadcastCode)}
                     title={syncError ? "Share the arena first so it exists on the spectator network" : undefined}
                   >
-                    {showBroadcastQr ? 'HIDE QR' : 'STREAM'}
+                    {showBroadcastCode ? 'HIDE CODE' : 'STREAM'}
                   </button>
                 )}
                 {extraTimePromptId === liveMatch.id && (
@@ -2081,7 +2081,7 @@ export function QuickTournament() {
               {/* The host runs the match from here, so this is where the code to
                   hand a camera operator belongs. The arena must be shared first,
                   since a broadcast is authorised against the stored arena. */}
-              {showBroadcastQr && arenaId && (
+              {showBroadcastCode && arenaId && (
                 <div
                   className="animate-in"
                   style={{
@@ -2092,11 +2092,11 @@ export function QuickTournament() {
                     border: '1px solid rgba(255,255,255,0.06)',
                   }}
                 >
-                  <BroadcastQr
+                  <BroadcastCode
                     arenaId={arenaId}
                     matchId={liveMatch.id}
                     pin={arenaPin}
-                    onClose={() => setShowBroadcastQr(false)}
+                    onClose={() => setShowBroadcastCode(false)}
                   />
                 </div>
               )}

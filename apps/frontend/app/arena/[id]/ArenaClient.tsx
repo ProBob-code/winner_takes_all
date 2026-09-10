@@ -5,7 +5,7 @@ import { readBackendJson } from "@/lib/backend";
 import { FootballMatchEngine } from "@/components/football-match-engine";
 import { PoolMatchEngine } from "@/components/pool-match-engine";
 import { LiveFeedViewer } from "@/components/live-feed-viewer";
-import { BroadcastQr } from "@/components/broadcast-qr";
+import { BroadcastCode } from "@/components/broadcast-code";
 import "@/components/tournament-engine.css";
 
 interface ArenaState {
@@ -263,13 +263,13 @@ export function ArenaClient({ id }: { id: string }) {
                 style={{ padding: '6px 12px', fontSize: '0.8rem' }}
                 onClick={() => setQrMatchId(qrMatchId === liveMatch.id ? null : liveMatch.id)}
               >
-                📷 {qrMatchId === liveMatch.id ? 'HIDE QR' : 'STREAM THIS MATCH'}
+                📷 {qrMatchId === liveMatch.id ? 'HIDE CODE' : 'STREAM THIS MATCH'}
               </button>
             </div>
 
             {qrMatchId === liveMatch.id && (
               <div style={{ marginBottom: '20px' }}>
-                <BroadcastQr arenaId={id} matchId={liveMatch.id} onClose={() => setQrMatchId(null)} />
+                <BroadcastCode arenaId={id} matchId={liveMatch.id} onClose={() => setQrMatchId(null)} />
               </div>
             )}
 
@@ -343,13 +343,13 @@ export function ArenaClient({ id }: { id: string }) {
                         style={{ padding: '6px 12px', fontSize: '0.78rem' }}
                         onClick={() => setQrMatchId(qrMatchId === m.id ? null : m.id)}
                       >
-                        📷 {qrMatchId === m.id ? 'HIDE QR' : 'STREAM'}
+                        📷 {qrMatchId === m.id ? 'HIDE CODE' : 'STREAM'}
                       </button>
                     </div>
 
                     {qrMatchId === m.id && (
                       <div style={{ marginBottom: '16px' }}>
-                        <BroadcastQr arenaId={id} matchId={m.id} onClose={() => setQrMatchId(null)} />
+                        <BroadcastCode arenaId={id} matchId={m.id} onClose={() => setQrMatchId(null)} />
                       </div>
                     )}
 

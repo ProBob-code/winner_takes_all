@@ -187,6 +187,17 @@ const BROADCAST_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no I,O,0,
  *  broadcast grant they stand for. */
 export const BROADCAST_CODE_LENGTH = 6;
 
+/**
+ * How long a displayed code stays redeemable.
+ *
+ * The host's screen rotates the code every minute, so a code only has to
+ * outlive the rotation that replaced it — long enough for someone mid-way
+ * through typing, short enough that a photograph of the screen is useless
+ * soon after. The broadcast token it stands for keeps its own longer life, so
+ * rotation never interrupts a camera already on air.
+ */
+export const BROADCAST_CODE_TTL_SECONDS = 150;
+
 export function createBroadcastCode(): string {
   const bytes = crypto.getRandomValues(new Uint8Array(BROADCAST_CODE_LENGTH));
   return Array.from(bytes, (b) => BROADCAST_CODE_ALPHABET[b % BROADCAST_CODE_ALPHABET.length]).join("");

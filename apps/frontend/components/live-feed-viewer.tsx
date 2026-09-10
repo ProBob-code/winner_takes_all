@@ -41,6 +41,9 @@ export function LiveFeedViewer({ arenaId, matchId, isLive }: Props) {
   const [primaryFeedId, setPrimaryFeedId] = useState<string | null>(null);
   const [connections, setConnections] = useState<Record<string, Connection>>({});
   const [usage, setUsage] = useState<TransportStats | null>(null);
+  // Remembered so the end of a match is announced rather than the panel just
+  // vanishing from under whoever was watching.
+  const [wasWatching, setWasWatching] = useState(false);
 
   const connectionsRef = useRef<Record<string, Connection>>({});
   const primaryVideoRef = useRef<HTMLVideoElement | null>(null);
@@ -95,6 +98,10 @@ export function LiveFeedViewer({ arenaId, matchId, isLive }: Props) {
   useEffect(() => {
     if (!isLive) dropAll();
   }, [isLive, dropAll]);
+
+  useEffect(() => {
+    if (isLive && feeds.length > 0) setWasWatching(true);
+  }, [isLive, feeds.length]);
 
   useEffect(() => dropAll, [dropAll]);
 
@@ -167,7 +174,28 @@ export function LiveFeedViewer({ arenaId, matchId, isLive }: Props) {
     };
   }, [primaryFeedId, connections]);
 
-  if (!isLive) return null;
+  if (!isLive) {
+    if (!wasWatching) return null;
+    return (
+      <div
+        style={{
+          padding: "18px",
+          borderRadius: "10px",
+          background: "rgba(239, 68, 68, 0.06)",
+          border: "1px solid rgba(239, 68, 68, 0.2)",
+          textAlign: "center",
+        }}
+      >
+        <div style={{ fontSize: "1.4rem" }}>🏁</div>
+        <p style={{ fontWeight: 800, marginTop: "6px", fontSize: "0.9rem" }}>
+          The quick tournament has ended
+        </p>
+        <p className="muted" style={{ fontSize: "0.78rem", marginTop: "4px" }}>
+          All cameras have stopped.
+        </p>
+      </div>
+    );
+  }
 
   if (feeds.length === 0) {
     return (
