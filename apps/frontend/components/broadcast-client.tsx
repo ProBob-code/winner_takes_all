@@ -456,6 +456,13 @@ export function BroadcastClient({ arenaId, matchId, token }: Props) {
               <button className="button button-gold" style={{ width: "100%" }} onClick={goLive}>
                 TRY AGAIN
               </button>
+              <a
+                href="/broadcast"
+                className="button button-secondary mt-4"
+                style={{ width: "100%", display: "block", textAlign: "center" }}
+              >
+                ENTER A NEW STREAM CODE
+              </a>
               <button
                 className="button button-secondary mt-4"
                 style={{ width: "100%" }}

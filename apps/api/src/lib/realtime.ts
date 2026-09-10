@@ -9,8 +9,15 @@
 
 import { hmacSha256, timingSafeEqual } from "./crypto";
 
-/** Broadcast links die quickly; a match-long link that leaks is a liability. */
-export const BROADCAST_TOKEN_TTL_SECONDS = 3 * 60 * 60;
+/**
+ * How long a grant may be used to *start* a broadcast.
+ *
+ * Deliberately short, and only a little longer than the code that carries it:
+ * a code that has expired must not still open a camera, so the grant it handed
+ * out has to expire with it. This does not limit how long a camera may stream
+ * — a feed already on air keeps going for as long as the match runs.
+ */
+export const BROADCAST_TOKEN_TTL_SECONDS = 5 * 60;
 
 /**
  * A feed is dropped this long after its last heartbeat.
@@ -79,11 +86,32 @@ export async function signBroadcastToken(
   return `${message}.${signature}`;
 }
 
+/**
+ * Returns the claims when the token is authentic, whether or not it has
+ * expired. Use this only where expiry is deliberately not the question — a
+ * heartbeat for a camera already streaming, where the match being live is what
+ * governs whether it continues.
+ */
+export async function verifyBroadcastSignature(
+  secret: string,
+  token: string
+): Promise<BroadcastClaims | null> {
+  return verify(secret, token, null);
+}
+
 /** Returns the claims when the token is authentic and unexpired, else null. */
 export async function verifyBroadcastToken(
   secret: string,
   token: string,
   nowSeconds: number
+): Promise<BroadcastClaims | null> {
+  return verify(secret, token, nowSeconds);
+}
+
+async function verify(
+  secret: string,
+  token: string,
+  nowSeconds: number | null
 ): Promise<BroadcastClaims | null> {
   const parts = token.split(".");
   // At least arenaId, one match-id segment, exp and sig. A match id containing
@@ -105,7 +133,7 @@ export async function verifyBroadcastToken(
   );
   if (!timingSafeEqual(expected, signature)) return null;
 
-  if (exp <= nowSeconds) return null;
+  if (nowSeconds !== null && exp <= nowSeconds) return null;
   return { arenaId, matchId, exp };
 }
 
@@ -287,8 +315,16 @@ async function callFeeds(
   return res.json();
 }
 
-export async function putFeed(ns: DurableObjectNamespace, feed: StreamFeed): Promise<void> {
-  await callFeeds(ns, feed.arenaId, feed.matchId, "/put", { method: "POST", body: feed });
+export async function putFeed(
+  ns: DurableObjectNamespace,
+  feed: StreamFeed,
+  options: { requireExisting?: boolean } = {}
+): Promise<{ ok: boolean; missing?: boolean }> {
+  const data = await callFeeds(ns, feed.arenaId, feed.matchId, "/put", {
+    method: "POST",
+    body: { ...feed, requireExisting: !!options.requireExisting },
+  });
+  return { ok: !!data?.ok, missing: !!data?.missing };
 }
 
 export async function listFeeds(

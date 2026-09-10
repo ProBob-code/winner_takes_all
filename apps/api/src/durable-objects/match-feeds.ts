@@ -88,10 +88,16 @@ export class MatchFeeds {
 
     if (request.method === "POST" && url.pathname === "/put") {
       const incoming = (await request.json()) as Omit<StoredFeed, "lastSeen" | "startedAt"> &
-        Partial<Pick<StoredFeed, "startedAt">>;
+        Partial<Pick<StoredFeed, "startedAt">> & { requireExisting?: boolean };
 
       const key = `feed:${incoming.feedId}`;
       const existing = await this.state.storage.get<StoredFeed>(key);
+
+      // A heartbeat may refresh a feed but never create one: claiming is the
+      // only way a camera gets on air, and that path checks an unexpired grant.
+      if (incoming.requireExisting && !existing) {
+        return json({ ok: false, missing: true });
+      }
 
       const feed: StoredFeed = {
         ...incoming,

@@ -17,6 +17,7 @@ import { createRazorpayOrder, verifyPaymentSignature, verifyWebhookSignature } f
 import {
   signBroadcastToken,
   verifyBroadcastToken,
+  verifyBroadcastSignature,
   realtimeConfig,
   callRealtime,
   putFeed,
@@ -1383,14 +1384,31 @@ app.post("/api/stream/feeds", async (c) => {
     const limited = await streamRateLimit(c, "stream-feed", 60, 60);
     if (limited) return limited;
   }
-  const claims = await verifyBroadcastToken(secret, body.token, nowSeconds());
+  // Two different questions. Refreshing a camera that is already streaming
+  // only needs the grant to be authentic, because how long it may continue is
+  // governed by the match still being live. Putting a camera on air needs the
+  // grant to be unexpired as well — an expired code must not open a camera,
+  // so neither may the grant it handed out.
+  const isHeartbeat = !!body.feedId;
+  const claims = isHeartbeat
+    ? await verifyBroadcastSignature(secret, body.token)
+    : await verifyBroadcastToken(secret, body.token, nowSeconds());
+
   if (!claims) {
-    return c.json({ ok: false, message: "This broadcast link is invalid or has expired." }, 403);
+    return c.json(
+      {
+        ok: false,
+        message: isHeartbeat
+          ? "This broadcast link is not valid."
+          : "This stream code has expired. Ask the host for the current one.",
+      },
+      403
+    );
   }
 
-  // No account required: the signed broadcast token, obtained by scanning the
-  // QR or entering the stream code, is the authorisation. Someone handed a
-  // phone at the ground should not have to sign up first.
+  // No account required: the signed broadcast token, obtained from the stream
+  // code, is the authorisation. Someone handed a phone at the ground should
+  // not have to sign up first.
   const broadcaster = c.get("user");
 
   // Checked on every heartbeat, not just registration: a match that ends
@@ -1414,7 +1432,20 @@ app.post("/api/stream/feeds", async (c) => {
     startedAt: nowSeconds(),
   };
 
-  await putFeed(c.env.MATCH_FEEDS, feed);
+  const result = await putFeed(c.env.MATCH_FEEDS, feed, { requireExisting: isHeartbeat });
+  if (result.missing) {
+    // The feed is gone — expired, or ended — so this is really a fresh claim
+    // and has to satisfy the unexpired-grant rule rather than slip in as a
+    // refresh.
+    return c.json(
+      {
+        ok: false,
+        message: "This broadcast has ended. Ask the host for a new stream code to start again.",
+      },
+      403
+    );
+  }
+
   return c.json({ ok: true, feed });
 });
 
@@ -1435,9 +1466,9 @@ app.post("/api/stream/feeds/end", async (c) => {
   if (!secret) return c.json({ ok: false, message: "Live streaming is not configured." }, 503);
 
   const body = parseBody(registerFeedSchema, await readJson(c));
-  const claims = await verifyBroadcastToken(secret, body.token, nowSeconds());
+  const claims = await verifyBroadcastSignature(secret, body.token);
   if (!claims || !body.feedId) {
-    return c.json({ ok: false, message: "This broadcast link is invalid or has expired." }, 403);
+    return c.json({ ok: false, message: "This broadcast link is not valid." }, 403);
   }
 
   await deleteFeed(c.env.MATCH_FEEDS, claims.arenaId, claims.matchId, body.feedId);
