@@ -17,6 +17,7 @@ export default function HostTournamentForm() {
     maxPlayers: 8,
     teamSize: 1,
     tournamentType: "online",
+    sport: "8BALL",
     bracketType: "single_elimination",
     password: "",
   });
@@ -156,6 +157,23 @@ export default function HostTournamentForm() {
             <option value="hybrid">Online-Offline</option>
           </select>
         </div>
+      </div>
+
+      <div className="form-group" style={{ marginBottom: "1.5rem" }}>
+        <label htmlFor="sport" style={{ display: "block", marginBottom: "0.5rem", color: "var(--text-secondary)", fontWeight: 500 }}>Sport</label>
+        <select
+          id="sport"
+          value={formData.sport}
+          onChange={(e) => setFormData({ ...formData, sport: e.target.value })}
+          className="form-control"
+          style={{ width: "100%", padding: "1rem", borderRadius: "0.5rem", background: "var(--glass-bg)", border: "1px solid var(--glass-border-color)", color: "var(--text-primary)", outline: "none", cursor: "pointer" }}
+        >
+          <option value="8BALL">🎱 8-Ball</option>
+          <option value="FOOTBALL">⚽ Football</option>
+        </select>
+        <p className="muted" style={{ fontSize: "0.78rem", marginTop: "0.5rem" }}>
+          Decides how matches are scored: balls and the black, or goals.
+        </p>
       </div>
 
       <div className="form-group" style={{ marginBottom: "2.5rem" }}>

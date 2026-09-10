@@ -49,6 +49,7 @@ CREATE TABLE IF NOT EXISTS tournaments (
   team_size INTEGER NOT NULL DEFAULT 1,
   host_id TEXT,
   tournament_type TEXT NOT NULL DEFAULT 'online',
+  sport TEXT NOT NULL DEFAULT '8BALL',
   password TEXT,
   winner_id TEXT,
   started_at TEXT,

@@ -119,7 +119,7 @@ export function generateNextMatches(
 export function processScoreUpdate<M extends EngineMatch>(
   match: M,
   scoringTeamId: string,
-  type: 'BALL' | 'BLACK' | 'MISTAKE'
+  type: 'BALL' | 'BLACK' | 'MISTAKE' | 'GOAL'
 ): { updatedMatch: M, matchEnded: boolean } {
   
   const updatedMatch = { ...match };
@@ -136,6 +136,15 @@ export function processScoreUpdate<M extends EngineMatch>(
   }
 
   const isTeamA = updatedMatch.team_a_id === scoringTeamId;
+
+  // A goal is worth one, and football has no race target: the match is decided
+  // by the clock, so a goal never ends it early.
+  if (type === 'GOAL') {
+    if (isTeamA) updatedMatch.score_team_a += 1;
+    else updatedMatch.score_team_b += 1;
+    return { updatedMatch, matchEnded: false };
+  }
+
   const points = type === 'BLACK' ? 30 : 10;
 
   // Update specific counters

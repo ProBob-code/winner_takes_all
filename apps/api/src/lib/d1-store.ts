@@ -43,6 +43,8 @@ export interface TournamentRecord {
   max_players: number; status: string; bracket_type: string;
   bracket_state: any | null; platform_fee_percent: number; team_size: number;
   host_id: string | null; tournament_type: string; password: string | null;
+  /** "8BALL" or "FOOTBALL"; rows predating the column read as 8BALL. */
+  sport: string;
   winner_id: string | null; started_at: string | null; completed_at: string | null;
   max_matches_per_team: number;
   participant_ids: string[];
@@ -264,6 +266,9 @@ export class D1Store {
     return {
       ...row,
       bracket_state: row.bracket_state ? JSON.parse(row.bracket_state) : null,
+      // Rows written before the column existed have no sport; they were all
+      // 8-ball, and this keeps them readable before the migration is applied.
+      sport: row.sport ?? "8BALL",
       participant_ids: pids,
     };
   }
@@ -283,15 +288,17 @@ export class D1Store {
   async createTournament(data: {
     name: string; entryFeeCents: number; maxPlayers: number; hostId: string;
     teamSize?: number; tournamentType?: string; bracketType?: string; password?: string | null;
+    sport?: string;
   }): Promise<TournamentRecord> {
     const id = createId("tournament");
     const now = new Date().toISOString();
     await this.db.prepare(
-      `INSERT INTO tournaments (id, name, entry_fee_cents, max_players, host_id, team_size, tournament_type, bracket_type, password, status, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'open', ?, ?)`
+      `INSERT INTO tournaments (id, name, entry_fee_cents, max_players, host_id, team_size, tournament_type, bracket_type, sport, password, status, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'open', ?, ?)`
     ).bind(id, data.name, data.entryFeeCents, data.maxPlayers, data.hostId,
       data.teamSize ?? 1, data.tournamentType ?? "online",
-      data.bracketType ?? "single_elimination", data.password ?? null, now, now).run();
+      data.bracketType ?? "single_elimination", data.sport ?? "8BALL",
+      data.password ?? null, now, now).run();
     return (await this.getTournament(id))!;
   }
 

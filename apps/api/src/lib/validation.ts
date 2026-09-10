@@ -66,6 +66,7 @@ export const createTournamentSchema = z.object({
   maxPlayers: z.coerce.number().int().min(2).max(128).default(8),
   teamSize: z.coerce.number().int().min(1).max(11).default(1),
   tournamentType: z.enum(["online", "offline"]).default("online"),
+  sport: z.enum(["8BALL", "FOOTBALL"]).default("8BALL"),
   bracketType: z
     .enum(["single_elimination", "double_elimination", "round_robin", "group_knockout"])
     .default("single_elimination"),
@@ -97,7 +98,8 @@ export const addTeamSchema = z.object({
 
 export const engineScoreSchema = z.object({
   teamId: z.string().min(1).max(64),
-  type: z.enum(["BALL", "BLACK", "MISTAKE"]),
+  // GOAL is football's only scoring event; the rest are 8-ball.
+  type: z.enum(["BALL", "BLACK", "MISTAKE", "GOAL"]),
 });
 
 export const highlightSchema = z.object({

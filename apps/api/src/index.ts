@@ -163,6 +163,7 @@ function serializeTournament(t: TournamentRecord) {
     bracketState: t.bracket_state,
     teamSize: t.team_size,
     tournamentType: t.tournament_type,
+    sport: t.sport,
     hostId: t.host_id,
     winnerId: t.winner_id,
     hasPassword: !!t.password,
@@ -447,6 +448,7 @@ app.post("/api/tournaments/create", async (c) => {
     teamSize: body.teamSize,
     tournamentType: body.tournamentType,
     bracketType: body.bracketType,
+    sport: body.sport,
     password: body.password ?? null,
   });
 
@@ -759,6 +761,7 @@ app.get("/api/engine/tournaments/:id/state", async (c) => {
   return c.json({
     ok: true,
     phase: tournament.status as Engine.TournamentPhase,
+    sport: tournament.sport,
     teams,
     matches,
   });

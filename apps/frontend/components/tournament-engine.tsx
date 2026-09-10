@@ -37,9 +37,13 @@ interface Match {
   ended_by?: 'SCORE' | 'TIME';
 }
 
+type Sport = '8BALL' | 'FOOTBALL';
+
 interface TournamentState {
   ok: boolean;
   phase: 'SETUP' | 'GROUP' | 'KNOCKOUT' | 'COMPLETED' | 'open';
+  /** Absent on tournaments created before the column existed; those are 8-ball. */
+  sport?: Sport;
   teams: Team[];
   matches: Match[];
 }
@@ -76,6 +80,8 @@ export function TournamentEngine({
   );
 
   const arenaName = tournamentName?.trim() || "Hosted Tournament";
+  const sport: Sport = state?.sport === 'FOOTBALL' ? 'FOOTBALL' : '8BALL';
+  const isFootball = sport === 'FOOTBALL';
 
   const fetchState = useCallback(async () => {
     try {
@@ -98,11 +104,11 @@ export function TournamentEngine({
   const arenaState = useCallback(
     (current: TournamentState, isStarted: boolean) => ({
       isStarted,
-      selectedSport: "8BALL" as const,
+      selectedSport: sport,
       teams: current.teams.map((t) => ({ ...t, is_team: false, players: [] })),
-      matches: current.matches.map((m) => ({ ...m, sport: "8BALL" as const })),
+      matches: current.matches.map((m) => ({ ...m, sport })),
     }),
-    []
+    [sport]
   );
 
   const pushArena = useCallback(
@@ -238,7 +244,7 @@ export function TournamentEngine({
     fetchState();
   };
 
-  const updateScore = async (matchId: string, teamId: string, type: 'BALL' | 'BLACK' | 'MISTAKE') => {
+  const updateScore = async (matchId: string, teamId: string, type: 'BALL' | 'BLACK' | 'MISTAKE' | 'GOAL') => {
     await backendFetch(`/engine/matches/${matchId}/score`, {
       method: "POST",
       body: JSON.stringify({ teamId, type })
@@ -307,7 +313,9 @@ export function TournamentEngine({
       <div className="engine-header">
         <div>
           <h1 className="glow-text">Stadium Arena Manager</h1>
-          <p className="muted">Host Perspective & Real-time Scoring</p>
+          <p className="muted">
+            {isFootball ? '⚽ Football' : '🎱 8-Ball'} · Host Perspective &amp; Real-time Scoring
+          </p>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
           {/* Private until the host chooses otherwise. */}
@@ -423,8 +431,18 @@ export function TournamentEngine({
                     {liveMatch.active_team_id === liveMatch.team_a_id && <div className="active-badge">Active Turn</div>}
                     <div className="pod-name" style={{ color: '#ef4444' }}>{getTeamName(liveMatch.team_a_id)}</div>
                     <div className="pod-score">{liveMatch.score_team_a}</div>
-                    <Ticker balls={liveMatch.balls_potted_a} black={liveMatch.black_potted_a} color="#ef4444" />
+                    {!isFootball && (
+                      <Ticker balls={liveMatch.balls_potted_a} black={liveMatch.black_potted_a} color="#ef4444" />
+                    )}
                     
+                    {isFootball ? (
+                      <div className="control-grid" style={{ marginTop: '2rem' }}>
+                        <button className="score-btn ball" onClick={(e) => { e.stopPropagation(); updateScore(liveMatch.id, liveMatch.team_a_id, 'GOAL') }}>
+                          <span>⚽ GOAL</span>
+                          <span className="points">+1</span>
+                        </button>
+                      </div>
+                    ) : (
                     <div className="control-grid" style={{ marginTop: '2rem' }}>
                       <button className="score-btn ball" onClick={(e) => { e.stopPropagation(); updateScore(liveMatch.id, liveMatch.team_a_id, 'BALL') }}>
                         <span>🎱 BALL</span>
@@ -439,6 +457,7 @@ export function TournamentEngine({
                         <span className="points">P2 +10</span>
                       </button>
                     </div>
+                    )}
                   </div>
 
                   <div className="vs-orb">VS</div>
@@ -451,8 +470,18 @@ export function TournamentEngine({
                     {liveMatch.active_team_id === liveMatch.team_b_id && <div className="active-badge">Active Turn</div>}
                     <div className="pod-name" style={{ color: '#3b82f6' }}>{getTeamName(liveMatch.team_b_id)}</div>
                     <div className="pod-score">{liveMatch.score_team_b}</div>
-                    <Ticker balls={liveMatch.balls_potted_b} black={liveMatch.black_potted_b} color="#3b82f6" />
+                    {!isFootball && (
+                      <Ticker balls={liveMatch.balls_potted_b} black={liveMatch.black_potted_b} color="#3b82f6" />
+                    )}
                     
+                    {isFootball ? (
+                      <div className="control-grid" style={{ marginTop: '2rem' }}>
+                        <button className="score-btn ball" onClick={(e) => { e.stopPropagation(); updateScore(liveMatch.id, liveMatch.team_b_id, 'GOAL') }}>
+                          <span>⚽ GOAL</span>
+                          <span className="points">+1</span>
+                        </button>
+                      </div>
+                    ) : (
                     <div className="control-grid" style={{ marginTop: '2rem' }}>
                       <button className="score-btn ball" onClick={(e) => { e.stopPropagation(); updateScore(liveMatch.id, liveMatch.team_b_id, 'BALL') }}>
                         <span>🎱 BALL</span>
@@ -467,6 +496,7 @@ export function TournamentEngine({
                         <span className="points">P1 +10</span>
                       </button>
                     </div>
+                    )}
                   </div>
                 </div>
 
