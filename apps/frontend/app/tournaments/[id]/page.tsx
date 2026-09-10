@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
+import { useParams } from "next/navigation";
 import Link from "next/link";
 import { readBackendJson, backendFetch } from "@/lib/backend";
 import { formatMoney } from "@/lib/format";
@@ -76,12 +77,17 @@ export default function TournamentDetailPage() {
   const [newTeamName, setNewTeamName] = useState("");
   const [reordering, setReordering] = useState(false);
 
+  const routeParams = useParams<{ id: string }>();
+  const routeId = routeParams?.id;
+
   const fetchTournamentData = useCallback(async () => {
     if (typeof window === "undefined") return;
     try {
-      const pathParts = window.location.pathname.split("/");
-      const id = pathParts[pathParts.length - 1];
-      if (!id || id === "view") return;
+      // Read the id from the route rather than by slicing the pathname: the
+      // page used to live at /tournaments/view, where that slice produced
+      // "view" and the page bailed, which is why every tournament link 404'd.
+      const id = routeId;
+      if (!id) return;
 
       const responses = await Promise.allSettled([
         readBackendJson<any>(`/tournaments/${id}`),
@@ -100,7 +106,7 @@ export default function TournamentDetailPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [routeId]);
 
   useEffect(() => {
     fetchTournamentData();
