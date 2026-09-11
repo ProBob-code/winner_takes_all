@@ -825,13 +825,73 @@ app.post("/api/engine/tournaments/:id/add-team", async (c) => {
   return c.json({ ok: true, team });
 });
 
+/**
+ * Start the tournament: turn everyone who joined into a competitor, then draw
+ * the opening fixtures.
+ *
+ * Joining recorded a participant, while the bracket, the leaderboard and every
+ * match read engine teams. Nothing bridged the two, so people who paid to join
+ * never appeared as competitors and the draw had nobody to pair. The host
+ * pressing start is where that conversion belongs — it is the moment the entry
+ * list closes.
+ */
 app.post("/api/engine/tournaments/:id/start", async (c) => {
   const tournamentId = c.req.param("id");
   const access = await requireTournamentManager(c, tournamentId);
   if ("error" in access) return access.error;
+  const { tournament } = access;
 
-  await c.get("store").updateTournamentStatus(tournamentId, "GROUP");
-  return c.json({ ok: true });
+  const store = c.get("store");
+  const [participants, existingTeams] = await Promise.all([
+    store.getParticipants(tournamentId),
+    store.getEngineTeams(tournamentId),
+  ]);
+
+  // Teams the host entered by hand keep their place; a participant is only
+  // added if nothing already stands for them.
+  const taken = new Set(existingTeams.map((t) => t.name.trim().toLowerCase()));
+  for (const p of participants) {
+    const label = (p.team_name || p.user_name || p.user_id).trim();
+    if (!label || taken.has(label.toLowerCase())) continue;
+    await store.createEngineTeam(tournamentId, label);
+    taken.add(label.toLowerCase());
+  }
+
+  const teams = await store.getEngineTeams(tournamentId);
+  if (teams.length < 2) {
+    return c.json(
+      { ok: false, message: "At least two players must join before the tournament can start." },
+      400
+    );
+  }
+
+  await store.updateTournamentStatus(tournamentId, "GROUP");
+
+  // Draw the opening fixtures so the schedule exists the moment it starts.
+  const matches = await store.getEngineMatches(tournamentId);
+  if (matches.length === 0) {
+    const matchups = await store.getEngineMatchups(tournamentId);
+    const limit = tournament.max_matches_per_team || 2;
+    const { matches: nextMatches, byeTeamId } = Engine.generateNextMatches(teams, matchups, "GROUP", limit);
+
+    for (const mData of nextMatches) {
+      const match = await store.createEngineMatch(tournamentId, mData);
+      await store.createEngineMatchup(tournamentId, match.team_a_id, match.team_b_id, match.id);
+    }
+
+    if (byeTeamId) {
+      const team = teams.find((t) => t.id === byeTeamId);
+      if (team) {
+        await store.updateEngineTeam(byeTeamId, {
+          matches_played: team.matches_played + 1,
+          group_points: team.group_points + 1,
+          bye_assigned: true,
+        });
+      }
+    }
+  }
+
+  return c.json({ ok: true, teams: teams.length });
 });
 
 app.post("/api/engine/tournaments/:id/generate", async (c) => {

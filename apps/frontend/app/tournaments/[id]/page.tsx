@@ -76,6 +76,7 @@ export default function TournamentDetailPage() {
   const [currentTime, setCurrentTime] = useState(Math.floor(Date.now() / 1000));
   const [newTeamName, setNewTeamName] = useState("");
   const [reordering, setReordering] = useState(false);
+  const [startError, setStartError] = useState<string | null>(null);
 
   const routeParams = useParams<{ id: string }>();
   const routeId = routeParams?.id;
@@ -131,6 +132,12 @@ export default function TournamentDetailPage() {
   const profileData = responses[3].status === "fulfilled" ? responses[3].value.payload : null;
   const isHost = profileData?.ok && profileData?.user?.id === tournament.tournamentHostId;
 
+  // Who has actually joined. Distinct from engine teams, which only exist once
+  // the tournament starts — this is the entry list.
+  const participants: any[] =
+    responses[2].status === "fulfilled" ? responses[2].value.payload?.participants || [] : [];
+  const hasStarted = !!engineState && engineState.phase !== "open" && engineState.phase !== "SETUP";
+
   // Engine Actions
   const addTeam = async () => {
     if (!newTeamName) return;
@@ -146,6 +153,23 @@ export default function TournamentDetailPage() {
 
   const highlightTeam = async (matchId: string, teamId: string) => {
     await backendFetch(`/engine/matches/${matchId}/highlight`, { method: "POST", body: JSON.stringify({ teamId }) });
+    fetchTournamentData();
+  };
+
+  const startTournament = async () => {
+    const res = await backendFetch(`/engine/tournaments/${id}/start`, { method: "POST" });
+    if (!res.ok) {
+      let message = "Could not start the tournament.";
+      try {
+        const body: any = await res.json();
+        if (body?.message) message = body.message;
+      } catch {
+        /* non-JSON error */
+      }
+      setStartError(message);
+      return;
+    }
+    setStartError(null);
     fetchTournamentData();
   };
 
@@ -356,6 +380,127 @@ export default function TournamentDetailPage() {
             </tbody>
           </table>
         </div>
+
+        {/* ENTRY LIST — who has joined, before and after the draw */}
+        <div className="glass-morphism" style={{ padding: '2rem', borderRadius: '16px', marginTop: '2rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.25rem' }}>
+            <h2 style={{ fontSize: '1rem', letterSpacing: '1px', opacity: 0.7, margin: 0 }}>
+              👥 PLAYERS JOINED ({participants.length}/{tournament.maxPlayers})
+            </h2>
+            {isHost && !hasStarted && (
+              <button
+                className="button button-gold"
+                onClick={startTournament}
+                disabled={participants.length < 2}
+                title={participants.length < 2 ? "At least two players must join" : "Close entries and draw the fixtures"}
+              >
+                START TOURNAMENT
+              </button>
+            )}
+          </div>
+
+          {startError && (
+            <p style={{ color: '#ef4444', fontSize: '0.85rem', marginBottom: '1rem' }}>{startError}</p>
+          )}
+
+          {participants.length === 0 ? (
+            <p className="muted" style={{ fontSize: '0.9rem' }}>
+              Nobody has joined yet. Share the link above to fill the lobby.
+            </p>
+          ) : (
+            <table className="leaderboard-table">
+              <thead><tr><th>#</th><th>PLAYER</th><th>USER ID</th><th>STATUS</th></tr></thead>
+              <tbody>
+                {participants.map((p, i) => (
+                  <tr key={p.userId}>
+                    <td style={{ padding: '1rem' }}>{i + 1}</td>
+                    <td style={{ fontWeight: 900 }}>{p.teamName || p.name || "Player"}</td>
+                    <td style={{ fontFamily: 'monospace', fontSize: '0.8rem', opacity: 0.7 }}>{p.userId}</td>
+                    <td style={{ color: 'var(--accent-primary)' }}>{(p.status || 'joined').toUpperCase()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+
+          {isHost && !hasStarted && participants.length >= 2 && (
+            <p className="muted" style={{ fontSize: '0.78rem', marginTop: '1rem' }}>
+              Starting closes entries, turns everyone here into a competitor and draws the fixtures.
+            </p>
+          )}
+        </div>
+
+        {/* MATCH SCHEDULE — the draw, in the order it will be played */}
+        {hasStarted && (engineState?.matches.length || 0) > 0 && (
+          <div className="glass-morphism" style={{ padding: '2rem', borderRadius: '16px', marginTop: '2rem' }}>
+            <h2 style={{ fontSize: '1rem', letterSpacing: '1px', opacity: 0.7, marginBottom: '1.5rem' }}>
+              📋 MATCH SCHEDULE
+            </h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {[...(engineState?.matches || [])]
+                .sort((a, b) => a.match_order - b.match_order)
+                .map((m, i) => {
+                  const done = m.status === 'COMPLETED';
+                  const live = m.status === 'LIVE';
+                  // The first fixture still waiting is the one up next.
+                  const isNext =
+                    !live &&
+                    m.status === 'CREATED' &&
+                    createdMatches.length > 0 &&
+                    m.id === [...createdMatches].sort((x, y) => x.match_order - y.match_order)[0].id;
+
+                  return (
+                    <div
+                      key={m.id}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '14px',
+                        padding: '14px 16px',
+                        borderRadius: '10px',
+                        background: live ? 'rgba(239,68,68,0.07)' : 'rgba(255,255,255,0.02)',
+                        border: live
+                          ? '1px solid rgba(239,68,68,0.3)'
+                          : isNext
+                            ? '1px solid rgba(245,158,11,0.3)'
+                            : '1px solid rgba(255,255,255,0.05)',
+                        opacity: done ? 0.55 : 1,
+                      }}
+                    >
+                      <span style={{ fontFamily: 'monospace', opacity: 0.5, minWidth: '2.5rem' }}>
+                        {String(i + 1).padStart(2, '0')}
+                      </span>
+                      <span style={{ flex: 1, fontWeight: 800 }}>
+                        {getTeamName(m.team_a_id)} <span style={{ opacity: 0.4 }}>vs</span> {getTeamName(m.team_b_id)}
+                      </span>
+                      {done && (
+                        <span style={{ fontFamily: 'monospace', opacity: 0.8 }}>
+                          {m.score_team_a} - {m.score_team_b}
+                        </span>
+                      )}
+                      <span
+                        style={{
+                          fontSize: '0.7rem',
+                          fontWeight: 900,
+                          letterSpacing: '0.5px',
+                          padding: '3px 10px',
+                          borderRadius: '6px',
+                          background: live
+                            ? 'rgba(239,68,68,0.15)'
+                            : isNext
+                              ? 'rgba(245,158,11,0.15)'
+                              : 'rgba(255,255,255,0.05)',
+                          color: live ? '#ef4444' : isNext ? 'var(--gold)' : 'var(--text-muted)',
+                        }}
+                      >
+                        {live ? 'LIVE' : done ? 'DONE' : isNext ? 'UP NEXT' : 'SCHEDULED'}
+                      </span>
+                    </div>
+                  );
+                })}
+            </div>
+          </div>
+        )}
 
         {/* RESET BUTTON (Host Only) */}
         {isHost && (
