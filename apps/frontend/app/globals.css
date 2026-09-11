@@ -3132,3 +3132,69 @@ select.form-control option {
     max-width: 95% !important;
   }
 }
+
+/* ──────────────────────────────────────────────────────────────────────────
+   Glass surfaces and status pills
+
+   Both class names were already used across the tournament, arena, screening
+   and match views but had never been defined, so every surface using them
+   rendered flat and every badge rendered as bare text. Defining them here
+   styles all of those at once, and they follow the theme variables so light
+   and dark both hold up.
+   ────────────────────────────────────────────────────────────────────────── */
+
+.glass-morphism {
+  background: var(--bg-card);
+  border: 1px solid var(--glass-border-color);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: var(--radius-full);
+  font-size: 0.65rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  line-height: 1;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border-color);
+  color: var(--text-secondary);
+}
+
+/* An open tournament is the one people can act on, so it carries the accent. */
+.status-badge.open {
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.3);
+  color: #10b981;
+}
+
+.status-badge.GROUP,
+.status-badge.KNOCKOUT {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+}
+
+.status-badge.COMPLETED {
+  background: var(--glass-bg);
+  border-color: var(--glass-border-color);
+  color: var(--text-muted);
+}
+
+/* A section heading that does not compete with the content beneath it. */
+.section-heading {
+  font-size: 0.8rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 900;
+  color: var(--text-muted);
+  margin: 0 0 1.25rem;
+}

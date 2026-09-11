@@ -450,7 +450,12 @@ export default function TournamentDetailPage() {
 
         {/* Existing Tournament Sections */}
         <div className="panel page-card" style={{ marginBottom: "1.5rem" }}>
-          <h2 style={{ fontSize: '1rem', letterSpacing: '1px', opacity: 0.7, marginBottom: '1.5rem' }}>🏆 LEADERBOARD</h2>
+          <h2 className="section-heading">Standings</h2>
+          {(engineState?.teams || []).length === 0 ? (
+            <p className="muted" style={{ fontSize: '0.88rem', margin: 0 }}>
+              Standings appear once the host starts the tournament and the first fixtures are drawn.
+            </p>
+          ) : (
           <table className="leaderboard-table">
             <thead><tr><th>RANK</th><th>TEAM / PLAYER</th><th>PLAYED</th><th>WINS</th><th>SCORE</th></tr></thead>
             <tbody>
@@ -465,19 +470,18 @@ export default function TournamentDetailPage() {
               ))}
             </tbody>
           </table>
+          )}
         </div>
 
         {/* HOW IT WORKS — the rules and where the money goes */}
         <div
           style={{
-            display: "grid", gap: "1.5rem", marginTop: "2rem",
+            display: "grid", gap: "1.5rem", marginTop: "1.5rem",
             gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
           }}
         >
-          <div className="glass-morphism" style={{ padding: "1.75rem", borderRadius: "16px" }}>
-            <h2 style={{ fontSize: "0.95rem", letterSpacing: "1px", opacity: 0.7, marginTop: 0, marginBottom: "1.1rem" }}>
-              {isFootball ? "FOOTBALL RULES" : "8-BALL RULES"}
-            </h2>
+          <div className="glass-morphism" style={{ padding: "1.75rem" }}>
+            <h2 className="section-heading">{isFootball ? "Football rules" : "8-Ball rules"}</h2>
             <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "0.8rem" }}>
               {rules.map((r) => (
                 <li key={r} style={{ display: "flex", gap: "10px", alignItems: "flex-start", fontSize: "0.88rem", lineHeight: 1.5 }}>
@@ -495,10 +499,8 @@ export default function TournamentDetailPage() {
             </ul>
           </div>
 
-          <div className="glass-morphism" style={{ padding: "1.75rem", borderRadius: "16px" }}>
-            <h2 style={{ fontSize: "0.95rem", letterSpacing: "1px", opacity: 0.7, marginTop: 0, marginBottom: "1.1rem" }}>
-              WHERE THE MONEY GOES
-            </h2>
+          <div className="glass-morphism" style={{ padding: "1.75rem" }}>
+            <h2 className="section-heading">Where the money goes</h2>
 
             {[
               { label: `Entry fee, per player`, value: "₹" + Number(tournament.entryFee?.amount ?? 0).toLocaleString("en-IN") },
@@ -538,10 +540,10 @@ export default function TournamentDetailPage() {
         </div>
 
         {/* ENTRY LIST — who has joined, before and after the draw */}
-        <div className="glass-morphism" style={{ padding: '2rem', borderRadius: '16px', marginTop: '2rem' }}>
+        <div className="glass-morphism" style={{ padding: '1.75rem', marginTop: '1.5rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.25rem' }}>
-            <h2 style={{ fontSize: '1rem', letterSpacing: '1px', opacity: 0.7, margin: 0 }}>
-              👥 PLAYERS JOINED ({participants.length}/{tournament.maxPlayers})
+            <h2 className="section-heading" style={{ margin: 0 }}>
+              Players joined <span style={{ opacity: 0.6 }}>({participants.length}/{tournament.maxPlayers})</span>
             </h2>
             {isHost && !hasStarted && (
               <button
@@ -612,10 +614,8 @@ export default function TournamentDetailPage() {
 
         {/* MATCH SCHEDULE — the draw, in the order it will be played */}
         {hasStarted && (engineState?.matches.length || 0) > 0 && (
-          <div className="glass-morphism" style={{ padding: '2rem', borderRadius: '16px', marginTop: '2rem' }}>
-            <h2 style={{ fontSize: '1rem', letterSpacing: '1px', opacity: 0.7, marginBottom: '1.5rem' }}>
-              📋 MATCH SCHEDULE
-            </h2>
+          <div className="glass-morphism" style={{ padding: '1.75rem', marginTop: '1.5rem' }}>
+            <h2 className="section-heading">Match schedule</h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {[...(engineState?.matches || [])]
                 .sort((a, b) => a.match_order - b.match_order)
