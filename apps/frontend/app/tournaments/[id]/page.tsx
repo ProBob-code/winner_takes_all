@@ -130,13 +130,43 @@ export default function TournamentDetailPage() {
   if (!tournament) return <div className="page"><div className="shell">Not Found</div></div>;
 
   const profileData = responses[3].status === "fulfilled" ? responses[3].value.payload : null;
-  const isHost = profileData?.ok && profileData?.user?.id === tournament.tournamentHostId;
+  const isHost = profileData?.ok && profileData?.user?.id === tournament.hostId;
 
   // Who has actually joined. Distinct from engine teams, which only exist once
   // the tournament starts — this is the entry list.
   const participants: any[] =
     responses[2].status === "fulfilled" ? responses[2].value.payload?.participants || [] : [];
   const hasStarted = !!engineState && engineState.phase !== "open" && engineState.phase !== "SETUP";
+
+  const hostEntry = participants.find((p) => p.userId === tournament.hostId);
+  const hostName = hostEntry?.name || hostEntry?.teamName || null;
+
+  const isFootball = tournament.sport === "FOOTBALL";
+  const feePercent = tournament.platformFeePercent ?? 7;
+  const pool = Number(tournament.prizePool?.amount ?? 0);
+  // What the winner actually receives once the platform takes its cut.
+  const winnerTakes = Math.max(0, Math.round(pool * (1 - feePercent / 100)));
+
+  const formatLabel =
+    ({
+      single_elimination: "Single Elimination",
+      double_elimination: "Double Elimination",
+      round_robin: "Round Robin",
+      group_knockout: "Group + Knockout",
+    } as Record<string, string>)[tournament.bracketType] || tournament.bracketType;
+
+  const rules = isFootball
+    ? [
+        "Every goal counts one. The higher score when the clock stops wins.",
+        "The host records goals live as they happen.",
+        "A drawn match is decided by the host under the event rules.",
+      ]
+    : [
+        "A potted ball scores 10. The black scores 30.",
+        "A foul by your opponent awards you 10.",
+        "First to 100 wins the match outright.",
+        "If the clock runs out first, the higher score wins.",
+      ];
 
   // Engine Actions
   const addTeam = async () => {
@@ -247,20 +277,76 @@ export default function TournamentDetailPage() {
         )}
 
         {/* Tournament Header */}
-        <div className="panel page-card slide-in" style={{ marginBottom: "1.5rem" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "1rem" }}>
-            <div>
-              <h2 style={{ fontSize: "2rem", fontWeight: 900 }}>{tournament.name}</h2>
-              <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", marginTop: '0.5rem' }}>
+        <div className="panel page-card slide-in" style={{ marginBottom: "1.5rem", position: "relative", overflow: "hidden" }}>
+          {/* The prize is why anyone is here, so let it colour the header. */}
+          <div
+            aria-hidden
+            style={{
+              position: "absolute", inset: 0, pointerEvents: "none",
+              background: "radial-gradient(120% 140% at 100% 0%, rgba(245,158,11,0.10), transparent 60%)",
+            }}
+          />
+
+          <div style={{ position: "relative", display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "1.5rem" }}>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap", marginBottom: "0.6rem" }}>
                 <span className={`status-badge ${tournament.status}`}>{tournament.status.toUpperCase()}</span>
-                {tournament.isPrivate && <span className="status-badge" style={{ background: "rgba(239, 68, 68, 0.1)", color: "#ef4444" }}>PRIVATE</span>}
+                <span className="status-badge" style={{ background: "rgba(59,130,246,0.12)", color: "#60a5fa" }}>
+                  {isFootball ? "FOOTBALL" : "8-BALL"}
+                </span>
+                <span className="status-badge" style={{ background: "rgba(255,255,255,0.05)", color: "var(--text-muted)" }}>
+                  {formatLabel}
+                </span>
+                {tournament.isPrivate && (
+                  <span className="status-badge" style={{ background: "rgba(239, 68, 68, 0.1)", color: "#ef4444" }}>PRIVATE</span>
+                )}
+              </div>
+
+              <h2 style={{ fontSize: "2.4rem", fontWeight: 900, lineHeight: 1.05, margin: 0 }}>{tournament.name}</h2>
+
+              <p className="muted" style={{ marginTop: "0.6rem", fontSize: "0.88rem" }}>
+                Hosted by <strong style={{ color: "var(--text)" }}>{hostName || "the organiser"}</strong>
+                {isHost && <span style={{ color: "var(--gold)", fontWeight: 800 }}> &middot; that is you</span>}
+              </p>
+            </div>
+
+            {/* What the winner receives is the headline, not the pool. */}
+            <div
+              style={{
+                textAlign: "right", padding: "1rem 1.4rem", borderRadius: "14px", minWidth: "220px",
+                background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.22)",
+              }}
+            >
+              <div style={{ fontSize: "0.62rem", letterSpacing: "1.5px", opacity: 0.7, fontWeight: 800 }}>WINNER TAKES</div>
+              <div style={{ fontSize: "2.2rem", fontWeight: 900, color: "var(--gold)", lineHeight: 1.1 }}>
+                ₹{winnerTakes.toLocaleString("en-IN")}
+              </div>
+              <div className="muted" style={{ fontSize: "0.72rem", marginTop: "2px" }}>
+                from a ₹{pool.toLocaleString("en-IN")} pool
               </div>
             </div>
-            <div className="tournament-meta" style={{ display: 'flex', gap: '1.5rem' }}>
-              <div style={{ textAlign: 'right' }}><div className="label" style={{ fontSize: '0.6rem', opacity: 0.5 }}>FEE</div><div style={{ fontWeight: 900 }}>₹{tournament.entryFee.amount}</div></div>
-              <div style={{ textAlign: 'right' }}><div className="label" style={{ fontSize: '0.6rem', opacity: 0.5 }}>REWARDS</div><div style={{ fontWeight: 900, color: 'var(--gold)' }}>₹{tournament.prizePool.amount}</div></div>
-              <div style={{ textAlign: 'right' }}><div className="label" style={{ fontSize: '0.6rem', opacity: 0.5 }}>PLAYERS</div><div style={{ fontWeight: 900 }}>{tournament.joinedPlayers}/{tournament.maxPlayers}</div></div>
-            </div>
+          </div>
+
+          <div
+            style={{
+              position: "relative", display: "grid", gap: "1px", marginTop: "1.75rem",
+              gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
+              background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.06)",
+              borderRadius: "12px", overflow: "hidden",
+            }}
+          >
+            {[
+              { label: "ENTRY FEE", value: "₹" + Number(tournament.entryFee?.amount ?? 0).toLocaleString("en-IN") },
+              { label: "PRIZE POOL", value: "₹" + pool.toLocaleString("en-IN"), gold: true },
+              { label: "PLAYERS", value: `${tournament.joinedPlayers}/${tournament.maxPlayers}` },
+              { label: "TEAM SIZE", value: tournament.teamSize > 1 ? `${tournament.teamSize} a side` : "Solo" },
+              { label: "PLAYED", value: tournament.tournamentType === "offline" ? "Offline" : "Online" },
+            ].map((f) => (
+              <div key={f.label} style={{ padding: "0.9rem 1rem", background: "rgba(9,9,22,0.6)" }}>
+                <div style={{ fontSize: "0.6rem", letterSpacing: "1px", opacity: 0.5, fontWeight: 800 }}>{f.label}</div>
+                <div style={{ fontWeight: 900, marginTop: "3px", color: f.gold ? "var(--gold)" : undefined }}>{f.value}</div>
+              </div>
+            ))}
           </div>
 
           <div className="cta-row" style={{ marginTop: "2rem", display: 'flex', justifyContent: 'space-between' }}>
@@ -381,6 +467,76 @@ export default function TournamentDetailPage() {
           </table>
         </div>
 
+        {/* HOW IT WORKS — the rules and where the money goes */}
+        <div
+          style={{
+            display: "grid", gap: "1.5rem", marginTop: "2rem",
+            gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+          }}
+        >
+          <div className="glass-morphism" style={{ padding: "1.75rem", borderRadius: "16px" }}>
+            <h2 style={{ fontSize: "0.95rem", letterSpacing: "1px", opacity: 0.7, marginTop: 0, marginBottom: "1.1rem" }}>
+              {isFootball ? "FOOTBALL RULES" : "8-BALL RULES"}
+            </h2>
+            <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "0.8rem" }}>
+              {rules.map((r) => (
+                <li key={r} style={{ display: "flex", gap: "10px", alignItems: "flex-start", fontSize: "0.88rem", lineHeight: 1.5 }}>
+                  <span style={{ color: "var(--gold)", fontWeight: 900 }}>&bull;</span>
+                  <span>{r}</span>
+                </li>
+              ))}
+              <li style={{ display: "flex", gap: "10px", alignItems: "flex-start", fontSize: "0.88rem", lineHeight: 1.5 }}>
+                <span style={{ color: "var(--gold)", fontWeight: 900 }}>&bull;</span>
+                <span>
+                  {formatLabel}
+                  {tournament.teamSize > 1 ? `, ${tournament.teamSize} a side.` : ", played solo."}
+                </span>
+              </li>
+            </ul>
+          </div>
+
+          <div className="glass-morphism" style={{ padding: "1.75rem", borderRadius: "16px" }}>
+            <h2 style={{ fontSize: "0.95rem", letterSpacing: "1px", opacity: 0.7, marginTop: 0, marginBottom: "1.1rem" }}>
+              WHERE THE MONEY GOES
+            </h2>
+
+            {[
+              { label: `Entry fee, per player`, value: "₹" + Number(tournament.entryFee?.amount ?? 0).toLocaleString("en-IN") },
+              { label: `${tournament.joinedPlayers} joined so far`, value: "₹" + pool.toLocaleString("en-IN"), muted: true },
+              { label: `Platform fee (${feePercent}%)`, value: "-₹" + (pool - winnerTakes).toLocaleString("en-IN"), muted: true },
+            ].map((row) => (
+              <div
+                key={row.label}
+                style={{
+                  display: "flex", justifyContent: "space-between", gap: "1rem",
+                  padding: "0.6rem 0", fontSize: "0.86rem",
+                  color: row.muted ? "var(--text-muted)" : undefined,
+                }}
+              >
+                <span>{row.label}</span>
+                <span style={{ fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>{row.value}</span>
+              </div>
+            ))}
+
+            <div
+              style={{
+                display: "flex", justifyContent: "space-between", gap: "1rem",
+                marginTop: "0.6rem", paddingTop: "0.9rem",
+                borderTop: "1px solid rgba(255,255,255,0.08)",
+              }}
+            >
+              <span style={{ fontWeight: 900 }}>Winner takes</span>
+              <span style={{ fontWeight: 900, color: "var(--gold)", fontVariantNumeric: "tabular-nums" }}>
+                ₹{winnerTakes.toLocaleString("en-IN")}
+              </span>
+            </div>
+
+            <p className="muted" style={{ fontSize: "0.74rem", marginTop: "0.9rem", lineHeight: 1.5 }}>
+              The pool grows as more players join, so this figure rises until entries close.
+            </p>
+          </div>
+        </div>
+
         {/* ENTRY LIST — who has joined, before and after the draw */}
         <div className="glass-morphism" style={{ padding: '2rem', borderRadius: '16px', marginTop: '2rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.25rem' }}>
@@ -414,7 +570,31 @@ export default function TournamentDetailPage() {
                 {participants.map((p, i) => (
                   <tr key={p.userId}>
                     <td style={{ padding: '1rem' }}>{i + 1}</td>
-                    <td style={{ fontWeight: 900 }}>{p.teamName || p.name || "Player"}</td>
+                    <td style={{ fontWeight: 900 }}>
+                      {p.teamName || p.name || "Player"}
+                      {p.userId === tournament.hostId && (
+                        <span
+                          style={{
+                            marginLeft: "8px", padding: "2px 8px", borderRadius: "5px",
+                            fontSize: "0.6rem", fontWeight: 900, letterSpacing: "0.5px",
+                            background: "rgba(245,158,11,0.15)", color: "var(--gold)",
+                          }}
+                        >
+                          HOST
+                        </span>
+                      )}
+                      {p.userId === profileData?.user?.id && (
+                        <span
+                          style={{
+                            marginLeft: "6px", padding: "2px 8px", borderRadius: "5px",
+                            fontSize: "0.6rem", fontWeight: 900, letterSpacing: "0.5px",
+                            background: "rgba(59,130,246,0.15)", color: "#60a5fa",
+                          }}
+                        >
+                          YOU
+                        </span>
+                      )}
+                    </td>
                     <td style={{ fontFamily: 'monospace', fontSize: '0.8rem', opacity: 0.7 }}>{p.userId}</td>
                     <td style={{ color: 'var(--accent-primary)' }}>{(p.status || 'joined').toUpperCase()}</td>
                   </tr>

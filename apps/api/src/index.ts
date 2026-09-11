@@ -168,6 +168,10 @@ function serializeTournament(t: TournamentRecord) {
     hostId: t.host_id,
     winnerId: t.winner_id,
     hasPassword: !!t.password,
+    // The public meaning of holding a password. Callers ask "is this private",
+    // not "does it have a password", and the listing already expected this.
+    isPrivate: !!t.password,
+    platformFeePercent: t.platform_fee_percent,
   };
 }
 
