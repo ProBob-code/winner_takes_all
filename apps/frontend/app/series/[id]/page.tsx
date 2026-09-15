@@ -8,7 +8,7 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { readBackendJson, backendFetch } from "@/lib/backend";
 
@@ -72,6 +72,7 @@ const formatWhen = (iso: string | null) => {
 };
 
 export default function SeriesDetailPage() {
+  const router = useRouter();
   const routeParams = useParams<{ id: string }>();
   const id = routeParams?.id;
 
@@ -127,6 +128,22 @@ export default function SeriesDetailPage() {
     } catch (err: any) {
       setNotice(err.message);
     } finally {
+      setBusy(false);
+    }
+  };
+
+  // Deleting a season leaves its weeks behind, so there is nothing to refund
+  // here and nothing to undo either.
+  const deleteSeries = async () => {
+    setBusy(true);
+    setNotice(null);
+    try {
+      const res = await backendFetch(`/series/${id}`, { method: "DELETE" });
+      const body: any = await res.json().catch(() => ({}));
+      if (!res.ok || !body?.ok) throw new Error(body?.message || "That did not work.");
+      router.push("/series");
+    } catch (err: any) {
+      setNotice(err.message);
       setBusy(false);
     }
   };
@@ -256,6 +273,18 @@ export default function SeriesDetailPage() {
                   END SEASON
                 </button>
               </>
+            )}
+            {isHost && (
+              <button
+                className="button button-danger"
+                disabled={busy}
+                onClick={() => {
+                  if (!confirm(`Delete "${series.name}"? The weeks already played stay as ordinary tournaments; only the season and its table go. This cannot be undone.`)) return;
+                  deleteSeries();
+                }}
+              >
+                🗑️ DELETE SERIES
+              </button>
             )}
           </div>
 

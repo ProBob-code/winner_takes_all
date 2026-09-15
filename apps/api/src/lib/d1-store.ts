@@ -416,7 +416,26 @@ export class D1Store {
     ).bind(JSON.stringify(state), new Date().toISOString(), id).run();
   }
 
+  /**
+   * Remove a tournament and everything played inside it.
+   *
+   * This used to drop the tournaments row alone, which left participants,
+   * matches and engine rows behind pointing at a tournament that no longer
+   * existed. Wallet transactions are still left alone on purpose: they are the
+   * financial record, and a fee that was taken and refunded must stay visible
+   * as both.
+   */
   async deleteTournament(id: string): Promise<void> {
+    // Children first, so a foreign key never blocks the parent.
+    for (const table of ["engine_matchups", "engine_matches", "engine_teams", "matches", "participants"]) {
+      try {
+        await this.db.prepare(`DELETE FROM ${table} WHERE tournament_id = ?`).bind(id).run();
+      } catch (err) {
+        // A database without the engine tables has nothing to clean up there.
+        if (!isMissingTableError(err)) throw err;
+      }
+    }
+
     await this.db.prepare(`DELETE FROM tournaments WHERE id = ?`).bind(id).run();
   }
 
@@ -759,6 +778,21 @@ export class D1Store {
   async getEngineMatchups(tournamentId: string): Promise<{ team1_id: string; team2_id: string }[]> {
     const { results } = await this.db.prepare(`SELECT team1_id, team2_id FROM engine_matchups WHERE tournament_id = ?`).bind(tournamentId).all<any>();
     return results as { team1_id: string; team2_id: string }[];
+  }
+
+  /**
+   * Remove a series, leaving its weeks behind as ordinary tournaments.
+   *
+   * The weeks are real tournaments that people paid to enter, so deleting a
+   * season must never delete them; unlinking keeps every entry and result
+   * intact while the season itself goes.
+   */
+  async deleteSeries(seriesId: string): Promise<void> {
+    await this.db.prepare(
+      `UPDATE tournaments SET series_id = NULL, series_week = NULL WHERE series_id = ?`
+    ).bind(seriesId).run();
+    await this.db.prepare(`DELETE FROM series_members WHERE series_id = ?`).bind(seriesId).run();
+    await this.db.prepare(`DELETE FROM series WHERE id = ?`).bind(seriesId).run();
   }
 
   // ── Weekly series ──

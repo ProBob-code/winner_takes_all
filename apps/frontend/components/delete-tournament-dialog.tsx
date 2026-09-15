@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
+import { backendFetch } from "@/lib/backend";
 
 interface DeleteTournamentDialogProps {
   tournamentId: string;
@@ -25,7 +26,10 @@ export function DeleteTournamentDialog({ tournamentId, tournamentName }: DeleteT
     setError(null);
 
     try {
-      const res = await fetch(`/api/tournaments/${tournamentId}`, {
+      // A relative URL reached the web app, not the API, so this always came
+      // back as an HTML 404. backendFetch adds the API origin and the session
+      // cookie the route needs to know who is asking.
+      const res = await backendFetch(`/tournaments/${tournamentId}`, {
         method: "DELETE",
       });
 

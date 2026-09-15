@@ -975,6 +975,88 @@ app.post("/api/series/:id/end", async (c) => {
   return c.json({ ok: true });
 });
 
+/**
+ * Delete a tournament, refunding everyone who paid to enter it.
+ *
+ * Only the host who created it, or an admin. The delete dialog has always
+ * promised that "all participants will be instantly refunded", so that promise
+ * is kept here: every entry fee goes back to the wallet it came from before
+ * anything is removed, and the refund is written as its own transaction so the
+ * fee and its return both stay on the record.
+ *
+ * A completed tournament is never deleted. Its prize has already been paid,
+ * and refunding entries after the fact would create money that does not exist.
+ */
+app.delete("/api/tournaments/:id", async (c) => {
+  const user = requireUser(c);
+  if (!user) return c.json({ ok: false, message: "Authentication required" }, 401);
+
+  const store = c.get("store");
+  const tournamentId = c.req.param("id");
+
+  const tournament = await store.getTournament(tournamentId);
+  if (!tournament) return c.json({ ok: false, message: "Tournament not found" }, 404);
+
+  if (tournament.host_id !== user.id && user.role !== "admin") {
+    return c.json({ ok: false, message: "Only the host who created this tournament can delete it" }, 403);
+  }
+
+  if (tournament.status === "completed") {
+    return c.json(
+      { ok: false, message: "A finished tournament cannot be deleted; its prize has already been paid." },
+      409
+    );
+  }
+
+  const participants = await store.getParticipants(tournamentId);
+  const fee = tournament.entry_fee_cents;
+
+  let refunded = 0;
+  if (fee > 0) {
+    for (const p of participants) {
+      await store.creditWallet(p.user_id, fee, "tournament_refund", tournamentId, "entry_fee_refund");
+      refunded++;
+    }
+  }
+
+  await store.deleteTournament(tournamentId);
+
+  return c.json({ ok: true, refunded, refundedAmount: centsToMoney(refunded * fee) });
+});
+
+/**
+ * Delete a series. Only the host who created it, or an admin.
+ *
+ * The weeks survive as ordinary tournaments. People paid to enter them and
+ * played them, so a season being wound up must not take that with it — the
+ * weeks are simply no longer part of a season.
+ */
+app.delete("/api/series/:id", async (c) => {
+  const user = requireUser(c);
+  if (!user) return c.json({ ok: false, message: "Authentication required" }, 401);
+
+  const store = c.get("store");
+  const seriesId = c.req.param("id");
+
+  try {
+    const series = await store.getSeries(seriesId);
+    if (!series) return c.json({ ok: false, message: "Series not found" }, 404);
+
+    if (series.host_id !== user.id && user.role !== "admin") {
+      return c.json({ ok: false, message: "Only the host who created this series can delete it" }, 403);
+    }
+
+    const weeks = await store.getSeriesTournaments(seriesId);
+    await store.deleteSeries(seriesId);
+
+    return c.json({ ok: true, weeksKept: weeks.length });
+  } catch (err) {
+    const storageError = engineStorageError(c, err);
+    if (storageError) return storageError;
+    throw err;
+  }
+});
+
 // --- Tournament Engine ---
 
 /**
