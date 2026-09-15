@@ -4,6 +4,7 @@ import type { Context } from "hono";
 import type { AppContext, Env } from "./types";
 import { D1Store, InsufficientFundsError, isMissingColumnError, isMissingTableError, type SeriesRecord, type TournamentRecord } from "./lib/d1-store";
 import { computeSeasonStandings } from "./lib/season";
+import { ensureEngineSchema } from "./lib/engine-schema";
 import {
   createSessionTokens,
   getRefreshSession,
@@ -102,6 +103,32 @@ app.use("/api/*", async (c, next) => {
   const origin = c.req.header("Origin");
   if (origin && !allowedOrigins(c.env).includes(origin)) {
     return c.json({ ok: false, message: "Origin not allowed" }, 403);
+  }
+  return next();
+});
+
+// The engine and series tables were added to schema.sql without a migration,
+// so a database provisioned before them never gained them and every route here
+// failed with "no such table". Creating what is missing, once per isolate,
+// costs a dozen guarded DDL statements and spares an operator having to run a
+// migration by hand before the app works at all. Everything it runs is
+// additive: see lib/engine-schema.ts.
+app.use("/api/engine/*", async (c, next) => {
+  try {
+    await ensureEngineSchema(c.env.DB);
+  } catch (err) {
+    // Serving the request is still worth trying; the route's own handler will
+    // report a storage problem if one really remains.
+    console.error("Could not ensure the engine schema:", err);
+  }
+  return next();
+});
+
+app.use("/api/series/*", async (c, next) => {
+  try {
+    await ensureEngineSchema(c.env.DB);
+  } catch (err) {
+    console.error("Could not ensure the engine schema:", err);
   }
   return next();
 });
@@ -834,6 +861,7 @@ async function openSeriesWeek(store: D1Store, series: SeriesRecord) {
 
 app.get("/api/series", async (c) => {
   const store = c.get("store");
+  await ensureEngineSchema(c.env.DB).catch(() => {});
   try {
     const all = await store.listSeries();
     return c.json({ ok: true, series: all.map(serializeSeries) });
