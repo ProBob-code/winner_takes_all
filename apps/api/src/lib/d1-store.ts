@@ -52,6 +52,55 @@ export function isMissingColumnError(err: unknown): boolean {
   return /no such column|has no column named/i.test(detail);
 }
 
+/**
+ * Whether a database error is a table the schema does not have.
+ *
+ * The engine tables were added to schema.sql long after the database was
+ * provisioned, and schema.sql only runs in full at provisioning time, so a
+ * live database can be missing them entirely. That surfaces as a bare 500 on
+ * every engine route, which tells an operator nothing about the real fix.
+ */
+export function isMissingTableError(err: unknown): boolean {
+  const detail = err instanceof Error ? err.message : String(err);
+  return /no such table/i.test(detail);
+}
+
+/**
+ * SQLite has no booleans, and a database that predates the foul counters has
+ * no value at all for them, so both are normalised on the way out.
+ */
+function normalizeEngineMatch(r: any): EngineMatch {
+  return {
+    ...r,
+    sudden_death: !!r.sudden_death,
+    black_potted_a: !!r.black_potted_a,
+    black_potted_b: !!r.black_potted_b,
+    fouls_a: r.fouls_a ?? 0,
+    fouls_b: r.fouls_b ?? 0,
+  };
+}
+
+export interface SeriesRecord {
+  id: string; name: string; host_id: string; sport: string;
+  bracket_type: string; tournament_type: string;
+  entry_fee_cents: number; max_players: number; team_size: number;
+  /** 'open': anyone may enter any week. 'locked': members only. */
+  roster_mode: string;
+  cadence_days: number;
+  /** ISO 8601 UTC, or null once the season is ended. */
+  next_event_at: string | null;
+  weeks_created: number;
+  status: string;
+  password: string | null;
+  created_at: string; updated_at: string;
+}
+
+export interface SeriesMemberRecord {
+  user_id: string;
+  user_name: string;
+  joined_at: string;
+}
+
 export interface TournamentRecord {
   id: string; name: string; entry_fee_cents: number; prize_pool_cents: number;
   max_players: number; status: string; bracket_type: string;
@@ -61,6 +110,9 @@ export interface TournamentRecord {
   sport: string;
   winner_id: string | null; started_at: string | null; completed_at: string | null;
   max_matches_per_team: number;
+  /** Set when this tournament is one week of a series. */
+  series_id: string | null;
+  series_week: number | null;
   participant_ids: string[];
 }
 
@@ -283,6 +335,10 @@ export class D1Store {
       // Rows written before the column existed have no sport; they were all
       // 8-ball, and this keeps them readable before the migration is applied.
       sport: row.sport ?? "8BALL",
+      // Rows predating the series columns are one-off tournaments, which is
+      // what a null series_id already means.
+      series_id: row.series_id ?? null,
+      series_week: row.series_week ?? null,
       participant_ids: pids,
     };
   }
@@ -302,7 +358,7 @@ export class D1Store {
   async createTournament(data: {
     name: string; entryFeeCents: number; maxPlayers: number; hostId: string;
     teamSize?: number; tournamentType?: string; bracketType?: string; password?: string | null;
-    sport?: string;
+    sport?: string; seriesId?: string; seriesWeek?: number;
   }): Promise<TournamentRecord> {
     const id = createId("tournament");
     const now = new Date().toISOString();
@@ -331,6 +387,15 @@ export class D1Store {
       ).bind(...common, data.password ?? null, now, now).run();
     }
 
+    // Stamped separately so the two insert shapes above stay as they were. A
+    // week is only ever created through the series routes, which already
+    // require the series table, so a missing column here is a real error.
+    if (data.seriesId) {
+      await this.db.prepare(
+        `UPDATE tournaments SET series_id = ?, series_week = ? WHERE id = ?`
+      ).bind(data.seriesId, data.seriesWeek ?? null, id).run();
+    }
+
     return (await this.getTournament(id))!;
   }
 
@@ -351,7 +416,26 @@ export class D1Store {
     ).bind(JSON.stringify(state), new Date().toISOString(), id).run();
   }
 
+  /**
+   * Remove a tournament and everything played inside it.
+   *
+   * This used to drop the tournaments row alone, which left participants,
+   * matches and engine rows behind pointing at a tournament that no longer
+   * existed. Wallet transactions are still left alone on purpose: they are the
+   * financial record, and a fee that was taken and refunded must stay visible
+   * as both.
+   */
   async deleteTournament(id: string): Promise<void> {
+    // Children first, so a foreign key never blocks the parent.
+    for (const table of ["engine_matchups", "engine_matches", "engine_teams", "matches", "participants"]) {
+      try {
+        await this.db.prepare(`DELETE FROM ${table} WHERE tournament_id = ?`).bind(id).run();
+      } catch (err) {
+        // A database without the engine tables has nothing to clean up there.
+        if (!isMissingTableError(err)) throw err;
+      }
+    }
+
     await this.db.prepare(`DELETE FROM tournaments WHERE id = ?`).bind(id).run();
   }
 
@@ -613,12 +697,21 @@ export class D1Store {
 
   // ── Engine (dynamic tournament) ──
 
-  async createEngineTeam(tournamentId: string, name: string): Promise<EngineTeam> {
+  async createEngineTeam(tournamentId: string, name: string, userId: string | null = null): Promise<EngineTeam> {
     const id = createId("eteam");
     const now = new Date().toISOString();
-    await this.db.prepare(
-      `INSERT INTO engine_teams (id, tournament_id, name, created_at) VALUES (?, ?, ?, ?)`
-    ).bind(id, tournamentId, name, now).run();
+    try {
+      await this.db.prepare(
+        `INSERT INTO engine_teams (id, tournament_id, name, user_id, created_at) VALUES (?, ?, ?, ?, ?)`
+      ).bind(id, tournamentId, name, userId, now).run();
+    } catch (err) {
+      // A database that predates user_id can still run a tournament; it just
+      // cannot add a player's weeks together, which only a series needs.
+      if (!isMissingColumnError(err)) throw err;
+      await this.db.prepare(
+        `INSERT INTO engine_teams (id, tournament_id, name, created_at) VALUES (?, ?, ?, ?)`
+      ).bind(id, tournamentId, name, now).run();
+    }
     return { id, name, matches_played: 0, group_points: 0, total_score: 0, bye_assigned: false };
   }
 
@@ -653,12 +746,12 @@ export class D1Store {
   async getEngineMatch(matchId: string): Promise<EngineMatch | null> {
     const r = await this.db.prepare(`SELECT * FROM engine_matches WHERE id = ?`).bind(matchId).first<any>();
     if (!r) return null;
-    return { ...r, sudden_death: !!r.sudden_death, black_potted_a: !!r.black_potted_a, black_potted_b: !!r.black_potted_b };
+    return normalizeEngineMatch(r);
   }
 
   async getEngineMatches(tournamentId: string): Promise<EngineMatch[]> {
     const { results } = await this.db.prepare(`SELECT * FROM engine_matches WHERE tournament_id = ? ORDER BY match_order ASC, created_at ASC`).bind(tournamentId).all<any>();
-    return results.map(r => ({ ...r, sudden_death: !!r.sudden_death, black_potted_a: !!r.black_potted_a, black_potted_b: !!r.black_potted_b }));
+    return results.map(normalizeEngineMatch);
   }
 
   async updateEngineMatch(matchId: string, updates: Partial<EngineMatch>): Promise<void> {
@@ -685,6 +778,146 @@ export class D1Store {
   async getEngineMatchups(tournamentId: string): Promise<{ team1_id: string; team2_id: string }[]> {
     const { results } = await this.db.prepare(`SELECT team1_id, team2_id FROM engine_matchups WHERE tournament_id = ?`).bind(tournamentId).all<any>();
     return results as { team1_id: string; team2_id: string }[];
+  }
+
+  /**
+   * Remove a series, leaving its weeks behind as ordinary tournaments.
+   *
+   * The weeks are real tournaments that people paid to enter, so deleting a
+   * season must never delete them; unlinking keeps every entry and result
+   * intact while the season itself goes.
+   */
+  async deleteSeries(seriesId: string): Promise<void> {
+    await this.db.prepare(
+      `UPDATE tournaments SET series_id = NULL, series_week = NULL WHERE series_id = ?`
+    ).bind(seriesId).run();
+    await this.db.prepare(`DELETE FROM series_members WHERE series_id = ?`).bind(seriesId).run();
+    await this.db.prepare(`DELETE FROM series WHERE id = ?`).bind(seriesId).run();
+  }
+
+  // ── Weekly series ──
+
+  async createSeries(data: {
+    name: string; hostId: string; sport: string; bracketType: string;
+    tournamentType: string; entryFeeCents: number; maxPlayers: number;
+    teamSize: number; rosterMode: string; cadenceDays: number;
+    firstEventAt: string; password: string | null;
+  }): Promise<SeriesRecord> {
+    const id = createId("series");
+    const now = new Date().toISOString();
+    await this.db.prepare(
+      `INSERT INTO series (id, name, host_id, sport, bracket_type, tournament_type,
+                           entry_fee_cents, max_players, team_size, roster_mode,
+                           cadence_days, next_event_at, weeks_created, status,
+                           password, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 'active', ?, ?, ?)`
+    ).bind(
+      id, data.name, data.hostId, data.sport, data.bracketType, data.tournamentType,
+      data.entryFeeCents, data.maxPlayers, data.teamSize, data.rosterMode,
+      data.cadenceDays, data.firstEventAt, data.password, now, now
+    ).run();
+    return (await this.getSeries(id))!;
+  }
+
+  async getSeries(id: string): Promise<SeriesRecord | null> {
+    return await this.db.prepare(`SELECT * FROM series WHERE id = ?`).bind(id).first<SeriesRecord>();
+  }
+
+  async listSeries(limit = 50): Promise<SeriesRecord[]> {
+    const { results } = await this.db.prepare(
+      `SELECT * FROM series ORDER BY created_at DESC LIMIT ?`
+    ).bind(limit).all<SeriesRecord>();
+    return results;
+  }
+
+  /** Every series whose next week is due, for the scheduled run. */
+  async listSeriesDue(nowIso: string, limit = 50): Promise<SeriesRecord[]> {
+    const { results } = await this.db.prepare(
+      `SELECT * FROM series
+       WHERE status = 'active' AND next_event_at IS NOT NULL AND next_event_at <= ?
+       ORDER BY next_event_at ASC LIMIT ?`
+    ).bind(nowIso, limit).all<SeriesRecord>();
+    return results;
+  }
+
+  async updateSeries(id: string, updates: Partial<SeriesRecord>): Promise<void> {
+    const sets: string[] = [];
+    const vals: any[] = [];
+    for (const [k, v] of Object.entries(updates)) {
+      if (k === "id") continue;
+      sets.push(`${k} = ?`);
+      vals.push(v);
+    }
+    if (sets.length === 0) return;
+    sets.push("updated_at = ?");
+    vals.push(new Date().toISOString(), id);
+    await this.db.prepare(`UPDATE series SET ${sets.join(", ")} WHERE id = ?`).bind(...vals).run();
+  }
+
+  async addSeriesMember(seriesId: string, userId: string): Promise<void> {
+    await this.db.prepare(
+      `INSERT OR IGNORE INTO series_members (id, series_id, user_id, joined_at) VALUES (?, ?, ?, ?)`
+    ).bind(createId("smember"), seriesId, userId, new Date().toISOString()).run();
+  }
+
+  async isSeriesMember(seriesId: string, userId: string): Promise<boolean> {
+    const row = await this.db.prepare(
+      `SELECT 1 AS hit FROM series_members WHERE series_id = ? AND user_id = ?`
+    ).bind(seriesId, userId).first<any>();
+    return !!row;
+  }
+
+  async getSeriesMembers(seriesId: string): Promise<SeriesMemberRecord[]> {
+    const { results } = await this.db.prepare(
+      `SELECT m.user_id, COALESCE(u.name, m.user_id) AS user_name, m.joined_at
+       FROM series_members m
+       LEFT JOIN users u ON u.id = m.user_id
+       WHERE m.series_id = ?
+       ORDER BY m.joined_at ASC`
+    ).bind(seriesId).all<SeriesMemberRecord>();
+    return results;
+  }
+
+  async getSeriesTournaments(seriesId: string): Promise<TournamentRecord[]> {
+    const { results } = await this.db.prepare(
+      `SELECT * FROM tournaments WHERE series_id = ? ORDER BY series_week ASC`
+    ).bind(seriesId).all<any>();
+    return Promise.all(results.map((r: any) => this.rowToTournament(r)));
+  }
+
+  /**
+   * Every competitor row across a season's weeks, in one query rather than one
+   * per week. Identity is user_id where there is one, and the displayed name
+   * otherwise, which is what a team the host typed in by hand has.
+   */
+  async getSeriesEngineTeams(seriesId: string): Promise<Array<{
+    tournament_id: string; series_week: number | null; user_id: string | null;
+    name: string; matches_played: number; group_points: number; total_score: number;
+  }>> {
+    const { results } = await this.db.prepare(
+      `SELECT et.tournament_id, t.series_week, et.user_id, et.name,
+              et.matches_played, et.group_points, et.total_score
+       FROM engine_teams et
+       JOIN tournaments t ON t.id = et.tournament_id
+       WHERE t.series_id = ?`
+    ).bind(seriesId).all<any>();
+    return results;
+  }
+
+  /** How far each week has got, so a finished week can crown its winner. */
+  async getSeriesMatchProgress(seriesId: string): Promise<Array<{
+    tournament_id: string; total: number; finished: number;
+  }>> {
+    const { results } = await this.db.prepare(
+      `SELECT em.tournament_id,
+              COUNT(*) AS total,
+              SUM(CASE WHEN em.status = 'COMPLETED' THEN 1 ELSE 0 END) AS finished
+       FROM engine_matches em
+       JOIN tournaments t ON t.id = em.tournament_id
+       WHERE t.series_id = ?
+       GROUP BY em.tournament_id`
+    ).bind(seriesId).all<any>();
+    return results;
   }
 
   // ── Public arenas ──

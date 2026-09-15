@@ -1,0 +1,57 @@
+name: Apply a D1 migration
+
+# Run by hand from the Actions tab, never automatically.
+#
+# Migrations are deliberately NOT part of deploy-api.yml. SQLite has no
+# ADD COLUMN IF NOT EXISTS, so a migration that has already been applied fails
+# on a second run — wiring that into every deploy would turn a routine deploy
+# red for reasons that do not matter. Running it here, once, on purpose, keeps
+# that failure where it belongs.
+#
+# HOW TO USE
+#   Actions -> "Apply a D1 migration" -> Run workflow -> pick the file.
+#
+# A "duplicate column name" or "table already exists" error means the migration
+# was already applied. That is safe to ignore.
+on:
+  workflow_dispatch:
+    inputs:
+      file:
+        description: 'Migration file under apps/api/migrations'
+        required: true
+        type: choice
+        options:
+          - 0006_engine_tables.sql
+          - 0007_series.sql
+          - 0005_tournament_sport.sql
+          - 0004_arena_columns.sql
+          - 0003_integrity_constraints.sql
+          - 0002_add_pin_to_arenas.sql
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    name: Migrate
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Apply migration to the production database
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          workingDirectory: 'apps/api'
+          command: d1 execute winner-takes-all-db --remote --file=./migrations/${{ inputs.file }}

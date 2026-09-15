@@ -38,3 +38,9 @@ ALLOWED_ORIGINS = "https://winner-takes-all.pages.dev,http://localhost:3000"
 REALTIME_API_BASE = "https://rtc.live.cloudflare.com/v1"
 # Origin used to build the scannable broadcast URL placed in match QR codes.
 PUBLIC_APP_ORIGIN = "https://winner-takes-all.pages.dev"
+
+# Opens the next week of every active series once its date has passed. Hourly
+# rather than daily so a season set to open at 20:00 does so the same evening;
+# the run is a no-op when nothing is due.
+[triggers]
+crons = ["0 * * * *"]

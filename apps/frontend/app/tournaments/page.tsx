@@ -114,6 +114,11 @@ export default function TournamentsPage() {
               >
                 QUICK
               </button>
+              {/* A series lists seasons rather than tournaments, so it is its
+                  own section rather than a tab of this one. */}
+              <Link href="/series" className="tab-btn" style={{ textDecoration: "none" }}>
+                SERIES
+              </Link>
             </div>
             {activeTab === 'arena' && (
               <Link href={isLoggedIn ? "/tournaments/create" : "/login"} className="button button-gold btn-glow">
@@ -168,6 +173,27 @@ export default function TournamentsPage() {
                             <h3 className="tournament-title">{t.name}</h3>
                             <div className="tournament-type">
                               {t.isPrivate ? "🔒 PRIVATE ROOM" : "🌐 OPEN ARENA"}
+                            </div>
+                            {/* Whether you have to turn up in person decides
+                                whether you can enter at all, so it belongs on
+                                the card and not two pages deep. */}
+                            <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginTop: "10px" }}>
+                              <span
+                                className="status-badge"
+                                style={{ background: "rgba(59,130,246,0.12)", color: "#60a5fa" }}
+                              >
+                                {t.sport === "FOOTBALL" ? "⚽ FOOTBALL" : "🎱 8-BALL"}
+                              </span>
+                              <span
+                                className="status-badge"
+                                style={
+                                  t.tournamentType === "offline"
+                                    ? { background: "rgba(245,158,11,0.12)", color: "var(--gold)" }
+                                    : { background: "rgba(16,185,129,0.12)", color: "#10b981" }
+                                }
+                              >
+                                {t.tournamentType === "offline" ? "📍 OFFLINE" : "💻 ONLINE"}
+                              </span>
                             </div>
                           </div>
 

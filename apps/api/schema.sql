@@ -55,10 +55,50 @@ CREATE TABLE IF NOT EXISTS tournaments (
   started_at TEXT,
   completed_at TEXT,
   max_matches_per_team INTEGER DEFAULT 2,
+  -- Set when this tournament is one week of a series; null for a one-off.
+  series_id TEXT,
+  series_week INTEGER,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
   FOREIGN KEY (host_id) REFERENCES users(id)
 );
+
+-- ── Weekly series (a season made of one tournament per week) ──
+
+CREATE TABLE IF NOT EXISTS series (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  host_id TEXT NOT NULL,
+  sport TEXT NOT NULL DEFAULT '8BALL',
+  bracket_type TEXT NOT NULL DEFAULT 'single_elimination',
+  tournament_type TEXT NOT NULL DEFAULT 'online',
+  entry_fee_cents INTEGER NOT NULL DEFAULT 0,
+  max_players INTEGER NOT NULL DEFAULT 8,
+  team_size INTEGER NOT NULL DEFAULT 1,
+  roster_mode TEXT NOT NULL DEFAULT 'open',
+  cadence_days INTEGER NOT NULL DEFAULT 7,
+  next_event_at TEXT,
+  weeks_created INTEGER NOT NULL DEFAULT 0,
+  status TEXT NOT NULL DEFAULT 'active',
+  password TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  FOREIGN KEY (host_id) REFERENCES users(id)
+);
+
+CREATE TABLE IF NOT EXISTS series_members (
+  id TEXT PRIMARY KEY,
+  series_id TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  joined_at TEXT NOT NULL,
+  FOREIGN KEY (series_id) REFERENCES series(id),
+  FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_series_host ON series(host_id);
+CREATE INDEX IF NOT EXISTS idx_series_status ON series(status, next_event_at);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_series_members_unique ON series_members(series_id, user_id);
+CREATE INDEX IF NOT EXISTS idx_tournaments_series ON tournaments(series_id, series_week);
 
 CREATE TABLE IF NOT EXISTS participants (
   id TEXT PRIMARY KEY,
@@ -158,6 +198,9 @@ CREATE TABLE IF NOT EXISTS engine_teams (
   id TEXT PRIMARY KEY,
   tournament_id TEXT NOT NULL,
   name TEXT NOT NULL,
+  -- Which account this competitor is, so a season table can add a player's
+  -- weeks together. Null for a team the host typed in by hand.
+  user_id TEXT,
   matches_played INTEGER DEFAULT 0,
   group_points INTEGER DEFAULT 0,
   total_score INTEGER DEFAULT 0,
@@ -179,6 +222,8 @@ CREATE TABLE IF NOT EXISTS engine_matches (
   balls_potted_b INTEGER DEFAULT 0,
   black_potted_a INTEGER DEFAULT 0,
   black_potted_b INTEGER DEFAULT 0,
+  fouls_a INTEGER DEFAULT 0,
+  fouls_b INTEGER DEFAULT 0,
   start_time INTEGER,
   duration INTEGER DEFAULT 600,
   score_team_a INTEGER DEFAULT 0,

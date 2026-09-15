@@ -8,6 +8,7 @@ import { BracketView } from "@/components/bracket-view";
 import { JoinTournamentButton } from "@/components/join-tournament-button";
 import { ShareTournament } from "@/components/share-tournament";
 import { DeleteTournamentDialog } from "@/components/delete-tournament-dialog";
+import { HostedArena, type ArenaScoreEvent } from "@/components/hosted-arena";
 import "@/components/tournament-engine.css";
 
 // --- Types ---
@@ -33,6 +34,8 @@ interface EngineMatch {
   balls_potted_b: number;
   black_potted_a: boolean;
   black_potted_b: boolean;
+  fouls_a?: number;
+  fouls_b?: number;
   start_time: number | null;
   duration: number;
   score_team_a: number;
@@ -50,31 +53,15 @@ interface TournamentState {
   matches: EngineMatch[];
 }
 
-// --- Sub-components ---
-
-function Ticker({ balls, black, color }: { balls: number, black: boolean, color: string }) {
-  return (
-    <div className="ticker-row">
-      {[...Array(7)].map((_, i) => (
-        <div key={i} className={`ball-slot ${i < balls ? 'filled' : ''}`} style={{ '--accent-primary': color } as any}>
-          {i + 1}
-        </div>
-      ))}
-      <div className={`ball-slot black ${black ? 'filled' : ''}`}>8</div>
-    </div>
-  );
-}
-
 // --- Main Page ---
 
 export default function TournamentDetailPage() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<any>(null);
-  const [showArena, setShowArena] = useState(false);
   const [engineState, setEngineState] = useState<TournamentState | null>(null);
+  const [engineError, setEngineError] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState(Math.floor(Date.now() / 1000));
-  const [newTeamName, setNewTeamName] = useState("");
   const [reordering, setReordering] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
 
@@ -99,8 +86,14 @@ export default function TournamentDetailPage() {
       ]);
       
       setData({ responses, id });
+      // A failure here used to leave engineState null and say nothing, so the
+      // arena simply never appeared and there was no way to tell why.
       if (responses[4].status === "fulfilled") {
         setEngineState(responses[4].value.payload);
+        setEngineError(null);
+      } else {
+        const reason = responses[4].reason;
+        setEngineError(reason instanceof Error ? reason.message : String(reason));
       }
     } catch (err) {
       setError(err);
@@ -169,14 +162,7 @@ export default function TournamentDetailPage() {
       ];
 
   // Engine Actions
-  const addTeam = async () => {
-    if (!newTeamName) return;
-    await backendFetch(`/engine/tournaments/${id}/add-team`, { method: "POST", body: JSON.stringify({ name: newTeamName }) });
-    setNewTeamName("");
-    fetchTournamentData();
-  };
-
-  const updateScore = async (matchId: string, teamId: string, type: 'BALL' | 'BLACK' | 'MISTAKE') => {
+  const updateScore = async (matchId: string, teamId: string, type: ArenaScoreEvent) => {
     await backendFetch(`/engine/matches/${matchId}/score`, { method: "POST", body: JSON.stringify({ teamId, type }) });
     fetchTournamentData();
   };
@@ -219,63 +205,31 @@ export default function TournamentDetailPage() {
   };
 
   const reorderMatch = async (matchId: string, direction: 'up' | 'down') => {
-    if (!engineState) return;
-    setReordering(true);
-    const created = engineState.matches.filter(m => m.status === 'CREATED');
+    if (!engineState || reordering) return;
+
+    const created = engineState.matches
+      .filter(m => m.status === 'CREATED')
+      .sort((a, b) => a.match_order - b.match_order);
     const idx = created.findIndex(m => m.id === matchId);
-    if (idx === -1) return;
+    const target = direction === 'up' ? idx - 1 : idx + 1;
+    if (idx === -1 || target < 0 || target >= created.length) return;
 
     const newList = [...created];
-    const target = direction === 'up' ? idx - 1 : idx + 1;
-    if (target < 0 || target >= newList.length) return;
-
     [newList[idx], newList[target]] = [newList[target], newList[idx]];
-    await backendFetch(`/engine/tournaments/${id}/reorder`, { method: "POST", body: JSON.stringify({ matchIds: newList.map(m => m.id) }) });
-    fetchTournamentData();
-    setReordering(false);
-  };
 
-  // Helper
-  const getTeamName = (teamId: string) => engineState?.teams.find(t => t.id === teamId)?.name || (teamId === 'BYE' ? 'BYE' : "Unknown");
-  const formatTime = (seconds: number) => {
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
-    return `${m}:${s.toString().padStart(2, '0')}`;
+    setReordering(true);
+    try {
+      await backendFetch(`/engine/tournaments/${id}/reorder`, { method: "POST", body: JSON.stringify({ matchIds: newList.map(m => m.id) }) });
+      await fetchTournamentData();
+    } finally {
+      setReordering(false);
+    }
   };
-
-  const liveMatch = engineState?.matches.find(m => m.status === 'LIVE');
-  const createdMatches = engineState?.matches.filter(m => m.status === 'CREATED') || [];
 
   return (
     <main className="page">
       <div className="shell">
         
-        {/* LIVE ARENA BANNER (Everyone) */}
-        {liveMatch && (
-          <div className="panel page-card animate-in" style={{ border: '1px solid var(--accent-primary)', background: 'rgba(139, 92, 246, 0.05)', marginBottom: '1.5rem', padding: '2rem' }}>
-            <div className="match-status-indicator" style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'center', gap: '1rem' }}>
-              <div className="live-dot"></div>
-              <span style={{ fontWeight: 900, letterSpacing: '2px' }}>LIVE MATCH</span>
-              <span style={{ opacity: 0.5 }}>|</span>
-              <span style={{ fontWeight: 900, color: 'var(--gold)' }}>{formatTime(Math.max(0, (liveMatch.start_time || 0) + liveMatch.duration - currentTime))}</span>
-            </div>
-            
-            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '3rem' }}>
-              <div style={{ textAlign: 'center', flex: 1 }}>
-                <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#ef4444', marginBottom: '0.5rem' }}>{getTeamName(liveMatch.team_a_id)}</div>
-                <div style={{ fontSize: '4rem', fontWeight: 900, lineHeight: 1 }}>{liveMatch.score_team_a}</div>
-                <Ticker balls={liveMatch.balls_potted_a} black={liveMatch.black_potted_a} color="#ef4444" />
-              </div>
-              <div className="vs-orb" style={{ width: '80px', height: '80px', fontSize: '1.2rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>VS</div>
-              <div style={{ textAlign: 'center', flex: 1 }}>
-                <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#3b82f6', marginBottom: '0.5rem' }}>{getTeamName(liveMatch.team_b_id)}</div>
-                <div style={{ fontSize: '4rem', fontWeight: 900, lineHeight: 1 }}>{liveMatch.score_team_b}</div>
-                <Ticker balls={liveMatch.balls_potted_b} black={liveMatch.black_potted_b} color="#3b82f6" />
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Tournament Header */}
         <div className="panel page-card slide-in" style={{ marginBottom: "1.5rem", position: "relative", overflow: "hidden" }}>
           {/* The prize is why anyone is here, so let it colour the header. */}
@@ -297,10 +251,31 @@ export default function TournamentDetailPage() {
                 <span className="status-badge" style={{ background: "rgba(255,255,255,0.05)", color: "var(--text-muted)" }}>
                   {formatLabel}
                 </span>
+                <span
+                  className="status-badge"
+                  style={
+                    tournament.tournamentType === "offline"
+                      ? { background: "rgba(245,158,11,0.12)", color: "var(--gold)" }
+                      : { background: "rgba(16,185,129,0.12)", color: "#10b981" }
+                  }
+                >
+                  {tournament.tournamentType === "offline" ? "📍 PLAYED OFFLINE" : "💻 PLAYED ONLINE"}
+                </span>
                 {tournament.isPrivate && (
                   <span className="status-badge" style={{ background: "rgba(239, 68, 68, 0.1)", color: "#ef4444" }}>PRIVATE</span>
                 )}
               </div>
+
+              {/* A week of a season should say so, and lead back to it. */}
+              {tournament.seriesId && (
+                <Link
+                  href={`/series/${tournament.seriesId}`}
+                  className="muted"
+                  style={{ textDecoration: "none", fontSize: "0.78rem", fontWeight: 800, letterSpacing: "1px" }}
+                >
+                  ← WEEK {tournament.seriesWeek ?? "?"} OF THIS SERIES
+                </Link>
+              )}
 
               <h2 style={{ fontSize: "2.4rem", fontWeight: 900, lineHeight: 1.05, margin: 0 }}>{tournament.name}</h2>
 
@@ -349,129 +324,51 @@ export default function TournamentDetailPage() {
             ))}
           </div>
 
-          <div className="cta-row" style={{ marginTop: "2rem", display: 'flex', justifyContent: 'space-between' }}>
-            <div style={{ display: "flex", gap: "1rem" }}>
-              <JoinTournamentButton tournamentId={id} isPrivate={tournament.isPrivate} />
-              <ShareTournament tournamentId={id} tournamentName={tournament.name} />
-            </div>
-            {isHost && (
-              <button onClick={() => setShowArena(!showArena)} className={`button ${showArena ? 'button-primary' : 'button-gold'}`} style={{ minWidth: '200px' }}>
-                🏟️ {showArena ? 'CLOSE MANAGER' : 'MANAGE ARENA'}
-              </button>
-            )}
+          <div className="cta-row" style={{ marginTop: "2rem", display: "flex", gap: "1rem" }}>
+            <JoinTournamentButton tournamentId={id} isPrivate={tournament.isPrivate} />
+            <ShareTournament tournamentId={id} tournamentName={tournament.name} />
           </div>
         </div>
 
-        {/* ARENA MANAGER (Host Only) */}
-        {showArena && isHost && engineState && (
-          <div className="engine-container animate-in" style={{ marginBottom: '3rem' }}>
-            <div className="center-stage" style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.05)' }}>
-              {liveMatch ? (
-                <>
-                  <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                    <h3 className="glow-text">LIVE SCORING</h3>
-                    <button className="button button-secondary button-sm" onClick={() => addExtraTime(liveMatch.id)}>+1 MIN EXTRA TIME</button>
-                  </div>
-                  <div className="score-arena" style={{ width: '100%', gap: '2rem' }}>
-                    <div 
-                      className={`team-arena-card red ${liveMatch.active_team_id === liveMatch.team_a_id ? 'active' : ''}`} 
-                      onClick={() => highlightTeam(liveMatch.id, liveMatch.team_a_id)}
-                    >
-                      {liveMatch.active_team_id === liveMatch.team_a_id && <div className="active-badge">AT TABLE</div>}
-                      <div className="pod-score">{liveMatch.score_team_a}</div>
-                      <Ticker balls={liveMatch.balls_potted_a} black={liveMatch.black_potted_a} color="#ef4444" />
-                      <div className="control-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', width: '100%', marginTop: '1.5rem' }}>
-                        <button className="score-btn" style={{ background: '#ef4444' }} onClick={(e) => { e.stopPropagation(); updateScore(liveMatch.id, liveMatch.team_a_id, 'BALL') }}>BALL</button>
-                        <button className="score-btn" style={{ background: '#111', border: '1px solid #fff' }} onClick={(e) => { e.stopPropagation(); updateScore(liveMatch.id, liveMatch.team_a_id, 'BLACK') }}>BLACK</button>
-                      </div>
-                    </div>
-                    
-                    <div 
-                      className={`team-arena-card blue ${liveMatch.active_team_id === liveMatch.team_b_id ? 'active' : ''}`} 
-                      onClick={() => highlightTeam(liveMatch.id, liveMatch.team_b_id)}
-                    >
-                      {liveMatch.active_team_id === liveMatch.team_b_id && <div className="active-badge">AT TABLE</div>}
-                      <div className="pod-score">{liveMatch.score_team_b}</div>
-                      <Ticker balls={liveMatch.balls_potted_b} black={liveMatch.black_potted_b} color="#3b82f6" />
-                      <div className="control-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', width: '100%', marginTop: '1.5rem' }}>
-                        <button className="score-btn" style={{ background: '#3b82f6' }} onClick={(e) => { e.stopPropagation(); updateScore(liveMatch.id, liveMatch.team_b_id, 'BALL') }}>BALL</button>
-                        <button className="score-btn" style={{ background: '#111', border: '1px solid #fff' }} onClick={(e) => { e.stopPropagation(); updateScore(liveMatch.id, liveMatch.team_b_id, 'BLACK') }}>BLACK</button>
-                      </div>
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <div style={{ textAlign: 'center', padding: '2rem' }}>
-                  <h3 className="glow-text">ARENA IDLE</h3>
-                  {createdMatches.length > 0 ? (
-                    <div style={{ marginTop: '1.5rem' }}>
-                      <p className="muted">Next: {getTeamName(createdMatches[0].team_a_id)} vs {getTeamName(createdMatches[0].team_b_id)}</p>
-                      <button className="button button-gold mt-4" onClick={() => startMatch(createdMatches[0].id)}>START NEXT MATCH</button>
-                    </div>
-                  ) : (
-                    <button className="button button-secondary mt-4" onClick={generateMatches}>GENERATE NEXT ROUND</button>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Match Queue Management */}
-            <div className="match-queue-section" style={{ marginTop: '2rem' }}>
-              <h3 className="section-label">UPCOMING QUEUE ({createdMatches.length})</h3>
-              <div className="queue-grid">
-                {createdMatches.map((m, i) => (
-                  <div key={m.id} className="queue-item">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                      <span style={{ opacity: 0.3, fontWeight: 900 }}>#{i+1}</span>
-                      <span style={{ fontWeight: 700 }}>{getTeamName(m.team_a_id)} vs {getTeamName(m.team_b_id)}</span>
-                    </div>
-                    <div className="queue-controls">
-                      <button className="q-btn" onClick={() => reorderMatch(m.id, 'up')} disabled={i === 0 || reordering}>↑</button>
-                      <button className="q-btn" onClick={() => reorderMatch(m.id, 'down')} disabled={i === createdMatches.length - 1 || reordering}>↓</button>
-                      {i === 0 && !liveMatch && <button className="button button-primary button-sm" style={{ marginLeft: '1rem' }} onClick={() => startMatch(m.id)}>START</button>}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-            
-            {engineState.phase === 'SETUP' && engineState.matches.length === 0 && (
-              <div className="standings-card" style={{ marginTop: '2rem', padding: '2rem' }}>
-                <h3 className="section-label">ROSTER SETUP</h3>
-                <div className="team-input-row" style={{ marginTop: '1rem' }}>
-                  <input placeholder="Add team name..." value={newTeamName} onChange={e => setNewTeamName(e.target.value)} onKeyPress={e => e.key === 'Enter' && addTeam()} />
-                  <button className="button button-primary" onClick={addTeam}>ADD</button>
-                </div>
-                {engineState.teams.length >= 2 && <button className="button button-gold mt-4" style={{ width: '100%' }} onClick={generateMatches}>GENERATE MATCHES</button>}
-              </div>
-            )}
+        {/* THE ARENA — the same one Quick Tournament runs, once play starts.
+            It is shown to everyone; only the host is handed the controls. */}
+        {engineError && (
+          <div
+            className="glass-morphism"
+            style={{ padding: "1.25rem 1.5rem", marginBottom: "1.5rem", border: "1px solid rgba(239,68,68,0.3)" }}
+          >
+            <strong style={{ color: "#ef4444" }}>The arena could not be loaded.</strong>
+            <p className="muted" style={{ fontSize: "0.82rem", margin: "0.5rem 0 0" }}>{engineError}</p>
           </div>
         )}
 
-        {/* Existing Tournament Sections */}
-        <div className="panel page-card" style={{ marginBottom: "1.5rem" }}>
-          <h2 className="section-heading">Standings</h2>
-          {(engineState?.teams || []).length === 0 ? (
+        {hasStarted && engineState && (
+          <HostedArena
+            tournamentName={tournament.name}
+            isHost={!!isHost}
+            isFootball={isFootball}
+            teams={engineState.teams}
+            matches={engineState.matches}
+            currentTime={currentTime}
+            onScore={updateScore}
+            onHighlight={highlightTeam}
+            onStartMatch={startMatch}
+            onExtraTime={addExtraTime}
+            onGenerate={generateMatches}
+            onReorder={reorderMatch}
+          />
+        )}
+
+        {/* Before the draw there is nothing to rank. Afterwards the arena's
+            own standings tab carries it, so this does not repeat it. */}
+        {!hasStarted && (
+          <div className="panel page-card" style={{ marginBottom: "1.5rem" }}>
+            <h2 className="section-heading">Standings</h2>
             <p className="muted" style={{ fontSize: '0.88rem', margin: 0 }}>
               Standings appear once the host starts the tournament and the first fixtures are drawn.
             </p>
-          ) : (
-          <table className="leaderboard-table">
-            <thead><tr><th>RANK</th><th>TEAM / PLAYER</th><th>PLAYED</th><th>WINS</th><th>SCORE</th></tr></thead>
-            <tbody>
-              {(engineState?.teams || []).sort((a,b) => b.group_points - a.group_points || b.total_score - a.total_score).map((t, i) => (
-                <tr key={t.id}>
-                  <td style={{ padding: '1rem' }}>#{i+1}</td>
-                  <td style={{ fontWeight: 900 }}>{t.name}</td>
-                  <td>{t.matches_played}</td>
-                  <td style={{ color: 'var(--accent-primary)' }}>{t.group_points}</td>
-                  <td style={{ fontWeight: 900, color: 'var(--gold)' }}>{t.total_score}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* HOW IT WORKS — the rules and where the money goes */}
         <div
@@ -611,76 +508,6 @@ export default function TournamentDetailPage() {
             </p>
           )}
         </div>
-
-        {/* MATCH SCHEDULE — the draw, in the order it will be played */}
-        {hasStarted && (engineState?.matches.length || 0) > 0 && (
-          <div className="glass-morphism" style={{ padding: '1.75rem', marginTop: '1.5rem' }}>
-            <h2 className="section-heading">Match schedule</h2>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {[...(engineState?.matches || [])]
-                .sort((a, b) => a.match_order - b.match_order)
-                .map((m, i) => {
-                  const done = m.status === 'COMPLETED';
-                  const live = m.status === 'LIVE';
-                  // The first fixture still waiting is the one up next.
-                  const isNext =
-                    !live &&
-                    m.status === 'CREATED' &&
-                    createdMatches.length > 0 &&
-                    m.id === [...createdMatches].sort((x, y) => x.match_order - y.match_order)[0].id;
-
-                  return (
-                    <div
-                      key={m.id}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '14px',
-                        padding: '14px 16px',
-                        borderRadius: '10px',
-                        background: live ? 'rgba(239,68,68,0.07)' : 'rgba(255,255,255,0.02)',
-                        border: live
-                          ? '1px solid rgba(239,68,68,0.3)'
-                          : isNext
-                            ? '1px solid rgba(245,158,11,0.3)'
-                            : '1px solid rgba(255,255,255,0.05)',
-                        opacity: done ? 0.55 : 1,
-                      }}
-                    >
-                      <span style={{ fontFamily: 'monospace', opacity: 0.5, minWidth: '2.5rem' }}>
-                        {String(i + 1).padStart(2, '0')}
-                      </span>
-                      <span style={{ flex: 1, fontWeight: 800 }}>
-                        {getTeamName(m.team_a_id)} <span style={{ opacity: 0.4 }}>vs</span> {getTeamName(m.team_b_id)}
-                      </span>
-                      {done && (
-                        <span style={{ fontFamily: 'monospace', opacity: 0.8 }}>
-                          {m.score_team_a} - {m.score_team_b}
-                        </span>
-                      )}
-                      <span
-                        style={{
-                          fontSize: '0.7rem',
-                          fontWeight: 900,
-                          letterSpacing: '0.5px',
-                          padding: '3px 10px',
-                          borderRadius: '6px',
-                          background: live
-                            ? 'rgba(239,68,68,0.15)'
-                            : isNext
-                              ? 'rgba(245,158,11,0.15)'
-                              : 'rgba(255,255,255,0.05)',
-                          color: live ? '#ef4444' : isNext ? 'var(--gold)' : 'var(--text-muted)',
-                        }}
-                      >
-                        {live ? 'LIVE' : done ? 'DONE' : isNext ? 'UP NEXT' : 'SCHEDULED'}
-                      </span>
-                    </div>
-                  );
-                })}
-            </div>
-          </div>
-        )}
 
         {/* RESET BUTTON (Host Only) */}
         {isHost && (

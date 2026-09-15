@@ -35,6 +35,8 @@ function match(overrides: Partial<EngineMatch> = {}): EngineMatch {
     balls_potted_b: 0,
     black_potted_a: false,
     black_potted_b: false,
+    fouls_a: 0,
+    fouls_b: 0,
     start_time: 1000,
     duration: 600,
     score_team_a: 0,
@@ -128,6 +130,49 @@ describe("processScoreUpdate", () => {
     const { updatedMatch, matchEnded } = processScoreUpdate(m, "b", "MISTAKE");
     expect(matchEnded).toBe(true);
     expect(updatedMatch.winner_id).toBe("b");
+  });
+});
+
+describe("processScoreUpdate — fouls and corrections", () => {
+  it("credits a foul to the opponent and counts it against the offender", () => {
+    const { updatedMatch } = processScoreUpdate(match(), "a", "FOUL");
+    expect(updatedMatch.fouls_a).toBe(1);
+    expect(updatedMatch.score_team_b).toBe(10);
+    expect(updatedMatch.score_team_a).toBe(0);
+  });
+
+  it("takes back a foul that was recorded by mistake", () => {
+    const m = match({ fouls_a: 1, score_team_b: 10 });
+    const { updatedMatch } = processScoreUpdate(m, "a", "REMOVE_FOUL");
+    expect(updatedMatch.fouls_a).toBe(0);
+    expect(updatedMatch.score_team_b).toBe(0);
+  });
+
+  it("ignores an undo when there is nothing to undo", () => {
+    const { updatedMatch } = processScoreUpdate(match(), "a", "REMOVE_FOUL");
+    expect(updatedMatch.fouls_a).toBe(0);
+    expect(updatedMatch.score_team_b).toBe(0);
+  });
+
+  it("takes back a ball that was never potted without going negative", () => {
+    const { updatedMatch } = processScoreUpdate(match(), "b", "REMOVE_BALL");
+    expect(updatedMatch.balls_potted_b).toBe(0);
+    expect(updatedMatch.score_team_b).toBe(0);
+  });
+
+  it("ends the match when a foul carries the opponent to 100", () => {
+    const m = match({ score_team_b: 90 });
+    const { updatedMatch, matchEnded } = processScoreUpdate(m, "a", "FOUL");
+    expect(matchEnded).toBe(true);
+    expect(updatedMatch.winner_id).toBe("b");
+  });
+
+  it("does not let a correction decide a sudden-death match", () => {
+    const m = match({ sudden_death: true, fouls_a: 1, score_team_b: 10 });
+    const { updatedMatch, matchEnded } = processScoreUpdate(m, "a", "REMOVE_FOUL");
+    expect(matchEnded).toBe(false);
+    expect(updatedMatch.winner_id).toBeNull();
+    expect(updatedMatch.score_team_b).toBe(0);
   });
 });
 
