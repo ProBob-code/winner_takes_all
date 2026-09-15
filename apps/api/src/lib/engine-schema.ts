@@ -19,8 +19,9 @@
  * in this file drops, rewrites or backfills anything, so it can never cost
  * data.
  *
- * Kept deliberately in step with apps/api/migrations/0006_engine_tables.sql
- * and 0007_series.sql; apps/api/migrations/rehearse.py checks the SQL runs.
+ * Kept deliberately in step with apps/api/migrations/0006_engine_tables.sql,
+ * 0007_series.sql and 0009_engine_houses.sql; apps/api/migrations/rehearse.py
+ * and rehearse_bootstrap.py check the SQL runs.
  */
 
 /** Tables and indexes. Safe to run any number of times. */
@@ -52,6 +53,8 @@ const CREATE_STATEMENTS = [
     black_potted_b INTEGER DEFAULT 0,
     fouls_a INTEGER DEFAULT 0,
     fouls_b INTEGER DEFAULT 0,
+    team_a_house TEXT DEFAULT 'SOLID',
+    team_b_house TEXT DEFAULT 'STRIPES',
     start_time INTEGER,
     duration INTEGER DEFAULT 600,
     score_team_a INTEGER DEFAULT 0,
@@ -120,6 +123,8 @@ const ADD_COLUMN_STATEMENTS = [
   `ALTER TABLE engine_teams ADD COLUMN user_id TEXT`,
   `ALTER TABLE engine_matches ADD COLUMN fouls_a INTEGER DEFAULT 0`,
   `ALTER TABLE engine_matches ADD COLUMN fouls_b INTEGER DEFAULT 0`,
+  `ALTER TABLE engine_matches ADD COLUMN team_a_house TEXT DEFAULT 'SOLID'`,
+  `ALTER TABLE engine_matches ADD COLUMN team_b_house TEXT DEFAULT 'STRIPES'`,
 ];
 
 const INDEX_AFTER_COLUMNS = [

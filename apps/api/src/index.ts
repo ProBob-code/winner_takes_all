@@ -55,6 +55,9 @@ import {
   engineScoreSchema,
   highlightSchema,
   reorderSchema,
+  extraTimeSchema,
+  houseSchema,
+  publishArenaSchema,
   upsertArenaSchema,
   broadcastTokenSchema,
   streamSessionSchema,
@@ -1049,6 +1052,23 @@ app.delete("/api/tournaments/:id", async (c) => {
 
   await store.deleteTournament(tournamentId);
 
+  // A published tournament has a spectator arena that would otherwise stay on
+  // Live Screening, with its cameras running, after the tournament is gone.
+  try {
+    const arena = await store.getArena(engineArenaId(tournamentId));
+    if (arena && (arena.state as any)?.isStarted) {
+      await store.upsertArena({
+        id: arena.id,
+        name: arena.name,
+        state: { ...(arena.state as object), isStarted: false },
+        pin: arena.pin,
+        ownerId: arena.owner_id,
+      });
+    }
+  } catch (err) {
+    console.error("Could not take a deleted tournament's arena off air:", err);
+  }
+
   return c.json({ ok: true, refunded, refundedAmount: centsToMoney(refunded * fee) });
 });
 
@@ -1123,12 +1143,148 @@ async function requireTournamentManager(
   return { tournament };
 }
 
+type EngineTeamRow = Awaited<ReturnType<D1Store["getEngineTeams"]>>[number];
+type EngineMatchRow = Awaited<ReturnType<D1Store["getEngineMatches"]>>[number];
+
+function engineSport(tournament: TournamentRecord): Engine.Sport {
+  return tournament.sport === "FOOTBALL" ? "FOOTBALL" : "8BALL";
+}
+
+/**
+ * The spectator-network arena a hosted tournament is published as.
+ *
+ * Derived from the tournament rather than stored, so republishing after a
+ * reload keeps the same spectator link. It is the same id the old host
+ * manager page derived, so a tournament published from there keeps its link.
+ */
+function engineArenaId(tournamentId: string): string {
+  return `T${tournamentId.replace(/[^a-zA-Z0-9]/g, "").slice(0, 24).toUpperCase()}`;
+}
+
+/**
+ * The tournament in the shape Live Screening, the spectator page and the
+ * streaming endpoints read — the same shape a Quick Tournament publishes.
+ */
+function engineArenaState(
+  tournament: TournamentRecord,
+  teams: EngineTeamRow[],
+  matches: EngineMatchRow[],
+  isStarted: boolean
+) {
+  const sport = engineSport(tournament);
+  return {
+    isStarted,
+    selectedSport: sport,
+    tournamentId: tournament.id,
+    teams: teams.map((t) => ({ ...t, is_team: false, players: [], total_balls_potted: 0, total_fouls: 0 })),
+    matches: matches.map((m) => ({
+      ...m,
+      sport,
+      order: m.match_order,
+      is_draw: m.status === "COMPLETED" && !m.winner_id,
+    })),
+  };
+}
+
+/**
+ * Keep a published tournament's spectator arena in step with the engine.
+ *
+ * The engine is the source of truth, so the server mirrors it rather than
+ * relying on the host's browser to push it: spectators and cameras stay
+ * current even with the host's tab closed. A tournament that was never
+ * published, or was taken off air, is left alone. A failure here never fails
+ * the host's action; spectators simply catch up on the next one.
+ */
+async function syncEngineArena(
+  c: Context<AppContext>,
+  tournament: TournamentRecord,
+  preloaded?: [EngineTeamRow[], EngineMatchRow[]]
+): Promise<void> {
+  try {
+    const store = c.get("store");
+    const arena = await store.getArena(engineArenaId(tournament.id));
+    if (!arena || !(arena.state as any)?.isStarted) return;
+
+    const [teams, matches] =
+      preloaded ??
+      (await Promise.all([store.getEngineTeams(tournament.id), store.getEngineMatches(tournament.id)]));
+
+    await store.upsertArena({
+      id: arena.id,
+      name: arena.name,
+      state: engineArenaState(tournament, teams, matches, true),
+      pin: arena.pin,
+      ownerId: arena.owner_id,
+    });
+  } catch (err) {
+    console.error("Could not mirror the tournament to its spectator arena:", err);
+  }
+}
+
+/**
+ * Add a finished match to both teams' totals, and close the tournament once
+ * its final is decided. Only ever called by the request whose guarded write
+ * actually finished the match, so a result is never counted twice.
+ */
+async function recordEngineResult(
+  c: Context<AppContext>,
+  tournament: TournamentRecord,
+  match: EngineMatchRow
+): Promise<void> {
+  const store = c.get("store");
+  for (const delta of Engine.resultDeltas(match, engineSport(tournament))) {
+    await store.addEngineTeamResult(delta.teamId, delta);
+  }
+  if (match.phase === "FINAL" && match.winner_id) {
+    await store.updateTournamentStatus(tournament.id, "COMPLETED");
+    tournament.status = "COMPLETED";
+  }
+}
+
+/**
+ * Finish any live match whose clock has run out.
+ *
+ * The clock used to be looked at only when a score was recorded, so a match
+ * nobody touched in its last seconds stayed live at 0:00 indefinitely. Quick
+ * Tournament ends a match the moment its clock does, and this is the server's
+ * equivalent: every poll of the state settles what has expired. The matches
+ * passed in are updated in place. Returns whether anything changed.
+ */
+async function settleExpiredMatches(
+  c: Context<AppContext>,
+  tournament: TournamentRecord,
+  matches: EngineMatchRow[]
+): Promise<boolean> {
+  const store = c.get("store");
+  const now = nowSeconds();
+  let changed = false;
+
+  for (let i = 0; i < matches.length; i++) {
+    const { updatedMatch, matchEnded, suddenDeathStarted } = Engine.checkTimer(matches[i], now);
+    if (!matchEnded && !suddenDeathStarted) continue;
+
+    const applied = await store.saveLiveEngineMatch(updatedMatch.id, {
+      status: updatedMatch.status,
+      winner_id: updatedMatch.winner_id,
+      sudden_death: updatedMatch.sudden_death,
+      ended_by: matchEnded ? "TIME" : null,
+    });
+    if (!applied) continue;
+
+    changed = true;
+    matches[i] = { ...updatedMatch, ended_by: matchEnded ? "TIME" : null };
+    if (matchEnded) await recordEngineResult(c, tournament, matches[i]);
+  }
+
+  return changed;
+}
+
 app.get("/api/engine/tournaments/:id/state", async (c) => {
   const store = c.get("store");
   const tournamentId = c.req.param("id");
 
-  let teams: Awaited<ReturnType<typeof store.getEngineTeams>>;
-  let matches: Awaited<ReturnType<typeof store.getEngineMatches>>;
+  let teams: EngineTeamRow[];
+  let matches: EngineMatchRow[];
   let tournament: TournamentRecord | null;
   try {
     [teams, matches, tournament] = await Promise.all([
@@ -1144,12 +1300,26 @@ app.get("/api/engine/tournaments/:id/state", async (c) => {
 
   if (!tournament) return c.json({ ok: false, message: "Tournament not found" }, 404);
 
+  const settled = await settleExpiredMatches(c, tournament, matches);
+  if (settled) teams = await store.getEngineTeams(tournamentId);
+
+  const arenaId = engineArenaId(tournamentId);
+  const arena = await store.getArena(arenaId).catch(() => null);
+  const published = !!(arena?.state as any)?.isStarted;
+  if (settled && published) await syncEngineArena(c, tournament, [teams, matches]);
+
   return c.json({
     ok: true,
     phase: tournament.status as Engine.TournamentPhase,
     sport: tournament.sport,
     teams,
     matches,
+    arenaId,
+    published,
+    matchesPerTeam: tournament.max_matches_per_team || 2,
+    // Clocks are counted down in the browser against start_time, which is
+    // server time; this lets a client with a skewed clock correct for it.
+    serverTime: nowSeconds(),
   });
 });
 
@@ -1289,6 +1459,10 @@ app.post("/api/engine/tournaments/:id/generate", async (c) => {
     store.getEngineMatches(tournamentId),
   ]);
 
+  if (tournament.status !== "GROUP") {
+    return c.json({ ok: false, message: "The group stage is over, so no more group rounds can be drawn." }, 400);
+  }
+
   if (matches.some((m) => m.status === "LIVE")) {
     return c.json({ ok: false, message: "Cannot generate matches while a match is LIVE" }, 400);
   }
@@ -1296,8 +1470,10 @@ app.post("/api/engine/tournaments/:id/generate", async (c) => {
   const limit = tournament.max_matches_per_team || 2;
   const { matches: nextMatches, byeTeamId } = Engine.generateNextMatches(teams, matchups, "GROUP", limit);
 
-  for (const mData of nextMatches) {
-    const match = await store.createEngineMatch(tournamentId, mData);
+  // Queue the new round behind whatever is already there.
+  const nextOrder = matches.reduce((max, m) => Math.max(max, m.match_order), -1) + 1;
+  for (let i = 0; i < nextMatches.length; i++) {
+    const match = await store.createEngineMatch(tournamentId, { ...nextMatches[i], match_order: nextOrder + i });
     await store.createEngineMatchup(tournamentId, match.team_a_id, match.team_b_id, match.id);
   }
 
@@ -1312,7 +1488,116 @@ app.post("/api/engine/tournaments/:id/generate", async (c) => {
     }
   }
 
-  return c.json({ ok: true, matchesCreated: nextMatches.length, byeAssigned: !!byeTeamId });
+  await syncEngineArena(c, tournament);
+
+  return c.json({
+    ok: true,
+    matchesCreated: nextMatches.length,
+    byeAssigned: !!byeTeamId,
+    ...(nextMatches.length === 0 && !byeTeamId
+      ? { message: "No new pairings are possible: every team has reached its quota or met everyone available. Advance to the knockouts." }
+      : {}),
+  });
+});
+
+/**
+ * Take the knockout one step further: the group's top four into semi-finals
+ * (or its top two straight into a final), then the semi-final winners into the
+ * final. The same progression Quick Tournament's arena offers.
+ */
+app.post("/api/engine/tournaments/:id/advance", async (c) => {
+  const tournamentId = c.req.param("id");
+  const access = await requireTournamentManager(c, tournamentId);
+  if ("error" in access) return access.error;
+  const { tournament } = access;
+
+  if (tournament.status !== "GROUP" && tournament.status !== "KNOCKOUT") {
+    return c.json({ ok: false, message: "Only a tournament in play can advance to the knockouts." }, 400);
+  }
+
+  const store = c.get("store");
+  const [teams, matches] = await Promise.all([
+    store.getEngineTeams(tournamentId),
+    store.getEngineMatches(tournamentId),
+  ]);
+
+  const plan = Engine.planAdvance(teams, matches);
+  if ("error" in plan) return c.json({ ok: false, message: plan.error }, 400);
+
+  // A knockout match keeps the length the host last played to.
+  const lastPlayed = [...matches].reverse().find((m) => m.status === "COMPLETED");
+  const duration = lastPlayed?.duration || 600;
+  const nextOrder = matches.reduce((max, m) => Math.max(max, m.match_order), -1) + 1;
+
+  for (let i = 0; i < plan.matches.length; i++) {
+    await store.createEngineMatch(tournamentId, { ...plan.matches[i], duration, match_order: nextOrder + i });
+  }
+
+  await store.updateTournamentStatus(tournamentId, "KNOCKOUT");
+  tournament.status = "KNOCKOUT";
+  await syncEngineArena(c, tournament);
+
+  return c.json({ ok: true, matchesCreated: plan.matches.length });
+});
+
+/**
+ * Put a hosted tournament on the spectator network, or take it off.
+ *
+ * A hosted tournament is private until its host says otherwise. Publishing
+ * mirrors it into the arena system — what Live Screening lists, what the
+ * spectator link shows, and what a camera's stream code is checked against —
+ * and from then on the server keeps that mirror current on every change.
+ * Taking it off air clears isStarted, which removes it from Live Screening and
+ * stops every camera on it, exactly as closing a Quick Tournament does.
+ */
+app.post("/api/engine/tournaments/:id/publish", async (c) => {
+  const tournamentId = c.req.param("id");
+  const access = await requireTournamentManager(c, tournamentId);
+  if ("error" in access) return access.error;
+  const { tournament } = access;
+
+  const store = c.get("store");
+  const body = parseBody(publishArenaSchema, await readJson(c));
+  const arenaId = engineArenaId(tournamentId);
+  const existing = await store.getArena(arenaId);
+
+  if (existing?.owner_id && tournament.host_id && existing.owner_id !== tournament.host_id) {
+    return c.json({ ok: false, message: "This tournament's spectator arena belongs to another account." }, 409);
+  }
+
+  if (!body.live && !existing) return c.json({ ok: true, arenaId, published: false });
+
+  const [teams, matches] = await Promise.all([
+    store.getEngineTeams(tournamentId),
+    store.getEngineMatches(tournamentId),
+  ]);
+
+  try {
+    await store.upsertArena({
+      id: arenaId,
+      name: tournament.name.slice(0, 80),
+      state: engineArenaState(tournament, teams, matches, body.live),
+      pin: existing?.pin ?? null,
+      // The host owns it even when an admin publishes, so the host can still
+      // put cameras on it.
+      ownerId: existing?.owner_id ?? tournament.host_id,
+    });
+  } catch (err) {
+    if (isMissingColumnError(err)) {
+      return c.json(
+        {
+          ok: false,
+          message:
+            "Arena storage is out of date and is missing a column. Run migrations/0004_arena_columns.sql against the D1 database.",
+          detail: err instanceof Error ? err.message : String(err),
+        },
+        500
+      );
+    }
+    throw err;
+  }
+
+  return c.json({ ok: true, arenaId, published: body.live });
 });
 
 app.post("/api/engine/matches/:id/start", async (c) => {
@@ -1323,6 +1608,11 @@ app.post("/api/engine/matches/:id/start", async (c) => {
   const access = await requireTournamentManager(c, match.tournament_id);
   if ("error" in access) return access.error;
 
+  // Starting a finished match again would count its result a second time.
+  if (match.status !== "CREATED") {
+    return c.json({ ok: false, message: "Only a match that has not been played can be started." }, 400);
+  }
+
   const allMatches = await store.getEngineMatches(match.tournament_id);
   if (allMatches.some((m) => m.status === "LIVE")) {
     return c.json({ ok: false, message: "Another match is already LIVE" }, 400);
@@ -1330,12 +1620,47 @@ app.post("/api/engine/matches/:id/start", async (c) => {
 
   await store.updateEngineMatch(match.id, {
     status: "LIVE",
-    start_time: Math.floor(Date.now() / 1000),
+    start_time: nowSeconds(),
   });
 
+  await syncEngineArena(c, access.tournament);
   return c.json({ ok: true });
 });
 
+/** Start a live match over: scores, balls and fouls back to zero, clock from the top. */
+app.post("/api/engine/matches/:id/restart", async (c) => {
+  const store = c.get("store");
+  const match = await store.getEngineMatch(c.req.param("id"));
+  if (!match) return c.json({ ok: false, message: "Match not found" }, 404);
+
+  const access = await requireTournamentManager(c, match.tournament_id);
+  if ("error" in access) return access.error;
+
+  const reset = Engine.resetMatch(match, nowSeconds());
+  const applied = await store.saveLiveEngineMatch(match.id, {
+    score_team_a: reset.score_team_a,
+    score_team_b: reset.score_team_b,
+    balls_potted_a: reset.balls_potted_a,
+    balls_potted_b: reset.balls_potted_b,
+    black_potted_a: reset.black_potted_a,
+    black_potted_b: reset.black_potted_b,
+    fouls_a: reset.fouls_a,
+    fouls_b: reset.fouls_b,
+    sudden_death: reset.sudden_death,
+    active_team_id: reset.active_team_id,
+    winner_id: reset.winner_id,
+    start_time: reset.start_time,
+  });
+  if (!applied) return c.json({ ok: false, message: "Only a live match can be restarted." }, 409);
+
+  await syncEngineArena(c, access.tournament);
+  return c.json({ ok: true });
+});
+
+/**
+ * Add time to a match, or take it away. With no body this is the +1 MIN
+ * button; the arena's − / + and +2 MINS controls send the seconds they mean.
+ */
 app.post("/api/engine/matches/:id/extra-time", async (c) => {
   const store = c.get("store");
   const match = await store.getEngineMatch(c.req.param("id"));
@@ -1344,7 +1669,44 @@ app.post("/api/engine/matches/:id/extra-time", async (c) => {
   const access = await requireTournamentManager(c, match.tournament_id);
   if ("error" in access) return access.error;
 
-  await store.updateEngineMatch(match.id, { duration: match.duration + 60 });
+  if (match.status === "COMPLETED") {
+    return c.json({ ok: false, message: "This match has already finished." }, 409);
+  }
+
+  // No body at all is the plain +1 MIN.
+  const body = parseBody(extraTimeSchema, await readJson(c).catch(() => ({})));
+  const duration = Math.max(60, match.duration + (body.seconds ?? 60));
+
+  const updates: Partial<EngineMatchRow> = { duration };
+  // Time given back to a level knockout match reopens its clock, so it is no
+  // longer waiting on a golden point.
+  if (match.sudden_death && match.start_time && match.start_time + duration > nowSeconds()) {
+    updates.sudden_death = false;
+  }
+
+  await store.updateEngineMatch(match.id, updates);
+  await syncEngineArena(c, access.tournament);
+  return c.json({ ok: true, duration });
+});
+
+/** Which set each side is on. Choosing one for a side gives the other the rest. */
+app.post("/api/engine/matches/:id/house", async (c) => {
+  const store = c.get("store");
+  const match = await store.getEngineMatch(c.req.param("id"));
+  if (!match) return c.json({ ok: false, message: "Match not found" }, 404);
+
+  const access = await requireTournamentManager(c, match.tournament_id);
+  if ("error" in access) return access.error;
+
+  const body = parseBody(houseSchema, await readJson(c));
+  const other: Engine.PoolHouse = body.house === "SOLID" ? "STRIPES" : "SOLID";
+
+  await store.updateEngineMatch(match.id, {
+    team_a_house: body.team === "A" ? body.house : other,
+    team_b_house: body.team === "B" ? body.house : other,
+  });
+
+  await syncEngineArena(c, access.tournament);
   return c.json({ ok: true });
 });
 
@@ -1366,6 +1728,7 @@ app.post("/api/engine/tournaments/:id/reorder", async (c) => {
     }
   }
 
+  await syncEngineArena(c, access.tournament);
   return c.json({ ok: true });
 });
 
@@ -1379,29 +1742,41 @@ app.post("/api/engine/matches/:id/highlight", async (c) => {
 
   const body = parseBody(highlightSchema, await readJson(c));
   await store.updateEngineMatch(match.id, { active_team_id: body.teamId });
+  await syncEngineArena(c, access.tournament);
   return c.json({ ok: true });
 });
 
 app.post("/api/engine/matches/:id/score", async (c) => {
   const store = c.get("store");
-  let match = await store.getEngineMatch(c.req.param("id"));
+  const match = await store.getEngineMatch(c.req.param("id"));
   if (!match) return c.json({ ok: false, message: "Match not found" }, 404);
 
   const access = await requireTournamentManager(c, match.tournament_id);
   if ("error" in access) return access.error;
+  const { tournament } = access;
 
   const body = parseBody(engineScoreSchema, await readJson(c));
   if (body.teamId !== match.team_a_id && body.teamId !== match.team_b_id) {
     return c.json({ ok: false, message: "teamId is not part of this match" }, 400);
   }
 
-  // Check timer first, then apply the score event.
-  const { updatedMatch: timedMatch, matchEnded: timerEnded } = Engine.checkTimer(match, Math.floor(Date.now() / 1000));
-  match = timedMatch;
+  if (match.status !== "LIVE") {
+    return c.json({ ok: false, message: "This match is not live." }, 409);
+  }
 
-  const { updatedMatch: finalMatch, matchEnded: scoreEnded } = Engine.processScoreUpdate(match, body.teamId, body.type);
+  // The clock first: a tap that arrives after it ran out is too late to count,
+  // and the match ends on time instead.
+  const timed = Engine.checkTimer(match, nowSeconds());
+  let finalMatch = timed.updatedMatch;
+  let endedBy: "SCORE" | "TIME" | null = timed.matchEnded ? "TIME" : null;
 
-  await store.updateEngineMatch(finalMatch.id, {
+  if (!timed.matchEnded) {
+    const scored = Engine.processScoreUpdate(timed.updatedMatch, body.teamId, body.type);
+    finalMatch = scored.updatedMatch;
+    if (scored.matchEnded) endedBy = "SCORE";
+  }
+
+  const applied = await store.saveLiveEngineMatch(finalMatch.id, {
     score_team_a: finalMatch.score_team_a,
     score_team_b: finalMatch.score_team_b,
     balls_potted_a: finalMatch.balls_potted_a,
@@ -1413,32 +1788,18 @@ app.post("/api/engine/matches/:id/score", async (c) => {
     status: finalMatch.status,
     winner_id: finalMatch.winner_id,
     sudden_death: finalMatch.sudden_death,
-    ended_by: scoreEnded ? "SCORE" : timerEnded ? "TIME" : null,
+    ended_by: endedBy,
   });
 
-  if (timerEnded || scoreEnded) {
-    // Finalize team stats.
-    const teams = await store.getEngineTeams(finalMatch.tournament_id);
-    const teamA = teams.find((t) => t.id === finalMatch.team_a_id);
-    const teamB = teams.find((t) => t.id === finalMatch.team_b_id);
+  // Something else finished it in the meantime — most likely its clock, on
+  // someone's poll — and has already recorded the result.
+  if (!applied) return c.json({ ok: false, message: "This match has already finished." }, 409);
 
-    if (teamA) {
-      await store.updateEngineTeam(teamA.id, {
-        matches_played: teamA.matches_played + 1,
-        total_score: teamA.total_score + finalMatch.score_team_a,
-        group_points: teamA.group_points + (finalMatch.winner_id === teamA.id ? 1 : 0),
-      });
-    }
-    if (teamB) {
-      await store.updateEngineTeam(teamB.id, {
-        matches_played: teamB.matches_played + 1,
-        total_score: teamB.total_score + finalMatch.score_team_b,
-        group_points: teamB.group_points + (finalMatch.winner_id === teamB.id ? 1 : 0),
-      });
-    }
-  }
+  const saved = { ...finalMatch, ended_by: endedBy };
+  if (saved.status === "COMPLETED") await recordEngineResult(c, tournament, saved);
 
-  return c.json({ ok: true, match: finalMatch });
+  await syncEngineArena(c, tournament);
+  return c.json({ ok: true, match: saved });
 });
 
 // --- Public Arenas ---

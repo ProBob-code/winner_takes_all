@@ -1,57 +1,29 @@
 "use client";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { readBackendJson, backendFetch } from "@/lib/backend";
-import { formatMoney } from "@/lib/format";
-import { BracketView } from "@/components/bracket-view";
 import { JoinTournamentButton } from "@/components/join-tournament-button";
 import { ShareTournament } from "@/components/share-tournament";
 import { DeleteTournamentDialog } from "@/components/delete-tournament-dialog";
-import { HostedArena, type ArenaScoreEvent } from "@/components/hosted-arena";
+import { HostedArena, type ArenaMatch, type ArenaTeam } from "@/components/hosted-arena";
 import "@/components/tournament-engine.css";
 
 // --- Types ---
 
-interface EngineTeam {
-  id: string;
-  name: string;
-  matches_played: number;
-  group_points: number;
-  total_score: number;
-  bye_assigned: boolean;
-}
-
-interface EngineMatch {
-  id: string;
-  phase: string;
-  team_a_id: string;
-  team_b_id: string;
-  status: 'CREATED' | 'LIVE' | 'COMPLETED';
-  sudden_death: boolean;
-  active_team_id: string | null;
-  balls_potted_a: number;
-  balls_potted_b: number;
-  black_potted_a: boolean;
-  black_potted_b: boolean;
-  fouls_a?: number;
-  fouls_b?: number;
-  start_time: number | null;
-  duration: number;
-  score_team_a: number;
-  score_team_b: number;
-  winner_id: string | null;
-  explanation: string;
-  match_order: number;
-  ended_by?: 'SCORE' | 'TIME';
-}
-
 interface TournamentState {
   ok: boolean;
   phase: string;
-  teams: EngineTeam[];
-  matches: EngineMatch[];
+  teams: ArenaTeam[];
+  matches: ArenaMatch[];
+  arenaId?: string;
+  published?: boolean;
+  matchesPerTeam?: number;
+  /** Unix seconds on the server when the state was read. */
+  serverTime?: number;
 }
+
+const nowSeconds = () => Math.floor(Date.now() / 1000);
 
 // --- Main Page ---
 
@@ -61,15 +33,25 @@ export default function TournamentDetailPage() {
   const [error, setError] = useState<any>(null);
   const [engineState, setEngineState] = useState<TournamentState | null>(null);
   const [engineError, setEngineError] = useState<string | null>(null);
-  const [currentTime, setCurrentTime] = useState(Math.floor(Date.now() / 1000));
-  const [reordering, setReordering] = useState(false);
+  const [currentTime, setCurrentTime] = useState(nowSeconds());
   const [startError, setStartError] = useState<string | null>(null);
 
   const routeParams = useParams<{ id: string }>();
   const routeId = routeParams?.id;
 
+  // The match clock counts down against start_time, which is the server's
+  // time. A device whose clock is off would show the wrong time left, so the
+  // difference is measured on every read and the clock is shown in server time.
+  const clockOffsetRef = useRef(0);
+
+  // Only the most recent read may land. A poll that set off before a score was
+  // recorded, and came back after, would otherwise put the old score back on
+  // screen until the next poll.
+  const fetchGenerationRef = useRef(0);
+
   const fetchTournamentData = useCallback(async () => {
     if (typeof window === "undefined") return;
+    const generation = ++fetchGenerationRef.current;
     try {
       // Read the id from the route rather than by slicing the pathname: the
       // page used to live at /tournaments/view, where that slice produced
@@ -84,12 +66,18 @@ export default function TournamentDetailPage() {
         readBackendJson<any>("/user/profile"),
         readBackendJson<TournamentState>(`/engine/tournaments/${id}/state`),
       ]);
-      
+      if (generation !== fetchGenerationRef.current) return;
+
       setData({ responses, id });
       // A failure here used to leave engineState null and say nothing, so the
       // arena simply never appeared and there was no way to tell why.
       if (responses[4].status === "fulfilled") {
-        setEngineState(responses[4].value.payload);
+        const state = responses[4].value.payload;
+        if (typeof state?.serverTime === "number") {
+          clockOffsetRef.current = state.serverTime - nowSeconds();
+          setCurrentTime(nowSeconds() + clockOffsetRef.current);
+        }
+        setEngineState(state);
         setEngineError(null);
       } else {
         const reason = responses[4].reason;
@@ -105,15 +93,23 @@ export default function TournamentDetailPage() {
   useEffect(() => {
     fetchTournamentData();
     const interval = setInterval(fetchTournamentData, 3000);
-    const timeInterval = setInterval(() => setCurrentTime(Math.floor(Date.now() / 1000)), 1000);
+    const timeInterval = setInterval(() => setCurrentTime(nowSeconds() + clockOffsetRef.current), 1000);
     return () => {
       clearInterval(interval);
       clearInterval(timeInterval);
     };
   }, [fetchTournamentData]);
 
-  if (loading && !data) return <div className="page"><div className="shell">Loading...</div></div>;
+  /** Show a match the server just returned without waiting for the next poll. */
+  const mergeMatch = useCallback((match: ArenaMatch) => {
+    setEngineState((prev) =>
+      prev ? { ...prev, matches: prev.matches.map((m) => (m.id === match.id ? { ...m, ...match } : m)) } : prev
+    );
+  }, []);
+
   if (error) return <div className="page"><div className="shell">Error loading tournament</div></div>;
+  // A first read that was overtaken by a newer one leaves nothing to show yet.
+  if (loading || !data) return <div className="page"><div className="shell">Loading...</div></div>;
   
   const { responses, id } = data;
   const tournamentRes = responses[0];
@@ -148,29 +144,19 @@ export default function TournamentDetailPage() {
       group_knockout: "Group + Knockout",
     } as Record<string, string>)[tournament.bracketType] || tournament.bracketType;
 
+  // The same rules Quick Tournament plays, which the engine now enforces.
   const rules = isFootball
     ? [
         "Every goal counts one. The higher score when the clock stops wins.",
         "The host records goals live as they happen.",
-        "A drawn match is decided by the host under the event rules.",
+        "A level group match is a draw. A level knockout match goes to a golden goal.",
       ]
     : [
-        "A potted ball scores 10. The black scores 30.",
-        "A foul by your opponent awards you 10.",
-        "First to 100 wins the match outright.",
-        "If the clock runs out first, the higher score wins.",
+        "A potted ball scores 10. The black, after all seven of your balls, scores 30 and wins the match.",
+        "Potting the black before your seven balls loses the match.",
+        "A foul costs the player who commits it 5 points.",
+        "If the clock runs out, the higher score wins. A level group match is a draw worth +50 to each side; a level knockout match goes to sudden death.",
       ];
-
-  // Engine Actions
-  const updateScore = async (matchId: string, teamId: string, type: ArenaScoreEvent) => {
-    await backendFetch(`/engine/matches/${matchId}/score`, { method: "POST", body: JSON.stringify({ teamId, type }) });
-    fetchTournamentData();
-  };
-
-  const highlightTeam = async (matchId: string, teamId: string) => {
-    await backendFetch(`/engine/matches/${matchId}/highlight`, { method: "POST", body: JSON.stringify({ teamId }) });
-    fetchTournamentData();
-  };
 
   const startTournament = async () => {
     const res = await backendFetch(`/engine/tournaments/${id}/start`, { method: "POST" });
@@ -187,43 +173,6 @@ export default function TournamentDetailPage() {
     }
     setStartError(null);
     fetchTournamentData();
-  };
-
-  const startMatch = async (matchId: string) => {
-    await backendFetch(`/engine/matches/${matchId}/start`, { method: "POST" });
-    fetchTournamentData();
-  };
-
-  const addExtraTime = async (matchId: string) => {
-    await backendFetch(`/engine/matches/${matchId}/extra-time`, { method: "POST" });
-    fetchTournamentData();
-  };
-
-  const generateMatches = async () => {
-    await backendFetch(`/engine/tournaments/${id}/generate`, { method: "POST" });
-    fetchTournamentData();
-  };
-
-  const reorderMatch = async (matchId: string, direction: 'up' | 'down') => {
-    if (!engineState || reordering) return;
-
-    const created = engineState.matches
-      .filter(m => m.status === 'CREATED')
-      .sort((a, b) => a.match_order - b.match_order);
-    const idx = created.findIndex(m => m.id === matchId);
-    const target = direction === 'up' ? idx - 1 : idx + 1;
-    if (idx === -1 || target < 0 || target >= created.length) return;
-
-    const newList = [...created];
-    [newList[idx], newList[target]] = [newList[target], newList[idx]];
-
-    setReordering(true);
-    try {
-      await backendFetch(`/engine/tournaments/${id}/reorder`, { method: "POST", body: JSON.stringify({ matchIds: newList.map(m => m.id) }) });
-      await fetchTournamentData();
-    } finally {
-      setReordering(false);
-    }
   };
 
   return (
@@ -344,18 +293,19 @@ export default function TournamentDetailPage() {
 
         {hasStarted && engineState && (
           <HostedArena
+            tournamentId={id}
             tournamentName={tournament.name}
             isHost={!!isHost}
             isFootball={isFootball}
+            phase={engineState.phase}
             teams={engineState.teams}
             matches={engineState.matches}
+            matchesPerTeam={engineState.matchesPerTeam ?? 2}
+            arenaId={engineState.arenaId ?? ""}
+            published={!!engineState.published}
             currentTime={currentTime}
-            onScore={updateScore}
-            onHighlight={highlightTeam}
-            onStartMatch={startMatch}
-            onExtraTime={addExtraTime}
-            onGenerate={generateMatches}
-            onReorder={reorderMatch}
+            onMatchUpdate={mergeMatch}
+            onRefresh={fetchTournamentData}
           />
         )}
 

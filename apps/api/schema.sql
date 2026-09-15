@@ -224,6 +224,9 @@ CREATE TABLE IF NOT EXISTS engine_matches (
   black_potted_b INTEGER DEFAULT 0,
   fouls_a INTEGER DEFAULT 0,
   fouls_b INTEGER DEFAULT 0,
+  -- Which set each side is on in 8-ball: 'SOLID' or 'STRIPES'.
+  team_a_house TEXT DEFAULT 'SOLID',
+  team_b_house TEXT DEFAULT 'STRIPES',
   start_time INTEGER,
   duration INTEGER DEFAULT 600,
   score_team_a INTEGER DEFAULT 0,

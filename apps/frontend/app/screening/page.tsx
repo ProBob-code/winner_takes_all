@@ -102,6 +102,11 @@ export default function ScreeningPage() {
     const start = m.start_time || 0;
     if (!start) return false;
 
+    // A hosted knockout match that ends level on the clock goes to sudden
+    // death: still being played, with its clock at zero until someone scores.
+    // Only the frozen-clock backstop below applies to it.
+    if (m.sudden_death) return now > start + m.duration + LIVE_OVERRUN_GRACE;
+
     const fd = m.footballData;
     if (fd) {
       // Football runs its own clock and pauses at half-time, so trust that first.

@@ -21,6 +21,7 @@ on:
         required: true
         type: choice
         options:
+          - 0009_engine_houses.sql
           - 0006_engine_tables.sql
           - 0007_series.sql
           - 0005_tournament_sport.sql

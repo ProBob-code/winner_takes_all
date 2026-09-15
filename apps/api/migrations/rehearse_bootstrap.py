@@ -100,6 +100,8 @@ for t in ("engine_teams", "engine_matches", "engine_matchups", "series", "series
 
 cols = lambda t: [r[1] for r in db.execute(f"PRAGMA table_info({t})")]
 check("engine_matches has fouls_a", "fouls_a" in cols("engine_matches"))
+check("engine_matches has team_a_house", "team_a_house" in cols("engine_matches"))
+check("engine_matches has team_b_house", "team_b_house" in cols("engine_matches"))
 check("engine_teams has user_id", "user_id" in cols("engine_teams"))
 check("tournaments has series_id", "series_id" in cols("tournaments"))
 check("tournaments has series_week", "series_week" in cols("tournaments"))
@@ -140,6 +142,20 @@ old.executescript("""
       matches_played INTEGER, group_points INTEGER, total_score INTEGER,
       bye_assigned INTEGER, created_at TEXT
     );
+    -- engine_matches as it stood before the houses were added:
+    CREATE TABLE engine_matches (
+      id TEXT PRIMARY KEY, tournament_id TEXT NOT NULL, phase TEXT NOT NULL DEFAULT 'GROUP',
+      team_a_id TEXT, team_b_id TEXT, status TEXT NOT NULL DEFAULT 'CREATED',
+      sudden_death INTEGER DEFAULT 0, active_team_id TEXT,
+      balls_potted_a INTEGER DEFAULT 0, balls_potted_b INTEGER DEFAULT 0,
+      black_potted_a INTEGER DEFAULT 0, black_potted_b INTEGER DEFAULT 0,
+      fouls_a INTEGER DEFAULT 0, fouls_b INTEGER DEFAULT 0,
+      start_time INTEGER, duration INTEGER DEFAULT 600,
+      score_team_a INTEGER DEFAULT 0, score_team_b INTEGER DEFAULT 0,
+      winner_id TEXT, ended_by TEXT, explanation TEXT, match_order INTEGER DEFAULT 0,
+      created_at TEXT
+    );
+    INSERT INTO engine_matches (id, tournament_id, status) VALUES ('old1', 't0', 'LIVE');
 """)
 try:
     ensure(old, creates, alters, after)
@@ -147,6 +163,11 @@ try:
 except sqlite3.Error as e:
     check(f"bootstrap adapts to a partial database (got: {e})", False)
 check("user_id added to the existing engine_teams", "user_id" in [r[1] for r in old.execute("PRAGMA table_info(engine_teams)")])
+check("houses added to the existing engine_matches", "team_a_house" in [r[1] for r in old.execute("PRAGMA table_info(engine_matches)")])
+check(
+    "an existing match reads its default houses",
+    old.execute("SELECT team_a_house, team_b_house FROM engine_matches WHERE id = 'old1'").fetchone() == ("SOLID", "STRIPES"),
+)
 
 print()
 if failures:

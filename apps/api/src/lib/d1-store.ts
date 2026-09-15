@@ -66,8 +66,9 @@ export function isMissingTableError(err: unknown): boolean {
 }
 
 /**
- * SQLite has no booleans, and a database that predates the foul counters has
- * no value at all for them, so both are normalised on the way out.
+ * SQLite has no booleans, and a database that predates the foul counters or
+ * the houses has no value at all for them, so all are normalised on the way
+ * out.
  */
 function normalizeEngineMatch(r: any): EngineMatch {
   return {
@@ -77,7 +78,23 @@ function normalizeEngineMatch(r: any): EngineMatch {
     black_potted_b: !!r.black_potted_b,
     fouls_a: r.fouls_a ?? 0,
     fouls_b: r.fouls_b ?? 0,
+    team_a_house: r.team_a_house === "STRIPES" ? "STRIPES" : "SOLID",
+    team_b_house: r.team_b_house === "SOLID" ? "SOLID" : "STRIPES",
   };
+}
+
+const ENGINE_MATCH_BOOLEANS = new Set(["sudden_death", "black_potted_a", "black_potted_b"]);
+
+/** SET clause and values for an engine match update. */
+function engineMatchSets(updates: Partial<EngineMatch>): { sets: string[]; vals: any[] } {
+  const sets: string[] = [];
+  const vals: any[] = [];
+  for (const [k, v] of Object.entries(updates)) {
+    if (k === "id" || k === "tournament_id") continue;
+    sets.push(`${k} = ?`);
+    vals.push(ENGINE_MATCH_BOOLEANS.has(k) ? (v ? 1 : 0) : v);
+  }
+  return { sets, vals };
 }
 
 export interface SeriesRecord {
@@ -755,20 +772,45 @@ export class D1Store {
   }
 
   async updateEngineMatch(matchId: string, updates: Partial<EngineMatch>): Promise<void> {
-    const sets: string[] = [];
-    const vals: any[] = [];
-    for (const [k, v] of Object.entries(updates)) {
-      if (k === 'id' || k === 'tournament_id') continue;
-      sets.push(`${k} = ?`);
-      if (['sudden_death', 'black_potted_a', 'black_potted_b'].includes(k)) {
-        vals.push(v ? 1 : 0);
-      } else {
-        vals.push(v);
-      }
-    }
+    const { sets, vals } = engineMatchSets(updates);
     if (sets.length === 0) return;
     vals.push(matchId);
     await this.db.prepare(`UPDATE engine_matches SET ${sets.join(", ")} WHERE id = ?`).bind(...vals).run();
+  }
+
+  /**
+   * Write a match's new state only while it is still live, and say whether it
+   * applied.
+   *
+   * A match can be finished from two places at once — a score tap and the
+   * clock running out on someone's poll — and each finish adds the result to
+   * both teams. Guarding the write on the status means exactly one of them
+   * wins, and only that one goes on to record the result.
+   */
+  async saveLiveEngineMatch(matchId: string, updates: Partial<EngineMatch>): Promise<boolean> {
+    const { sets, vals } = engineMatchSets(updates);
+    if (sets.length === 0) return false;
+    vals.push(matchId);
+    const res = await this.db
+      .prepare(`UPDATE engine_matches SET ${sets.join(", ")} WHERE id = ? AND status = 'LIVE'`)
+      .bind(...vals)
+      .run();
+    return (res.meta?.changes ?? 0) > 0;
+  }
+
+  /** Add a finished match to a team's running totals, relative to what is stored. */
+  async addEngineTeamResult(
+    teamId: string,
+    delta: { played: number; wins: number; score: number }
+  ): Promise<void> {
+    await this.db
+      .prepare(
+        `UPDATE engine_teams
+         SET matches_played = matches_played + ?, group_points = group_points + ?, total_score = total_score + ?
+         WHERE id = ?`
+      )
+      .bind(delta.played, delta.wins, delta.score, teamId)
+      .run();
   }
 
   async createEngineMatchup(tournamentId: string, team1Id: string, team2Id: string, matchId: string): Promise<void> {

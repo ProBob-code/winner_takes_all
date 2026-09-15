@@ -23,11 +23,27 @@ export function PoolMatchEngine({
 }: PoolMatchEngineProps) {
   const getTeamName = (tid: string) => teams.find(t => t.id === tid)?.name || "Unknown Team";
 
+  // A locked pod is read-only. The pods draw a control for every handler they
+  // are given, so a locked one is given none: otherwise a spectator is shown
+  // score buttons that do nothing, and a locked host could still score.
+  const controls = (teamId: string, side: 'A' | 'B') =>
+    isLocked
+      ? {}
+      : {
+          onFoulClick: () => onUpdateScore(match.id, teamId, 'FOUL'),
+          onFoulRemove: () => onUpdateScore(match.id, teamId, 'REMOVE_FOUL'),
+          onBallClick: () => onUpdateScore(match.id, teamId, 'BALL'),
+          onBallRemove: () => onUpdateScore(match.id, teamId, 'REMOVE_BALL'),
+          onBlackClick: () => onUpdateScore(match.id, teamId, 'BLACK'),
+          onHouseToggle: (h: 'SOLID' | 'STRIPES') => onUpdateHouse(match.id, side, h),
+          onClick: () => onSetActiveTeam(match.id, teamId),
+        };
+
   return (
     <div className="pool-match-panel" style={{ width: '100%' }}>
       <div className="battle-view" style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: '24px', alignItems: 'center' }}>
         <div className="pod-wrapper red">
-          <TeamPod 
+          <TeamPod
             teamName={getTeamName(match.team_a_id)}
             score={match.score_team_a}
             color="red"
@@ -36,21 +52,15 @@ export function PoolMatchEngine({
             house={match.team_a_house}
             ballsPotted={match.balls_potted_a}
             blackPotted={match.black_potted_a}
-            onFoulClick={() => onUpdateScore(match.id, match.team_a_id, 'FOUL')}
-            onFoulRemove={() => onUpdateScore(match.id, match.team_a_id, 'REMOVE_FOUL')}
-            onBallClick={() => onUpdateScore(match.id, match.team_a_id, 'BALL')}
-            onBallRemove={() => onUpdateScore(match.id, match.team_a_id, 'REMOVE_BALL')}
-            onBlackClick={() => onUpdateScore(match.id, match.team_a_id, 'BLACK')}
-            onHouseToggle={(h) => onUpdateHouse(match.id, 'A', h)}
             isLocked={isLocked}
-            onClick={() => onSetActiveTeam(match.id, match.team_a_id)}
+            {...controls(match.team_a_id, 'A')}
           />
         </div>
 
         <VSCore />
 
         <div className="pod-wrapper blue">
-          <TeamPod 
+          <TeamPod
             teamName={getTeamName(match.team_b_id)}
             score={match.score_team_b}
             color="blue"
@@ -59,14 +69,8 @@ export function PoolMatchEngine({
             house={match.team_b_house}
             ballsPotted={match.balls_potted_b}
             blackPotted={match.black_potted_b}
-            onFoulClick={() => onUpdateScore(match.id, match.team_b_id, 'FOUL')}
-            onFoulRemove={() => onUpdateScore(match.id, match.team_b_id, 'REMOVE_FOUL')}
-            onBallClick={() => onUpdateScore(match.id, match.team_b_id, 'BALL')}
-            onBallRemove={() => onUpdateScore(match.id, match.team_b_id, 'REMOVE_BALL')}
-            onBlackClick={() => onUpdateScore(match.id, match.team_b_id, 'BLACK')}
-            onHouseToggle={(h) => onUpdateHouse(match.id, 'B', h)}
             isLocked={isLocked}
-            onClick={() => onSetActiveTeam(match.id, match.team_b_id)}
+            {...controls(match.team_b_id, 'B')}
           />
         </div>
       </div>

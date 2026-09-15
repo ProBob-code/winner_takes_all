@@ -119,18 +119,32 @@ export const addTeamSchema = z.object({
 
 export const engineScoreSchema = z.object({
   teamId: z.string().min(1).max(64),
-  // GOAL is football's only scoring event; the rest are 8-ball. FOUL is
-  // recorded against the team that committed it, and the REMOVE_* pair undoes
-  // a miscount. MISTAKE is the older spelling of a foul, credited the other
-  // way round, and is kept so existing clients keep working.
+  // GOAL is football's scoring event; the rest are 8-ball. FOUL is recorded
+  // against, and costs, the team that committed it, and the REMOVE_* events
+  // undo a miscount. MISTAKE is an older event that credits the team named,
+  // and is kept so existing clients keep working.
   type: z.enum([
     "BALL", "BLACK", "MISTAKE", "GOAL",
-    "FOUL", "REMOVE_BALL", "REMOVE_FOUL",
+    "FOUL", "REMOVE_BALL", "REMOVE_FOUL", "REMOVE_GOAL",
   ]),
 });
 
 export const highlightSchema = z.object({
   teamId: z.string().min(1).max(64).nullable(),
+});
+
+/** Add or take away time; defaults to the +1 MIN button. */
+export const extraTimeSchema = z.object({
+  seconds: z.number().int().min(-600).max(600).refine((s) => s !== 0).optional(),
+});
+
+export const houseSchema = z.object({
+  team: z.enum(["A", "B"]),
+  house: z.enum(["SOLID", "STRIPES"]),
+});
+
+export const publishArenaSchema = z.object({
+  live: z.boolean(),
 });
 
 export const reorderSchema = z.object({
