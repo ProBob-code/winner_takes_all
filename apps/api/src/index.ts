@@ -2,7 +2,8 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import type { Context } from "hono";
 import type { AppContext, Env } from "./types";
-import { D1Store, InsufficientFundsError, isMissingColumnError, type TournamentRecord } from "./lib/d1-store";
+import { D1Store, InsufficientFundsError, isMissingColumnError, isMissingTableError, type SeriesRecord, type TournamentRecord } from "./lib/d1-store";
+import { computeSeasonStandings } from "./lib/season";
 import {
   createSessionTokens,
   getRefreshSession,
@@ -46,6 +47,7 @@ import {
   verifyPaymentSchema,
   transferSchema,
   createTournamentSchema,
+  createSeriesSchema,
   joinTournamentSchema,
   submitScoreSchema,
   addTeamSchema,
@@ -172,6 +174,9 @@ function serializeTournament(t: TournamentRecord) {
     // not "does it have a password", and the listing already expected this.
     isPrivate: !!t.password,
     platformFeePercent: t.platform_fee_percent,
+    // Null unless this tournament is one week of a series.
+    seriesId: t.series_id,
+    seriesWeek: t.series_week,
   };
 }
 
@@ -493,6 +498,21 @@ app.post("/api/tournaments/:id/join", async (c) => {
     return c.json({ ok: false, message: "Incorrect tournament password" }, 403);
   }
 
+  // A week of a locked series is closed to everyone but the roster. An open
+  // series is exactly as open as any other tournament, and entering one of its
+  // weeks quietly puts the player on the roster so the season table counts
+  // them from that week on.
+  if (tournament.series_id) {
+    const series = await store.getSeries(tournament.series_id);
+    if (series && series.roster_mode === "locked" && !(await store.isSeriesMember(series.id, user.id))) {
+      return c.json(
+        { ok: false, message: "This week is part of a locked series. Join the series first." },
+        403
+      );
+    }
+    if (series) await store.addSeriesMember(series.id, user.id);
+  }
+
   try {
     const result = await store.joinTournament(user.id, tournamentId);
     return c.json({
@@ -750,7 +770,231 @@ app.get("/api/admin/overview", async (c) => {
   });
 });
 
+// --- Weekly series ---
+
+const DAY_MS = 86_400_000;
+
+function serializeSeries(s: SeriesRecord) {
+  return {
+    id: s.id,
+    name: s.name,
+    hostId: s.host_id,
+    sport: s.sport,
+    bracketType: s.bracket_type,
+    tournamentType: s.tournament_type,
+    entryFee: centsToMoney(s.entry_fee_cents),
+    maxPlayers: s.max_players,
+    teamSize: s.team_size,
+    rosterMode: s.roster_mode,
+    cadenceDays: s.cadence_days,
+    nextEventAt: s.next_event_at,
+    weeksCreated: s.weeks_created,
+    status: s.status,
+    isPrivate: !!s.password,
+  };
+}
+
+/**
+ * Cut the next week from the series settings.
+ *
+ * The next date is stepped forward from the date that was due rather than from
+ * now, so a season keeps its day of the week. If a season was left alone for a
+ * month, stepping repeats until the date is in the future — one late run opens
+ * one week, never four at once.
+ */
+async function openSeriesWeek(store: D1Store, series: SeriesRecord) {
+  const week = series.weeks_created + 1;
+
+  const tournament = await store.createTournament({
+    name: series.name + " — Week " + week,
+    entryFeeCents: series.entry_fee_cents,
+    maxPlayers: series.max_players,
+    hostId: series.host_id,
+    teamSize: series.team_size,
+    tournamentType: series.tournament_type,
+    bracketType: series.bracket_type,
+    sport: series.sport,
+    password: series.password,
+    seriesId: series.id,
+    seriesWeek: week,
+  });
+
+  const cadence = Math.max(1, series.cadence_days) * DAY_MS;
+  const due = series.next_event_at ? Date.parse(series.next_event_at) : Date.now();
+  let next = (Number.isNaN(due) ? Date.now() : due) + cadence;
+  while (next <= Date.now()) next += cadence;
+
+  await store.updateSeries(series.id, {
+    weeks_created: week,
+    next_event_at: new Date(next).toISOString(),
+  });
+
+  return tournament;
+}
+
+app.get("/api/series", async (c) => {
+  const store = c.get("store");
+  try {
+    const all = await store.listSeries();
+    return c.json({ ok: true, series: all.map(serializeSeries) });
+  } catch (err) {
+    const storageError = engineStorageError(c, err);
+    if (storageError) return storageError;
+    throw err;
+  }
+});
+
+app.post("/api/series/create", async (c) => {
+  const user = requireUser(c);
+  if (!user) return c.json({ ok: false, message: "Authentication required" }, 401);
+
+  const store = c.get("store");
+  const body = parseBody(createSeriesSchema, await readJson(c));
+
+  try {
+    const series = await store.createSeries({
+      name: body.name,
+      hostId: user.id,
+      sport: body.sport,
+      bracketType: body.bracketType,
+      tournamentType: body.tournamentType,
+      entryFeeCents: Math.round(body.entryFee * 100),
+      maxPlayers: body.maxPlayers,
+      teamSize: body.teamSize,
+      rosterMode: body.rosterMode,
+      cadenceDays: body.cadenceDays,
+      firstEventAt: body.firstEventAt ?? new Date().toISOString(),
+      password: body.password ?? null,
+    });
+
+    // The host runs the season, so they are on its roster from the start.
+    await store.addSeriesMember(series.id, user.id);
+
+    return c.json({ ok: true, series: serializeSeries(series) });
+  } catch (err) {
+    const storageError = engineStorageError(c, err);
+    if (storageError) return storageError;
+    throw err;
+  }
+});
+
+app.get("/api/series/:id", async (c) => {
+  const store = c.get("store");
+  const seriesId = c.req.param("id");
+
+  try {
+    const series = await store.getSeries(seriesId);
+    if (!series) return c.json({ ok: false, message: "Series not found" }, 404);
+
+    const [weeks, members, teams, progress] = await Promise.all([
+      store.getSeriesTournaments(seriesId),
+      store.getSeriesMembers(seriesId),
+      store.getSeriesEngineTeams(seriesId),
+      store.getSeriesMatchProgress(seriesId),
+    ]);
+
+    return c.json({
+      ok: true,
+      series: serializeSeries(series),
+      weeks: weeks.map((w) => ({ ...serializeTournament(w), seriesWeek: w.series_week })),
+      members,
+      standings: computeSeasonStandings(teams, progress),
+    });
+  } catch (err) {
+    const storageError = engineStorageError(c, err);
+    if (storageError) return storageError;
+    throw err;
+  }
+});
+
+/**
+ * Join the roster. Free, and separate from entering a week: a week still
+ * charges its own entry fee when the player enters it, so nobody is ever
+ * debited by a season running in the background.
+ */
+app.post("/api/series/:id/join", async (c) => {
+  const user = requireUser(c);
+  if (!user) return c.json({ ok: false, message: "Authentication required" }, 401);
+
+  const store = c.get("store");
+  const series = await store.getSeries(c.req.param("id"));
+  if (!series) return c.json({ ok: false, message: "Series not found" }, 404);
+  if (series.status !== "active") {
+    return c.json({ ok: false, message: "This season has ended." }, 409);
+  }
+
+  if (series.password) {
+    const body = parseBody(joinTournamentSchema, await readJson(c).catch(() => ({})));
+    if (!timingSafeEqual(series.password, body.password ?? "")) {
+      return c.json({ ok: false, message: "Incorrect series password" }, 403);
+    }
+  }
+
+  await store.addSeriesMember(series.id, user.id);
+  return c.json({ ok: true });
+});
+
+/** Open the next week now, rather than waiting for its date. */
+app.post("/api/series/:id/weeks", async (c) => {
+  const user = requireUser(c);
+  if (!user) return c.json({ ok: false, message: "Authentication required" }, 401);
+
+  const store = c.get("store");
+  const series = await store.getSeries(c.req.param("id"));
+  if (!series) return c.json({ ok: false, message: "Series not found" }, 404);
+  if (series.host_id !== user.id && user.role !== "admin") {
+    return c.json({ ok: false, message: "Only the series host can open a week" }, 403);
+  }
+  if (series.status !== "active") {
+    return c.json({ ok: false, message: "This season has ended." }, 409);
+  }
+
+  try {
+    const tournament = await openSeriesWeek(store, series);
+    return c.json({ ok: true, tournament: serializeTournament(tournament) });
+  } catch (err) {
+    const storageError = engineStorageError(c, err);
+    if (storageError) return storageError;
+    throw err;
+  }
+});
+
+/** End the season. Weeks already open are left alone to finish. */
+app.post("/api/series/:id/end", async (c) => {
+  const user = requireUser(c);
+  if (!user) return c.json({ ok: false, message: "Authentication required" }, 401);
+
+  const store = c.get("store");
+  const series = await store.getSeries(c.req.param("id"));
+  if (!series) return c.json({ ok: false, message: "Series not found" }, 404);
+  if (series.host_id !== user.id && user.role !== "admin") {
+    return c.json({ ok: false, message: "Only the series host can end the season" }, 403);
+  }
+
+  await store.updateSeries(series.id, { status: "ended", next_event_at: null });
+  return c.json({ ok: true });
+});
+
 // --- Tournament Engine ---
+
+/**
+ * The engine tables can be absent entirely on a database provisioned before
+ * they were added to schema.sql. Answering "Internal server error" there sends
+ * an operator hunting through logs for a problem whose fix is one migration,
+ * so name it instead.
+ */
+function engineStorageError(c: Context<AppContext>, err: unknown): Response | null {
+  if (!isMissingTableError(err) && !isMissingColumnError(err)) return null;
+  return c.json(
+    {
+      ok: false,
+      message:
+        "Tournament engine storage is missing. Run migrations/0006_engine_tables.sql against the D1 database.",
+      detail: err instanceof Error ? err.message : String(err),
+    },
+    503
+  );
+}
 
 /** Load a tournament and confirm the caller may manage it (host or admin). */
 async function requireTournamentManager(
@@ -773,11 +1017,20 @@ app.get("/api/engine/tournaments/:id/state", async (c) => {
   const store = c.get("store");
   const tournamentId = c.req.param("id");
 
-  const [teams, matches, tournament] = await Promise.all([
-    store.getEngineTeams(tournamentId),
-    store.getEngineMatches(tournamentId),
-    store.getTournament(tournamentId),
-  ]);
+  let teams: Awaited<ReturnType<typeof store.getEngineTeams>>;
+  let matches: Awaited<ReturnType<typeof store.getEngineMatches>>;
+  let tournament: TournamentRecord | null;
+  try {
+    [teams, matches, tournament] = await Promise.all([
+      store.getEngineTeams(tournamentId),
+      store.getEngineMatches(tournamentId),
+      store.getTournament(tournamentId),
+    ]);
+  } catch (err) {
+    const storageError = engineStorageError(c, err);
+    if (storageError) return storageError;
+    throw err;
+  }
 
   if (!tournament) return c.json({ ok: false, message: "Tournament not found" }, 404);
 
@@ -846,22 +1099,37 @@ app.post("/api/engine/tournaments/:id/start", async (c) => {
   const { tournament } = access;
 
   const store = c.get("store");
-  const [participants, existingTeams] = await Promise.all([
-    store.getParticipants(tournamentId),
-    store.getEngineTeams(tournamentId),
-  ]);
+  let participants: Awaited<ReturnType<typeof store.getParticipants>>;
+  let existingTeams: Awaited<ReturnType<typeof store.getEngineTeams>>;
+  try {
+    [participants, existingTeams] = await Promise.all([
+      store.getParticipants(tournamentId),
+      store.getEngineTeams(tournamentId),
+    ]);
+  } catch (err) {
+    const storageError = engineStorageError(c, err);
+    if (storageError) return storageError;
+    throw err;
+  }
 
   // Teams the host entered by hand keep their place; a participant is only
   // added if nothing already stands for them.
   const taken = new Set(existingTeams.map((t) => t.name.trim().toLowerCase()));
-  for (const p of participants) {
-    const label = (p.team_name || p.user_name || p.user_id).trim();
-    if (!label || taken.has(label.toLowerCase())) continue;
-    await store.createEngineTeam(tournamentId, label);
-    taken.add(label.toLowerCase());
+  let teams: Awaited<ReturnType<typeof store.getEngineTeams>>;
+  try {
+    for (const p of participants) {
+      const label = (p.team_name || p.user_name || p.user_id).trim();
+      if (!label || taken.has(label.toLowerCase())) continue;
+      await store.createEngineTeam(tournamentId, label, p.user_id);
+      taken.add(label.toLowerCase());
+    }
+    teams = await store.getEngineTeams(tournamentId);
+  } catch (err) {
+    const storageError = engineStorageError(c, err);
+    if (storageError) return storageError;
+    throw err;
   }
 
-  const teams = await store.getEngineTeams(tournamentId);
   if (teams.length < 2) {
     return c.json(
       { ok: false, message: "At least two players must join before the tournament can start." },
@@ -1030,6 +1298,8 @@ app.post("/api/engine/matches/:id/score", async (c) => {
     balls_potted_b: finalMatch.balls_potted_b,
     black_potted_a: finalMatch.black_potted_a,
     black_potted_b: finalMatch.black_potted_b,
+    fouls_a: finalMatch.fouls_a,
+    fouls_b: finalMatch.fouls_b,
     status: finalMatch.status,
     winner_id: finalMatch.winner_id,
     sudden_death: finalMatch.sudden_death,
@@ -1560,7 +1830,47 @@ app.post("/api/stream/feeds/end", async (c) => {
 
 app.all("*", (c) => c.json({ ok: false, message: "Not Found" }, 404));
 
-export default app;
+/**
+ * Open any week that has come due.
+ *
+ * Runs from the Worker's cron trigger. It is deliberately tolerant: one series
+ * failing must not stop the rest of the seasons from opening, so each is tried
+ * on its own and a failure is logged rather than thrown.
+ */
+async function openDueSeriesWeeks(env: Env): Promise<{ opened: number; failed: number }> {
+  const store = new D1Store(env.DB);
+  let opened = 0;
+  let failed = 0;
+
+  let due: SeriesRecord[] = [];
+  try {
+    due = await store.listSeriesDue(new Date().toISOString());
+  } catch (err) {
+    // No series table yet means the migration has not been applied. There is
+    // nothing to open, and nothing worth failing the scheduled run over.
+    if (isMissingTableError(err)) return { opened: 0, failed: 0 };
+    throw err;
+  }
+
+  for (const series of due) {
+    try {
+      await openSeriesWeek(store, series);
+      opened++;
+    } catch (err) {
+      failed++;
+      console.error(`Could not open the next week of series ${series.id}:`, err);
+    }
+  }
+
+  return { opened, failed };
+}
+
+export default {
+  fetch: app.fetch,
+  async scheduled(_event: unknown, env: Env, ctx: { waitUntil(p: Promise<unknown>): void }) {
+    ctx.waitUntil(openDueSeriesWeeks(env));
+  },
+};
 
 // The Durable Object class must be exported from the Worker entry point for
 // the MATCH_FEEDS binding to resolve.

@@ -7,6 +7,17 @@ export type TournamentPhase = 'SETUP' | 'GROUP' | 'KNOCKOUT' | 'COMPLETED';
 export type MatchStatus = 'CREATED' | 'LIVE' | 'COMPLETED';
 export type MatchPhase = 'GROUP' | 'SEMI' | 'FINAL';
 
+/**
+ * Everything the arena can record. MISTAKE predates FOUL and awards the ten
+ * points to the team named, rather than to that team's opponent; it is kept so
+ * older clients keep working.
+ */
+export type ScoreEventType =
+  | 'BALL' | 'BLACK' | 'MISTAKE' | 'GOAL'
+  | 'FOUL' | 'REMOVE_BALL' | 'REMOVE_FOUL';
+
+const UNDO_EVENTS = new Set<ScoreEventType>(['REMOVE_BALL', 'REMOVE_FOUL']);
+
 export interface EngineTeam {
   id: string;
   name: string;
@@ -28,6 +39,9 @@ export interface EngineMatch {
   balls_potted_b: number;
   black_potted_a: boolean;
   black_potted_b: boolean;
+  /** Fouls committed by each side. The points go to their opponent. */
+  fouls_a: number;
+  fouls_b: number;
   start_time: number | null; // unix timestamp
   duration: number;          // seconds
   score_team_a: number;
@@ -119,7 +133,7 @@ export function generateNextMatches(
 export function processScoreUpdate<M extends EngineMatch>(
   match: M,
   scoringTeamId: string,
-  type: 'BALL' | 'BLACK' | 'MISTAKE' | 'GOAL'
+  type: ScoreEventType
 ): { updatedMatch: M, matchEnded: boolean } {
   
   const updatedMatch = { ...match };
@@ -128,14 +142,48 @@ export function processScoreUpdate<M extends EngineMatch>(
     return { updatedMatch, matchEnded: false };
   }
 
-  // Handle sudden death
-  if (updatedMatch.sudden_death) {
+  // Handle sudden death. An undo is a correction, not a golden point, so it
+  // must not hand the match to whoever was being corrected.
+  if (updatedMatch.sudden_death && !UNDO_EVENTS.has(type)) {
     updatedMatch.winner_id = scoringTeamId;
     updatedMatch.status = 'COMPLETED';
     return { updatedMatch, matchEnded: true };
   }
 
   const isTeamA = updatedMatch.team_a_id === scoringTeamId;
+
+  // A foul is recorded against the side that committed it, while the ten
+  // points go to their opponent — "a foul by your opponent awards you 10".
+  if (type === 'FOUL' || type === 'REMOVE_FOUL') {
+    const undo = type === 'REMOVE_FOUL';
+    const fouls = isTeamA ? updatedMatch.fouls_a : updatedMatch.fouls_b;
+    if (undo && fouls <= 0) return { updatedMatch, matchEnded: false };
+
+    const step = undo ? -1 : 1;
+    if (isTeamA) {
+      updatedMatch.fouls_a += step;
+      updatedMatch.score_team_b = Math.max(0, updatedMatch.score_team_b + step * 10);
+    } else {
+      updatedMatch.fouls_b += step;
+      updatedMatch.score_team_a = Math.max(0, updatedMatch.score_team_a + step * 10);
+    }
+
+    if (undo) return { updatedMatch, matchEnded: false };
+    return checkRaceTarget(updatedMatch);
+  }
+
+  // Undo a potted ball, for a miscount. It can only take a score down, so it
+  // never ends the match.
+  if (type === 'REMOVE_BALL') {
+    if (isTeamA && updatedMatch.balls_potted_a > 0) {
+      updatedMatch.balls_potted_a--;
+      updatedMatch.score_team_a = Math.max(0, updatedMatch.score_team_a - 10);
+    } else if (!isTeamA && updatedMatch.balls_potted_b > 0) {
+      updatedMatch.balls_potted_b--;
+      updatedMatch.score_team_b = Math.max(0, updatedMatch.score_team_b - 10);
+    }
+    return { updatedMatch, matchEnded: false };
+  }
 
   // A goal is worth one, and football has no race target: the match is decided
   // by the clock, so a goal never ends it early.
@@ -163,14 +211,20 @@ export function processScoreUpdate<M extends EngineMatch>(
     updatedMatch.score_team_b += points;
   }
 
-  // Check win condition (Race to 100)
+  return checkRaceTarget(updatedMatch);
+}
+
+/** First to 100 takes the match outright. */
+function checkRaceTarget<M extends EngineMatch>(match: M): { updatedMatch: M, matchEnded: boolean } {
+  const updatedMatch = match;
+
   if (updatedMatch.score_team_a >= 100) {
     updatedMatch.score_team_a = 100;
     updatedMatch.winner_id = updatedMatch.team_a_id;
     updatedMatch.status = 'COMPLETED';
     return { updatedMatch, matchEnded: true };
   }
-  
+
   if (updatedMatch.score_team_b >= 100) {
     updatedMatch.score_team_b = 100;
     updatedMatch.winner_id = updatedMatch.team_b_id;

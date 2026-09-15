@@ -73,6 +73,27 @@ export const createTournamentSchema = z.object({
   password: z.string().max(64).nullish(),
 });
 
+// ── Weekly series ──
+
+export const createSeriesSchema = z.object({
+  name: z.string().trim().min(2).max(80).default("Weekly Series"),
+  entryFee: z.coerce.number().min(0).max(100_000).default(0),
+  maxPlayers: z.coerce.number().int().min(2).max(128).default(8),
+  teamSize: z.coerce.number().int().min(1).max(11).default(1),
+  tournamentType: z.enum(["online", "offline"]).default("online"),
+  sport: z.enum(["8BALL", "FOOTBALL"]).default("8BALL"),
+  bracketType: z
+    .enum(["single_elimination", "double_elimination", "round_robin", "group_knockout"])
+    .default("single_elimination"),
+  // 'open' lets anyone enter any week; 'locked' admits members only.
+  rosterMode: z.enum(["open", "locked"]).default("open"),
+  // Weekly by default. Kept as days so a fortnightly season is possible.
+  cadenceDays: z.coerce.number().int().min(1).max(90).default(7),
+  /** When week 1 opens, ISO 8601. Defaults to now on the server. */
+  firstEventAt: z.string().datetime().optional(),
+  password: z.string().max(64).nullish(),
+});
+
 export const joinTournamentSchema = z.object({
   password: z.string().max(64).optional(),
 });
@@ -98,8 +119,14 @@ export const addTeamSchema = z.object({
 
 export const engineScoreSchema = z.object({
   teamId: z.string().min(1).max(64),
-  // GOAL is football's only scoring event; the rest are 8-ball.
-  type: z.enum(["BALL", "BLACK", "MISTAKE", "GOAL"]),
+  // GOAL is football's only scoring event; the rest are 8-ball. FOUL is
+  // recorded against the team that committed it, and the REMOVE_* pair undoes
+  // a miscount. MISTAKE is the older spelling of a foul, credited the other
+  // way round, and is kept so existing clients keep working.
+  type: z.enum([
+    "BALL", "BLACK", "MISTAKE", "GOAL",
+    "FOUL", "REMOVE_BALL", "REMOVE_FOUL",
+  ]),
 });
 
 export const highlightSchema = z.object({
