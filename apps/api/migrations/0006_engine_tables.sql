@@ -17,15 +17,15 @@
 -- to live somewhere.
 --
 -- HOW TO USE
--- Safe to run more than once. The CREATE statements are IF NOT EXISTS, and the
--- two ALTERs fail harmlessly with "duplicate column name: fouls_a" when the
--- columns are already there — run them only if this check lists no fouls_a:
---
---   wrangler d1 execute winner-takes-all-db --remote \
---     --command "PRAGMA table_info(engine_matches);"
+-- Safe to run as many times as you like: every statement here is guarded by
+-- IF NOT EXISTS, so this file on its own can never fail on a second run.
 --
 --   wrangler d1 execute winner-takes-all-db --remote \
 --     --file=./migrations/0006_engine_tables.sql
+--
+-- A database that ALREADY had engine_matches, from before the foul counters
+-- existed, needs 0008_engine_foul_columns.sql too. A database that gets its
+-- engine_matches from this file does not: the columns are in the CREATE.
 
 CREATE TABLE IF NOT EXISTS engine_teams (
   id TEXT PRIMARY KEY,
@@ -81,7 +81,3 @@ CREATE INDEX IF NOT EXISTS idx_engine_teams_tournament ON engine_teams(tournamen
 CREATE INDEX IF NOT EXISTS idx_engine_matches_tournament ON engine_matches(tournament_id);
 CREATE INDEX IF NOT EXISTS idx_engine_matches_order ON engine_matches(tournament_id, match_order);
 CREATE INDEX IF NOT EXISTS idx_engine_matchups_tournament ON engine_matchups(tournament_id);
-
--- Only needed when engine_matches already existed without the foul counters.
-ALTER TABLE engine_matches ADD COLUMN fouls_a INTEGER DEFAULT 0;
-ALTER TABLE engine_matches ADD COLUMN fouls_b INTEGER DEFAULT 0;
