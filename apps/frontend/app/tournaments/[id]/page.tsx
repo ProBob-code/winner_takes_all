@@ -139,7 +139,9 @@ export default function TournamentDetailPage() {
     tournament.winnerTakes?.amount ?? Math.max(0, Math.round(pool * (1 - feePercent / 100)))
   );
   const result = tournament.result || null;
-  const isClosed = tournament.status === "completed";
+  // Tournaments finished before prizes were paid out carry an upper-case
+  // status, so this is matched either way.
+  const isClosed = String(tournament.status || "").toLowerCase() === "completed";
 
   const formatLabel =
     ({

@@ -277,8 +277,14 @@ export function HostedArena({
   const isClosed = upperPhase === "COMPLETED";
   const concluded = isClosed || finalMatch?.status === "COMPLETED";
   const inKnockout = upperPhase === "KNOCKOUT" || semis.length > 0 || !!finalMatch;
+  /**
+   * Whether the pot has actually been paid. A tournament that finished before
+   * prizes were paid out at all is closed but unpaid, so this is what decides
+   * whether the host is still offered the payout — not whether it is closed.
+   */
+  const isPaidOut = !!result;
   /** Everything drawn has been played, so the pot can be settled. */
-  const readyToFinish = !isClosed && !liveMatch && queue.length === 0 && played.length > 0;
+  const readyToFinish = !isPaidOut && !liveMatch && queue.length === 0 && played.length > 0;
   const quotaRemaining = teams.some((t) => t.matches_played < matchesPerTeam);
 
   const getTeamName = (teamId: string | null) =>
@@ -509,7 +515,7 @@ export function HostedArena({
             </div>
           )}
 
-          {!isClosed && isHost && (
+          {!isPaidOut && isHost && played.length > 0 && (
             <button
               className="button button-gold button-lg mt-12 w-full"
               onClick={() => setConfirmFinish(true)}
@@ -517,6 +523,11 @@ export function HostedArena({
             >
               {hasPot ? `CLOSE TOURNAMENT & PAY OUT ${money(winnerTakes)}` : "CLOSE TOURNAMENT"}
             </button>
+          )}
+          {!isPaidOut && !isHost && (
+            <p className="muted" style={{ marginTop: "1.5rem", fontSize: "0.85rem" }}>
+              The prize has not been paid out yet. The host settles it from this page.
+            </p>
           )}
 
           <button className="button button-secondary button-lg mt-4 w-full" onClick={() => setActiveSubTab("standings")}>

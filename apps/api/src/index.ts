@@ -1526,6 +1526,19 @@ app.get("/api/engine/tournaments/:id/state", async (c) => {
   const settled = await settleExpiredMatches(c, tournament, matches);
   if (settled) teams = await store.getEngineTeams(tournamentId);
 
+  // A tournament whose final was won before prizes were paid out at all — or
+  // one whose payout was interrupted — never had its pot settled. The final
+  // decided it, so there is nothing to ask anyone: close it and pay.
+  if (!(tournament.bracket_state as any)?.result) {
+    const decidedFinal = matches.find(
+      (m) => m.phase === "FINAL" && m.status === "COMPLETED" && m.winner_id
+    );
+    if (decidedFinal) {
+      const paid = await settleTournament(c, tournament);
+      if (!paid.ok) console.error("Could not settle a decided tournament:", paid.message);
+    }
+  }
+
   const arenaId = engineArenaId(tournamentId);
   const arena = await store.getArena(arenaId).catch(() => null);
   const published = !!(arena?.state as any)?.isStarted;

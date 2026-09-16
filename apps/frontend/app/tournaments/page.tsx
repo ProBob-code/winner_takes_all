@@ -63,8 +63,11 @@ export default function TournamentsPage() {
 
   // A finished tournament has had its pot paid out and takes no more entries,
   // so it moves out of the live listing and into the record below it.
-  const live = tournaments.filter((t: any) => t.status !== "completed");
-  const past = tournaments.filter((t: any) => t.status === "completed");
+  // Tournaments finished before prizes were paid out carry an upper-case
+  // status, so this is matched either way.
+  const isFinished = (t: any) => String(t.status || "").toLowerCase() === "completed";
+  const live = tournaments.filter((t: any) => !isFinished(t));
+  const past = tournaments.filter(isFinished);
 
   if (loading) {
     return (
@@ -263,7 +266,7 @@ export default function TournamentsPage() {
                                 {shared ? ` shared the pot ${t.result.splitWays} ways` : " took the pot"}
                               </>
                             ) : (
-                              <span className="muted">Finished — no prize was paid</span>
+                              <span className="muted">Finished — prize not settled yet</span>
                             )}
                           </div>
                         </div>
