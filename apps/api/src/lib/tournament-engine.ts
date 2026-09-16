@@ -429,6 +429,60 @@ export function generateKnockout(rankedTeams: EngineTeam[]): Partial<EngineMatch
 }
 
 /**
+ * Who takes the prize pot.
+ *
+ * A grand final decides it outright — it cannot be drawn, because a level one
+ * goes to sudden death. Without a final, the top of the table takes it: most
+ * wins, then highest total score. Teams still exactly level on both share it.
+ */
+export function decideWinners(
+  teams: EngineTeam[],
+  matches: EngineMatch[]
+): { winnerIds: string[]; decidedBy: 'FINAL' | 'STANDINGS' } | { error: string } {
+  const final = matches.find(
+    (m) => m.phase === 'FINAL' && m.status === 'COMPLETED' && m.winner_id
+  );
+  if (final) return { winnerIds: [final.winner_id!], decidedBy: 'FINAL' };
+
+  if (matches.some((m) => m.status !== 'COMPLETED')) {
+    return { error: 'Every match has to be played before the pot can be paid out.' };
+  }
+
+  const contenders = teams.filter((t) => t.matches_played > 0);
+  if (contenders.length === 0 || matches.length === 0) {
+    return { error: 'No matches have been played, so there is nobody to pay.' };
+  }
+
+  const ranked = rankTeams(contenders);
+  const top = ranked[0];
+  const winnerIds = ranked
+    .filter((t) => t.group_points === top.group_points && t.total_score === top.total_score)
+    .map((t) => t.id);
+
+  return { winnerIds, decidedBy: 'STANDINGS' };
+}
+
+/**
+ * Split a pot equally, in whole paise.
+ *
+ * A pot that does not divide evenly would either lose money to rounding or
+ * invent it. The odd paise go one each to the first shares instead, so the
+ * shares always add back up to exactly the pot.
+ */
+export function splitPot(totalCents: number, ways: number): number[] {
+  if (ways <= 0 || totalCents < 0) return [];
+  const base = Math.floor(totalCents / ways);
+  const remainder = totalCents - base * ways;
+  return Array.from({ length: ways }, (_, i) => base + (i < remainder ? 1 : 0));
+}
+
+/** What the winners share once the platform has taken its cut. */
+export function prizeAfterFee(poolCents: number, feePercent: number): number {
+  const fee = Number.isFinite(feePercent) ? Math.min(100, Math.max(0, feePercent)) : 0;
+  return Math.max(0, Math.round(poolCents * (1 - fee / 100)));
+}
+
+/**
  * The next step of the knockout, as Quick Tournament takes it: the group
  * stage's top four into semi-finals (or its top two straight into a final),
  * then the two semi-final winners into the final.

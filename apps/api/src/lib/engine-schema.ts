@@ -20,8 +20,8 @@
  * data.
  *
  * Kept deliberately in step with apps/api/migrations/0006_engine_tables.sql,
- * 0007_series.sql and 0009_engine_houses.sql; apps/api/migrations/rehearse.py
- * and rehearse_bootstrap.py check the SQL runs.
+ * 0007_series.sql, 0009_engine_houses.sql and 0010_wallet_description.sql;
+ * apps/api/migrations/rehearse.py and rehearse_bootstrap.py check the SQL runs.
  */
 
 /** Tables and indexes. Safe to run any number of times. */
@@ -125,16 +125,23 @@ const ADD_COLUMN_STATEMENTS = [
   `ALTER TABLE engine_matches ADD COLUMN fouls_b INTEGER DEFAULT 0`,
   `ALTER TABLE engine_matches ADD COLUMN team_a_house TEXT DEFAULT 'SOLID'`,
   `ALTER TABLE engine_matches ADD COLUMN team_b_house TEXT DEFAULT 'STRIPES'`,
+  // Prize payouts are written from the engine routes, and say in the ledger
+  // which tournament the money came from and how it was shared.
+  `ALTER TABLE wallet_transactions ADD COLUMN description TEXT`,
 ];
 
 const INDEX_AFTER_COLUMNS = [
   `CREATE INDEX IF NOT EXISTS idx_tournaments_series ON tournaments(series_id, series_week)`,
 ];
 
-/** An ALTER that has already been applied, which is not a problem. */
+/**
+ * An ALTER there is nothing to do about, which is not a problem: the column is
+ * already there, or the table it belongs to is not part of this database at
+ * all. The CREATEs above run first and still throw if they fail.
+ */
 function isAlreadyApplied(err: unknown): boolean {
   const detail = err instanceof Error ? err.message : String(err);
-  return /duplicate column name|already exists/i.test(detail);
+  return /duplicate column name|already exists|no such table/i.test(detail);
 }
 
 /**

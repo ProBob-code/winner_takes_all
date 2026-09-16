@@ -5,22 +5,21 @@ export const dynamic = "force-dynamic";
 import { useEffect, useState } from "react";
 import { getApiUrl } from "@/lib/api-config";
 
-type LeaderboardResponse = {
-  ok: boolean;
-  entries: Array<{
-    userId: string;
-    displayName: string;
-    wins: number;
-    losses: number;
-    points: number;
-    totalScore: number;
-    earnings: { amount: string; currency: string };
-    status: string;
-  }>;
+type LeaderboardEntry = {
+  userId: string;
+  displayName: string;
+  /** Matches played, across bracket matches and hosted tournaments alike. */
+  played: number;
+  wins: number;
+  losses: number;
+  points: number;
+  totalScore: number;
+  tournamentWins: number;
+  earnings: { amount: string; currency: string };
 };
 
 export default function LeaderboardPage() {
-  const [entries, setEntries] = useState<any[]>([]);
+  const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -80,7 +79,10 @@ export default function LeaderboardPage() {
       <div className="shell" style={{ maxWidth: "900px" }}>
         <div className="panel page-card slide-in" style={{ marginBottom: "1.5rem" }}>
           <h2>🏆 Global Leaderboard</h2>
-          <p className="muted">Rankings based on tournament points (3 pts per win)</p>
+          <p className="muted">
+            Everyone who has played, from hosted tournaments and one-off matches alike.
+            Three points a win, ten for taking a tournament.
+          </p>
         </div>
 
         {/* Podium */}
@@ -114,6 +116,8 @@ export default function LeaderboardPage() {
               <tr>
                 <th>Rank</th>
                 <th>Player</th>
+                <th>Played</th>
+                <th>Titles</th>
                 <th>Points</th>
                 <th>Score</th>
                 <th>W/L</th>
@@ -123,18 +127,22 @@ export default function LeaderboardPage() {
             <tbody>
               {entries.length === 0 ? (
                 <tr>
-                  <td colSpan={6} style={{ textAlign: "center", padding: "2rem", color: "var(--text-muted)" }}>
+                  <td colSpan={8} style={{ textAlign: "center", padding: "2rem", color: "var(--text-muted)" }}>
                     No match data yet. Play some tournaments to appear on the leaderboard!
                   </td>
                 </tr>
               ) : (
-                entries.map((entry: any, i: number) => (
+                entries.map((entry, i: number) => (
                   <tr key={entry.userId}>
                     <td className="leaderboard-rank" data-label="Rank">
                       {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : <span className="rank-text">#{i + 1}</span>}
                     </td>
                     <td className="leaderboard-name" data-label="Player">
                       {entry.displayName}
+                    </td>
+                    <td data-label="Played">{entry.played ?? entry.wins + entry.losses}</td>
+                    <td data-label="Titles">
+                      {entry.tournamentWins > 0 ? `🏆 ${entry.tournamentWins}` : "—"}
                     </td>
                     <td style={{ fontWeight: 700 }} data-label="Points">{entry.points}</td>
                     <td data-label="Score">{entry.totalScore}</td>

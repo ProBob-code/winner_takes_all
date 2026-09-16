@@ -133,8 +133,13 @@ export default function TournamentDetailPage() {
   const isFootball = tournament.sport === "FOOTBALL";
   const feePercent = tournament.platformFeePercent ?? 7;
   const pool = Number(tournament.prizePool?.amount ?? 0);
-  // What the winner actually receives once the platform takes its cut.
-  const winnerTakes = Math.max(0, Math.round(pool * (1 - feePercent / 100)));
+  // What the winner actually receives once the platform takes its cut. The
+  // server works this out, so the figure shown is the figure paid.
+  const winnerTakes = Number(
+    tournament.winnerTakes?.amount ?? Math.max(0, Math.round(pool * (1 - feePercent / 100)))
+  );
+  const result = tournament.result || null;
+  const isClosed = tournament.status === "completed";
 
   const formatLabel =
     ({
@@ -234,20 +239,37 @@ export default function TournamentDetailPage() {
               </p>
             </div>
 
-            {/* What the winner receives is the headline, not the pool. */}
+            {/* What the winner receives is the headline, not the pool. Once
+                it has been paid, who received it matters more. */}
             <div
               style={{
                 textAlign: "right", padding: "1rem 1.4rem", borderRadius: "14px", minWidth: "220px",
                 background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.22)",
               }}
             >
-              <div style={{ fontSize: "0.62rem", letterSpacing: "1.5px", opacity: 0.7, fontWeight: 800 }}>WINNER TAKES</div>
-              <div style={{ fontSize: "2.2rem", fontWeight: 900, color: "var(--gold)", lineHeight: 1.1 }}>
-                ₹{winnerTakes.toLocaleString("en-IN")}
+              <div style={{ fontSize: "0.62rem", letterSpacing: "1.5px", opacity: 0.7, fontWeight: 800 }}>
+                {result ? (result.splitWays > 1 ? "POT SHARED BY" : "WON BY") : "WINNER TAKES"}
               </div>
-              <div className="muted" style={{ fontSize: "0.72rem", marginTop: "2px" }}>
-                from a ₹{pool.toLocaleString("en-IN")} pool
-              </div>
+              {result ? (
+                <>
+                  <div style={{ fontSize: "1.5rem", fontWeight: 900, color: "var(--gold)", lineHeight: 1.2 }}>
+                    {result.winners.map((w: any) => w.name).join(" & ")}
+                  </div>
+                  <div className="muted" style={{ fontSize: "0.72rem", marginTop: "4px" }}>
+                    ₹{Number(result.prize.amount).toLocaleString("en-IN")}
+                    {result.splitWays > 1 ? ` split ${result.splitWays} ways` : ""} · paid to wallet
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div style={{ fontSize: "2.2rem", fontWeight: 900, color: "var(--gold)", lineHeight: 1.1 }}>
+                    ₹{winnerTakes.toLocaleString("en-IN")}
+                  </div>
+                  <div className="muted" style={{ fontSize: "0.72rem", marginTop: "2px" }}>
+                    from a ₹{pool.toLocaleString("en-IN")} pool
+                  </div>
+                </>
+              )}
             </div>
           </div>
 
@@ -274,7 +296,8 @@ export default function TournamentDetailPage() {
           </div>
 
           <div className="cta-row" style={{ marginTop: "2rem", display: "flex", gap: "1rem" }}>
-            <JoinTournamentButton tournamentId={id} isPrivate={tournament.isPrivate} />
+            {/* A finished tournament takes no more entries. */}
+            {!isClosed && <JoinTournamentButton tournamentId={id} isPrivate={tournament.isPrivate} />}
             <ShareTournament tournamentId={id} tournamentName={tournament.name} />
           </div>
         </div>
@@ -303,6 +326,8 @@ export default function TournamentDetailPage() {
             matchesPerTeam={engineState.matchesPerTeam ?? 2}
             arenaId={engineState.arenaId ?? ""}
             published={!!engineState.published}
+            winnerTakes={String(winnerTakes)}
+            result={result}
             currentTime={currentTime}
             onMatchUpdate={mergeMatch}
             onRefresh={fetchTournamentData}
@@ -459,10 +484,17 @@ export default function TournamentDetailPage() {
           )}
         </div>
 
-        {/* RESET BUTTON (Host Only) */}
+        {/* RESET BUTTON (Host Only) — a finished tournament has paid its prize
+            out, so it stays on the record and cannot be deleted. */}
         {isHost && (
           <div style={{ marginTop: '4rem', textAlign: 'center' }}>
-            <DeleteTournamentDialog tournamentId={id} tournamentName={tournament.name} />
+            {isClosed ? (
+              <p className="muted" style={{ fontSize: '0.8rem' }}>
+                This tournament is finished and its prize has been paid, so it stays on the record.
+              </p>
+            ) : (
+              <DeleteTournamentDialog tournamentId={id} tournamentName={tournament.name} />
+            )}
           </div>
         )}
       </div>

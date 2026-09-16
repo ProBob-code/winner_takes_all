@@ -208,6 +208,12 @@ export default function WalletPage() {
                         </div>
                         <div>
                           <div style={{ fontWeight: 700 }}>{meta.label}</div>
+                          {/* What it was for, in words, when the entry carries
+                              it — which tournament a prize came from, and how
+                              the pot was shared. */}
+                          {tx.description && (
+                            <div style={{ fontSize: "0.8rem", marginTop: "2px" }}>{tx.description}</div>
+                          )}
                           <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginTop: "2px" }}>
                             {tx.referenceType} • {new Date(tx.createdAt).toLocaleDateString()} at {new Date(tx.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </div>

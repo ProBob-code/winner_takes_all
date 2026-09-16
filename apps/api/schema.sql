@@ -31,6 +31,9 @@ CREATE TABLE IF NOT EXISTS wallet_transactions (
   reference_type TEXT NOT NULL DEFAULT '',
   reference_id TEXT NOT NULL DEFAULT '',
   is_test INTEGER NOT NULL DEFAULT 0,
+  -- What the entry was for, in words: the tournament a prize came from, and
+  -- how it was shared. Shown to the account holder in their ledger.
+  description TEXT,
   created_at TEXT NOT NULL,
   FOREIGN KEY (wallet_id) REFERENCES wallets(id),
   FOREIGN KEY (user_id) REFERENCES users(id)

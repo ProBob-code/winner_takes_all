@@ -8,6 +8,9 @@ import {
   planAdvance,
   resetMatch,
   resultDeltas,
+  decideWinners,
+  splitPot,
+  prizeAfterFee,
   type EngineTeam,
   type EngineMatch,
   type MatchupRecord,
@@ -353,6 +356,98 @@ describe("generateKnockout", () => {
 
   it("returns nothing for a single team", () => {
     expect(generateKnockout([team()])).toHaveLength(0);
+  });
+});
+
+describe("decideWinners", () => {
+  const done = (overrides: Partial<EngineMatch>) => match({ status: "COMPLETED", ...overrides });
+
+  it("gives it to whoever won the grand final", () => {
+    const teams = [team({ id: "a", group_points: 9 }), team({ id: "b", group_points: 1, matches_played: 1 })];
+    const result = decideWinners(teams, [done({ id: "f", phase: "FINAL", winner_id: "b" })]);
+    expect(result).toEqual({ winnerIds: ["b"], decidedBy: "FINAL" });
+  });
+
+  it("gives it to the top of the table when there was no final", () => {
+    const teams = [
+      team({ id: "a", matches_played: 2, group_points: 1, total_score: 90 }),
+      team({ id: "b", matches_played: 2, group_points: 2, total_score: 50 }),
+    ];
+    const result = decideWinners(teams, [done({ id: "g1" }), done({ id: "g2" })]);
+    expect(result).toEqual({ winnerIds: ["b"], decidedBy: "STANDINGS" });
+  });
+
+  it("shares it between teams exactly level on wins and score", () => {
+    const teams = [
+      team({ id: "a", matches_played: 2, group_points: 2, total_score: 80 }),
+      team({ id: "b", matches_played: 2, group_points: 2, total_score: 80 }),
+      team({ id: "c", matches_played: 2, group_points: 1, total_score: 80 }),
+    ];
+    const result = decideWinners(teams, [done({ id: "g1" })]);
+    expect("winnerIds" in result && result.winnerIds.sort()).toEqual(["a", "b"]);
+  });
+
+  it("separates teams level on wins by total score", () => {
+    const teams = [
+      team({ id: "a", matches_played: 2, group_points: 2, total_score: 81 }),
+      team({ id: "b", matches_played: 2, group_points: 2, total_score: 80 }),
+    ];
+    const result = decideWinners(teams, [done({ id: "g1" })]);
+    expect("winnerIds" in result && result.winnerIds).toEqual(["a"]);
+  });
+
+  it("refuses while a match is still to be played", () => {
+    const teams = [team({ id: "a", matches_played: 1, group_points: 1 })];
+    const result = decideWinners(teams, [done({ id: "g1" }), match({ id: "g2", status: "CREATED" })]);
+    expect(result).toHaveProperty("error");
+  });
+
+  it("refuses when nothing has been played at all", () => {
+    expect(decideWinners([team({ id: "a" })], [])).toHaveProperty("error");
+  });
+
+  it("ignores teams that never played", () => {
+    const teams = [
+      team({ id: "sat-out", group_points: 0, total_score: 0, matches_played: 0 }),
+      team({ id: "played", group_points: 1, total_score: 40, matches_played: 1 }),
+    ];
+    const result = decideWinners(teams, [done({ id: "g1" })]);
+    expect("winnerIds" in result && result.winnerIds).toEqual(["played"]);
+  });
+});
+
+describe("splitPot", () => {
+  it("splits evenly when it divides", () => {
+    expect(splitPot(30000, 3)).toEqual([10000, 10000, 10000]);
+  });
+
+  it("hands the odd paise out one each, losing none of the pot", () => {
+    const shares = splitPot(10000, 3);
+    expect(shares).toEqual([3334, 3333, 3333]);
+    expect(shares.reduce((a, b) => a + b, 0)).toBe(10000);
+  });
+
+  it("gives one winner the lot", () => {
+    expect(splitPot(37200, 1)).toEqual([37200]);
+  });
+
+  it("has nothing to split between nobody", () => {
+    expect(splitPot(1000, 0)).toEqual([]);
+  });
+});
+
+describe("prizeAfterFee", () => {
+  it("takes the platform's cut off the pot", () => {
+    expect(prizeAfterFee(40000, 7)).toBe(37200);
+  });
+
+  it("pays the whole pot when there is no fee", () => {
+    expect(prizeAfterFee(40000, 0)).toBe(40000);
+  });
+
+  it("never returns less than nothing", () => {
+    expect(prizeAfterFee(0, 7)).toBe(0);
+    expect(prizeAfterFee(40000, 150)).toBe(0);
   });
 });
 

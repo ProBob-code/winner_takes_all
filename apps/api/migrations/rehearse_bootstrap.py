@@ -46,6 +46,11 @@ def production_shape():
     db = sqlite3.connect(":memory:")
     db.executescript("""
         CREATE TABLE users (id TEXT PRIMARY KEY, name TEXT);
+        CREATE TABLE wallet_transactions (
+          id TEXT PRIMARY KEY, wallet_id TEXT, user_id TEXT, payment_id TEXT,
+          type TEXT, amount_cents INTEGER, balance_after_cents INTEGER,
+          reference_type TEXT, reference_id TEXT, is_test INTEGER, created_at TEXT
+        );
         CREATE TABLE tournaments (
           id TEXT PRIMARY KEY, name TEXT, entry_fee_cents INTEGER,
           prize_pool_cents INTEGER DEFAULT 0, max_players INTEGER,
@@ -103,6 +108,7 @@ check("engine_matches has fouls_a", "fouls_a" in cols("engine_matches"))
 check("engine_matches has team_a_house", "team_a_house" in cols("engine_matches"))
 check("engine_matches has team_b_house", "team_b_house" in cols("engine_matches"))
 check("engine_teams has user_id", "user_id" in cols("engine_teams"))
+check("wallet_transactions has description", "description" in cols("wallet_transactions"))
 check("tournaments has series_id", "series_id" in cols("tournaments"))
 check("tournaments has series_week", "series_week" in cols("tournaments"))
 

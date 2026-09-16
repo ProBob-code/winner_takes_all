@@ -61,6 +61,11 @@ export default function TournamentsPage() {
 
   const [activeTab, setActiveTab] = useState<'arena' | 'quick'>('arena');
 
+  // A finished tournament has had its pot paid out and takes no more entries,
+  // so it moves out of the live listing and into the record below it.
+  const live = tournaments.filter((t: any) => t.status !== "completed");
+  const past = tournaments.filter((t: any) => t.status === "completed");
+
   if (loading) {
     return (
       <main className="page">
@@ -143,14 +148,14 @@ export default function TournamentsPage() {
               </div>
             )}
 
-            {tournaments.length > 0 && (
+            {live.length > 0 && (
               <section className="arena-section slide-in">
                 <div className="section-header">
                   <h2 className="section-title">Verified Competitions</h2>
                   <div className="section-line"></div>
                 </div>
                 <div className="tournament-grid">
-                  {tournaments.map((t: any) => {
+                  {live.map((t: any) => {
                     const statusClass = `status-badge ${t.status}`;
                     const isFree = parseFloat(t.entryFee.amount) === 0;
 
@@ -216,13 +221,64 @@ export default function TournamentsPage() {
               </section>
             )}
 
-            {tournaments.length === 0 && (
+            {live.length === 0 && (
               <div className="empty-state slide-in">
                 <div className="empty-icon-large">🏆</div>
                 <h3>The Arena is Quiet</h3>
                 <p className="muted">No active tournament brackets found. Create your own community event now.</p>
                 <Link href="/tournaments/create" className="button button-gold mt-6">INITIALIZE EVENT</Link>
               </div>
+            )}
+
+            {/* PAST MATCHES — finished tournaments, with who took the pot. */}
+            {past.length > 0 && (
+              <section className="arena-section slide-in" style={{ marginTop: "3rem" }}>
+                <div className="section-header">
+                  <h2 className="section-title">Past Matches</h2>
+                  <div className="section-line"></div>
+                </div>
+                <div className="past-list">
+                  {past.map((t: any) => {
+                    const winners: any[] = t.result?.winners || [];
+                    const shared = (t.result?.splitWays ?? 1) > 1;
+                    return (
+                      <Link
+                        key={t.id}
+                        href={isLoggedIn ? `/tournaments/${t.id}` : "/login"}
+                        className="past-card"
+                      >
+                        <div className="past-main">
+                          <div className="past-head">
+                            <span className="status-badge completed">COMPLETED</span>
+                            <span className="past-meta">
+                              {t.sport === "FOOTBALL" ? "⚽ FOOTBALL" : "🎱 8-BALL"} · {t.joinedPlayers} played
+                              {t.completedAt ? ` · ${new Date(t.completedAt).toLocaleDateString()}` : ""}
+                            </span>
+                          </div>
+                          <h3 className="past-title">{t.name}</h3>
+                          <div className="past-winner">
+                            {winners.length > 0 ? (
+                              <>
+                                🏆 <strong>{winners.map((w) => w.name).join(" & ")}</strong>
+                                {shared ? ` shared the pot ${t.result.splitWays} ways` : " took the pot"}
+                              </>
+                            ) : (
+                              <span className="muted">Finished — no prize was paid</span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="past-prize">
+                          <span className="past-prize-label">PRIZE POT</span>
+                          <span className="past-prize-value">
+                            ₹{Number(t.result?.prize?.amount ?? t.prizePool?.amount ?? 0).toLocaleString("en-IN")}
+                          </span>
+                          {shared && <span className="past-prize-split">split {t.result.splitWays} ways</span>}
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </section>
             )}
           </>
         ) : (
@@ -329,6 +385,38 @@ export default function TournamentsPage() {
         }
 
         .empty-icon-large { font-size: 4rem; margin-bottom: 1.5rem; opacity: 0.3; }
+
+        /* Past matches: a record, so it reads as a list rather than an offer. */
+        .past-list { display: flex; flex-direction: column; gap: 12px; }
+        .past-card {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 1.5rem;
+          padding: 1.25rem 1.5rem;
+          border-radius: 16px;
+          background: rgba(255, 255, 255, 0.02);
+          border: 1px solid rgba(255, 255, 255, 0.05);
+          text-decoration: none;
+          color: inherit;
+          transition: all 0.3s ease;
+        }
+        .past-card:hover { background: rgba(255,255,255,0.04); border-color: var(--gold-subtle); }
+        .past-main { min-width: 0; }
+        .past-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 6px; }
+        .status-badge.completed { background: rgba(148, 163, 184, 0.12); color: #94a3b8; }
+        .past-meta { font-size: 0.68rem; font-weight: 700; color: var(--text-muted); letter-spacing: 0.5px; }
+        .past-title { font-size: 1.05rem; font-weight: 800; margin: 0 0 4px; }
+        .past-winner { font-size: 0.85rem; color: var(--text-secondary); }
+        .past-prize { text-align: right; white-space: nowrap; }
+        .past-prize-label { display: block; font-size: 0.55rem; font-weight: 900; letter-spacing: 1px; color: var(--text-muted); }
+        .past-prize-value { font-size: 1.15rem; font-weight: 900; color: var(--gold); }
+        .past-prize-split { display: block; font-size: 0.6rem; font-weight: 700; color: var(--text-muted); }
+
+        @media (max-width: 640px) {
+          .past-card { flex-direction: column; align-items: flex-start; gap: 0.75rem; }
+          .past-prize { text-align: left; }
+        }
 
         @media (max-width: 768px) {
           .guest-banner-v2 { flex-direction: column; padding: 1.5rem; text-align: center; }

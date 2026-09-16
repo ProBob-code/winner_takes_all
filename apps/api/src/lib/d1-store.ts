@@ -20,6 +20,12 @@ import type {
 
 export type { EngineTeam };
 
+/** Engine team as stored — core engine shape plus which account it belongs to. */
+export interface EngineTeamRecord extends EngineTeam {
+  /** Null for a team the host typed in by hand, which has no wallet to pay. */
+  user_id: string | null;
+}
+
 /** Engine match as stored — core engine shape plus persistence fields. */
 export interface EngineMatch extends EngineMatchCore {
   tournament_id: string;
@@ -36,6 +42,8 @@ export interface UserRecord {
 export interface WalletEntryRecord {
   id: string; user_id: string; type: string; amount_cents: number;
   reference_type: string; reference_id: string; is_test: boolean; created_at: string;
+  /** What this entry was for, in words — e.g. the tournament a prize came from. */
+  description: string | null;
 }
 
 /**
@@ -171,7 +179,10 @@ export interface TeamRecord {
 
 export interface LeaderboardRow {
   user_id: string; name: string;
+  /** Matches played, across bracket matches and hosted tournaments alike. */
+  played: number;
   wins: number; losses: number;
+  total_score: number;
   tournament_wins: number; earnings_cents: number;
 }
 
@@ -240,7 +251,17 @@ export class D1Store {
     const { results } = await this.db.prepare(
       `SELECT * FROM wallet_transactions WHERE user_id = ? ORDER BY created_at DESC LIMIT 200`
     ).bind(userId).all<any>();
-    return results.map((r: any) => ({ ...r, is_test: !!r.is_test }));
+    // description is absent on a database that predates it.
+    return results.map((r: any) => ({ ...r, is_test: !!r.is_test, description: r.description ?? null }));
+  }
+
+  /** Whether this user already has a ledger entry against that reference. */
+  async hasWalletEntry(userId: string, refType: string, refId: string): Promise<boolean> {
+    const row = await this.db.prepare(
+      `SELECT 1 AS found FROM wallet_transactions
+       WHERE user_id = ? AND reference_type = ? AND reference_id = ? LIMIT 1`
+    ).bind(userId, refType, refId).first<any>();
+    return !!row;
   }
 
   /**
@@ -271,21 +292,41 @@ export class D1Store {
     return user;
   }
 
-  /** Atomically credit a wallet (relative update, single transaction). */
-  async creditWallet(userId: string, amountCents: number, refType: string, refId: string, txnType = "deposit", paymentId: string | null = null, isTest = false): Promise<UserRecord> {
+  /**
+   * Atomically credit a wallet (relative update, single transaction).
+   *
+   * `description` is what the ledger row says it was for, in words — the
+   * tournament a prize came from, and how it was shared. A database that
+   * predates the column still takes the credit, without the note.
+   */
+  async creditWallet(userId: string, amountCents: number, refType: string, refId: string, txnType = "deposit", paymentId: string | null = null, isTest = false, description: string | null = null): Promise<UserRecord> {
     if (!Number.isInteger(amountCents) || amountCents <= 0) throw new Error("Invalid amount");
     const now = new Date().toISOString();
 
-    const results = await this.db.batch([
-      this.db.prepare(
-        `UPDATE wallets SET balance_cents = balance_cents + ?, updated_at = ? WHERE user_id = ?`
-      ).bind(amountCents, now, userId),
-      this.db.prepare(
-        `INSERT INTO wallet_transactions (id, wallet_id, user_id, payment_id, type, amount_cents, balance_after_cents, reference_type, reference_id, is_test, created_at)
-         SELECT ?, w.id, ?, ?, ?, ?, w.balance_cents, ?, ?, ?, ?
-         FROM wallets w WHERE w.user_id = ?`
-      ).bind(createId("wallettxn"), userId, paymentId, txnType, amountCents, refType, refId, isTest ? 1 : 0, now, userId),
-    ]);
+    const credit = this.db.prepare(
+      `UPDATE wallets SET balance_cents = balance_cents + ?, updated_at = ? WHERE user_id = ?`
+    ).bind(amountCents, now, userId);
+
+    const ledger = (withDescription: boolean) =>
+      withDescription
+        ? this.db.prepare(
+            `INSERT INTO wallet_transactions (id, wallet_id, user_id, payment_id, type, amount_cents, balance_after_cents, reference_type, reference_id, is_test, description, created_at)
+             SELECT ?, w.id, ?, ?, ?, ?, w.balance_cents, ?, ?, ?, ?, ?
+             FROM wallets w WHERE w.user_id = ?`
+          ).bind(createId("wallettxn"), userId, paymentId, txnType, amountCents, refType, refId, isTest ? 1 : 0, description, now, userId)
+        : this.db.prepare(
+            `INSERT INTO wallet_transactions (id, wallet_id, user_id, payment_id, type, amount_cents, balance_after_cents, reference_type, reference_id, is_test, created_at)
+             SELECT ?, w.id, ?, ?, ?, ?, w.balance_cents, ?, ?, ?, ?
+             FROM wallets w WHERE w.user_id = ?`
+          ).bind(createId("wallettxn"), userId, paymentId, txnType, amountCents, refType, refId, isTest ? 1 : 0, now, userId);
+
+    let results;
+    try {
+      results = await this.db.batch([credit, ledger(description !== null)]);
+    } catch (err) {
+      if (description === null || !isMissingColumnError(err)) throw err;
+      results = await this.db.batch([credit, ledger(false)]);
+    }
 
     if ((results[0].meta.changes ?? 0) === 0) throw new Error("User not found");
 
@@ -425,6 +466,24 @@ export class D1Store {
     }
     vals.push(id);
     await this.db.prepare(`UPDATE tournaments SET ${sets.join(", ")} WHERE id = ?`).bind(...vals).run();
+  }
+
+  /**
+   * Close a tournament, once.
+   *
+   * The prize is paid by whoever wins this update, so it is guarded on the
+   * tournament not already being finished: a final settled by two requests at
+   * the same time pays out exactly one of them. Returns whether this caller is
+   * the one that closed it.
+   */
+  async finishTournament(id: string, winnerUserId: string | null, result: unknown): Promise<boolean> {
+    const now = new Date().toISOString();
+    const res = await this.db.prepare(
+      `UPDATE tournaments
+       SET status = 'completed', winner_id = ?, bracket_state = ?, completed_at = ?, updated_at = ?
+       WHERE id = ? AND status != 'completed'`
+    ).bind(winnerUserId, JSON.stringify(result), now, now, id).run();
+    return (res.meta.changes ?? 0) > 0;
   }
 
   async updateTournamentBracketState(id: string, state: any): Promise<void> {
@@ -649,6 +708,20 @@ export class D1Store {
     tournament_wins: number; wins: number; losses: number;
     total_score: number; points: number; earnings_cents: number;
   }> {
+    // Hosted tournaments keep their play in engine_teams rather than matches.
+    let engine = { games: 0, wins: 0, score: 0 };
+    try {
+      const r = await this.db.prepare(
+        `SELECT COALESCE(SUM(matches_played),0) AS games, COALESCE(SUM(group_points),0) AS wins,
+                COALESCE(SUM(total_score),0) AS score
+         FROM engine_teams WHERE user_id = ?`
+      ).bind(userId).first<any>();
+      if (r) engine = { games: r.games ?? 0, wins: r.wins ?? 0, score: r.score ?? 0 };
+    } catch (err) {
+      // A database without the engine tables simply has no hosted play yet.
+      if (!isMissingTableError(err) && !isMissingColumnError(err)) throw err;
+    }
+
     const [winsR, p1R, p2R, s1R, s2R, earningsR, twR] = await this.db.batch([
       this.db.prepare(`SELECT COUNT(*) as c FROM matches WHERE winner_id = ? AND scores_approved = 1`).bind(userId),
       this.db.prepare(`SELECT COUNT(*) as c FROM matches WHERE player1_id = ? AND scores_approved = 1`).bind(userId),
@@ -659,10 +732,10 @@ export class D1Store {
       this.db.prepare(`SELECT COUNT(*) as c FROM tournaments WHERE winner_id = ? AND status = 'completed'`).bind(userId),
     ]);
 
-    const wins = (winsR.results[0] as any)?.c ?? 0;
-    const total = ((p1R.results[0] as any)?.c ?? 0) + ((p2R.results[0] as any)?.c ?? 0);
+    const wins = ((winsR.results[0] as any)?.c ?? 0) + engine.wins;
+    const total = ((p1R.results[0] as any)?.c ?? 0) + ((p2R.results[0] as any)?.c ?? 0) + engine.games;
     const losses = total - wins;
-    const totalScore = ((s1R.results[0] as any)?.s ?? 0) + ((s2R.results[0] as any)?.s ?? 0);
+    const totalScore = ((s1R.results[0] as any)?.s ?? 0) + ((s2R.results[0] as any)?.s ?? 0) + engine.score;
     const earnings = (earningsR.results[0] as any)?.s ?? 0;
     const tournamentWins = (twR.results[0] as any)?.c ?? 0;
 
@@ -674,7 +747,15 @@ export class D1Store {
     };
   }
 
-  /** Real leaderboard: aggregated in SQL, only players who have played. */
+  /**
+   * Real leaderboard: aggregated in SQL, only players who have played.
+   *
+   * Two things count as playing. The bracket `matches` table is the original
+   * one-off match system. `engine_teams` is a hosted tournament's competitors,
+   * which carry their own matches played, wins and score — that is where every
+   * hosted tournament's play lives, and leaving it out meant a player could
+   * win a whole tournament and still not appear here.
+   */
   async getGlobalLeaderboard(limit = 100): Promise<LeaderboardRow[]> {
     const { results } = await this.db.prepare(
       `WITH played AS (
@@ -687,6 +768,20 @@ export class D1Store {
          SELECT winner_id AS uid, COUNT(*) AS wins FROM matches
          WHERE scores_approved = 1 AND winner_id IS NOT NULL GROUP BY winner_id
        ),
+       mscore AS (
+         SELECT uid, SUM(sc) AS score FROM (
+           SELECT player1_id AS uid, COALESCE(player1_score,0) AS sc FROM matches WHERE scores_approved = 1 AND player1_id IS NOT NULL
+           UNION ALL
+           SELECT player2_id, COALESCE(player2_score,0) FROM matches WHERE scores_approved = 1 AND player2_id IS NOT NULL
+         ) GROUP BY uid
+       ),
+       eng AS (
+         SELECT user_id AS uid,
+                COALESCE(SUM(matches_played),0) AS games,
+                COALESCE(SUM(group_points),0) AS wins,
+                COALESCE(SUM(total_score),0) AS score
+         FROM engine_teams WHERE user_id IS NOT NULL GROUP BY user_id
+       ),
        tw AS (
          SELECT winner_id AS uid, COUNT(*) AS twins FROM tournaments
          WHERE status = 'completed' AND winner_id IS NOT NULL GROUP BY winner_id
@@ -696,17 +791,21 @@ export class D1Store {
          FROM wallet_transactions WHERE type = 'tournament_payout' GROUP BY user_id
        )
        SELECT u.id AS user_id, u.name,
-              COALESCE(w.wins, 0) AS wins,
-              COALESCE(t.games, 0) - COALESCE(w.wins, 0) AS losses,
+              COALESCE(t.games, 0) + COALESCE(g.games, 0) AS played,
+              COALESCE(w.wins, 0) + COALESCE(g.wins, 0) AS wins,
+              (COALESCE(t.games, 0) + COALESCE(g.games, 0)) - (COALESCE(w.wins, 0) + COALESCE(g.wins, 0)) AS losses,
+              COALESCE(ms.score, 0) + COALESCE(g.score, 0) AS total_score,
               COALESCE(tw.twins, 0) AS tournament_wins,
               COALESCE(e.cents, 0) AS earnings_cents
        FROM users u
        LEFT JOIN totals t ON t.uid = u.id
        LEFT JOIN winners w ON w.uid = u.id
+       LEFT JOIN mscore ms ON ms.uid = u.id
+       LEFT JOIN eng g ON g.uid = u.id
        LEFT JOIN tw ON tw.uid = u.id
        LEFT JOIN earn e ON e.uid = u.id
-       WHERE COALESCE(t.games, 0) > 0 OR COALESCE(tw.twins, 0) > 0
-       ORDER BY wins DESC, earnings_cents DESC, u.name
+       WHERE COALESCE(t.games, 0) > 0 OR COALESCE(g.games, 0) > 0 OR COALESCE(tw.twins, 0) > 0
+       ORDER BY tournament_wins DESC, wins DESC, earnings_cents DESC, u.name
        LIMIT ?`
     ).bind(limit).all<any>();
     return results as LeaderboardRow[];
@@ -732,9 +831,9 @@ export class D1Store {
     return { id, name, matches_played: 0, group_points: 0, total_score: 0, bye_assigned: false };
   }
 
-  async getEngineTeams(tournamentId: string): Promise<EngineTeam[]> {
+  async getEngineTeams(tournamentId: string): Promise<EngineTeamRecord[]> {
     const { results } = await this.db.prepare(`SELECT * FROM engine_teams WHERE tournament_id = ?`).bind(tournamentId).all<any>();
-    return results.map(r => ({ ...r, bye_assigned: !!r.bye_assigned }));
+    return results.map(r => ({ ...r, bye_assigned: !!r.bye_assigned, user_id: r.user_id ?? null }));
   }
 
   async updateEngineTeam(teamId: string, updates: Partial<EngineTeam>): Promise<void> {

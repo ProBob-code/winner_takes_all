@@ -182,6 +182,26 @@ async function rateLimit(
   return null;
 }
 
+/** How a finished tournament's result reads to the app. */
+function serializeTournamentResult(result: any) {
+  if (!result || !Array.isArray(result.winners)) return null;
+  return {
+    decidedBy: result.decidedBy,
+    decidedAt: result.decidedAt,
+    prize: centsToMoney(result.prizeCents ?? 0),
+    pot: centsToMoney(result.potCents ?? 0),
+    splitWays: result.splitWays ?? result.winners.length,
+    winners: result.winners.map((w: any) => ({
+      teamId: w.teamId,
+      name: w.teamName,
+      userId: w.userId ?? null,
+      amount: centsToMoney(w.amountCents ?? 0),
+      /** A team the host typed in by hand has no wallet to credit. */
+      paid: !!w.userId && (w.amountCents ?? 0) > 0,
+    })),
+  };
+}
+
 /** Public representation of a tournament — never leaks the join password. */
 function serializeTournament(t: TournamentRecord) {
   return {
@@ -189,6 +209,12 @@ function serializeTournament(t: TournamentRecord) {
     name: t.name,
     entryFee: centsToMoney(t.entry_fee_cents),
     prizePool: centsToMoney(t.prize_pool_cents),
+    // What the winner actually receives, worked out once here so the page and
+    // the payout can never disagree about it.
+    winnerTakes: centsToMoney(Engine.prizeAfterFee(t.prize_pool_cents, t.platform_fee_percent)),
+    completedAt: t.completed_at,
+    /** Set once the tournament has been closed and its pot paid. */
+    result: serializeTournamentResult((t.bracket_state as any)?.result),
     maxPlayers: t.max_players,
     joinedPlayers: t.participant_ids.length,
     status: t.status,
@@ -697,6 +723,8 @@ app.get("/api/wallet", async (c) => {
     createdAt: e.created_at,
     referenceType: e.reference_type,
     referenceId: e.reference_id,
+    /** What it was for, in words — e.g. which tournament a prize came from. */
+    description: e.description,
   }));
 
   return c.json({
@@ -762,15 +790,24 @@ app.post("/api/notifications/:id/read", async (c) => {
 
 // --- Leaderboard ---
 app.get("/api/leaderboard/global", async (c) => {
+  // The table reads hosted tournament play out of the engine tables, which a
+  // database provisioned before them does not have.
+  await ensureEngineSchema(c.env.DB).catch(() => {});
+
   const store = c.get("store");
   const rows = await store.getGlobalLeaderboard();
 
   const entries = rows.map((r) => ({
     userId: r.user_id,
     displayName: r.name,
+    /** Matches played, across bracket matches and hosted tournaments alike. */
+    played: r.played,
     wins: r.wins,
     losses: r.losses,
+    totalScore: r.total_score,
     tournamentWins: r.tournament_wins,
+    // A win is worth three, taking a tournament ten.
+    points: r.wins * 3 + r.tournament_wins * 10,
     earnings: centsToMoney(r.earnings_cents),
   }));
 
@@ -1176,7 +1213,14 @@ function engineArenaState(
     isStarted,
     selectedSport: sport,
     tournamentId: tournament.id,
-    teams: teams.map((t) => ({ ...t, is_team: false, players: [], total_balls_potted: 0, total_fouls: 0 })),
+    // Spectators get the competitors, not the accounts behind them.
+    teams: teams.map(({ user_id, ...t }) => ({
+      ...t,
+      is_team: false,
+      players: [],
+      total_balls_potted: 0,
+      total_fouls: 0,
+    })),
     matches: matches.map((m) => ({
       ...m,
       sport,
@@ -1221,6 +1265,182 @@ async function syncEngineArena(
   }
 }
 
+/** What a finished tournament paid, and to whom. Stored on the tournament. */
+interface TournamentResult {
+  decidedBy: "FINAL" | "STANDINGS";
+  decidedAt: string;
+  potCents: number;
+  platformFeePercent: number;
+  prizeCents: number;
+  splitWays: number;
+  winners: Array<{
+    teamId: string;
+    teamName: string;
+    userId: string | null;
+    amountCents: number;
+  }>;
+}
+
+/** How a prize reads in the wallet ledger. */
+function prizeDescription(tournamentName: string, splitWays: number): string {
+  const share = splitWays > 1 ? `, split equally ${splitWays} ways` : "";
+  return `Prize pot — ${tournamentName}${share}`;
+}
+
+/**
+ * Pay every winner who has not been paid yet.
+ *
+ * Each share is written against the tournament, and a share is only paid if
+ * that account has no entry for it: settling the same tournament twice, or
+ * finishing a payout that was interrupted, cannot pay anyone a second time.
+ * A winning team the host typed in by hand has no account to credit, and is
+ * recorded unpaid rather than silently dropped.
+ */
+async function payTournamentPrizes(
+  c: Context<AppContext>,
+  tournament: TournamentRecord,
+  result: TournamentResult
+): Promise<void> {
+  const store = c.get("store");
+  const description = prizeDescription(tournament.name, result.splitWays);
+
+  for (const winner of result.winners) {
+    if (!winner.userId || winner.amountCents <= 0) continue;
+    if (await store.hasWalletEntry(winner.userId, "tournament_prize", tournament.id)) continue;
+
+    await store.creditWallet(
+      winner.userId,
+      winner.amountCents,
+      "tournament_prize",
+      tournament.id,
+      "tournament_payout",
+      null,
+      false,
+      description
+    );
+
+    await store
+      .createNotification({
+        userId: winner.userId,
+        type: "tournament_prize",
+        title: result.splitWays > 1 ? "You shared the prize pot" : "You won the prize pot",
+        message: `₹${(winner.amountCents / 100).toFixed(2)} from "${tournament.name}" has been credited to your wallet${
+          result.splitWays > 1 ? `, split equally ${result.splitWays} ways` : ""
+        }.`,
+        tournamentId: tournament.id,
+      })
+      .catch(() => {
+        /* the money is in; a missing notification must not undo that */
+      });
+  }
+}
+
+/**
+ * Close a tournament and pay out its pot.
+ *
+ * Deciding, closing and paying are separate on purpose. `finishTournament` is
+ * the one write that can only succeed once, so whoever wins it owns the
+ * payout; the shares are stored on the tournament before any money moves, so
+ * an interrupted payout can be finished later rather than lost.
+ */
+async function settleTournament(
+  c: Context<AppContext>,
+  tournament: TournamentRecord
+): Promise<{ ok: true; result: TournamentResult } | { ok: false; message: string }> {
+  const store = c.get("store");
+
+  // Already closed: make sure everyone owed a share actually has it.
+  const stored = (tournament.bracket_state as any)?.result as TournamentResult | undefined;
+  if (tournament.status === "completed" && stored) {
+    await payTournamentPrizes(c, tournament, stored);
+    return { ok: true, result: stored };
+  }
+
+  const [teams, matches] = await Promise.all([
+    store.getEngineTeams(tournament.id),
+    store.getEngineMatches(tournament.id),
+  ]);
+
+  const decision = Engine.decideWinners(teams, matches);
+  if ("error" in decision) return { ok: false, message: decision.error };
+
+  const prizeCents = Engine.prizeAfterFee(tournament.prize_pool_cents, tournament.platform_fee_percent);
+  const shares = Engine.splitPot(prizeCents, decision.winnerIds.length);
+
+  const result: TournamentResult = {
+    decidedBy: decision.decidedBy,
+    decidedAt: new Date().toISOString(),
+    potCents: tournament.prize_pool_cents,
+    platformFeePercent: tournament.platform_fee_percent,
+    prizeCents,
+    splitWays: decision.winnerIds.length,
+    winners: decision.winnerIds.map((teamId, i) => {
+      const team = teams.find((t) => t.id === teamId);
+      return {
+        teamId,
+        teamName: team?.name || "Unknown",
+        userId: team?.user_id ?? null,
+        amountCents: shares[i] ?? 0,
+      };
+    }),
+  };
+
+  // The title goes to a single winner. A shared pot has no one champion, so
+  // the tournament records none rather than crowning one of them arbitrarily.
+  const soleWinner = result.winners.length === 1 ? result.winners[0].userId : null;
+
+  const claimed = await store.finishTournament(tournament.id, soleWinner, { result });
+  if (!claimed) {
+    // Someone else closed it first; theirs is the record that stands.
+    const current = await store.getTournament(tournament.id);
+    const theirs = (current?.bracket_state as any)?.result as TournamentResult | undefined;
+    if (current && theirs) {
+      await payTournamentPrizes(c, current, theirs);
+      return { ok: true, result: theirs };
+    }
+    return { ok: false, message: "This tournament has already been closed." };
+  }
+
+  tournament.status = "completed";
+  tournament.bracket_state = { result };
+  tournament.winner_id = soleWinner;
+
+  await payTournamentPrizes(c, tournament, result);
+
+  // The tournament is over, so it stops being something to watch or film.
+  await setEngineArenaLive(c, tournament, false);
+
+  return { ok: true, result };
+}
+
+/** Put a tournament's spectator arena on air, or take it off. */
+async function setEngineArenaLive(
+  c: Context<AppContext>,
+  tournament: TournamentRecord,
+  live: boolean
+): Promise<void> {
+  try {
+    const store = c.get("store");
+    const arena = await store.getArena(engineArenaId(tournament.id));
+    if (!arena || !!(arena.state as any)?.isStarted === live) return;
+
+    const [teams, matches] = await Promise.all([
+      store.getEngineTeams(tournament.id),
+      store.getEngineMatches(tournament.id),
+    ]);
+
+    await store.upsertArena({
+      id: arena.id,
+      name: arena.name,
+      state: engineArenaState(tournament, teams, matches, live),
+      pin: arena.pin,
+      ownerId: arena.owner_id,
+    });
+  } catch (err) {
+    console.error("Could not change the tournament's spectator arena:", err);
+  }
+}
+
 /**
  * Add a finished match to both teams' totals, and close the tournament once
  * its final is decided. Only ever called by the request whose guarded write
@@ -1235,9 +1455,12 @@ async function recordEngineResult(
   for (const delta of Engine.resultDeltas(match, engineSport(tournament))) {
     await store.addEngineTeamResult(delta.teamId, delta);
   }
+
+  // Winning the grand final ends the tournament: it closes, and the pot is
+  // paid out, without the host having to do anything.
   if (match.phase === "FINAL" && match.winner_id) {
-    await store.updateTournamentStatus(tournament.id, "COMPLETED");
-    tournament.status = "COMPLETED";
+    const settled = await settleTournament(c, tournament);
+    if (!settled.ok) console.error("Could not settle the tournament:", settled.message);
   }
 }
 
@@ -1538,6 +1761,25 @@ app.post("/api/engine/tournaments/:id/advance", async (c) => {
   await syncEngineArena(c, tournament);
 
   return c.json({ ok: true, matchesCreated: plan.matches.length });
+});
+
+/**
+ * Close a tournament and pay the pot out.
+ *
+ * Winning a grand final does this on its own. A tournament played as a group
+ * with no final has no such moment, so its host ends it here: the top of the
+ * table takes the pot, shared equally by anyone exactly level with them.
+ * Running it again on a closed tournament pays any share that did not land.
+ */
+app.post("/api/engine/tournaments/:id/finish", async (c) => {
+  const tournamentId = c.req.param("id");
+  const access = await requireTournamentManager(c, tournamentId);
+  if ("error" in access) return access.error;
+
+  const settled = await settleTournament(c, access.tournament);
+  if (!settled.ok) return c.json({ ok: false, message: settled.message }, 400);
+
+  return c.json({ ok: true, result: serializeTournamentResult(settled.result) });
 });
 
 /**

@@ -62,6 +62,24 @@ export type ArenaScoreEvent =
   | "BALL" | "BLACK" | "GOAL" | "FOUL"
   | "REMOVE_BALL" | "REMOVE_FOUL" | "REMOVE_GOAL";
 
+/** What a finished tournament paid, and to whom. */
+export interface TournamentResult {
+  decidedBy: "FINAL" | "STANDINGS";
+  decidedAt: string;
+  prize: { amount: string; currency: string };
+  pot: { amount: string; currency: string };
+  splitWays: number;
+  winners: Array<{
+    teamId: string;
+    name: string;
+    userId: string | null;
+    amount: { amount: string; currency: string };
+    paid: boolean;
+  }>;
+}
+
+const money = (amount: string) => `₹${Number(amount || 0).toLocaleString("en-IN")}`;
+
 interface HostedArenaProps {
   tournamentId: string;
   tournamentName: string;
@@ -75,6 +93,10 @@ interface HostedArenaProps {
   /** The spectator-network arena this tournament publishes as. */
   arenaId: string;
   published: boolean;
+  /** What the winners will share, once the platform has taken its cut. */
+  winnerTakes: string;
+  /** Set once the tournament has been closed and its pot paid out. */
+  result: TournamentResult | null;
   /** Unix seconds on the server's clock, ticked by the parent. */
   currentTime: number;
   /** Merge one match the server just returned, ahead of the next poll. */
@@ -131,6 +153,8 @@ export function HostedArena({
   matchesPerTeam,
   arenaId,
   published,
+  winnerTakes,
+  result,
   currentTime,
   onMatchUpdate,
   onRefresh,
@@ -144,6 +168,7 @@ export function HostedArena({
   const [showShareModal, setShowShareModal] = useState(false);
   const [confirmRestartId, setConfirmRestartId] = useState<string | null>(null);
   const [confirmOffAir, setConfirmOffAir] = useState(false);
+  const [confirmFinish, setConfirmFinish] = useState(false);
   const [victoryMatch, setVictoryMatch] = useState<ArenaMatch | null>(null);
   const [dismissedPromptId, setDismissedPromptId] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -225,6 +250,11 @@ export function HostedArena({
     return !!payload;
   };
 
+  const finishTournament = async () => {
+    setConfirmFinish(false);
+    await send(`/engine/tournaments/${tournamentId}/finish`);
+  };
+
   const reorder = (queue: ArenaMatch[], matchId: string, direction: "up" | "down") => {
     const idx = queue.findIndex((m) => m.id === matchId);
     const target = direction === "up" ? idx - 1 : idx + 1;
@@ -243,8 +273,12 @@ export function HostedArena({
   const played = matches.filter((m) => m.status === "COMPLETED");
   const finalMatch = matches.find((m) => m.phase === "FINAL") || null;
   const semis = matches.filter((m) => m.phase === "SEMI");
-  const concluded = phase === "COMPLETED" || finalMatch?.status === "COMPLETED";
-  const inKnockout = phase === "KNOCKOUT" || semis.length > 0 || !!finalMatch;
+  const upperPhase = (phase || "").toUpperCase();
+  const isClosed = upperPhase === "COMPLETED";
+  const concluded = isClosed || finalMatch?.status === "COMPLETED";
+  const inKnockout = upperPhase === "KNOCKOUT" || semis.length > 0 || !!finalMatch;
+  /** Everything drawn has been played, so the pot can be settled. */
+  const readyToFinish = !isClosed && !liveMatch && queue.length === 0 && played.length > 0;
   const quotaRemaining = teams.some((t) => t.matches_played < matchesPerTeam);
 
   const getTeamName = (teamId: string | null) =>
@@ -255,6 +289,31 @@ export function HostedArena({
   );
   const championId = concluded ? finalMatch?.winner_id ?? null : null;
   const champion = championId ? getTeamName(championId) : null;
+
+  /**
+   * Who the pot is about to go to, shown before the host commits to it. The
+   * server decides this for real, by the same rule: the grand final if there
+   * was one, otherwise the top of the table, shared by anyone exactly level.
+   */
+  const projectedWinners = (() => {
+    if (finalMatch?.status === "COMPLETED" && finalMatch.winner_id) {
+      return teams.filter((t) => t.id === finalMatch.winner_id);
+    }
+    const contenders = [...teams].filter((t) => t.matches_played > 0);
+    if (contenders.length === 0) return [];
+    const top = contenders.sort(
+      (a, b) => b.group_points - a.group_points || b.total_score - a.total_score
+    )[0];
+    return contenders.filter(
+      (t) => t.group_points === top.group_points && t.total_score === top.total_score
+    );
+  })();
+
+  const hasPot = Number(winnerTakes || 0) > 0;
+  const projectedShare =
+    projectedWinners.length > 0
+      ? (Number(winnerTakes || 0) / projectedWinners.length).toFixed(2)
+      : "0";
 
   const remaining = liveMatch ? (liveMatch.start_time || 0) + liveMatch.duration - currentTime : 0;
 
@@ -372,7 +431,10 @@ export function HostedArena({
       );
     }
 
-    if (concluded) {
+    if (isClosed || concluded) {
+      const winners = result?.winners ?? [];
+      const unpaid = winners.filter((w) => !w.paid);
+
       return (
         <div className="tournament-completion-card animate-in">
           <div className="p-icon" style={{ fontSize: "4rem", marginBottom: "1.5rem" }}>🏆</div>
@@ -380,12 +442,23 @@ export function HostedArena({
             TOURNAMENT CONCLUDED
           </h2>
           <p className="muted" style={{ letterSpacing: "2px", marginBottom: "3rem" }}>
-            THE BATTLE HAS SETTLED • CHAMPIONS REMAIN
+            {result
+              ? result.splitWays > 1
+                ? `THE POT WAS SHARED ${result.splitWays} WAYS`
+                : "THE POT HAS BEEN PAID"
+              : "THE BATTLE HAS SETTLED • CHAMPIONS REMAIN"}
           </p>
+
           <div className="final-results-summary">
             <div className="summary-item gold-border">
-              <div className="item-label">TOURNAMENT CHAMPION</div>
-              <div className="item-value">{champion || standings[0]?.name || "TBD"}</div>
+              <div className="item-label">
+                {winners.length > 1 ? "JOINT CHAMPIONS" : "TOURNAMENT CHAMPION"}
+              </div>
+              <div className="item-value">
+                {winners.length > 0
+                  ? winners.map((w) => w.name).join(" & ")
+                  : champion || standings[0]?.name || "TBD"}
+              </div>
             </div>
             {finalMatch && (
               <div className="summary-item">
@@ -396,7 +469,57 @@ export function HostedArena({
               </div>
             )}
           </div>
-          <button className="button button-gold button-lg mt-12 w-full" onClick={() => setActiveSubTab("standings")}>
+
+          {result && (
+            <div
+              style={{
+                marginTop: "2rem",
+                padding: "1.25rem",
+                borderRadius: "12px",
+                background: "rgba(245,158,11,0.06)",
+                border: "1px solid rgba(245,158,11,0.22)",
+                textAlign: "left",
+              }}
+            >
+              <div className="section-label-v2" style={{ marginBottom: "0.75rem" }}>
+                PRIZE POT • {money(result.prize.amount)}
+                {result.splitWays > 1 ? ` SPLIT EQUALLY ${result.splitWays} WAYS` : ""}
+              </div>
+              {winners.map((w) => (
+                <div
+                  key={w.teamId}
+                  style={{ display: "flex", justifyContent: "space-between", gap: "1rem", padding: "0.35rem 0", fontSize: "0.9rem" }}
+                >
+                  <span style={{ fontWeight: 800 }}>
+                    🏅 {w.name}
+                    {!w.paid && (
+                      <span className="muted" style={{ fontWeight: 600 }}> — no linked account</span>
+                    )}
+                  </span>
+                  <span style={{ fontWeight: 900, color: "var(--gold)", fontVariantNumeric: "tabular-nums" }}>
+                    {money(w.amount.amount)}
+                  </span>
+                </div>
+              ))}
+              <p className="muted" style={{ fontSize: "0.75rem", marginTop: "0.75rem", lineHeight: 1.5 }}>
+                {unpaid.length > 0
+                  ? "A team the host entered by hand has no account to credit, so its share was not paid. Everyone else has been credited to their wallet."
+                  : "Credited to the winners' wallets, and listed in each of their ledgers under this tournament."}
+              </p>
+            </div>
+          )}
+
+          {!isClosed && isHost && (
+            <button
+              className="button button-gold button-lg mt-12 w-full"
+              onClick={() => setConfirmFinish(true)}
+              disabled={busy}
+            >
+              {hasPot ? `CLOSE TOURNAMENT & PAY OUT ${money(winnerTakes)}` : "CLOSE TOURNAMENT"}
+            </button>
+          )}
+
+          <button className="button button-secondary button-lg mt-4 w-full" onClick={() => setActiveSubTab("standings")}>
             VIEW FULL HALL OF FAME
           </button>
         </div>
@@ -430,16 +553,30 @@ export function HostedArena({
             : "All teams have reached their match quota. Ready to resolve the tournament?"}
         </p>
         {isHost ? (
-          <div style={{ display: "flex", gap: "12px", justifyContent: "center", flexWrap: "wrap" }}>
-            {quotaRemaining && (
-              <button className="button button-secondary button-lg" onClick={drawNextRound} disabled={busy}>
-                DRAW THE NEXT ROUND
+          <>
+            <div style={{ display: "flex", gap: "12px", justifyContent: "center", flexWrap: "wrap" }}>
+              {quotaRemaining && (
+                <button className="button button-secondary button-lg" onClick={drawNextRound} disabled={busy}>
+                  DRAW THE NEXT ROUND
+                </button>
+              )}
+              <button className="button button-gold button-lg" onClick={advance} disabled={busy || teams.length < 2}>
+                ADVANCE TO KNOCKOUTS
+              </button>
+            </div>
+            {/* Ending it here pays the top of the table, for a tournament
+                played as a group with no final. */}
+            {readyToFinish && (
+              <button
+                className="button button-secondary button-lg mt-6"
+                onClick={() => setConfirmFinish(true)}
+                disabled={busy}
+                style={{ borderColor: "rgba(245,158,11,0.4)", color: "var(--gold)" }}
+              >
+                {hasPot ? `FINISH HERE & PAY OUT ${money(winnerTakes)}` : "FINISH HERE"}
               </button>
             )}
-            <button className="button button-gold button-lg" onClick={advance} disabled={busy || teams.length < 2}>
-              ADVANCE TO KNOCKOUTS
-            </button>
-          </div>
+          </>
         ) : (
           <p className="muted">Waiting for the host.</p>
         )}
@@ -865,6 +1002,60 @@ export function HostedArena({
                 }}
               >
                 RESTART MATCH
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {confirmFinish && mounted && createPortal(
+        <div className="custom-modal-overlay">
+          <div className="custom-modal">
+            <div className="modal-icon">🏆</div>
+            <h2>Close the tournament?</h2>
+            <p className="muted">
+              {!hasPot
+                ? "There is no pot to pay. The tournament will be closed and moved to past matches. This cannot be undone."
+                : projectedWinners.length > 1
+                  ? `The pot of ${money(winnerTakes)} will be split equally ${projectedWinners.length} ways and credited to their wallets now. This cannot be undone.`
+                  : `The pot of ${money(winnerTakes)} will be credited to the winner's wallet now. This cannot be undone.`}
+            </p>
+
+            <div
+              style={{
+                margin: "1.25rem 0",
+                padding: "1rem",
+                borderRadius: "10px",
+                background: "rgba(255,255,255,0.03)",
+                textAlign: "left",
+              }}
+            >
+              {projectedWinners.length === 0 ? (
+                <span className="muted">Nobody has played a match, so there is nobody to pay.</span>
+              ) : (
+                projectedWinners.map((t) => (
+                  <div key={t.id} style={{ display: "flex", justifyContent: "space-between", gap: "1rem", padding: "0.3rem 0" }}>
+                    <span style={{ fontWeight: 800 }}>🏅 {t.name}</span>
+                    <span style={{ fontWeight: 900, color: "var(--gold)" }}>{money(projectedShare)}</span>
+                  </div>
+                ))
+              )}
+              <p className="muted" style={{ fontSize: "0.72rem", marginTop: "0.75rem", lineHeight: 1.5 }}>
+                {finalMatch?.status === "COMPLETED"
+                  ? "Decided by the grand final."
+                  : "Decided on the table: most wins, then highest score. Teams exactly level share the pot."}
+              </p>
+            </div>
+
+            <div className="modal-actions">
+              <button className="button button-secondary" onClick={() => setConfirmFinish(false)}>CANCEL</button>
+              <button
+                className="button button-gold"
+                onClick={finishTournament}
+                disabled={projectedWinners.length === 0}
+              >
+                PAY OUT &amp; CLOSE
               </button>
             </div>
           </div>
