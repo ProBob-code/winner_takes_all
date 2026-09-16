@@ -48,26 +48,36 @@ export default function WalletPage() {
     fetchWallet();
   }, [router]);
 
+  /**
+   * What the ledger adds up to.
+   *
+   * The API sends money as { amount, currency }, not as a bare string. Reading
+   * it as a string produced NaN for every row, which is why each of these
+   * totalled ₹0.00 however much had moved through the account.
+   */
   const stats = useMemo(() => {
-    if (!wallet?.transactions) return { deposits: 0, winnings: 0, entries: 0 };
-    
-    return wallet.transactions.reduce((acc: any, tx: any) => {
-      // API sends amount as string (e.g. "100.00")
-      const amt = parseFloat(String(tx.amount || "0"));
-      
-      if (isNaN(amt)) return acc;
+    const empty = { deposits: 0, winnings: 0, entries: 0, refunds: 0, count: 0 };
+    if (!wallet?.transactions) return empty;
 
-      // Group by logic
-      if (tx.type === "deposit" || (tx.type === "manual_adjustment" && tx.referenceType === "signup_bonus")) {
+    return wallet.transactions.reduce((acc: typeof empty, tx: any) => {
+      const raw = tx?.amount;
+      const amt = Number(typeof raw === "object" && raw !== null ? raw.amount : raw);
+      if (!Number.isFinite(amt)) return acc;
+
+      acc.count += 1;
+
+      if (tx.type === "deposit" || tx.type === "manual_adjustment") {
         acc.deposits += amt;
       } else if (tx.type === "tournament_payout") {
         acc.winnings += amt;
       } else if (tx.type === "entry_fee_debit") {
         acc.entries += amt;
+      } else if (tx.type === "refund" || tx.referenceType === "entry_fee_refund") {
+        acc.refunds += amt;
       }
-      
+
       return acc;
-    }, { deposits: 0, winnings: 0, entries: 0 });
+    }, { ...empty });
   }, [wallet]);
 
   if (loading) {
@@ -235,19 +245,37 @@ export default function WalletPage() {
           {/* Sidebar Stats Area */}
           <div className="stack" style={{ gap: "2rem" }}>
             <div className="panel" style={{ padding: "1.5rem" }}>
-              <h4 style={{ marginBottom: "1.5rem", fontSize: "1.1rem" }}>Portfolio Analytics</h4>
+              <h4 style={{ marginBottom: "0.35rem", fontSize: "1.1rem" }}>Portfolio Analytics</h4>
+              <p className="muted" style={{ fontSize: "0.72rem", marginBottom: "1.25rem" }}>
+                Everything that has moved through this account, from the {stats.count} entr
+                {stats.count === 1 ? "y" : "ies"} below.
+              </p>
               <div className="stack" style={{ gap: "1rem" }}>
-                <div style={{ background: "rgba(255,255,255,0.02)", padding: "1rem", borderRadius: "16px", border: "1px solid rgba(255,255,255,0.05)" }}>
-                  <div className="muted" style={{ fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase" }}>Championship Rewards</div>
-                  <div style={{ fontSize: "1.5rem", fontWeight: 800, color: "var(--gold)" }}>{formatMoney(stats.winnings)}</div>
-                </div>
-                <div style={{ background: "rgba(255,255,255,0.02)", padding: "1rem", borderRadius: "16px", border: "1px solid rgba(255,255,255,0.05)" }}>
-                  <div className="muted" style={{ fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase" }}>Total Accounted</div>
-                  <div style={{ fontSize: "1.5rem", fontWeight: 800, color: "var(--green-light)" }}>{formatMoney(stats.deposits)}</div>
-                </div>
-                <div style={{ background: "rgba(255,255,255,0.02)", padding: "1rem", borderRadius: "16px", border: "1px solid rgba(255,255,255,0.05)" }}>
-                  <div className="muted" style={{ fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase" }}>Participation Fees</div>
-                  <div style={{ fontSize: "1.5rem", fontWeight: 800, color: "var(--red-light)" }}>{formatMoney(stats.entries)}</div>
+                {[
+                  { label: "Championship Rewards", value: stats.winnings, color: "var(--gold)", sign: "+" },
+                  { label: "Top-ups & Credits", value: stats.deposits, color: "var(--green-light)", sign: "+" },
+                  { label: "Participation Fees", value: stats.entries, color: "var(--red-light)", sign: "−" },
+                  ...(stats.refunds > 0
+                    ? [{ label: "Refunds", value: stats.refunds, color: "var(--cyan)", sign: "+" }]
+                    : []),
+                ].map((row) => (
+                  <div
+                    key={row.label}
+                    style={{ background: "rgba(255,255,255,0.02)", padding: "1rem", borderRadius: "16px", border: "1px solid rgba(255,255,255,0.05)" }}
+                  >
+                    <div className="muted" style={{ fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase" }}>{row.label}</div>
+                    <div style={{ fontSize: "1.5rem", fontWeight: 800, color: row.color }}>
+                      {row.value > 0 ? row.sign : ""}{formatMoney(row.value)}
+                    </div>
+                  </div>
+                ))}
+
+                {/* The three above should land on the balance at the top. */}
+                <div style={{ display: "flex", justifyContent: "space-between", gap: "1rem", padding: "0.75rem 1rem 0", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+                  <span className="muted" style={{ fontSize: "0.75rem", fontWeight: 700 }}>NET MOVEMENT</span>
+                  <span style={{ fontWeight: 900, fontVariantNumeric: "tabular-nums" }}>
+                    {formatMoney(stats.deposits + stats.winnings + stats.refunds - stats.entries)}
+                  </span>
                 </div>
               </div>
             </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { getApiUrl } from "@/lib/api-config";
@@ -11,6 +11,49 @@ type PaymentButtonProps = {
 
 const AMOUNTS = [100, 500, 1000, 2500, 5000];
 
+const CHECKOUT_SRC = "https://checkout.razorpay.com/v1/checkout.js";
+
+/**
+ * Make sure Razorpay's checkout is actually loaded.
+ *
+ * The script is requested in the page head with `async`, so it may not have
+ * arrived by the time someone clicks — and if an ad blocker or a strict
+ * network drops it, it never will. Waiting for it, and loading it again if it
+ * is missing, turns "please wait a moment" into either a checkout or an
+ * explanation.
+ */
+function loadRazorpay(timeoutMs = 12000): Promise<any> {
+  if (typeof window === "undefined") return Promise.reject(new Error("No browser"));
+  const w = window as any;
+  if (w.Razorpay) return Promise.resolve(w.Razorpay);
+
+  return new Promise((resolve, reject) => {
+    const existing = document.querySelector<HTMLScriptElement>(`script[src="${CHECKOUT_SRC}"]`);
+    const script = existing ?? document.createElement("script");
+
+    const settle = () => {
+      if (w.Razorpay) resolve(w.Razorpay);
+      else reject(new Error("The payment window could not be loaded. Disable any ad or script blocker for this site and try again."));
+    };
+
+    const timer = setTimeout(settle, timeoutMs);
+    script.addEventListener("load", () => {
+      clearTimeout(timer);
+      settle();
+    });
+    script.addEventListener("error", () => {
+      clearTimeout(timer);
+      reject(new Error("The payment window was blocked before it could load. Disable any ad or script blocker for this site and try again."));
+    });
+
+    if (!existing) {
+      script.src = CHECKOUT_SRC;
+      script.async = true;
+      document.body.appendChild(script);
+    }
+  });
+}
+
 export function PaymentButton({ onSuccess }: PaymentButtonProps) {
   const router = useRouter();
   const [showModal, setShowModal] = useState(false);
@@ -18,6 +61,12 @@ export function PaymentButton({ onSuccess }: PaymentButtonProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [mounted, setMounted] = useState(false);
+  const [gateway, setGateway] = useState<{ enabled: boolean; mode: string | null } | null>(null);
+  const [profile, setProfile] = useState<{ name?: string; email?: string } | null>(null);
+
+  // One key per attempt, so a retry of the same top-up reuses its order
+  // instead of leaving a trail of abandoned ones.
+  const idempotencyKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -31,6 +80,41 @@ export function PaymentButton({ onSuccess }: PaymentButtonProps) {
     };
   }, [showModal]);
 
+  // Ask the server whether it can take a payment at all, rather than finding
+  // out at the moment of paying.
+  useEffect(() => {
+    if (!showModal) return;
+    let cancelled = false;
+
+    (async () => {
+      const apiUrl = getApiUrl();
+      try {
+        const res = await fetch(`${apiUrl}/api/payments/config`, { credentials: "include" });
+        const data = await res.json();
+        if (!cancelled) setGateway({ enabled: !!data?.enabled, mode: data?.mode ?? null });
+      } catch {
+        if (!cancelled) setGateway(null);
+      }
+
+      try {
+        const res = await fetch(`${apiUrl}/api/user/profile`, { credentials: "include" });
+        const data = await res.json();
+        if (!cancelled && data?.user) setProfile({ name: data.user.name, email: data.user.email });
+      } catch {
+        /* prefill is a convenience, not a requirement */
+      }
+
+      // Warm the checkout up while the amount is being chosen.
+      loadRazorpay().catch(() => {
+        /* reported when they actually pay */
+      });
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [showModal]);
+
   async function handlePayment() {
     setLoading(true);
     setError("");
@@ -38,11 +122,21 @@ export function PaymentButton({ onSuccess }: PaymentButtonProps) {
     try {
       const apiUrl = getApiUrl();
 
-      // Create order
+      // The checkout window first: an order taken against a checkout that
+      // cannot open leaves a pending payment nobody can complete.
+      const Razorpay = await loadRazorpay();
+
+      if (!idempotencyKeyRef.current) {
+        idempotencyKeyRef.current =
+          typeof crypto !== "undefined" && "randomUUID" in crypto
+            ? crypto.randomUUID()
+            : `topup-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      }
+
       const orderRes = await fetch(`${apiUrl}/api/payments/create-order`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: Number(selectedAmount) }),
+        body: JSON.stringify({ amount: Number(selectedAmount), idempotencyKey: idempotencyKeyRef.current }),
         credentials: "include"
       });
 
@@ -54,11 +148,15 @@ export function PaymentButton({ onSuccess }: PaymentButtonProps) {
         throw new Error(`Server returned invalid JSON (${orderRes.status}). ${text.slice(0, 50)}...`);
       }
 
+      if (orderRes.status === 401) {
+        router.push("/login");
+        return;
+      }
+
       if (!orderRes.ok) {
         throw new Error(orderData.message || `Error ${orderRes.status}: Failed to create payment order`);
       }
 
-      // Load Razorpay checkout
       const options = {
         key: orderData.keyId,
         amount: orderData.amount,
@@ -80,20 +178,28 @@ export function PaymentButton({ onSuccess }: PaymentButtonProps) {
             });
 
             if (verifyRes.ok) {
+              // This top-up is done; a further one starts its own order.
+              idempotencyKeyRef.current = null;
               setShowModal(false);
+              onSuccess?.();
               // Force a hard refresh to update all server components (balance, history)
               window.location.reload();
             } else {
               const data = await verifyRes.json();
-              setError(data.message || "Payment verification failed. Please check your balance in a few moments.");
+              setError(
+                data.message ||
+                  "The payment went through but could not be confirmed here. It will be credited automatically — refresh in a moment."
+              );
             }
           } catch (err: any) {
-            setError(err.message || "Verification connection error. Please refresh the page.");
+            setError(
+              "The payment went through but this page could not confirm it. It will be credited automatically — refresh in a moment."
+            );
           }
         },
         prefill: {
-          name: "User",
-          email: "",
+          name: profile?.name || "",
+          email: profile?.email || "",
           contact: ""
         },
         theme: {
@@ -104,11 +210,15 @@ export function PaymentButton({ onSuccess }: PaymentButtonProps) {
         },
       };
 
-      if (!(window as any).Razorpay) {
-        throw new Error("Payment gateway is still loading. Please wait a moment.");
-      }
+      const rzp = new Razorpay(options);
 
-      const rzp = new (window as any).Razorpay(options);
+      // Without this, a card that is declined closes the window silently.
+      rzp.on("payment.failed", (response: any) => {
+        const reason = response?.error?.description || "The payment could not be completed.";
+        setError(`${reason} Nothing has been charged — you can try again.`);
+        setLoading(false);
+      });
+
       rzp.open();
     } catch (err: any) {
       setError(err.message || "Something went wrong");
@@ -118,6 +228,8 @@ export function PaymentButton({ onSuccess }: PaymentButtonProps) {
   }
 
   if (!mounted) return null;
+
+  const gatewayDown = gateway !== null && !gateway.enabled;
 
   return (
     <>
@@ -241,6 +353,23 @@ export function PaymentButton({ onSuccess }: PaymentButtonProps) {
                   </div>
 
                   <div style={{ marginTop: "2rem" }}>
+                    {/* A gateway with no keys cannot take a payment, so say
+                        so here rather than at the moment of paying. */}
+                    {gatewayDown && (
+                      <div style={{
+                        padding: "1rem",
+                        background: "rgba(245, 158, 11, 0.08)",
+                        border: "1px solid rgba(245, 158, 11, 0.25)",
+                        borderRadius: "12px",
+                        color: "var(--gold)",
+                        fontSize: "0.85rem",
+                        marginBottom: "1rem",
+                        textAlign: "center"
+                      }}>
+                        Top-ups are unavailable: this site's payment gateway is not configured yet.
+                      </div>
+                    )}
+
                     {error && (
                       <div style={{
                         padding: "1rem",
@@ -258,22 +387,27 @@ export function PaymentButton({ onSuccess }: PaymentButtonProps) {
 
                     <button
                       onClick={handlePayment}
-                      disabled={loading}
+                      disabled={loading || gatewayDown}
                       className="button"
                       style={{
                         width: "100%",
                         padding: "1.25rem",
                         fontSize: "1.1rem",
                         background: "var(--gradient-primary)",
-                        boxShadow: "0 15px 30px rgba(187, 134, 252, 0.3)"
+                        boxShadow: "0 15px 30px rgba(187, 134, 252, 0.3)",
+                        opacity: gatewayDown ? 0.5 : 1,
+                        cursor: gatewayDown ? "not-allowed" : undefined
                       }}
                     >
-                      {loading ? "Processing..." : "Checkout Now"}
+                      {loading ? "Processing..." : `Pay ₹${selectedAmount}`}
                     </button>
 
                     <div style={{ textAlign: "center", marginTop: "1rem", display: "flex", alignItems: "center", justifyContent: "center", gap: "1rem", opacity: 0.5 }}>
                       <div style={{ fontSize: "0.7rem", display: "flex", alignItems: "center", gap: "0.3rem" }}>🔒 SECURE</div>
                       <div style={{ fontSize: "0.7rem", display: "flex", alignItems: "center", gap: "0.3rem" }}>⚡ RAZORPAY</div>
+                      {gateway?.mode === "test" && (
+                        <div style={{ fontSize: "0.7rem", color: "var(--gold)" }}>TEST MODE</div>
+                      )}
                     </div>
                   </div>
                 </div>

@@ -355,6 +355,27 @@ app.get("/api/user/profile", async (c) => {
 });
 
 // --- Payments ---
+
+/**
+ * Whether top-ups can be taken, and the key the checkout needs.
+ *
+ * A Razorpay key pair is a public id and a secret; the id is what the browser
+ * hands to the checkout, and only the secret is confidential. Saying plainly
+ * whether the gateway is configured is what lets the app explain itself when
+ * it is not, instead of failing at the moment someone tries to pay.
+ */
+app.get("/api/payments/config", (c) => {
+  const keyId = c.env.RAZORPAY_KEY_ID || null;
+  return c.json({
+    ok: true,
+    enabled: !!(keyId && c.env.RAZORPAY_KEY_SECRET),
+    keyId,
+    mode: keyId ? (keyId.startsWith("rzp_live") ? "live" : "test") : null,
+    /** Without this, a payment completed away from the browser is never credited. */
+    webhookConfigured: !!c.env.RAZORPAY_WEBHOOK_SECRET,
+  });
+});
+
 app.post("/api/payments/create-order", async (c) => {
   const user = requireUser(c);
   if (!user) return c.json({ ok: false, message: "Authentication required" }, 401);
@@ -410,8 +431,20 @@ app.post("/api/payments/create-order", async (c) => {
       keyId: c.env.RAZORPAY_KEY_ID,
     });
   } catch (err) {
-    console.error("Razorpay order creation error:", err instanceof Error ? err.message : err);
-    return c.json({ ok: false, message: "Payment gateway error, please try again" }, 502);
+    const detail = err instanceof Error ? err.message : String(err);
+    console.error("Razorpay order creation error:", detail);
+    // Keys that Razorpay rejects are a configuration problem, not a blip, and
+    // saying so beats asking someone to try again forever.
+    const rejected = /\b401\b|authentication/i.test(detail);
+    return c.json(
+      {
+        ok: false,
+        message: rejected
+          ? "Razorpay rejected this site's API keys. Check RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET on the Worker."
+          : "Payment gateway error, please try again",
+      },
+      502
+    );
   }
 });
 
