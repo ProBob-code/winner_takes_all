@@ -59,7 +59,13 @@ export default function TournamentsPage() {
     fetchData();
   }, []);
 
-  const [activeTab, setActiveTab] = useState<'arena' | 'quick'>('arena');
+  // The SERIES tab leaves this page, so the switcher on /series links back
+  // with ?tab=quick to land on the tab the visitor was last looking at.
+  const [activeTab, setActiveTab] = useState<'arena' | 'quick'>(() =>
+    typeof window !== "undefined" && new URLSearchParams(window.location.search).get("tab") === "quick"
+      ? 'quick'
+      : 'arena',
+  );
 
   // A finished tournament has had its pot paid out and takes no more entries,
   // so it moves out of the live listing and into the record below it.
@@ -124,7 +130,7 @@ export default function TournamentsPage() {
               </button>
               {/* A series lists seasons rather than tournaments, so it is its
                   own section rather than a tab of this one. */}
-              <Link href="/series" className="tab-btn" style={{ textDecoration: "none" }}>
+              <Link href="/series" className="tab-btn">
                 SERIES
               </Link>
             </div>
@@ -294,21 +300,38 @@ export default function TournamentsPage() {
       <style jsx>{`
         .tab-switcher-v2 {
           display: flex;
+          align-items: center;
           background: rgba(255, 255, 255, 0.05);
           padding: 4px;
           border-radius: 16px;
           border: 1px solid rgba(255, 255, 255, 0.1);
         }
-        .tab-btn {
+        /* SERIES is a <Link>, and styled-jsx does not scope custom
+           components, so the tab rules are written as :global() from the
+           switcher down -- otherwise only the plain <button> tabs get them. */
+        .tab-switcher-v2 :global(.tab-btn) {
+          display: inline-flex;
+          align-items: center;
           padding: 0.6rem 1.5rem;
+          background: none;
+          border: none;
           border-radius: 12px;
+          font-family: inherit;
           font-size: 0.75rem;
           font-weight: 800;
           letter-spacing: 1px;
+          line-height: 1;
+          white-space: nowrap;
+          text-decoration: none;
+          cursor: pointer;
           color: var(--text-muted);
           transition: all 0.3s ease;
         }
-        .tab-btn.active {
+        .tab-switcher-v2 :global(.tab-btn:hover) {
+          color: var(--text-primary);
+          text-shadow: none;
+        }
+        .tab-switcher-v2 :global(.tab-btn.active) {
           background: var(--gradient-primary);
           color: white;
           box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
