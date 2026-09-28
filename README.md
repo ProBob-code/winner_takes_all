@@ -81,6 +81,14 @@ Copy `.env.example` and fill in what you need.
 **API** (`apps/api/.dev.vars` for local dev, `wrangler secret put` for deployed environments):
 - `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`
 
+  These belong to the **Worker**, not to the frontend. wrangler does not read
+  the repo-root `.env`, and Cloudflare Pages variables set on the web app are
+  never visible to the Worker — keys put in either place leave
+  `GET /api/payments/config` reporting `enabled: false`, which is what the
+  wallet's "top-ups are unavailable" notice is reading. That endpoint names the
+  variables it is missing; `curl $NEXT_PUBLIC_API_URL/api/payments/config` is
+  the fastest way to see what the deployed Worker actually holds.
+
 **API** (`apps/api/wrangler.toml` `[vars]`, non-secret):
 - `ALLOWED_ORIGINS` — comma-separated list of origins allowed to make cross-site cookie requests.
 

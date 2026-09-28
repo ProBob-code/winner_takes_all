@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
-import { getApiUrl } from "@/lib/api-config";
+import { getApiUrl, readJsonResponse } from "@/lib/api-config";
 
 type PaymentButtonProps = {
   onSuccess?: () => void;
@@ -61,7 +61,11 @@ export function PaymentButton({ onSuccess }: PaymentButtonProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [mounted, setMounted] = useState(false);
-  const [gateway, setGateway] = useState<{ enabled: boolean; mode: string | null } | null>(null);
+  const [gateway, setGateway] = useState<{ enabled: boolean; mode: string | null; missing: string[] } | null>(null);
+  // Kept apart from `gateway`: a gateway that answers "not configured" and one
+  // that cannot be reached at all need different things done about them, and
+  // collapsing the two sent people to check keys that were already set.
+  const [gatewayError, setGatewayError] = useState<string | null>(null);
   const [profile, setProfile] = useState<{ name?: string; email?: string } | null>(null);
 
   // One key per attempt, so a retry of the same top-up reuses its order
@@ -90,10 +94,26 @@ export function PaymentButton({ onSuccess }: PaymentButtonProps) {
       const apiUrl = getApiUrl();
       try {
         const res = await fetch(`${apiUrl}/api/payments/config`, { credentials: "include" });
-        const data = await res.json();
-        if (!cancelled) setGateway({ enabled: !!data?.enabled, mode: data?.mode ?? null });
-      } catch {
-        if (!cancelled) setGateway(null);
+        // readJsonResponse, not res.json(): when the API base URL is unset the
+        // request lands on the web app and comes back as an HTML 404, and the
+        // raw parse error says nothing about why.
+        const data = await readJsonResponse(res);
+        if (!res.ok || !data?.ok) {
+          throw new Error(data?.message || `The payment service answered ${res.status}.`);
+        }
+        if (!cancelled) {
+          setGateway({
+            enabled: !!data.enabled,
+            mode: data.mode ?? null,
+            missing: Array.isArray(data.missing) ? data.missing : [],
+          });
+          setGatewayError(null);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setGateway(null);
+          setGatewayError(err instanceof Error ? err.message : "The payment service could not be reached.");
+        }
       }
 
       try {
@@ -229,7 +249,17 @@ export function PaymentButton({ onSuccess }: PaymentButtonProps) {
 
   if (!mounted) return null;
 
+  // Either way the gateway cannot take money, so the Pay button stays shut --
+  // but the reason shown is the one that actually applies.
   const gatewayDown = gateway !== null && !gateway.enabled;
+  const gatewayBlocked = gatewayDown || gatewayError !== null;
+  const gatewayNotice = gatewayError
+    ? `Top-ups are unavailable: the payment service at ${getApiUrl() || "this site"} could not be reached. ${gatewayError}`
+    : gatewayDown
+      ? gateway!.missing.length > 0
+        ? `Top-ups are unavailable: ${gateway!.missing.join(" and ")} ${gateway!.missing.length > 1 ? "are" : "is"} not set on the API Worker (${getApiUrl() || "this site"}). Razorpay keys belong to that Worker's secrets, not to the frontend's environment variables.`
+        : "Top-ups are unavailable: this site's payment gateway is not configured yet."
+      : null;
 
   return (
     <>
@@ -353,9 +383,10 @@ export function PaymentButton({ onSuccess }: PaymentButtonProps) {
                   </div>
 
                   <div style={{ marginTop: "2rem" }}>
-                    {/* A gateway with no keys cannot take a payment, so say
-                        so here rather than at the moment of paying. */}
-                    {gatewayDown && (
+                    {/* A gateway that has no keys, or that cannot be reached
+                        at all, cannot take a payment -- so say which it is
+                        here rather than at the moment of paying. */}
+                    {gatewayNotice && (
                       <div style={{
                         padding: "1rem",
                         background: "rgba(245, 158, 11, 0.08)",
@@ -366,7 +397,7 @@ export function PaymentButton({ onSuccess }: PaymentButtonProps) {
                         marginBottom: "1rem",
                         textAlign: "center"
                       }}>
-                        Top-ups are unavailable: this site's payment gateway is not configured yet.
+                        {gatewayNotice}
                       </div>
                     )}
 
@@ -387,7 +418,7 @@ export function PaymentButton({ onSuccess }: PaymentButtonProps) {
 
                     <button
                       onClick={handlePayment}
-                      disabled={loading || gatewayDown}
+                      disabled={loading || gatewayBlocked}
                       className="button"
                       style={{
                         width: "100%",
@@ -395,8 +426,8 @@ export function PaymentButton({ onSuccess }: PaymentButtonProps) {
                         fontSize: "1.1rem",
                         background: "var(--gradient-primary)",
                         boxShadow: "0 15px 30px rgba(187, 134, 252, 0.3)",
-                        opacity: gatewayDown ? 0.5 : 1,
-                        cursor: gatewayDown ? "not-allowed" : undefined
+                        opacity: gatewayBlocked ? 0.5 : 1,
+                        cursor: gatewayBlocked ? "not-allowed" : undefined
                       }}
                     >
                       {loading ? "Processing..." : `Pay ₹${selectedAmount}`}

@@ -357,6 +357,24 @@ app.get("/api/user/profile", async (c) => {
 // --- Payments ---
 
 /**
+ * The Razorpay credentials as this Worker actually holds them.
+ *
+ * Keys pasted into the Cloudflare dashboard routinely arrive with a trailing
+ * newline or a stray space. Razorpay answers those with a 401 that says
+ * nothing about whitespace, so trimming once here means every caller --
+ * config, order creation, signature checks -- works from the same clean pair,
+ * and a value that is only whitespace counts as absent rather than present.
+ */
+function razorpayCredentials(env: Env) {
+  const keyId = (env.RAZORPAY_KEY_ID ?? "").trim();
+  const keySecret = (env.RAZORPAY_KEY_SECRET ?? "").trim();
+  const missing: string[] = [];
+  if (!keyId) missing.push("RAZORPAY_KEY_ID");
+  if (!keySecret) missing.push("RAZORPAY_KEY_SECRET");
+  return { keyId, keySecret, configured: missing.length === 0, missing };
+}
+
+/**
  * Whether top-ups can be taken, and the key the checkout needs.
  *
  * A Razorpay key pair is a public id and a secret; the id is what the browser
@@ -365,14 +383,21 @@ app.get("/api/user/profile", async (c) => {
  * it is not, instead of failing at the moment someone tries to pay.
  */
 app.get("/api/payments/config", (c) => {
-  const keyId = c.env.RAZORPAY_KEY_ID || null;
+  const { keyId, configured, missing } = razorpayCredentials(c.env);
   return c.json({
     ok: true,
-    enabled: !!(keyId && c.env.RAZORPAY_KEY_SECRET),
-    keyId,
+    enabled: configured,
+    keyId: keyId || null,
     mode: keyId ? (keyId.startsWith("rzp_live") ? "live" : "test") : null,
     /** Without this, a payment completed away from the browser is never credited. */
-    webhookConfigured: !!c.env.RAZORPAY_WEBHOOK_SECRET,
+    webhookConfigured: !!(c.env.RAZORPAY_WEBHOOK_SECRET ?? "").trim(),
+    /**
+     * Which variables this Worker is missing, so "not configured" can name
+     * them instead of sending someone to check both. Presence only: the
+     * values themselves never leave the Worker, and the key id that does is
+     * public by design -- the browser hands it to the checkout.
+     */
+    missing,
   });
 });
 
@@ -386,9 +411,16 @@ app.post("/api/payments/create-order", async (c) => {
   const body = parseBody(createOrderSchema, await readJson(c));
   const amountCents = Math.round(body.amount * 100);
 
-  if (!c.env.RAZORPAY_KEY_ID || !c.env.RAZORPAY_KEY_SECRET) {
-    console.error("Missing RAZORPAY_KEY_ID or RAZORPAY_KEY_SECRET in worker environment");
-    return c.json({ ok: false, message: "Payment gateway is not configured on the server" }, 500);
+  const razorpay = razorpayCredentials(c.env);
+  if (!razorpay.configured) {
+    console.error(`Missing ${razorpay.missing.join(" and ")} in worker environment`);
+    return c.json(
+      {
+        ok: false,
+        message: `Payment gateway is not configured on the server: ${razorpay.missing.join(" and ")} is not set on the API Worker.`,
+      },
+      500,
+    );
   }
 
   const store = c.get("store");
@@ -402,15 +434,15 @@ app.post("/api/payments/create-order", async (c) => {
         razorpayOrderId: existing.provider_order_id,
         amount: existing.amount_cents,
         currency: existing.currency,
-        keyId: c.env.RAZORPAY_KEY_ID,
+        keyId: razorpay.keyId,
       });
     }
   }
 
   try {
     const order = await createRazorpayOrder(
-      c.env.RAZORPAY_KEY_ID,
-      c.env.RAZORPAY_KEY_SECRET,
+      razorpay.keyId,
+      razorpay.keySecret,
       amountCents,
       "INR",
       { userId: user.id }
@@ -428,7 +460,7 @@ app.post("/api/payments/create-order", async (c) => {
       razorpayOrderId: order.id,
       amount: amountCents,
       currency: "INR",
-      keyId: c.env.RAZORPAY_KEY_ID,
+      keyId: razorpay.keyId,
     });
   } catch (err) {
     const detail = err instanceof Error ? err.message : String(err);
@@ -455,7 +487,7 @@ app.post("/api/payments/verify", async (c) => {
   const body = parseBody(verifyPaymentSchema, await readJson(c));
 
   const isValid = await verifyPaymentSignature(
-    c.env.RAZORPAY_KEY_SECRET ?? "",
+    razorpayCredentials(c.env).keySecret,
     body.razorpayOrderId,
     body.razorpayPaymentId,
     body.razorpaySignature
@@ -491,7 +523,7 @@ app.post("/api/payments/webhook", async (c) => {
 
   const rawBody = await c.req.arrayBuffer();
   // Fail closed: without a configured webhook secret no webhook is accepted.
-  const isValid = await verifyWebhookSignature(c.env.RAZORPAY_WEBHOOK_SECRET ?? "", rawBody, signature);
+  const isValid = await verifyWebhookSignature((c.env.RAZORPAY_WEBHOOK_SECRET ?? "").trim(), rawBody, signature);
   if (!isValid) return c.json({ ok: false, message: "Invalid signature" }, 400);
 
   const body = JSON.parse(new TextDecoder().decode(rawBody));
