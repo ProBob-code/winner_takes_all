@@ -163,7 +163,8 @@ export function JoinTournamentButton({
           display: "flex",
           alignItems: "center",
           gap: "1rem",
-          minWidth: "300px"
+          minWidth: "min(300px, calc(100vw - 2rem))",
+          maxWidth: "calc(100vw - 2rem)"
         }}>
           <div style={{ 
             width: "10px", 

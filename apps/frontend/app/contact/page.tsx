@@ -14,7 +14,7 @@ export default function ContactPage() {
           </p>
         </header>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "2.5rem" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(320px, 100%), 1fr))", gap: "2.5rem" }}>
           <div className="panel" style={{ padding: "3rem", border: "1px solid rgba(139, 92, 246, 0.2)", background: "rgba(139, 92, 246, 0.02)" }}>
             <div style={{ background: "rgba(139, 92, 246, 0.1)", width: "60px", height: "60px", borderRadius: "16px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.5rem", marginBottom: "2rem" }}>✉️</div>
             <h3 style={{ fontSize: "1.5rem", fontWeight: 800, marginBottom: "1rem" }}>Technical Support</h3>

@@ -2403,7 +2403,7 @@ export function QuickTournament() {
           <p className="muted mb-8" style={{ fontSize: '0.9rem' }}>Real-time spectator multiplex. Click on any game card to expand full tactical statistics, pitch configurations, and live timeline events.</p>
           
           {matches.filter(m => m.status === 'LIVE').length > 0 ? (
-            <div className="screening-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '20px', width: '100%' }}>
+            <div className="screening-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(360px, 100%), 1fr))', gap: '20px', width: '100%' }}>
               {matches.filter(m => m.status === 'LIVE').map(m => {
                 const isFootball = m.sport === 'FOOTBALL';
                 const timeStr = isFootball ? getFootballTimeDisplay(m) : `${Math.max(0, Math.floor(((m.start_time || 0) + m.duration - currentTime) / 60))}:${String(Math.max(0, ((m.start_time || 0) + m.duration - currentTime) % 60)).padStart(2, '0')}`;

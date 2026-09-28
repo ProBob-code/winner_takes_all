@@ -243,7 +243,7 @@ export default function ScreeningPage() {
             </button>
           </div>
 
-          <div style={{ position: "relative", minWidth: "300px" }}>
+          <div style={{ position: "relative", minWidth: "min(300px, 100%)", flex: "1 1 240px" }}>
             <input 
               type="text"
               placeholder="Search by team or arena..."
@@ -257,7 +257,7 @@ export default function ScreeningPage() {
 
         {/* Live Grid */}
         {filteredMatches.length > 0 ? (
-          <div className="screening-grid animate-in" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(420px, 1fr))", gap: "20px" }}>
+          <div className="screening-grid animate-in" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(420px, 100%), 1fr))", gap: "20px" }}>
             {filteredMatches.map((m: any) => {
               const isFootball = (m.sport === 'FOOTBALL') || (m.arenaSport === 'FOOTBALL');
               const isLive = m.status === 'LIVE';

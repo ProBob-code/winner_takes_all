@@ -351,7 +351,7 @@ export default function TournamentDetailPage() {
         <div
           style={{
             display: "grid", gap: "1.5rem", marginTop: "1.5rem",
-            gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+            gridTemplateColumns: "repeat(auto-fit, minmax(min(300px, 100%), 1fr))",
           }}
         >
           <div className="glass-morphism" style={{ padding: "1.75rem" }}>

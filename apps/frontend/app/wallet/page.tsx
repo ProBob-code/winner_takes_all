@@ -103,22 +103,24 @@ export default function WalletPage() {
   }
 
   return (
-    <main className="page" style={{ padding: "2rem" }}>
+    <main className="page">
       <div className="shell" style={{ maxWidth: "1200px" }}>
         
         <div className="page-header" style={{ marginBottom: "2rem" }}>
-          <h1 style={{ fontSize: "2.5rem", fontWeight: 900 }}>Organizer Account Balance</h1>
+          {/* clamp rather than a breakpoint: the heading has to survive every
+              width between a phone and a desktop, not just two of them. */}
+          <h1 style={{ fontSize: "clamp(1.6rem, 6vw, 2.5rem)", fontWeight: 900, overflowWrap: "anywhere" }}>Organizer Account Balance</h1>
           <p className="muted">Manage your tournament participation and track rewards</p>
         </div>
 
-        <div className="page-grid" style={{ gridTemplateColumns: "1fr 350px", gap: "2rem" }}>
+        <div className="page-grid wallet-grid" style={{ gap: "2rem" }}>
           
           <div className="stack" style={{ gap: "2rem" }}>
             {/* Main Balance Card */}
             <div className="panel" style={{ 
               background: "linear-gradient(135deg, rgba(20, 10, 60, 0.8) 0%, rgba(5, 2, 20, 0.9) 100%)",
-              padding: "2.5rem",
-              borderRadius: "32px",
+              padding: "clamp(1.25rem, 5vw, 2.5rem)",
+              borderRadius: "clamp(20px, 4vw, 32px)",
               border: "1px solid var(--glass-border-color-hover)",
               position: "relative",
               overflow: "hidden",
@@ -129,12 +131,12 @@ export default function WalletPage() {
               <div style={{ position: "absolute", bottom: "-100px", left: "-100px", width: "250px", height: "250px", background: "var(--cyan)", filter: "blur(100px)", opacity: 0.05, pointerEvents: "none" }}></div>
               
               <div style={{ position: "relative", zIndex: 1 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "2rem" }}>
-                  <div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "2rem", gap: "1rem", flexWrap: "wrap" }}>
+                  <div style={{ minWidth: 0 }}>
                     <div style={{ color: "var(--accent-light)", fontSize: "0.85rem", fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", marginBottom: "0.5rem" }}>
                       Current Balance
                     </div>
-                    <div style={{ fontSize: "4rem", fontWeight: 950, fontFamily: "var(--font-outfit)", letterSpacing: "-2px" }}>
+                    <div style={{ fontSize: "clamp(2.1rem, 11vw, 4rem)", fontWeight: 950, fontFamily: "var(--font-outfit)", letterSpacing: "-2px", lineHeight: 1.05, overflowWrap: "anywhere" }}>
                       {formatMoney(wallet.balance)}
                     </div>
                   </div>
@@ -151,7 +153,7 @@ export default function WalletPage() {
                   </div>
                 </div>
 
-                <div style={{ display: "flex", gap: "2rem", marginBottom: "2rem", borderTop: "1px solid rgba(255,255,255,0.05)", paddingTop: "1.5rem" }}>
+                <div className="meta-row" style={{ display: "flex", gap: "2rem", flexWrap: "wrap", marginBottom: "2rem", borderTop: "1px solid rgba(255,255,255,0.05)", paddingTop: "1.5rem" }}>
                    <div>
                      <div className="muted" style={{ fontSize: "0.75rem", fontWeight: 600 }}>CURRENCY</div>
                      <div style={{ fontWeight: 700 }}>INR / Balance</div>
@@ -180,14 +182,14 @@ export default function WalletPage() {
 
             {/* Transaction List */}
             <div className="stack" style={{ gap: "1rem" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <h3 style={{ fontSize: "1.5rem" }}>Recent Activity</h3>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}>
+                <h3 style={{ fontSize: "clamp(1.15rem, 4.5vw, 1.5rem)" }}>Recent Activity</h3>
                 <span className="muted" style={{ fontSize: "0.85rem" }}>Showing last 20 operations</span>
               </div>
               
               <div className="list">
                 {wallet.transactions.length === 0 ? (
-                  <div className="panel" style={{ padding: "4rem", textAlign: "center", opacity: 0.5 }}>
+                  <div className="panel" style={{ padding: "clamp(2rem, 8vw, 4rem)", textAlign: "center", opacity: 0.5 }}>
                     <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>🌑</div>
                     <p>No transaction history found.</p>
                   </div>
@@ -196,14 +198,8 @@ export default function WalletPage() {
                     const meta = TX_LABELS[tx.type] || { label: tx.type, icon: "📋", color: "var(--text-primary)", bg: "rgba(255,255,255,0.05)" };
                     const isCredit = tx.type === "deposit" || tx.type === "tournament_payout" || tx.type === "manual_adjustment" || tx.type === "refund";
                     return (
-                      <div key={tx.id} className="panel interactive-hover" style={{ 
-                        padding: "1rem 1.5rem",
-                        display: "grid",
-                        gridTemplateColumns: "48px 1fr 150px",
-                        alignItems: "center",
-                        gap: "1.5rem"
-                      }}>
-                        <div style={{ 
+                      <div key={tx.id} className="panel interactive-hover tx-row">
+                        <div className="tx-icon" style={{ 
                           width: "48px", 
                           height: "48px", 
                           borderRadius: "14px", 
@@ -216,7 +212,7 @@ export default function WalletPage() {
                         }}>
                           {meta.icon}
                         </div>
-                        <div>
+                        <div style={{ minWidth: 0 }}>
                           <div style={{ fontWeight: 700 }}>{meta.label}</div>
                           {/* What it was for, in words, when the entry carries
                               it — which tournament a prize came from, and how
@@ -224,12 +220,12 @@ export default function WalletPage() {
                           {tx.description && (
                             <div style={{ fontSize: "0.8rem", marginTop: "2px" }}>{tx.description}</div>
                           )}
-                          <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginTop: "2px" }}>
+                          <div className="tx-meta" style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginTop: "2px" }}>
                             {tx.referenceType} • {new Date(tx.createdAt).toLocaleDateString()} at {new Date(tx.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </div>
                         </div>
-                        <div style={{ textAlign: "right" }}>
-                          <div style={{ fontWeight: 900, fontSize: "1.25rem", color: meta.color }}>
+                        <div className="tx-amount">
+                          <div style={{ fontWeight: 900, fontSize: "1.25rem", color: meta.color, whiteSpace: "nowrap" }}>
                             {isCredit ? "+" : "-"}{formatMoney(tx.amount)}
                           </div>
                           <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "var(--green)", opacity: 0.8, letterSpacing: "1px" }}>COMPLETED</div>

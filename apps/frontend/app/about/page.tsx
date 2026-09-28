@@ -22,7 +22,7 @@ export default function AboutPage() {
           </p>
         </header>
 
-        <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "2.5rem", marginBottom: "8rem" }}>
+        <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(300px, 100%), 1fr))", gap: "2.5rem", marginBottom: "8rem" }}>
           <div className="panel" style={{ padding: "3rem", display: "flex", flexDirection: "column", gap: "1.5rem" }}>
             <div style={{ fontSize: "2.5rem" }}>⚡</div>
             <h2 style={{ fontSize: "1.8rem", fontWeight: 800 }}>Founder Story</h2>

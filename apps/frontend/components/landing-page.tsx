@@ -257,7 +257,7 @@ export function LandingPage() {
         <section id="how-it-works" className="section reveal" style={{ marginTop: "120px" }}>
             <h2 style={{ fontSize: "3rem", fontWeight: 800, marginBottom: "1rem" }}>EVENT LIFECYCLE</h2>
             <p className="muted" style={{ marginBottom: "4rem" }}>Three steps to professional event management.</p>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "2.5rem", position: "relative" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(300px, 100%), 1fr))", gap: "2.5rem", position: "relative" }}>
                 <div className="card-3d" style={{ padding: "4rem 3rem", position: "relative", overflow: "hidden" }}>
                     <div style={{ position: "absolute", top: "-20px", right: "-10px", fontSize: "8rem", fontWeight: 900, opacity: 0.05, color: "white" }}>01</div>
                     <div style={{ background: "linear-gradient(135deg, #8b5cf6, #06b6d4)", width: "60px", height: "60px", borderRadius: "16px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.5rem", marginBottom: "2rem", boxShadow: "0 0 20px rgba(139, 92, 246, 0.4)" }}>📊</div>
@@ -281,7 +281,7 @@ export function LandingPage() {
 
         <section className="section reveal" style={{ marginTop: "120px" }}>
             <h2 style={{ fontSize: "3rem", fontWeight: 800, marginBottom: "4rem" }}>THE INFRASTRUCTURE EDGE</h2>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "2rem" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(300px, 100%), 1fr))", gap: "2rem" }}>
                 <div className="card-3d" style={{ padding: "3rem" }}>
                     <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>⚡</div>
                     <h3>Automated Orchestration</h3>

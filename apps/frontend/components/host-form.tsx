@@ -92,7 +92,7 @@ export default function HostTournamentForm() {
         />
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem", marginBottom: "1.5rem" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(220px, 100%), 1fr))", gap: "1.5rem", marginBottom: "1.5rem" }}>
         <div className="form-group">
           <label htmlFor="entryFee" style={{ display: "block", marginBottom: "0.5rem", color: "var(--text-secondary)", fontWeight: 500 }}>Platform Fee (Credits)</label>
           <input
@@ -128,7 +128,7 @@ export default function HostTournamentForm() {
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem", marginBottom: "1.5rem" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(220px, 100%), 1fr))", gap: "1.5rem", marginBottom: "1.5rem" }}>
         <div className="form-group">
           <label htmlFor="teamSize" style={{ display: "block", marginBottom: "0.5rem", color: "var(--text-secondary)", fontWeight: 500 }}>Team Size</label>
           <select

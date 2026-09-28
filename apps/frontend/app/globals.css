@@ -668,9 +668,12 @@ a:hover {
   align-items: start;
 }
 
+/* !important because pages set grid-template-columns inline to vary the
+   sidebar width, and a plain rule here loses to that even inside a media
+   query -- which is how the wallet kept a 350px sidebar on a phone. */
 @media (max-width: 900px) {
   .page-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr !important;
   }
 }
 
@@ -876,6 +879,55 @@ a:hover {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+}
+
+/* The wallet's sidebar is wider than the shared 2fr/1fr split; declared here
+   rather than inline so the mobile rule can still override it. */
+.wallet-grid {
+  grid-template-columns: 1fr 350px;
+}
+
+/* ── Ledger rows ── */
+.tx-row {
+  display: grid;
+  grid-template-columns: 48px 1fr 150px;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 1rem 1.5rem;
+}
+
+.tx-amount {
+  text-align: right;
+}
+
+/* A fixed 150px amount column and a 48px icon leave too little for the
+   description, so below this the amount sits under the label instead. */
+@media (max-width: 640px) {
+  .tx-row {
+    grid-template-columns: 40px minmax(0, 1fr);
+    gap: 0.75rem 0.85rem;
+    padding: 1rem !important;
+  }
+
+  .tx-row .tx-icon {
+    width: 40px !important;
+    height: 40px !important;
+    font-size: 1.05rem !important;
+  }
+
+  .tx-amount {
+    grid-column: 2;
+    text-align: left;
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+  }
+}
+
+/* Long ids and reference types are unbreakable strings; without this they set
+   the row's minimum width and push the whole card off-screen. */
+.tx-row .tx-meta {
+  overflow-wrap: anywhere;
 }
 
 /* ── Floating Topbar ── */
@@ -2852,9 +2904,38 @@ select.form-control option {
 
   /* === Grids & Cards === */
   .dashboard-grid,
+  .page-grid,
   .schedule-grid,
   .standings-grid-v2 {
     grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+  }
+
+  /* Side padding stacked up three deep -- .page-content, .page and .shell each
+     added their own, leaving barely half the screen for content. One gutter is
+     enough on a phone. */
+  .page {
+    padding: 1rem 0 !important;
+    min-height: auto !important;
+  }
+
+  .shell {
+    padding: 0 !important;
+    max-width: 100% !important;
+  }
+
+  /* Cards and panels: the desktop padding is too generous here. Deliberately
+     not !important -- a panel that sets its own responsive padding inline
+     should keep it; this only catches the ones that never thought about it. */
+  .panel {
+    padding: 1.25rem;
+    border-radius: 20px;
+  }
+
+  /* Anything laid out as a row of labelled figures wraps instead of pushing
+     the card wider than the screen. */
+  .meta-row {
+    flex-wrap: wrap !important;
     gap: 1rem !important;
   }
 

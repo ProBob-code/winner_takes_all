@@ -129,7 +129,7 @@ export default function HostSeriesForm() {
         />
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem", marginBottom: "1.5rem" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(220px, 100%), 1fr))", gap: "1.5rem", marginBottom: "1.5rem" }}>
         <div>
           <label htmlFor="entryFee" style={labelStyle}>Entry Fee, per week (₹)</label>
           <input
@@ -158,7 +158,7 @@ export default function HostSeriesForm() {
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem", marginBottom: "1.5rem" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(220px, 100%), 1fr))", gap: "1.5rem", marginBottom: "1.5rem" }}>
         <div>
           <label htmlFor="sport" style={labelStyle}>Sport</label>
           <select
@@ -187,7 +187,7 @@ export default function HostSeriesForm() {
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem", marginBottom: "1.5rem" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(220px, 100%), 1fr))", gap: "1.5rem", marginBottom: "1.5rem" }}>
         <div>
           <label htmlFor="bracketType" style={labelStyle}>Bracket Format</label>
           <select
@@ -231,7 +231,7 @@ export default function HostSeriesForm() {
       >
         <h3 className="section-heading" style={{ marginTop: 0 }}>The schedule</h3>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(220px, 100%), 1fr))", gap: "1.5rem" }}>
           <div>
             <label htmlFor="firstEventAt" style={labelStyle}>First week opens</label>
             <input

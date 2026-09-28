@@ -97,7 +97,7 @@ export default function SeriesListPage() {
             style={{
               display: "grid",
               gap: "1.25rem",
-              gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
+              gridTemplateColumns: "repeat(auto-fill, minmax(min(300px, 100%), 1fr))",
             }}
           >
             {series.map((s) => (

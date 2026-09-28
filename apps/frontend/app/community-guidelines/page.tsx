@@ -14,7 +14,7 @@ export default function CommunityGuidelinesPage() {
           </p>
         </header>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(400px, 1fr))", gap: "2rem" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(400px, 100%), 1fr))", gap: "2rem" }}>
           {[
             {
               icon: "⚖️",
