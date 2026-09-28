@@ -1,0 +1,8 @@
+# Cloudflare Pages applies these to asset responses. Paired with the headers()
+# block in next.config.js, which covers the worker-rendered ones: documents
+# revalidate, content-hashed assets do not.
+/*
+  Cache-Control: public, max-age=0, must-revalidate
+
+/_next/static/*
+  Cache-Control: public, max-age=31536000, immutable

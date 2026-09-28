@@ -384,6 +384,9 @@ function razorpayCredentials(env: Env) {
  */
 app.get("/api/payments/config", (c) => {
   const { keyId, configured, missing } = razorpayCredentials(c.env);
+  // Never let this answer come from a cache: a stale "not configured" reads
+  // exactly like a real one, and sends someone to re-check keys that are set.
+  c.header("Cache-Control", "no-store");
   return c.json({
     ok: true,
     enabled: configured,

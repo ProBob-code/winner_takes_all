@@ -93,7 +93,7 @@ export function PaymentButton({ onSuccess }: PaymentButtonProps) {
     (async () => {
       const apiUrl = getApiUrl();
       try {
-        const res = await fetch(`${apiUrl}/api/payments/config`, { credentials: "include" });
+        const res = await fetch(`${apiUrl}/api/payments/config`, { credentials: "include", cache: "no-store" });
         // readJsonResponse, not res.json(): when the API base URL is unset the
         // request lands on the web app and comes back as an HTML 404, and the
         // raw parse error says nothing about why.
