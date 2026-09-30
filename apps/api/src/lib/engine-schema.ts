@@ -20,12 +20,26 @@
  * data.
  *
  * Kept deliberately in step with apps/api/migrations/0006_engine_tables.sql,
- * 0007_series.sql, 0009_engine_houses.sql and 0010_wallet_description.sql;
- * apps/api/migrations/rehearse.py and rehearse_bootstrap.py check the SQL runs.
+ * 0007_series.sql, 0009_engine_houses.sql, 0010_wallet_description.sql and
+ * 0011_payouts_and_bonus.sql; apps/api/migrations/rehearse.py and
+ * rehearse_bootstrap.py check the SQL runs.
  */
 
 /** Tables and indexes. Safe to run any number of times. */
 const CREATE_STATEMENTS = [
+  `CREATE TABLE IF NOT EXISTS payout_requests (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    amount_cents INTEGER NOT NULL,
+    fee_cents INTEGER NOT NULL,
+    net_cents INTEGER NOT NULL,
+    destination TEXT NOT NULL DEFAULT '',
+    status TEXT NOT NULL DEFAULT 'pending',
+    note TEXT,
+    processed_by TEXT,
+    processed_at TEXT,
+    created_at TEXT NOT NULL
+  )`,
   `CREATE TABLE IF NOT EXISTS engine_teams (
     id TEXT PRIMARY KEY,
     tournament_id TEXT NOT NULL,
@@ -118,6 +132,9 @@ const CREATE_STATEMENTS = [
  * steady state, and is ignored.
  */
 const ADD_COLUMN_STATEMENTS = [
+  // The part of a balance that was given rather than deposited or won. It can
+  // be staked, but it can never be withdrawn.
+  `ALTER TABLE wallets ADD COLUMN bonus_cents INTEGER NOT NULL DEFAULT 0`,
   `ALTER TABLE tournaments ADD COLUMN series_id TEXT`,
   `ALTER TABLE tournaments ADD COLUMN series_week INTEGER`,
   `ALTER TABLE engine_teams ADD COLUMN user_id TEXT`,
@@ -132,6 +149,8 @@ const ADD_COLUMN_STATEMENTS = [
 
 const INDEX_AFTER_COLUMNS = [
   `CREATE INDEX IF NOT EXISTS idx_tournaments_series ON tournaments(series_id, series_week)`,
+  `CREATE INDEX IF NOT EXISTS idx_payouts_user ON payout_requests(user_id, created_at DESC)`,
+  `CREATE INDEX IF NOT EXISTS idx_payouts_status ON payout_requests(status, created_at DESC)`,
 ];
 
 /**

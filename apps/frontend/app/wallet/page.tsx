@@ -5,6 +5,7 @@ export const dynamic = "force-dynamic";
 import { useEffect, useState, useMemo } from "react";
 import { formatMoney } from "@/lib/format";
 import { PaymentButton } from "@/components/payment-button";
+import { PayoutButton } from "@/components/payout-button";
 import { useRouter } from "next/navigation";
 import { getApiUrl } from "@/lib/api-config";
 
@@ -14,6 +15,7 @@ const TX_LABELS: Record<string, { label: string; icon: string; color: string; bg
   tournament_payout: { label: "Championship Reward", icon: "🏆", color: "var(--gold)", bg: "var(--gold-subtle)" },
   refund: { label: "Refund", icon: "↩️", color: "var(--cyan)", bg: "var(--cyan-subtle)" },
   manual_adjustment: { label: "Adjustment", icon: "🎁", color: "var(--accent-light)", bg: "var(--accent-subtle)" },
+  payout_debit: { label: "Withdrawal", icon: "🏦", color: "var(--red-light)", bg: "var(--red-subtle)" },
 };
 
 export default function WalletPage() {
@@ -21,6 +23,8 @@ export default function WalletPage() {
   const [wallet, setWallet] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     const fetchWallet = async () => {
@@ -46,7 +50,7 @@ export default function WalletPage() {
       }
     };
     fetchWallet();
-  }, [router]);
+  }, [router, reloadKey]);
 
   /**
    * What the ledger adds up to.
@@ -56,7 +60,7 @@ export default function WalletPage() {
    * totalled ₹0.00 however much had moved through the account.
    */
   const stats = useMemo(() => {
-    const empty = { deposits: 0, winnings: 0, entries: 0, refunds: 0, count: 0 };
+    const empty = { deposits: 0, winnings: 0, entries: 0, refunds: 0, withdrawn: 0, count: 0 };
     if (!wallet?.transactions) return empty;
 
     return wallet.transactions.reduce((acc: typeof empty, tx: any) => {
@@ -72,6 +76,8 @@ export default function WalletPage() {
         acc.winnings += amt;
       } else if (tx.type === "entry_fee_debit") {
         acc.entries += amt;
+      } else if (tx.type === "payout_debit") {
+        acc.withdrawn += amt;
       } else if (tx.type === "refund" || tx.referenceType === "entry_fee_refund") {
         acc.refunds += amt;
       }
@@ -166,16 +172,29 @@ export default function WalletPage() {
                      </div>
                    </div>
                    <div>
-                     <div className="muted" style={{ fontSize: "0.75rem", fontWeight: 600 }}>LAST SYNC</div>
-                     <div style={{ fontWeight: 700 }}>Just Now</div>
+                     <div className="muted" style={{ fontSize: "0.75rem", fontWeight: 600 }}>WITHDRAWABLE</div>
+                     <div style={{ fontWeight: 700, color: "var(--green-light)" }}>
+                       {formatMoney(wallet.withdrawable ?? wallet.balance)}
+                     </div>
                    </div>
+                   {Number(wallet.bonus?.amount ?? 0) > 0 && (
+                     <div>
+                       <div className="muted" style={{ fontSize: "0.75rem", fontWeight: 600 }}>GAME BONUS</div>
+                       <div style={{ fontWeight: 700, color: "var(--gold)" }} title="Can be staked on entry fees, but not cashed out">
+                         {formatMoney(wallet.bonus)}
+                       </div>
+                     </div>
+                   )}
                 </div>
 
                 <div className="cta-row" style={{ marginTop: "auto" }}>
-                  <PaymentButton />
-                  <button className="button-secondary" style={{ opacity: 0.6, cursor: "not-allowed" }} title="Coming Soon">
-                    Request Payout
-                  </button>
+                  <PaymentButton onSuccess={() => setReloadKey((n) => n + 1)} />
+                  <PayoutButton
+                    withdrawable={wallet.withdrawable ?? wallet.balance}
+                    bonus={wallet.bonus ?? { amount: "0.00", currency: "INR" }}
+                    feePercent={wallet.payoutFeePercent ?? 1}
+                    onRequested={() => setReloadKey((n) => n + 1)}
+                  />
                 </div>
               </div>
             </div>
@@ -254,6 +273,9 @@ export default function WalletPage() {
                   ...(stats.refunds > 0
                     ? [{ label: "Refunds", value: stats.refunds, color: "var(--cyan)", sign: "+" }]
                     : []),
+                  ...(stats.withdrawn > 0
+                    ? [{ label: "Withdrawn", value: stats.withdrawn, color: "var(--red-light)", sign: "\u2212" }]
+                    : []),
                 ].map((row) => (
                   <div
                     key={row.label}
@@ -270,11 +292,47 @@ export default function WalletPage() {
                 <div style={{ display: "flex", justifyContent: "space-between", gap: "1rem", padding: "0.75rem 1rem 0", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
                   <span className="muted" style={{ fontSize: "0.75rem", fontWeight: 700 }}>NET MOVEMENT</span>
                   <span style={{ fontWeight: 900, fontVariantNumeric: "tabular-nums" }}>
-                    {formatMoney(stats.deposits + stats.winnings + stats.refunds - stats.entries)}
+                    {formatMoney(stats.deposits + stats.winnings + stats.refunds - stats.entries - stats.withdrawn)}
                   </span>
                 </div>
               </div>
             </div>
+
+            {Array.isArray(wallet.payouts) && wallet.payouts.length > 0 && (
+              <div className="panel" style={{ padding: "1.5rem" }}>
+                <h4 style={{ marginBottom: "0.35rem", fontSize: "1.1rem" }}>Withdrawals</h4>
+                <p className="muted" style={{ fontSize: "0.72rem", marginBottom: "1rem" }}>
+                  A declined withdrawal returns every rupee, handling charge included.
+                </p>
+                <div className="stack" style={{ gap: "0.75rem" }}>
+                  {wallet.payouts.map((p: any) => (
+                    <div key={p.id} style={{ background: "rgba(255,255,255,0.02)", padding: "0.85rem", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.05)" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", gap: "0.75rem", flexWrap: "wrap" }}>
+                        <strong>{formatMoney(p.net)}</strong>
+                        <span
+                          className="status-badge"
+                          style={
+                            p.status === "paid"
+                              ? { background: "rgba(16,185,129,0.12)", color: "#10b981" }
+                              : p.status === "rejected"
+                                ? { background: "rgba(239,68,68,0.12)", color: "#f87171" }
+                                : { background: "rgba(245,158,11,0.12)", color: "var(--gold)" }
+                          }
+                        >
+                          {p.status.toUpperCase()}
+                        </span>
+                      </div>
+                      <div className="muted" style={{ fontSize: "0.72rem", marginTop: "0.3rem", overflowWrap: "anywhere" }}>
+                        {formatMoney(p.amount)} less {formatMoney(p.fee)} charge → {p.destination}
+                      </div>
+                      {p.note && (
+                        <div className="muted" style={{ fontSize: "0.72rem", marginTop: "0.25rem" }}>{p.note}</div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="panel" style={{ padding: "1.5rem", border: "1px dashed var(--border-color)", background: "transparent" }}>
               <h4 style={{ marginBottom: "1rem", fontSize: "1rem" }}>Security Tips</h4>

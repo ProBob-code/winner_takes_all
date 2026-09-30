@@ -39,6 +39,14 @@ export interface UserRecord {
   role: string; wallet_balance_cents: number; created_at: string;
 }
 
+export interface PayoutRequestRecord {
+  id: string; user_id: string; amount_cents: number; fee_cents: number;
+  net_cents: number; destination: string; status: string; note: string | null;
+  processed_by: string | null; processed_at: string | null; created_at: string;
+  /** Joined for the admin queue, so it need not fetch each member separately. */
+  user_name?: string; user_email?: string;
+}
+
 export interface WalletEntryRecord {
   id: string; user_id: string; type: string; amount_cents: number;
   reference_type: string; reference_id: string; is_test: boolean; created_at: string;
@@ -287,9 +295,215 @@ export class D1Store {
 
     if ((results[1].meta.changes ?? 0) === 0) throw new InsufficientFundsError();
 
+    // Bonus is staked before real money, which is the whole point of giving
+    // it. Draining it first also keeps the withdrawable figure honest: what is
+    // left is money the member actually put in or won. A database that
+    // predates the column simply skips this.
+    try {
+      await this.db.prepare(
+        `UPDATE wallets SET bonus_cents = MAX(0, bonus_cents - ?) WHERE user_id = ?`
+      ).bind(amountCents, userId).run();
+    } catch (err) {
+      if (!isMissingColumnError(err)) throw err;
+    }
+
     const user = await this.getUserById(userId);
     if (!user) throw new Error("User not found");
     return user;
+  }
+
+  /**
+   * What this member may actually withdraw.
+   *
+   * Bonus credit sits inside the balance so it can be staked, but it was never
+   * their money, so it never leaves as cash. On a database that predates the
+   * column every rupee is withdrawable, which is the pre-bonus behaviour.
+   */
+  async getWalletSummary(userId: string): Promise<{ balanceCents: number; bonusCents: number; withdrawableCents: number }> {
+    let row: any = null;
+    try {
+      row = await this.db.prepare(
+        `SELECT balance_cents, bonus_cents FROM wallets WHERE user_id = ?`
+      ).bind(userId).first<any>();
+    } catch (err) {
+      if (!isMissingColumnError(err)) throw err;
+      row = await this.db.prepare(`SELECT balance_cents FROM wallets WHERE user_id = ?`).bind(userId).first<any>();
+    }
+    const balanceCents = row?.balance_cents ?? 0;
+    const bonusCents = row?.bonus_cents ?? 0;
+    return { balanceCents, bonusCents, withdrawableCents: Math.max(0, balanceCents - bonusCents) };
+  }
+
+  /** Give bonus credit: spendable on entry fees, never withdrawable as cash. */
+  async creditBonus(userId: string, amountCents: number, description: string | null): Promise<UserRecord> {
+    const user = await this.creditWallet(
+      userId, amountCents, "bonus_grant", createId("bonus"), "manual_adjustment", null, false, description,
+    );
+    try {
+      await this.db.prepare(
+        `UPDATE wallets SET bonus_cents = bonus_cents + ? WHERE user_id = ?`
+      ).bind(amountCents, userId).run();
+    } catch (err) {
+      if (!isMissingColumnError(err)) throw err;
+    }
+    return user;
+  }
+
+  /**
+   * Debit the wallet and record the request together.
+   *
+   * The money leaves now rather than when an admin approves, so the same
+   * balance cannot be promised to two requests. The debit is gated on the
+   * *withdrawable* figure rather than the balance, because bonus credit can
+   * never be cashed out. Rejecting a request puts amount_cents back.
+   */
+  async createPayoutRequest(userId: string, amountCents: number, feeCents: number, destination: string): Promise<PayoutRequestRecord> {
+    if (!Number.isInteger(amountCents) || amountCents <= 0) throw new Error("Invalid amount");
+    const now = new Date().toISOString();
+    const id = createId("payout");
+    const netCents = amountCents - feeCents;
+
+    // COALESCE keeps this working on a database that predates bonus_cents.
+    const debit = await this.db.prepare(
+      `UPDATE wallets SET balance_cents = balance_cents - ?, updated_at = ?
+       WHERE user_id = ? AND (balance_cents - COALESCE(bonus_cents, 0)) >= ?`
+    ).bind(amountCents, now, userId, amountCents).run();
+
+    if ((debit.meta.changes ?? 0) === 0) throw new InsufficientFundsError();
+
+    await this.db.batch([
+      this.db.prepare(
+        `INSERT INTO wallet_transactions (id, wallet_id, user_id, type, amount_cents, balance_after_cents, reference_type, reference_id, description, created_at)
+         SELECT ?, w.id, ?, 'payout_debit', ?, w.balance_cents, 'payout_request', ?, ?, ?
+         FROM wallets w WHERE w.user_id = ?`
+      ).bind(createId("wallettxn"), userId, amountCents, id, "Payout requested to " + destination, now, userId),
+      this.db.prepare(
+        `INSERT INTO payout_requests (id, user_id, amount_cents, fee_cents, net_cents, destination, status, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, 'pending', ?)`
+      ).bind(id, userId, amountCents, feeCents, netCents, destination, now),
+    ]);
+
+    const row = await this.getPayoutRequest(id);
+    if (!row) throw new Error("Payout request could not be created");
+    return row;
+  }
+
+  async getPayoutRequest(id: string): Promise<PayoutRequestRecord | null> {
+    return await this.db.prepare(
+      `SELECT p.*, u.name AS user_name, u.email AS user_email
+       FROM payout_requests p LEFT JOIN users u ON u.id = p.user_id WHERE p.id = ?`
+    ).bind(id).first<any>();
+  }
+
+  async listPayoutRequests(opts: { userId?: string; status?: string; limit?: number } = {}): Promise<PayoutRequestRecord[]> {
+    const where: string[] = [];
+    const binds: any[] = [];
+    if (opts.userId) { where.push("p.user_id = ?"); binds.push(opts.userId); }
+    if (opts.status) { where.push("p.status = ?"); binds.push(opts.status); }
+    binds.push(Math.min(opts.limit ?? 100, 500));
+    const clause = where.length ? "WHERE " + where.join(" AND ") : "";
+    const { results } = await this.db.prepare(
+      `SELECT p.*, u.name AS user_name, u.email AS user_email
+       FROM payout_requests p LEFT JOIN users u ON u.id = p.user_id
+       ${clause}
+       ORDER BY p.created_at DESC LIMIT ?`
+    ).bind(...binds).all<any>();
+    return results;
+  }
+
+  /**
+   * Settle a pending request.
+   *
+   * The status change is conditional on it still being pending, so two admins
+   * acting at once cannot pay twice, nor refund a payout that already went out.
+   */
+  async settlePayoutRequest(id: string, status: "paid" | "rejected", adminId: string, note: string | null): Promise<PayoutRequestRecord | null> {
+    const now = new Date().toISOString();
+    const res = await this.db.prepare(
+      `UPDATE payout_requests SET status = ?, processed_by = ?, processed_at = ?, note = ?
+       WHERE id = ? AND status = 'pending'`
+    ).bind(status, adminId, now, note, id).run();
+
+    if ((res.meta.changes ?? 0) === 0) return null;
+
+    if (status === "rejected") {
+      const req = await this.db.prepare(
+        `SELECT user_id, amount_cents FROM payout_requests WHERE id = ?`
+      ).bind(id).first<any>();
+      if (req) {
+        // Straight back to the balance, with a ledger line saying why.
+        await this.creditWallet(
+          req.user_id, req.amount_cents, "payout_rejected", id, "refund", null, false,
+          note ? "Payout declined: " + note : "Payout declined",
+        );
+      }
+    }
+
+    return await this.getPayoutRequest(id);
+  }
+
+  /**
+   * What the platform has earned, and what it still owes.
+   *
+   * Only fees on payouts that were actually paid count as earned: a pending
+   * request has taken nothing yet, and a rejected one gave it all back.
+   */
+  async platformEarnings(): Promise<{ feesEarnedCents: number; paidOutCents: number; pendingCount: number; pendingCents: number }> {
+    const paid = await this.db.prepare(
+      `SELECT COALESCE(SUM(fee_cents),0) AS fees, COALESCE(SUM(net_cents),0) AS net
+       FROM payout_requests WHERE status = 'paid'`
+    ).first<any>();
+    const pending = await this.db.prepare(
+      `SELECT COUNT(*) AS n, COALESCE(SUM(amount_cents),0) AS amt
+       FROM payout_requests WHERE status = 'pending'`
+    ).first<any>();
+    return {
+      feesEarnedCents: paid?.fees ?? 0,
+      paidOutCents: paid?.net ?? 0,
+      pendingCount: pending?.n ?? 0,
+      pendingCents: pending?.amt ?? 0,
+    };
+  }
+
+  /** Every member, with balance and how much they have moved. Admin only. */
+  async listAllUsers(limit = 200): Promise<any[]> {
+    const { results } = await this.db.prepare(
+      `SELECT u.id, u.name, u.email, u.role, u.created_at,
+              COALESCE(w.balance_cents, 0) AS balance_cents,
+              COALESCE(w.bonus_cents, 0) AS bonus_cents,
+              (SELECT COUNT(*) FROM wallet_transactions t WHERE t.user_id = u.id) AS txn_count,
+              (SELECT MAX(created_at) FROM wallet_transactions t WHERE t.user_id = u.id) AS last_activity
+       FROM users u LEFT JOIN wallets w ON w.user_id = u.id
+       ORDER BY u.created_at DESC LIMIT ?`
+    ).bind(Math.min(limit, 500)).all<any>();
+    return results;
+  }
+
+  /** The whole ledger, newest first, with who each row belongs to. Admin only. */
+  async listAllTransactions(limit = 100): Promise<any[]> {
+    const { results } = await this.db.prepare(
+      `SELECT t.id, t.user_id, t.type, t.amount_cents, t.reference_type, t.reference_id,
+              t.description, t.created_at, u.name AS user_name, u.email AS user_email
+       FROM wallet_transactions t LEFT JOIN users u ON u.id = t.user_id
+       ORDER BY t.created_at DESC LIMIT ?`
+    ).bind(Math.min(limit, 500)).all<any>();
+    return results;
+  }
+
+  /** Change a member's role. False when there is no such member. */
+  async setUserRole(userId: string, role: string): Promise<boolean> {
+    const res = await this.db.prepare(
+      `UPDATE users SET role = ?, updated_at = ? WHERE id = ?`
+    ).bind(role, new Date().toISOString(), userId).run();
+    return (res.meta.changes ?? 0) > 0;
+  }
+
+  /** Replace a member's password hash, for an admin-forced reset. */
+  async setPasswordHash(userId: string, passwordHash: string): Promise<boolean> {
+    const res = await this.db.prepare(
+      `UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?`
+    ).bind(passwordHash, new Date().toISOString(), userId).run();
+    return (res.meta.changes ?? 0) > 0;
   }
 
   /**

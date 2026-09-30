@@ -53,6 +53,32 @@ export const verifyPaymentSchema = z.object({
 
 // ── Wallet ──
 
+export const payoutRequestSchema = z.object({
+  // Rupees. A floor keeps the 1% from rounding to nothing; the ceiling matches
+  // the top-up cap so a wallet cannot be drained in one unreviewed request.
+  amount: z.coerce.number().positive().min(100).max(100_000),
+  // UPI id or account reference, as the member typed it.
+  destination: z.string().trim().min(3).max(140),
+});
+
+export const settlePayoutSchema = z.object({
+  action: z.enum(["paid", "rejected"]),
+  note: z.string().trim().max(280).optional(),
+});
+
+export const adminRoleSchema = z.object({
+  role: z.enum(["player", "admin"]),
+});
+
+export const adminBonusSchema = z.object({
+  amount: z.coerce.number().positive().max(100_000),
+  reason: z.string().trim().max(200).optional(),
+});
+
+export const adminResetPasswordSchema = z.object({
+  password: z.string().min(8).max(200),
+});
+
 export const transferSchema = z.object({
   recipientId: z.string().trim().min(1).max(64),
   amount: z.coerce.number().positive().max(1_000_000),

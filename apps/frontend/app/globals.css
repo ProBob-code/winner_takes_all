@@ -3279,3 +3279,46 @@ select.form-control option {
   color: var(--text-muted);
   margin: 0 0 1.25rem;
 }
+
+/* ── Admin console tables ───────────────────────────────────────────────
+   A table is the one thing allowed to be wider than a phone, so each sits in
+   its own scrolling box (.admin-table-wrap) and the page never scrolls. */
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  min-width: 560px;
+}
+
+.admin-table th {
+  text-align: left;
+  font-size: 0.66rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  font-weight: 800;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--glass-bg-hover);
+  white-space: nowrap;
+}
+
+.admin-table td {
+  padding: 0.7rem 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  vertical-align: top;
+}
+
+.admin-table tr:last-child td {
+  border-bottom: none;
+}
+
+.admin-sub {
+  font-size: 0.7rem;
+  overflow-wrap: anywhere;
+}
+
+.button-sm {
+  padding: 0.4rem 0.75rem !important;
+  font-size: 0.72rem !important;
+  border-radius: 10px !important;
+}

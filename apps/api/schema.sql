@@ -15,8 +15,30 @@ CREATE TABLE IF NOT EXISTS wallets (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL UNIQUE,
   balance_cents INTEGER NOT NULL DEFAULT 0 CHECK (balance_cents >= 0),
+  -- The part of balance_cents that was given rather than deposited or won.
+  -- Included in the balance so it can be staked, excluded from withdrawals:
+  -- withdrawable = balance_cents - bonus_cents.
+  bonus_cents INTEGER NOT NULL DEFAULT 0 CHECK (bonus_cents >= 0),
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
+  FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+-- A member asking for their balance back, and the 1% the platform keeps for
+-- handling it. amount_cents leaves the wallet when the request is made, so the
+-- same balance cannot be promised to two requests; rejecting one refunds it.
+CREATE TABLE IF NOT EXISTS payout_requests (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  amount_cents INTEGER NOT NULL,
+  fee_cents INTEGER NOT NULL,
+  net_cents INTEGER NOT NULL,
+  destination TEXT NOT NULL DEFAULT '',
+  status TEXT NOT NULL DEFAULT 'pending',
+  note TEXT,
+  processed_by TEXT,
+  processed_at TEXT,
+  created_at TEXT NOT NULL,
   FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
@@ -185,6 +207,8 @@ CREATE TABLE IF NOT EXISTS notifications (
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_wallets_user ON wallets(user_id);
 CREATE INDEX IF NOT EXISTS idx_wallet_txn_user ON wallet_transactions(user_id);
+CREATE INDEX IF NOT EXISTS idx_payouts_user ON payout_requests(user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_payouts_status ON payout_requests(status, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_participants_tournament ON participants(tournament_id);
 CREATE INDEX IF NOT EXISTS idx_participants_user ON participants(user_id);
 CREATE INDEX IF NOT EXISTS idx_matches_tournament ON matches(tournament_id);

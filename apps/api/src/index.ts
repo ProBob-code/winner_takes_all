@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import type { Context } from "hono";
 import type { AppContext, Env } from "./types";
-import { D1Store, InsufficientFundsError, isMissingColumnError, isMissingTableError, type SeriesRecord, type TournamentRecord } from "./lib/d1-store";
+import { D1Store, InsufficientFundsError, isMissingColumnError, isMissingTableError, type PayoutRequestRecord, type SeriesRecord, type TournamentRecord } from "./lib/d1-store";
 import { computeSeasonStandings } from "./lib/season";
 import { ensureEngineSchema } from "./lib/engine-schema";
 import {
@@ -36,7 +36,7 @@ import {
   type RealtimeConfig,
 } from "./lib/realtime";
 import { authMiddleware, requireUser, requireAdmin, serializeUser, extractAccessToken } from "./middleware/auth";
-import { centsToMoney } from "./lib/money";
+import { centsToMoney, payoutFeeCents, PAYOUT_FEE_PERCENT } from "./lib/money";
 import { checkRateLimit, clientKey } from "./lib/rate-limit";
 import * as Engine from "./lib/tournament-engine";
 import {
@@ -65,6 +65,11 @@ import {
   streamRenegotiateSchema,
   streamCloseSchema,
   registerFeedSchema,
+  payoutRequestSchema,
+  settlePayoutSchema,
+  adminRoleSchema,
+  adminBonusSchema,
+  adminResetPasswordSchema,
 } from "./lib/validation";
 
 const app = new Hono<AppContext>();
@@ -132,6 +137,26 @@ app.use("/api/series/*", async (c, next) => {
     await ensureEngineSchema(c.env.DB);
   } catch (err) {
     console.error("Could not ensure the engine schema:", err);
+  }
+  return next();
+});
+
+// Payout requests and the bonus column arrived the same way the engine tables
+// did, so the same safety net covers the routes that read them.
+app.use("/api/wallet/*", async (c, next) => {
+  try {
+    await ensureEngineSchema(c.env.DB);
+  } catch (err) {
+    console.error("Could not ensure the payout schema:", err);
+  }
+  return next();
+});
+
+app.use("/api/admin/*", async (c, next) => {
+  try {
+    await ensureEngineSchema(c.env.DB);
+  } catch (err) {
+    console.error("Could not ensure the payout schema:", err);
   }
   return next();
 });
@@ -795,13 +820,89 @@ app.get("/api/wallet", async (c) => {
     description: e.description,
   }));
 
+  // Bonus credit is spendable but not cashable, so the wallet reports both the
+  // balance and what could actually be withdrawn from it.
+  const summary = await store.getWalletSummary(user.id);
+  const payouts = await store.listPayoutRequests({ userId: user.id, limit: 20 });
+
   return c.json({
     ok: true,
     wallet: {
       balance: centsToMoney(user.wallet_balance_cents),
+      bonus: centsToMoney(summary.bonusCents),
+      withdrawable: centsToMoney(summary.withdrawableCents),
+      payoutFeePercent: PAYOUT_FEE_PERCENT,
       transactions,
+      payouts: payouts.map(serializePayout),
     },
   });
+});
+
+function serializePayout(p: PayoutRequestRecord) {
+  return {
+    id: p.id,
+    amount: centsToMoney(p.amount_cents),
+    fee: centsToMoney(p.fee_cents),
+    net: centsToMoney(p.net_cents),
+    destination: p.destination,
+    status: p.status,
+    note: p.note,
+    createdAt: p.created_at,
+    processedAt: p.processed_at,
+    user: p.user_name ? { id: p.user_id, name: p.user_name, email: p.user_email } : undefined,
+  };
+}
+
+/**
+ * Ask for money back.
+ *
+ * Everything except bonus credit is withdrawable. The balance is debited here
+ * rather than when an admin approves, so two requests cannot be funded by the
+ * same rupees; a rejection refunds it.
+ */
+app.post("/api/wallet/payout", async (c) => {
+  const user = requireUser(c);
+  if (!user) return c.json({ ok: false, message: "Authentication required" }, 401);
+
+  const limited = await rateLimit(c, `payout:${user.id}`, 5, 300);
+  if (limited) return limited;
+
+  const body = parseBody(payoutRequestSchema, await readJson(c));
+  const amountCents = Math.round(body.amount * 100);
+
+  const store = c.get("store");
+  const summary = await store.getWalletSummary(user.id);
+
+  if (amountCents > summary.withdrawableCents) {
+    return c.json({
+      ok: false,
+      message:
+        summary.bonusCents > 0
+          ? `Only ${centsToMoney(summary.withdrawableCents).amount} of this balance can be withdrawn — ${centsToMoney(summary.bonusCents).amount} is bonus credit, which can be played with but not cashed out.`
+          : `Only ${centsToMoney(summary.withdrawableCents).amount} is available to withdraw.`,
+    }, 400);
+  }
+
+  const feeCents = payoutFeeCents(amountCents);
+
+  try {
+    const request = await store.createPayoutRequest(user.id, amountCents, feeCents, body.destination);
+    return c.json({ ok: true, payout: serializePayout(request) });
+  } catch (err) {
+    if (err instanceof InsufficientFundsError) {
+      return c.json({ ok: false, message: "That is more than this wallet can withdraw right now." }, 400);
+    }
+    throw err;
+  }
+});
+
+/** A member's own payout history. */
+app.get("/api/wallet/payouts", async (c) => {
+  const user = requireUser(c);
+  if (!user) return c.json({ ok: false, message: "Authentication required" }, 401);
+  const store = c.get("store");
+  const payouts = await store.listPayoutRequests({ userId: user.id, limit: 50 });
+  return c.json({ ok: true, payouts: payouts.map(serializePayout) });
 });
 
 app.post("/api/wallet/transfer", async (c) => {
@@ -883,25 +984,218 @@ app.get("/api/leaderboard/global", async (c) => {
 });
 
 // --- Admin ---
-app.get("/api/admin/overview", async (c) => {
+
+/**
+ * Guard every admin route the same way.
+ *
+ * Returns the admin, or the 403 to hand straight back. Kept as one helper so a
+ * new admin route cannot accidentally ship without the check.
+ */
+function adminOr403(c: Context<AppContext>) {
   const admin = requireAdmin(c);
-  if (!admin) return c.json({ ok: false, message: "Admin access required" }, 403);
+  if (!admin) return { admin: null, deny: c.json({ ok: false, message: "Admin access required" }, 403) };
+  return { admin, deny: null };
+}
+
+app.get("/api/admin/overview", async (c) => {
+  const { admin, deny } = adminOr403(c);
+  if (!admin) return deny;
 
   const store = c.get("store");
-  const tournaments = await store.listTournaments();
+  const [tournaments, users, earnings, pendingPayouts] = await Promise.all([
+    store.listTournaments(),
+    store.listAllUsers(500),
+    store.platformEarnings(),
+    store.listPayoutRequests({ status: "pending", limit: 100 }),
+  ]);
+
+  const completed = tournaments.filter((t) => String(t.status).toLowerCase() === "completed");
+
+  // Money the members are holding, which is what the platform owes if every
+  // one of them cashed out at once. Bonus credit is excluded: it is never
+  // payable.
+  const heldCents = users.reduce((n: number, u: any) => n + (u.balance_cents || 0), 0);
+  const bonusCents = users.reduce((n: number, u: any) => n + (u.bonus_cents || 0), 0);
 
   return c.json({
     ok: true,
     totalTournaments: tournaments.length,
     activeTournaments: tournaments.filter((t) => t.status === "open" || t.status === "in_progress").length,
-    completedTournaments: tournaments.filter((t) => t.status === "completed").length,
+    completedTournaments: completed.length,
+    totalUsers: users.length,
+    admins: users.filter((u: any) => u.role === "admin").length,
+    /** Platform charges live here and nowhere a member can reach. */
+    platform: {
+      feesEarned: centsToMoney(earnings.feesEarnedCents),
+      paidOut: centsToMoney(earnings.paidOutCents),
+      pendingPayouts: earnings.pendingCount,
+      pendingPayoutValue: centsToMoney(earnings.pendingCents),
+      feePercent: PAYOUT_FEE_PERCENT,
+      memberBalances: centsToMoney(heldCents),
+      bonusOutstanding: centsToMoney(bonusCents),
+      liability: centsToMoney(Math.max(0, heldCents - bonusCents)),
+    },
+    pendingPayoutQueue: pendingPayouts.map(serializePayout),
     tournaments: tournaments.map((t) => ({
       id: t.id,
       name: t.name,
       status: t.status,
       joinedPlayers: t.participant_ids.length,
       maxPlayers: t.max_players,
+      entryFee: centsToMoney(t.entry_fee_cents),
+      prizePool: centsToMoney(t.prize_pool_cents),
+      hostId: t.host_id,
+      // Who took the pot, for the wins view.
+      winnerId: t.winner_id,
+      startedAt: t.started_at,
+      completedAt: t.completed_at,
     })),
+  });
+});
+
+/**
+ * Every member.
+ *
+ * Passwords are deliberately absent: they are stored as salted PBKDF2 hashes
+ * and cannot be turned back into the original, by an admin or by anyone else.
+ * Use the reset route below to set a new one rather than to read the old one.
+ */
+app.get("/api/admin/users", async (c) => {
+  const { admin, deny } = adminOr403(c);
+  if (!admin) return deny;
+
+  const store = c.get("store");
+  const users = await store.listAllUsers(500);
+
+  return c.json({
+    ok: true,
+    users: users.map((u: any) => ({
+      id: u.id,
+      name: u.name,
+      email: u.email,
+      role: u.role,
+      createdAt: u.created_at,
+      balance: centsToMoney(u.balance_cents || 0),
+      bonus: centsToMoney(u.bonus_cents || 0),
+      withdrawable: centsToMoney(Math.max(0, (u.balance_cents || 0) - (u.bonus_cents || 0))),
+      transactionCount: u.txn_count || 0,
+      lastActivity: u.last_activity || null,
+    })),
+  });
+});
+
+/** The whole ledger, across every member. */
+app.get("/api/admin/transactions", async (c) => {
+  const { admin, deny } = adminOr403(c);
+  if (!admin) return deny;
+
+  const store = c.get("store");
+  const limit = Number(c.req.query("limit") || 150);
+  const rows = await store.listAllTransactions(Number.isFinite(limit) ? limit : 150);
+
+  return c.json({
+    ok: true,
+    transactions: rows.map((t: any) => ({
+      id: t.id,
+      userId: t.user_id,
+      userName: t.user_name,
+      userEmail: t.user_email,
+      type: t.type,
+      amount: centsToMoney(t.amount_cents),
+      referenceType: t.reference_type,
+      referenceId: t.reference_id,
+      description: t.description,
+      createdAt: t.created_at,
+    })),
+  });
+});
+
+/** The payout queue. `status` filters it; omitted, it lists everything. */
+app.get("/api/admin/payouts", async (c) => {
+  const { admin, deny } = adminOr403(c);
+  if (!admin) return deny;
+
+  const store = c.get("store");
+  const status = c.req.query("status");
+  const payouts = await store.listPayoutRequests({ status: status || undefined, limit: 200 });
+  return c.json({ ok: true, payouts: payouts.map(serializePayout) });
+});
+
+/**
+ * Mark a payout paid, or decline it.
+ *
+ * Declining refunds the member. Both are conditional on the request still
+ * being pending, so two admins acting at once cannot pay it twice.
+ */
+app.post("/api/admin/payouts/:id/settle", async (c) => {
+  const { admin, deny } = adminOr403(c);
+  if (!admin) return deny;
+
+  const body = parseBody(settlePayoutSchema, await readJson(c));
+  const store = c.get("store");
+  const settled = await store.settlePayoutRequest(c.req.param("id"), body.action, admin.id, body.note ?? null);
+
+  if (!settled) {
+    return c.json({ ok: false, message: "That payout is no longer pending — someone may have already settled it." }, 409);
+  }
+
+  return c.json({ ok: true, payout: serializePayout(settled) });
+});
+
+/** Promote or demote a member. */
+app.post("/api/admin/users/:id/role", async (c) => {
+  const { admin, deny } = adminOr403(c);
+  if (!admin) return deny;
+
+  const target = c.req.param("id");
+  if (target === admin.id) {
+    return c.json({ ok: false, message: "You cannot change your own role." }, 400);
+  }
+
+  const body = parseBody(adminRoleSchema, await readJson(c));
+  const store = c.get("store");
+  const changed = await store.setUserRole(target, body.role);
+  if (!changed) return c.json({ ok: false, message: "No such member" }, 404);
+  return c.json({ ok: true, role: body.role });
+});
+
+/**
+ * Set a new password for a member.
+ *
+ * This is the only thing an admin can do about a password. The stored value is
+ * a salted PBKDF2 hash, so the original cannot be read back by anyone.
+ */
+app.post("/api/admin/users/:id/reset-password", async (c) => {
+  const { admin, deny } = adminOr403(c);
+  if (!admin) return deny;
+
+  const body = parseBody(adminResetPasswordSchema, await readJson(c));
+  const store = c.get("store");
+  const hash = await hashPassword(body.password);
+  const changed = await store.setPasswordHash(c.req.param("id"), hash);
+  if (!changed) return c.json({ ok: false, message: "No such member" }, 404);
+  return c.json({ ok: true, message: "Password reset. The member should change it after signing in." });
+});
+
+/** Grant bonus credit: spendable on entry fees, never withdrawable as cash. */
+app.post("/api/admin/users/:id/bonus", async (c) => {
+  const { admin, deny } = adminOr403(c);
+  if (!admin) return deny;
+
+  const body = parseBody(adminBonusSchema, await readJson(c));
+  const store = c.get("store");
+  const target = await store.getUserById(c.req.param("id"));
+  if (!target) return c.json({ ok: false, message: "No such member" }, 404);
+
+  const amountCents = Math.round(body.amount * 100);
+  await store.creditBonus(target.id, amountCents, body.reason ? `Bonus: ${body.reason}` : "Game bonus");
+  const summary = await store.getWalletSummary(target.id);
+
+  return c.json({
+    ok: true,
+    balance: centsToMoney(summary.balanceCents),
+    bonus: centsToMoney(summary.bonusCents),
+    withdrawable: centsToMoney(summary.withdrawableCents),
   });
 });
 
