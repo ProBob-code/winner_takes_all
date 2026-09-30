@@ -1,5 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  env: {
+    // Stamped into the page so a screenshot says which build it came from.
+    // Three rounds of "the mobile fix isn't live" were a tab showing a render
+    // from days earlier; with this, that is visible at a glance instead of
+    // being inferred from the layout.
+    NEXT_PUBLIC_BUILD_SHA: (process.env.CF_PAGES_COMMIT_SHA || "dev").slice(0, 7),
+  },
   async headers() {
     return [
       {

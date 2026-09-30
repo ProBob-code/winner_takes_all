@@ -63,6 +63,13 @@ export function LayoutClient({ children }: { children: React.ReactNode }) {
           <div style={{ color: "var(--text-muted)", fontSize: "0.8rem", marginTop: "2rem" }}>
             &copy; {new Date().getFullYear()} W.T.A Platform. All rights reserved. <br/>
             <span style={{ opacity: 0.6 }}>Professional Tournament Infrastructure Software</span>
+            {/* Which build this page actually came from. A stale tab shows an
+                old sha here, which is far quicker to spot than inferring it
+                from the layout. */}
+            <br/>
+            <span style={{ opacity: 0.35, fontSize: "0.7rem", letterSpacing: "0.5px" }}>
+              build {process.env.NEXT_PUBLIC_BUILD_SHA || "dev"}
+            </span>
           </div>
         </footer>
       </div>
