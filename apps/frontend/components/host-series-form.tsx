@@ -47,7 +47,7 @@ export default function HostSeriesForm() {
 
   const [form, setForm] = useState({
     name: "",
-    entryFee: 0,
+    entryFee: 0, // always zero: stakes are switched off
     maxPlayers: 8,
     teamSize: 1,
     tournamentType: "online",
@@ -130,18 +130,7 @@ export default function HostSeriesForm() {
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(220px, 100%), 1fr))", gap: "1.5rem", marginBottom: "1.5rem" }}>
-        <div>
-          <label htmlFor="entryFee" style={labelStyle}>Entry Fee, per week (₹)</label>
-          <input
-            id="entryFee"
-            type="number"
-            min={0}
-            className="form-control"
-            style={inputStyle}
-            value={form.entryFee}
-            onChange={(e) => set({ entryFee: Number(e.target.value) })}
-          />
-        </div>
+        {/* Free to enter: the API clamps any fee to zero while stakes are off. */}
         <div>
           <label htmlFor="maxPlayers" style={labelStyle}>Max Players, per week</label>
           <select

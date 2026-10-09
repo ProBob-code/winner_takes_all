@@ -61,7 +61,7 @@ export function PaymentButton({ onSuccess }: PaymentButtonProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [mounted, setMounted] = useState(false);
-  const [gateway, setGateway] = useState<{ enabled: boolean; mode: string | null; missing: string[] } | null>(null);
+  const [gateway, setGateway] = useState<{ enabled: boolean; mode: string | null; missing: string[]; stakesDisabled?: boolean; message?: string | null } | null>(null);
   // Kept apart from `gateway`: a gateway that answers "not configured" and one
   // that cannot be reached at all need different things done about them, and
   // collapsing the two sent people to check keys that were already set.
@@ -106,6 +106,10 @@ export function PaymentButton({ onSuccess }: PaymentButtonProps) {
             enabled: !!data.enabled,
             mode: data.mode ?? null,
             missing: Array.isArray(data.missing) ? data.missing : [],
+            // Set when stakes are switched off deliberately, as opposed to keys
+            // being absent by accident. The two need different wording.
+            stakesDisabled: !!data.stakesDisabled,
+            message: typeof data.message === "string" ? data.message : null,
           });
           setGatewayError(null);
         }
@@ -253,7 +257,9 @@ export function PaymentButton({ onSuccess }: PaymentButtonProps) {
   // but the reason shown is the one that actually applies.
   const gatewayDown = gateway !== null && !gateway.enabled;
   const gatewayBlocked = gatewayDown || gatewayError !== null;
-  const gatewayNotice = gatewayError
+  const gatewayNotice = gateway?.stakesDisabled
+    ? gateway.message || "Top-ups are closed. Tournaments here are free to enter."
+    : gatewayError
     ? `Top-ups are unavailable: the payment service at ${getApiUrl() || "this site"} could not be reached. ${gatewayError}`
     : gatewayDown
       ? gateway!.missing.length > 0

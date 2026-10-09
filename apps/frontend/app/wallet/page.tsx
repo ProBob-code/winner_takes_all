@@ -4,7 +4,6 @@ export const dynamic = "force-dynamic";
 
 import { useEffect, useState, useMemo } from "react";
 import { formatMoney } from "@/lib/format";
-import { PaymentButton } from "@/components/payment-button";
 import { PayoutButton } from "@/components/payout-button";
 import { useRouter } from "next/navigation";
 import { getApiUrl } from "@/lib/api-config";
@@ -112,6 +111,19 @@ export default function WalletPage() {
     <main className="page">
       <div className="shell" style={{ maxWidth: "1200px" }}>
         
+        {Number(wallet.balance?.amount ?? 0) > 0 && (
+          <div
+            className="panel"
+            style={{ padding: "1rem 1.25rem", marginBottom: "1.5rem", border: "1px solid rgba(245,158,11,0.3)" }}
+          >
+            <strong style={{ color: "var(--gold)" }}>This balance is being returned to you.</strong>
+            <p className="muted" style={{ fontSize: "0.85rem", margin: "0.4rem 0 0" }}>
+              Winner Takes All no longer takes entry fees or top-ups, and tournaments are now free to enter.
+              Withdraw your remaining balance below, or it will be returned to you directly.
+            </p>
+          </div>
+        )}
+
         <div className="page-header" style={{ marginBottom: "2rem" }}>
           {/* clamp rather than a breakpoint: the heading has to survive every
               width between a phone and a desktop, not just two of them. */}
@@ -187,8 +199,9 @@ export default function WalletPage() {
                    )}
                 </div>
 
+                {/* Top-ups are withdrawn; the payout path stays open until every
+                    balance taken before the switch has been returned. */}
                 <div className="cta-row" style={{ marginTop: "auto" }}>
-                  <PaymentButton onSuccess={() => setReloadKey((n) => n + 1)} />
                   <PayoutButton
                     withdrawable={wallet.withdrawable ?? wallet.balance}
                     bonus={wallet.bonus ?? { amount: "0.00", currency: "INR" }}

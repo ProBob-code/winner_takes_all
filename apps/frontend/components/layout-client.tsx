@@ -47,7 +47,7 @@ export function LayoutClient({ children }: { children: React.ReactNode }) {
             <Link href="/privacy" style={{ color: "inherit", textDecoration: "none", fontWeight: 600 }}>Privacy Policy</Link>
             <Link href="/refund" style={{ color: "inherit", textDecoration: "none", fontWeight: 600 }}>Refund & Cancellation</Link>
             <Link href="/community-guidelines" style={{ color: "inherit", textDecoration: "none", fontWeight: 600 }}>Community Guidelines</Link>
-            <Link href="/skill-based-policy" style={{ color: "inherit", textDecoration: "none", fontWeight: 600 }}>Skill-Based Policy</Link>
+            <Link href="/skill-based-policy" style={{ color: "inherit", textDecoration: "none", fontWeight: 600 }}>No-Stakes Policy</Link>
             <Link href="/kyc-aml" style={{ color: "inherit", textDecoration: "none", fontWeight: 600 }}>KYC/AML</Link>
             <Link href="/responsible-gaming" style={{ color: "inherit", textDecoration: "none", fontWeight: 600 }}>Responsible Gaming</Link>
           </div>
@@ -57,7 +57,7 @@ export function LayoutClient({ children }: { children: React.ReactNode }) {
               The platform provides tools for tournament hosting, bracket management, scheduling, rankings, and event operations.
             </p>
             <p style={{ fontWeight: 600, color: "var(--text-primary)" }}>
-              W.T.A does not facilitate betting, gambling, or games of chance. Tournament outcomes are determined solely by participant skill and organizer-defined competition rules.
+              W.T.A does not take entry fees, hold player funds, or pool prize money. Tournaments are free to enter; any prize is provided and awarded by the organising venue. No stake of any kind is accepted through this platform.
             </p>
           </div>
           <div style={{ color: "var(--text-muted)", fontSize: "0.8rem", marginTop: "2rem" }}>

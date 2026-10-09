@@ -37,6 +37,7 @@ import {
 } from "./lib/realtime";
 import { authMiddleware, requireUser, requireAdmin, serializeUser, extractAccessToken } from "./middleware/auth";
 import { centsToMoney, payoutFeeCents, PAYOUT_FEE_PERCENT } from "./lib/money";
+import { stakesEnabled, allowedEntryFeeCents } from "./lib/stakes";
 import { checkRateLimit, clientKey } from "./lib/rate-limit";
 import * as Engine from "./lib/tournament-engine";
 import {
@@ -382,6 +383,24 @@ app.get("/api/user/profile", async (c) => {
 // --- Payments ---
 
 /**
+ * The 410 handed back to anything that would move a stake.
+ *
+ * 410 rather than 404: the route existed and was deliberately withdrawn, which
+ * is what we want in a log a regulator or an auditor reads.
+ */
+function stakesWithdrawn(c: Context<AppContext>) {
+  return c.json(
+    {
+      ok: false,
+      code: "stakes_disabled",
+      message:
+        "Paid entry and wallet top-ups have been withdrawn. Tournaments on this platform are free to enter and no prize money is pooled from players.",
+    },
+    410,
+  );
+}
+
+/**
  * The Razorpay credentials as this Worker actually holds them.
  *
  * Keys pasted into the Cloudflare dashboard routinely arrive with a trailing
@@ -412,6 +431,20 @@ app.get("/api/payments/config", (c) => {
   // Never let this answer come from a cache: a stale "not configured" reads
   // exactly like a real one, and sends someone to re-check keys that are set.
   c.header("Cache-Control", "no-store");
+  // Keys may well be present and valid; with stakes off the gateway is still
+  // shut, and the wallet should say so rather than offer a top-up that 410s.
+  if (!stakesEnabled(c.env)) {
+    return c.json({
+      ok: true,
+      enabled: false,
+      stakesDisabled: true,
+      keyId: null,
+      mode: null,
+      webhookConfigured: false,
+      missing: [],
+      message: "Top-ups are closed. Tournaments here are free to enter.",
+    });
+  }
   return c.json({
     ok: true,
     enabled: configured,
@@ -430,6 +463,7 @@ app.get("/api/payments/config", (c) => {
 });
 
 app.post("/api/payments/create-order", async (c) => {
+  if (!stakesEnabled(c.env)) return stakesWithdrawn(c);
   const user = requireUser(c);
   if (!user) return c.json({ ok: false, message: "Authentication required" }, 401);
 
@@ -509,6 +543,7 @@ app.post("/api/payments/create-order", async (c) => {
 });
 
 app.post("/api/payments/verify", async (c) => {
+  if (!stakesEnabled(c.env)) return stakesWithdrawn(c);
   const user = requireUser(c);
   if (!user) return c.json({ ok: false, message: "Authentication required" }, 401);
 
@@ -546,6 +581,9 @@ app.post("/api/payments/verify", async (c) => {
 });
 
 app.post("/api/payments/webhook", async (c) => {
+  // A webhook for an order that can no longer be created is either late or
+  // forged; either way it must not credit a wallet.
+  if (!stakesEnabled(c.env)) return stakesWithdrawn(c);
   const signature = c.req.header("X-Razorpay-Signature");
   if (!signature) return c.json({ ok: false, message: "Missing signature" }, 400);
 
@@ -605,7 +643,7 @@ app.post("/api/tournaments/create", async (c) => {
   try {
     tournament = await store.createTournament({
       name: body.name,
-      entryFeeCents: Math.round(body.entryFee * 100),
+      entryFeeCents: allowedEntryFeeCents(c.env, body.entryFee),
       maxPlayers: body.maxPlayers,
       hostId: user.id,
       teamSize: body.teamSize,
@@ -642,6 +680,10 @@ app.post("/api/tournaments/:id/join", async (c) => {
 
   const tournament = await store.getTournament(tournamentId);
   if (!tournament) return c.json({ ok: false, message: "Tournament not found" }, 404);
+
+  // A tournament created before stakes were switched off still carries its fee.
+  // Nobody may be charged for it now.
+  if (tournament.entry_fee_cents > 0 && !stakesEnabled(c.env)) return stakesWithdrawn(c);
 
   if (tournament.password && !timingSafeEqual(tournament.password, body.password ?? "")) {
     return c.json({ ok: false, message: "Incorrect tournament password" }, 403);
@@ -906,6 +948,7 @@ app.get("/api/wallet/payouts", async (c) => {
 });
 
 app.post("/api/wallet/transfer", async (c) => {
+  if (!stakesEnabled(c.env)) return stakesWithdrawn(c);
   const user = requireUser(c);
   if (!user) return c.json({ ok: false, message: "Authentication required" }, 401);
 
@@ -1179,6 +1222,7 @@ app.post("/api/admin/users/:id/reset-password", async (c) => {
 
 /** Grant bonus credit: spendable on entry fees, never withdrawable as cash. */
 app.post("/api/admin/users/:id/bonus", async (c) => {
+  if (!stakesEnabled(c.env)) return stakesWithdrawn(c);
   const { admin, deny } = adminOr403(c);
   if (!admin) return deny;
 
@@ -1288,7 +1332,7 @@ app.post("/api/series/create", async (c) => {
       sport: body.sport,
       bracketType: body.bracketType,
       tournamentType: body.tournamentType,
-      entryFeeCents: Math.round(body.entryFee * 100),
+      entryFeeCents: allowedEntryFeeCents(c.env, body.entryFee),
       maxPlayers: body.maxPlayers,
       teamSize: body.teamSize,
       rosterMode: body.rosterMode,

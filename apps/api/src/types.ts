@@ -25,6 +25,21 @@ export interface Env {
   BROADCAST_TOKEN_SECRET?: string;
 
   // Non-secret config
+  /**
+   * Whether this deployment may take stakes: entry fees, top-ups, pooled pots
+   * and the rake on them.
+   *
+   * Default OFF. India's Promotion and Regulation of Online Gaming Act 2025,
+   * in force since 1 May 2026, prohibits games played for a stake whether they
+   * turn on skill or on chance, so a deployment that has not deliberately
+   * turned this on must not take money from a player.
+   *
+   * It deliberately does NOT close the withdrawal path. Stopping money coming
+   * in and stopping it going back out are different decisions: balances taken
+   * before the switch still belong to the people who deposited them, and they
+   * have to be able to get them back. See `windDownOnly()`.
+   */
+  STAKES_ENABLED?: string;
   ALLOWED_ORIGINS?: string;
   REALTIME_API_BASE?: string;
   /** Origin used to build the scannable broadcast URL. */

@@ -93,21 +93,9 @@ export default function HostTournamentForm() {
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(220px, 100%), 1fr))", gap: "1.5rem", marginBottom: "1.5rem" }}>
-        <div className="form-group">
-          <label htmlFor="entryFee" style={{ display: "block", marginBottom: "0.5rem", color: "var(--text-secondary)", fontWeight: 500 }}>Platform Fee (Credits)</label>
-          <input
-            id="entryFee"
-            type="number"
-            min="0"
-            required
-            value={formData.entryFee}
-            onChange={(e) => setFormData({ ...formData, entryFee: parseInt(e.target.value) })}
-            className="form-control"
-            style={{ width: "100%", padding: "1rem", borderRadius: "0.5rem", background: "var(--glass-bg)", border: "1px solid var(--glass-border-color)", color: "var(--text-primary)", outline: "none", transition: "border 0.2s" }}
-            onFocus={(e) => e.target.style.borderColor = "var(--accent)"}
-            onBlur={(e) => e.target.style.borderColor = "var(--glass-border-color)"}
-          />
-        </div>
+        {/* The entry-fee field is gone: tournaments are free to enter and the
+            API clamps any fee to zero, so offering the input would only let a
+            host set a price that is silently ignored. */}
 
         <div className="form-group">
           <label htmlFor="maxPlayers" style={{ display: "block", marginBottom: "0.5rem", color: "var(--text-secondary)", fontWeight: 500 }}>Max Players</label>

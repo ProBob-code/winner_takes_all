@@ -48,6 +48,7 @@ export function Topbar({ user: initialUser }: { user?: any }) {
         <ThemeToggle />
         {user ? (
           <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+            {Number(user.walletBalance || 0) > 0 && (
             <div style={{ 
               display: "flex", 
               alignItems: "center", 
@@ -58,9 +59,13 @@ export function Topbar({ user: initialUser }: { user?: any }) {
               gap: "0.3rem",
               flexShrink: 0
             }}>
+              {/* Shown only while there is still a balance to return. Stakes are
+                  closed, so once the wind-down refunds land this disappears by
+                  itself rather than advertising a wallet nobody can top up. */}
               <span style={{ fontSize: "0.65rem", fontWeight: 700, color: "var(--gold-light)", opacity: 0.8 }}>₹</span>
               <span style={{ fontWeight: 800, color: "var(--gold-light)", fontSize: "0.8rem" }}>{Number(user.walletBalance || 0).toFixed(0)}</span>
             </div>
+            )}
             <Link href="/dashboard" className="topbar-link desktop-only" style={{ fontWeight: 600, color: "var(--text-primary)", fontSize: "0.85rem" }}>
                {user.name.split(' ')[0]}
             </Link>
