@@ -1,0 +1,13 @@
+{
+  "id": "P007",
+  "buys": false,
+  "purchases_first_month": 0,
+  "reason_code": "habit",
+  "reason": "The money is nothing, 1,500 a month I would not even notice. But I run my competition night on a whiteboard now and it works, and I am the one who will end up standing there fiddling with a phone instead of working the floor.",
+  "objection": "Who actually operates it on the night? My boys will not learn a new app, and if it goes wrong mid-tournament with twenty people watching the screen, I look like a fool and I am back to the whiteboard anyway.",
+  "would_change_my_mind": "Someone comes to my venue, sets it up on my screen themselves, and runs one night standing next to my floor staff so I see them do it without me touching anything.",
+  "price_too_cheap": 300,
+  "price_cheap": 800,
+  "price_expensive": 2500,
+  "price_too_expensive": 5000
+}

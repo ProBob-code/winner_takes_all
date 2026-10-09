@@ -1,0 +1,222 @@
+[
+ {
+  "id": "P001",
+  "name": "Chloe",
+  "age": 50,
+  "segment": "Multi-venue / small chain owner",
+  "income": 2903000,
+  "behaviour": "Runs it on paper now",
+  "behaviour_how": "Draws the bracket on a whiteboard, keeps score in a notebook, has done it this way for years.",
+  "objection": "My staff will not learn new software",
+  "habit": "you have a TV on the wall showing a muted cricket match"
+ },
+ {
+  "id": "P002",
+  "name": "Sofia",
+  "age": 51,
+  "segment": "Multi-venue / small chain owner",
+  "income": 2697000,
+  "behaviour": "WhatsApp organiser",
+  "behaviour_how": "Runs everything through a WhatsApp group: entries, fixtures, results, arguments.",
+  "objection": "My staff will not learn new software",
+  "habit": "a sales rep calls you about software roughly once a fortnight"
+ },
+ {
+  "id": "P003",
+  "name": "Lina",
+  "age": 25,
+  "segment": "Single-venue owner-operator",
+  "income": 342000,
+  "behaviour": "Tight on cash",
+  "behaviour_how": "Counts every monthly subscription, has cancelled software before for not being used.",
+  "objection": "Who pays the prize money — me?",
+  "habit": "your busiest nights are Friday and Saturday and Tuesday is dead"
+ },
+ {
+  "id": "P004",
+  "name": "Rosa",
+  "age": 31,
+  "segment": "Single-venue owner-operator",
+  "income": 566000,
+  "behaviour": "WhatsApp organiser",
+  "behaviour_how": "Runs everything through a WhatsApp group: entries, fixtures, results, arguments.",
+  "objection": "A monthly fee for something I use four nights a month is hard to justify",
+  "habit": "your busiest nights are Friday and Saturday and Tuesday is dead"
+ },
+ {
+  "id": "P005",
+  "name": "Selin",
+  "age": 40,
+  "segment": "Community league organiser, no venue of their own",
+  "income": 696000,
+  "behaviour": "Tech-shy",
+  "behaviour_how": "Does not want to learn new software, needs staff to pick it up in one shift.",
+  "objection": "What happens when the internet drops mid-tournament?",
+  "habit": "a sales rep calls you about software roughly once a fortnight"
+ },
+ {
+  "id": "P006",
+  "name": "June",
+  "age": 49,
+  "segment": "Multi-venue / small chain owner",
+  "income": 1490000,
+  "behaviour": "Never run one",
+  "behaviour_how": "Likes the idea of a league night but has never organised one and is not sure where to start.",
+  "objection": "My staff will not learn new software",
+  "habit": "you know your regulars by name and they ask when the next tournament is"
+ },
+ {
+  "id": "P007",
+  "name": "Emil",
+  "age": 30,
+  "segment": "Single-venue owner-operator",
+  "income": 821000,
+  "behaviour": "Tech-shy",
+  "behaviour_how": "Does not want to learn new software, needs staff to pick it up in one shift.",
+  "objection": "I already do this on a whiteboard and it costs me nothing",
+  "habit": "you have a TV on the wall showing a muted cricket match"
+ },
+ {
+  "id": "P008",
+  "name": "Julian",
+  "age": 31,
+  "segment": "Manager running the floor (not the owner)",
+  "income": 384000,
+  "behaviour": "Tight on cash",
+  "behaviour_how": "Counts every monthly subscription, has cancelled software before for not being used.",
+  "objection": "My staff will not learn new software",
+  "habit": "you lost a whole evening last month to an argument about a disputed frame"
+ },
+ {
+  "id": "P009",
+  "name": "Mateo",
+  "age": 31,
+  "segment": "Single-venue owner-operator",
+  "income": 421000,
+  "behaviour": "Runs it on paper now",
+  "behaviour_how": "Draws the bracket on a whiteboard, keeps score in a notebook, has done it this way for years.",
+  "objection": "What happens when the internet drops mid-tournament?",
+  "habit": "you have a TV on the wall showing a muted cricket match"
+ },
+ {
+  "id": "P010",
+  "name": "Elena",
+  "age": 32,
+  "segment": "Single-venue owner-operator",
+  "income": 824000,
+  "behaviour": "Runs it on paper now",
+  "behaviour_how": "Draws the bracket on a whiteboard, keeps score in a notebook, has done it this way for years.",
+  "objection": "I already do this on a whiteboard and it costs me nothing",
+  "habit": "your busiest nights are Friday and Saturday and Tuesday is dead"
+ },
+ {
+  "id": "P011",
+  "name": "Sana",
+  "age": 47,
+  "segment": "Manager running the floor (not the owner)",
+  "income": 467000,
+  "behaviour": "Never run one",
+  "behaviour_how": "Likes the idea of a league night but has never organised one and is not sure where to start.",
+  "objection": "Does this get more people through the door, or is it just admin?",
+  "habit": "you lost a whole evening last month to an argument about a disputed frame"
+ },
+ {
+  "id": "P012",
+  "name": "Declan",
+  "age": 35,
+  "segment": "Community league organiser, no venue of their own",
+  "income": 656000,
+  "behaviour": "Runs it on paper now",
+  "behaviour_how": "Draws the bracket on a whiteboard, keeps score in a notebook, has done it this way for years.",
+  "objection": "My staff will not learn new software",
+  "habit": "you know your regulars by name and they ask when the next tournament is"
+ },
+ {
+  "id": "P013",
+  "name": "Talia",
+  "age": 48,
+  "segment": "Single-venue owner-operator",
+  "income": 743000,
+  "behaviour": "Already pays for a POS/booking tool",
+  "behaviour_how": "Used to paying a monthly SaaS fee for the venue, judges new tools against it.",
+  "objection": "Does this get more people through the door, or is it just admin?",
+  "habit": "you have a TV on the wall showing a muted cricket match"
+ },
+ {
+  "id": "P014",
+  "name": "Noah",
+  "age": 26,
+  "segment": "Single-venue owner-operator",
+  "income": 716000,
+  "behaviour": "WhatsApp organiser",
+  "behaviour_how": "Runs everything through a WhatsApp group: entries, fixtures, results, arguments.",
+  "objection": "I already do this on a whiteboard and it costs me nothing",
+  "habit": "you have a TV on the wall showing a muted cricket match"
+ },
+ {
+  "id": "P015",
+  "name": "Zara",
+  "age": 45,
+  "segment": "Multi-venue / small chain owner",
+  "income": 1436000,
+  "behaviour": "Already pays for a POS/booking tool",
+  "behaviour_how": "Used to paying a monthly SaaS fee for the venue, judges new tools against it.",
+  "objection": "I have no screen to put this on",
+  "habit": "you lost a whole evening last month to an argument about a disputed frame"
+ },
+ {
+  "id": "P016",
+  "name": "Ada",
+  "age": 50,
+  "segment": "Single-venue owner-operator",
+  "income": 564000,
+  "behaviour": "Runs it on paper now",
+  "behaviour_how": "Draws the bracket on a whiteboard, keeps score in a notebook, has done it this way for years.",
+  "objection": "Does this get more people through the door, or is it just admin?",
+  "habit": "you have a TV on the wall showing a muted cricket match"
+ },
+ {
+  "id": "P017",
+  "name": "Cole",
+  "age": 46,
+  "segment": "Single-venue owner-operator",
+  "income": 775000,
+  "behaviour": "Burned by real-money apps",
+  "behaviour_how": "Watched the 2025 gaming ban hit, wary of anything that looks like betting.",
+  "objection": "My staff will not learn new software",
+  "habit": "your busiest nights are Friday and Saturday and Tuesday is dead"
+ },
+ {
+  "id": "P018",
+  "name": "Daniel",
+  "age": 29,
+  "segment": "Single-venue owner-operator",
+  "income": 725000,
+  "behaviour": "WhatsApp organiser",
+  "behaviour_how": "Runs everything through a WhatsApp group: entries, fixtures, results, arguments.",
+  "objection": "Who pays the prize money — me?",
+  "habit": "you lost a whole evening last month to an argument about a disputed frame"
+ },
+ {
+  "id": "P019",
+  "name": "Jonah",
+  "age": 45,
+  "segment": "Manager running the floor (not the owner)",
+  "income": 503000,
+  "behaviour": "Never run one",
+  "behaviour_how": "Likes the idea of a league night but has never organised one and is not sure where to start.",
+  "objection": "Who pays the prize money — me?",
+  "habit": "you lost a whole evening last month to an argument about a disputed frame"
+ },
+ {
+  "id": "P020",
+  "name": "Wes",
+  "age": 47,
+  "segment": "Manager running the floor (not the owner)",
+  "income": 477000,
+  "behaviour": "Tight on cash",
+  "behaviour_how": "Counts every monthly subscription, has cancelled software before for not being used.",
+  "objection": "What happens when the internet drops mid-tournament?",
+  "habit": "your busiest nights are Friday and Saturday and Tuesday is dead"
+ }
+]

@@ -1,0 +1,13 @@
+{
+  "id": "P005",
+  "buys": false,
+  "purchases_first_month": 0,
+  "reason_code": "trust",
+  "reason": "I do not own the room. I run my league in whoever's hall will have us that week, on whoever's wifi, so a screen on the wall and a per-venue price is not really sold to me. And I have had a rep on the phone about software every other week for years; I am not going to put my Tuesday night on an app I have never seen hold up.",
+  "objection": "What happens when the internet drops in the middle of a tournament? If the bracket is on a phone and the signal goes, I am standing in front of forty people with nothing, and the whole point was to stop the arguing.",
+  "would_change_my_mind": "Show me it keeps running with no signal at all - scores still go in on the phone and sync up later - and send someone to sit with me and my two helpers for the first night so none of us has to learn it from a manual.",
+  "price_too_cheap": 300,
+  "price_cheap": 900,
+  "price_expensive": 2500,
+  "price_too_expensive": 4000
+}

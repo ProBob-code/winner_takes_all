@@ -1,0 +1,102 @@
+{
+ "n": 20,
+ "seed": 15364,
+ "customer": {
+  "business": "Winner Takes All — tournament software a venue pays for, to run its own competition night",
+  "target": "Owners and managers of gaming cafés, pool halls, snooker parlours, PlayStation/console lounges and board-game cafés in Indian cities, who already run or want to run a regular competition night",
+  "where": "India — tier 1 and tier 2 cities (Bengaluru, Pune, Kochi, Hyderabad, Indore, Coimbatore)",
+  "age": [
+   24,
+   52
+  ],
+  "segments": [
+   {
+    "name": "Single-venue owner-operator",
+    "share": 0.5,
+    "income": [
+     300000,
+     900000
+    ]
+   },
+   {
+    "name": "Multi-venue / small chain owner",
+    "share": 0.2,
+    "income": [
+     900000,
+     3000000
+    ]
+   },
+   {
+    "name": "Manager running the floor (not the owner)",
+    "share": 0.2,
+    "income": [
+     240000,
+     600000
+    ]
+   },
+   {
+    "name": "Community league organiser, no venue of their own",
+    "share": 0.1,
+    "income": [
+     200000,
+     700000
+    ]
+   }
+  ],
+  "behaviours": [
+   {
+    "name": "Runs it on paper now",
+    "share": 0.22,
+    "how": "Draws the bracket on a whiteboard, keeps score in a notebook, has done it this way for years."
+   },
+   {
+    "name": "WhatsApp organiser",
+    "share": 0.2,
+    "how": "Runs everything through a WhatsApp group: entries, fixtures, results, arguments."
+   },
+   {
+    "name": "Never run one",
+    "share": 0.15,
+    "how": "Likes the idea of a league night but has never organised one and is not sure where to start."
+   },
+   {
+    "name": "Tight on cash",
+    "share": 0.15,
+    "how": "Counts every monthly subscription, has cancelled software before for not being used."
+   },
+   {
+    "name": "Already pays for a POS/booking tool",
+    "share": 0.12,
+    "how": "Used to paying a monthly SaaS fee for the venue, judges new tools against it."
+   },
+   {
+    "name": "Tech-shy",
+    "share": 0.1,
+    "how": "Does not want to learn new software, needs staff to pick it up in one shift."
+   },
+   {
+    "name": "Burned by real-money apps",
+    "share": 0.06,
+    "how": "Watched the 2025 gaming ban hit, wary of anything that looks like betting."
+   }
+  ],
+  "objections": [
+   "I already do this on a whiteboard and it costs me nothing",
+   "A monthly fee for something I use four nights a month is hard to justify",
+   "My staff will not learn new software",
+   "Does this get more people through the door, or is it just admin?",
+   "Is this legal? It sounds like the betting apps that got banned",
+   "What happens when the internet drops mid-tournament?",
+   "I have no screen to put this on",
+   "Who pays the prize money — me?"
+  ],
+  "habits": [
+   "your busiest nights are Friday and Saturday and Tuesday is dead",
+   "you know your regulars by name and they ask when the next tournament is",
+   "you lost a whole evening last month to an argument about a disputed frame",
+   "you have a TV on the wall showing a muted cricket match",
+   "a sales rep calls you about software roughly once a fortnight"
+  ]
+ },
+ "pitch": "# Winner Takes All — run your competition night\n\nSoftware for your venue to run its own tournament night. You set up a bracket in\nabout a minute, your regulars join from their phones by scanning a code, and the\nlive bracket and running scores go up on the screen on your wall.\n\nIt keeps score for 8-ball pool and for football, so a disputed frame is settled\nby what is on the screen rather than by argument. Run it as a weekly series and\nit keeps a league table across the weeks, so the same people come back next\nTuesday to defend their place.\n\n₹1,500 a month per venue. No contract, cancel any month.\n\nPlayers pay you nothing through the software and stake nothing on the app. Entry\nis free, or you collect it at the counter in your own name, exactly as you do\nnow. Any prize is yours or a sponsor's to give. The app never touches your\ncustomers' money, which is what keeps it clear of the 2025 online money gaming\nrules.\n\nFirst month free. If your regulars do not come back for a second week, you do\nnot pay."
+}

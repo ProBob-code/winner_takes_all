@@ -1,0 +1,13 @@
+{
+  "id": "P019",
+  "buys": false,
+  "purchases_first_month": 0,
+  "reason_code": "other",
+  "reason": "I run the floor, I do not sign for a monthly bill in the owner's name, however small it is. And I have never organised a league night, so I would be buying a scoreboard for an event that does not exist yet.",
+  "objection": "Even if the app never touches the money, the prize still has to come from somewhere, and the somewhere is the counter. If entry is free then there is no prize, and I do not believe my regulars come back a second Tuesday to defend a place on a screen with nothing on it.",
+  "would_change_my_mind": "Give me one page I can put in front of the owner: what a first league night actually looks like, who gets the entry money, who funds the prize, and what it did to a comparable hall's Tuesday takings. If he says yes to that I will run the free month.",
+  "price_too_cheap": 300,
+  "price_cheap": 700,
+  "price_expensive": 2500,
+  "price_too_expensive": 4000
+}

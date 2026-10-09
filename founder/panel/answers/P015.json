@@ -1,0 +1,13 @@
+{
+  "id": "P015",
+  "buys": true,
+  "purchases_first_month": 1,
+  "reason_code": "need",
+  "reason": "I lost a whole evening last month to an argument about a disputed frame, and ₹1,500 is less than I pay for my booking tool, so this is not a decision I need to think hard about. But I buy it for one venue first and watch a month of Tuesdays before I roll it anywhere else.",
+  "objection": "I have no screen to put this on. The bracket on the wall is the whole point of it, and in two of my rooms there is nothing to show it on, so the ₹1,500 is the small part of what this actually costs me.",
+  "would_change_my_mind": "A chain-level view — one dashboard and one league table running across all my venues instead of a separate ₹1,500 subscription sitting on its own in each room — would move me from one venue to all of them.",
+  "price_too_cheap": 300,
+  "price_cheap": 1000,
+  "price_expensive": 3000,
+  "price_too_expensive": 6000
+}

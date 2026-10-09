@@ -1,0 +1,13 @@
+{
+  "id": "P008",
+  "buys": false,
+  "purchases_first_month": 0,
+  "reason_code": "habit",
+  "reason": "The price is nothing and the disputed-frame problem is real, but it is not my signature on the subscription and my floor staff will not touch new software on a busy Tuesday. They will go back to the whiteboard the first time the screen lags and I will be paying for something nobody opens.",
+  "objection": "My boys on the floor will not learn it. I have seen software die here before because the staff quietly stopped using it, and then I am the one explaining a bill for an app we do not open.",
+  "would_change_my_mind": "If you set up the first night yourself, in my venue, and showed one of my floor staff running the bracket end to end without me standing over him, I would take it to the owner the same week.",
+  "price_too_cheap": 300,
+  "price_cheap": 800,
+  "price_expensive": 2500,
+  "price_too_expensive": 4000
+}

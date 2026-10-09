@@ -1,0 +1,13 @@
+{
+  "id": "P009",
+  "buys": false,
+  "purchases_first_month": 0,
+  "reason_code": "habit",
+  "reason": "The whiteboard and my notebook have never once failed me on a Tuesday night, and I am the one who knows the bracket anyway. ₹1,500 is not the problem; swapping something that works for something that can go dark mid-frame is the problem.",
+  "objection": "What happens when the internet drops in the middle of a tournament? Half my regulars are standing there with phones and no bracket, and the match on that screen is the only thing keeping the rest of them seated.",
+  "would_change_my_mind": "Show me it runs fully offline on my own WiFi or off a phone hotspot, with scoring that keeps working and syncs later, and that the bracket can share the screen with the cricket instead of taking it over.",
+  "price_too_cheap": 300,
+  "price_cheap": 800,
+  "price_expensive": 2500,
+  "price_too_expensive": 4000
+}

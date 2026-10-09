@@ -1,0 +1,160 @@
+{
+ "business": "Winner Takes All — tournament software a venue pays for, to run its own competition night",
+ "seed": 15364,
+ "dealt": 20,
+ "answered": 20,
+ "skipped": [],
+ "buys": 10,
+ "passes": 10,
+ "buy_rate": 0.5,
+ "by_segment": [
+  [
+   "Multi-venue / small chain owner",
+   4,
+   1.0
+  ],
+  [
+   "Single-venue owner-operator",
+   10,
+   0.6
+  ],
+  [
+   "Community league organiser, no venue of their own",
+   2,
+   0.0
+  ],
+  [
+   "Manager running the floor (not the owner)",
+   4,
+   0.0
+  ]
+ ],
+ "by_behaviour": [
+  [
+   "WhatsApp organiser",
+   4,
+   1.0
+  ],
+  [
+   "Already pays for a POS/booking tool",
+   2,
+   1.0
+  ],
+  [
+   "Burned by real-money apps",
+   1,
+   1.0
+  ],
+  [
+   "Tight on cash",
+   3,
+   0.3333333333333333
+  ],
+  [
+   "Never run one",
+   3,
+   0.3333333333333333
+  ],
+  [
+   "Runs it on paper now",
+   5,
+   0.2
+  ],
+  [
+   "Tech-shy",
+   2,
+   0.0
+  ]
+ ],
+ "by_income": [
+  [
+   "$775,000 and up",
+   7,
+   0.7142857142857143
+  ],
+  [
+   "$564,000 to $775,000",
+   7,
+   0.5714285714285714
+  ],
+  [
+   "under $564,000",
+   6,
+   0.16666666666666666
+  ]
+ ],
+ "why_not": [
+  [
+   "habit",
+   6,
+   [
+    "The money is nothing, 1,500 a month I would not even notice. But I run my competition night on a whiteboard now and it works, and I am the one who will end up standing there fiddling with a phone instead of working the floor.",
+    "The price is nothing and the disputed-frame problem is real, but it is not my signature on the subscription and my floor staff will not touch new software on a busy Tuesday. They will go back to the whiteboard the first time the screen lags and I will be paying for something nobody opens."
+   ],
+   [
+    "P007",
+    "P008"
+   ]
+  ],
+  [
+   "other",
+   3,
+   [
+    "I run the floor, I don't sign up for things - the owner does, and ₹1,500 is small but it is still his money and his decision. And honestly it solves the fight over a frame, not the empty Tuesday; it assumes I already have a league night running, and I don't.",
+    "I run the floor, I do not sign for a monthly bill in the owner's name, however small it is. And I have never organised a league night, so I would be buying a scoreboard for an event that does not exist yet."
+   ],
+   [
+    "P011",
+    "P019"
+   ]
+  ],
+  [
+   "trust",
+   1,
+   [
+    "I do not own the room. I run my league in whoever's hall will have us that week, on whoever's wifi, so a screen on the wall and a per-venue price is not really sold to me. And I have had a rep on the phone about software every other week for years; I am not going to put my Tuesday night on an app I have never seen hold up."
+   ],
+   [
+    "P005"
+   ]
+  ]
+ ],
+ "why_yes": [
+  [
+   "need",
+   9,
+   [
+    "The whiteboard works inside one room, but across my venues I have no idea who is leading anything after week two, and the notebook is wherever the last manager left it. For 1,500 free for a month I will put it on the pool night at my busiest branch and see if the league table actually brings the same faces back; the other branches stay on paper until it proves itself.",
+    "Fifteen hundred a month is less than one night's till, and the free month means I risk nothing, so I will put it in one venue and watch. The part I actually want is the screen settling a disputed frame, because right now that argument lands in my WhatsApp group at eleven at night and I am the referee."
+   ],
+   [
+    "P001",
+    "P002"
+   ]
+  ],
+  [
+   "convenience",
+   1,
+   [
+    "Fifteen hundred a month is less than I lose in one argument over a frame, and the screen is already on the wall playing cricket nobody is watching. I'll take the free month because the league table is the part I can't do on a whiteboard - people coming back on a Tuesday to defend a place is my slow night fixed."
+   ],
+   [
+    "P014"
+   ]
+  ]
+ ],
+ "flip": [
+  "Show me it keeps running with no signal at all - scores still go in on the phone and sync up later - and send someone to sit with me and my two helpers for the first night so none of us has to learn it from a manual.",
+  "Someone comes to my venue, sets it up on my screen themselves, and runs one night standing next to my floor staff so I see them do it without me touching anything.",
+  "If you set up the first night yourself, in my venue, and showed one of my floor staff running the bracket end to end without me standing over him, I would take it to the owner the same week.",
+  "Show me it runs fully offline on my own WiFi or off a phone hotspot, with scoring that keeps working and syncs later, and that the bracket can share the screen with the cricket instead of taking it over.",
+  "Show me a pool hall my size where the Tuesday count actually went up and stayed up for two or three months after they put this in, with their numbers, not a demo.",
+  "Show me two or three venues like mine in India with real before-and-after footfall on their competition night, plus a simple week-by-week guide to starting one from nothing - then I take it to the owner myself and run the free month.",
+  "If it worked for someone like me with no venue - bracket and league table on the players' own phones, no screen needed - and I could run a whole night without touching it after setup, I'd try the free month.",
+  "A venue my size, in a city like mine, showing me its counter takings for the competition night before and after - if the night actually got bigger, I would put it up next Tuesday.",
+  "Give me one page I can put in front of the owner: what a first league night actually looks like, who gets the entry money, who funds the prize, and what it did to a comparable hall's Tuesday takings. If he says yes to that I will run the free month.",
+  "Show me it keeps running on the venue's own screen with the connection pulled - bracket and scores still working offline, syncing later - and I will take the free month to the owner myself."
+ ],
+ "purchases_first_month_per_buyer": 0.9,
+ "price_answers": 20
+}

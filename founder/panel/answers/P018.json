@@ -1,0 +1,13 @@
+{
+  "id": "P018",
+  "buys": true,
+  "purchases_first_month": 1,
+  "reason_code": "need",
+  "reason": "I lost a whole evening last month to one disputed frame, and ₹1,500 is less than I lose in a night of that. First month free means I can put it on the wall screen next Tuesday and find out for nothing.",
+  "objection": "A screen does not referee a frame. Somebody still has to type in who won, and that somebody is me or a boy at the counter, so the argument just moves from the table to the laptop. And it is still my money paying the prize, the app only tells me it is not touching it.",
+  "would_change_my_mind": "If the score entry still comes down to me, I want both players to confirm the frame on their own phones before it locks, so the screen is their word and not mine.",
+  "price_too_cheap": 300,
+  "price_cheap": 900,
+  "price_expensive": 3000,
+  "price_too_expensive": 6000
+}

@@ -1,0 +1,13 @@
+{
+  "id": "P010",
+  "buys": false,
+  "purchases_first_month": 0,
+  "reason_code": "habit",
+  "reason": "I have run my bracket on the whiteboard for years and it costs me nothing, and nobody has ever walked out because the scores were in my notebook. Free month or not, this is me changing something that is not broken and then paying 1,500 a month to keep it changed.",
+  "objection": "The real work is not the bracket, it is getting the same forty people in on a Tuesday. A screen on my wall does not do that, and if I stop paying after a month I have taught my regulars to expect something I have taken away.",
+  "would_change_my_mind": "Show me a pool hall my size where the Tuesday count actually went up and stayed up for two or three months after they put this in, with their numbers, not a demo.",
+  "price_too_cheap": 200,
+  "price_cheap": 500,
+  "price_expensive": 2000,
+  "price_too_expensive": 3000
+}

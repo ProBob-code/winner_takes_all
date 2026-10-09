@@ -1,0 +1,13 @@
+{
+  "id": "P020",
+  "buys": false,
+  "purchases_first_month": 0,
+  "reason_code": "other",
+  "reason": "It is not my card and not my call - I run the floor, the owner signs off on anything that recurs, and I am not going to push a monthly subscription when our Tuesday is already dead. We have cancelled software before that nobody opened after a fortnight.",
+  "objection": "What happens when the internet drops mid-tournament? If the screen freezes halfway through a frame on a Friday I am the one standing in front of forty regulars with no bracket and no scores, and then the argument I was meant to avoid is twice as bad.",
+  "would_change_my_mind": "Show me it keeps running on the venue's own screen with the connection pulled - bracket and scores still working offline, syncing later - and I will take the free month to the owner myself.",
+  "price_too_cheap": 300,
+  "price_cheap": 800,
+  "price_expensive": 2500,
+  "price_too_expensive": 4000
+}

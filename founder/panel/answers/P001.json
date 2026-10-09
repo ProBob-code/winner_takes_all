@@ -1,0 +1,13 @@
+{
+  "id": "P001",
+  "buys": true,
+  "purchases_first_month": 1,
+  "reason_code": "need",
+  "reason": "The whiteboard works inside one room, but across my venues I have no idea who is leading anything after week two, and the notebook is wherever the last manager left it. For 1,500 free for a month I will put it on the pool night at my busiest branch and see if the league table actually brings the same faces back; the other branches stay on paper until it proves itself.",
+  "objection": "My staff will not learn new software. The boys behind my counters change every few months and they already forget to write the frame down; if this needs someone to sit with a phone and a login to run the night, it will be abandoned by the third Tuesday and I will be the one drawing the bracket again at ten o'clock.",
+  "would_change_my_mind": "If setting it up or running a night needs more than the floor boy scanning a code with no training, or if I had to sign for all my venues at once instead of trying one, I would not touch it.",
+  "price_too_cheap": 400,
+  "price_cheap": 1000,
+  "price_expensive": 3000,
+  "price_too_expensive": 5000
+}

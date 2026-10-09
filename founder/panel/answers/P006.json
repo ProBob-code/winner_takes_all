@@ -1,0 +1,13 @@
+{
+  "id": "P006",
+  "buys": true,
+  "purchases_first_month": 1,
+  "reason_code": "need",
+  "reason": "My regulars ask me when the next tournament is and I have never had an answer, because I do not know how to run one. For 1,500 with the first month free I will put it in one venue and see if my floor manager can actually work it.",
+  "objection": "My staff will not learn new software. Setting up a bracket in a minute is your minute, not my counter boy's on a Friday with fifteen people waiting, and if he gives up on it the screen sits blank and I look foolish in front of the regulars I promised.",
+  "would_change_my_mind": "Someone from your side sets up and runs the first night at one of my venues with my staff watching, so I am buying a working league night and not a login I have to teach.",
+  "price_too_cheap": 400,
+  "price_cheap": 1200,
+  "price_expensive": 4000,
+  "price_too_expensive": 8000
+}

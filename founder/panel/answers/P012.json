@@ -1,0 +1,13 @@
+{
+  "id": "P012",
+  "buys": false,
+  "purchases_first_month": 0,
+  "reason_code": "habit",
+  "reason": "The whiteboard and the notebook have run my bracket for years and nobody has ever complained. Half of what I'd be paying for is a live bracket on the wall, and I don't have a wall - I don't have a venue at all, I borrow whatever space will have us.",
+  "objection": "The people who help me on the night are not going to learn new software - it will end up being me on my phone fixing it while twenty regulars stand around waiting, and the whiteboard never did that to me.",
+  "would_change_my_mind": "If it worked for someone like me with no venue - bracket and league table on the players' own phones, no screen needed - and I could run a whole night without touching it after setup, I'd try the free month.",
+  "price_too_cheap": 250,
+  "price_cheap": 600,
+  "price_expensive": 1500,
+  "price_too_expensive": 2500
+}

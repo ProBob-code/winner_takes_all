@@ -41,3 +41,7 @@ apps/frontend/.open-next/
 # Editor/OS
 *.log
 .pytest-tmp/
+
+# Stray duplicate checkouts of this project (105 MB each), not part of the repo.
+/winner_takes_all/
+/winner_takes_all-1/
