@@ -8,11 +8,13 @@ export function MobileNav({ user }: { user: any }) {
 
   const navItems = user ? [
     { label: "Home", href: "/dashboard", icon: "📊" },
-    { label: "Games", href: "/games", icon: "🕹️" },
+    // First after Home: a host on a phone behind the bar is here to start a
+    // night, not to browse.
+    { label: "Run", href: "/run", icon: "⚡" },
     { label: "Tourney", href: "/tournaments", icon: "🎮" },
+    { label: "Venues", href: "/venues", icon: "🏠" },
     { label: "Leader", href: "/leaderboard", icon: "🏆" },
-    { label: "Me", href: "/profile", icon: "👤" },
-    { label: "Wallet", href: "/wallet", icon: "💳" }
+    { label: "Me", href: "/profile", icon: "👤" }
   ] : [
     { label: "Games", href: "/games", icon: "🕹️" },
     { label: "Tourney", href: "/tournaments", icon: "🎮" },

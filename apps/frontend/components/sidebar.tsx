@@ -58,6 +58,10 @@ export function Sidebar({ user: initialUser }: { user: any }) {
 
   const navItems = user ? [
     { label: "Dashboard", href: "/dashboard", icon: "📊" },
+    // The fastest route to a running night, and the two Phase 2 screens a
+    // venue owner actually lives in.
+    { label: "Run a Night", href: "/run", icon: "⚡" },
+    { label: "Venues", href: "/venues", icon: "🏠" },
     { label: "Live Screening", href: "/screening", icon: "📺" },
     { label: "Games", href: "/games", icon: "🕹️" },
     { label: "Tournaments", href: "/tournaments", icon: "🎮" },
@@ -68,7 +72,11 @@ export function Sidebar({ user: initialUser }: { user: any }) {
     { label: "Live Screening", href: "/screening", icon: "📺" },
     { label: "Games", href: "/games", icon: "🕹️" },
     { label: "Tournaments", href: "/tournaments", icon: "🎮" },
-    { label: "Rankings", href: "/leaderboard", icon: "🏆" }
+    { label: "Rankings", href: "/leaderboard", icon: "🏆" },
+    // Both are useful before signing up, and the playbook is the thing that
+    // converts a venue with no league night at all.
+    { label: "Playbook", href: "/playbook", icon: "📖" },
+    { label: "Pricing", href: "/pricing", icon: "🏷️" }
   ];
 
   const [isOpen, setIsOpen] = useState(false);

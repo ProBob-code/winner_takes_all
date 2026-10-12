@@ -2,7 +2,16 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import type { Context } from "hono";
 import type { AppContext, Env } from "./types";
-import { D1Store, InsufficientFundsError, isMissingColumnError, isMissingTableError, type PayoutRequestRecord, type SeriesRecord, type TournamentRecord } from "./lib/d1-store";
+import {
+  D1Store,
+  InsufficientFundsError,
+  isMissingColumnError,
+  isMissingTableError,
+  type PayoutRequestRecord,
+  type SeriesRecord,
+  type TournamentRecord,
+  type VenueRecord,
+} from "./lib/d1-store";
 import { computeSeasonStandings } from "./lib/season";
 import { ensureEngineSchema } from "./lib/engine-schema";
 import {
@@ -38,6 +47,19 @@ import {
 import { authMiddleware, requireUser, requireAdmin, serializeUser, extractAccessToken } from "./middleware/auth";
 import { centsToMoney, payoutFeeCents, PAYOUT_FEE_PERCENT } from "./lib/money";
 import { stakesEnabled, allowedEntryFeeCents } from "./lib/stakes";
+import {
+  PLANS,
+  TRIAL_DAYS,
+  billingEnabled,
+  findPlan,
+  planAmountPaise,
+  createRazorpayPlan,
+  createRazorpaySubscription,
+  cancelRazorpaySubscription,
+  mapProviderStatus,
+  statusEntitles,
+} from "./lib/billing";
+import { shareText, whatsappShareUrl, type ShareKind } from "./lib/share-text";
 import { checkRateLimit, clientKey } from "./lib/rate-limit";
 import * as Engine from "./lib/tournament-engine";
 import {
@@ -71,6 +93,14 @@ import {
   adminRoleSchema,
   adminBonusSchema,
   adminResetPasswordSchema,
+  confirmFrameSchema,
+  quickSetupSchema,
+  joinByCodeSchema,
+  createVenueSchema,
+  updateVenueSchema,
+  venueMemberSchema,
+  createChainSchema,
+  subscribeSchema,
 } from "./lib/validation";
 
 const app = new Hono<AppContext>();
@@ -81,6 +111,17 @@ function allowedOrigins(env: Env): string[] {
   return env.ALLOWED_ORIGINS
     ? env.ALLOWED_ORIGINS.split(",").map((o) => o.trim()).filter(Boolean)
     : DEFAULT_ORIGINS;
+}
+
+/**
+ * The origin links handed to a person should point at.
+ *
+ * A join link goes on a screen for a room to scan and into a WhatsApp group;
+ * it has to be the public address of the app, not whichever origin happened to
+ * make the request.
+ */
+function publicOrigin(env: Env): string {
+  return env.PUBLIC_APP_ORIGIN || allowedOrigins(env)[0] || "";
 }
 
 // Inject store
@@ -161,6 +202,19 @@ app.use("/api/admin/*", async (c, next) => {
   }
   return next();
 });
+
+// Venues, chains, billing, join codes and the share text all read tables added
+// in 0012, so they get the same safety net.
+for (const family of ["/api/venues/*", "/api/chains/*", "/api/billing/*", "/api/join/*", "/api/tournaments/*"]) {
+  app.use(family, async (c, next) => {
+    try {
+      await ensureEngineSchema(c.env.DB);
+    } catch (err) {
+      console.error("Could not ensure the venue schema:", err);
+    }
+    return next();
+  });
+}
 
 // Attach user (if any) to every request
 app.use("/api/*", async (c, next) => {
@@ -637,6 +691,14 @@ app.post("/api/tournaments/create", async (c) => {
   const store = c.get("store");
   const body = parseBody(createTournamentSchema, await readJson(c));
 
+  // A host may attribute the night to a venue they actually work at, and no
+  // other. Without the check, a venue's activity figures — which is what a
+  // chain owner is paying to see — could be written by anyone.
+  const venue = await resolveVenueForUser(c, body.venueId ?? null, user.id);
+  if (venue === "denied") {
+    return c.json({ ok: false, message: "You cannot host for that venue." }, 403);
+  }
+
   // Any remaining database-shape problem should name itself rather than reach
   // the catch-all as "Internal server error", which says nothing actionable.
   let tournament;
@@ -651,6 +713,8 @@ app.post("/api/tournaments/create", async (c) => {
       bracketType: body.bracketType,
       sport: body.sport,
       password: body.password ?? null,
+      venueId: venue?.id ?? null,
+      requireFrameConfirmation: body.requireFrameConfirmation,
     });
   } catch (err) {
     if (isMissingColumnError(err)) {
@@ -1858,6 +1922,17 @@ async function recordEngineResult(
   match: EngineMatchRow
 ): Promise<void> {
   const store = c.get("store");
+
+  // A tournament that asked for both players to agree holds the result here.
+  // The frame is over — the clock has stopped and the bracket has moved on —
+  // but nothing is added to either team's totals and a final does not pay out
+  // until both sides have confirmed. See the confirm route below.
+  if (tournament.require_frame_confirmation && !match.awaiting_confirmation) {
+    await store.updateEngineMatch(match.id, { awaiting_confirmation: true });
+    match.awaiting_confirmation = true;
+    return;
+  }
+
   for (const delta of Engine.resultDeltas(match, engineSport(tournament))) {
     await store.addEngineTeamResult(delta.teamId, delta);
   }
@@ -1937,7 +2012,14 @@ app.get("/api/engine/tournaments/:id/state", async (c) => {
   // decided it, so there is nothing to ask anyone: close it and pay.
   if (!(tournament.bracket_state as any)?.result) {
     const decidedFinal = matches.find(
-      (m) => m.phase === "FINAL" && m.status === "COMPLETED" && m.winner_id
+      (m) =>
+        m.phase === "FINAL" &&
+        m.status === "COMPLETED" &&
+        m.winner_id &&
+        // A final held for both players to agree is not an unsettled final. It
+        // is one working exactly as the host asked, and closing it here would
+        // defeat the confirmation it is waiting for.
+        !m.awaiting_confirmation
     );
     if (decidedFinal) {
       const paid = await settleTournament(c, tournament);
@@ -1950,6 +2032,16 @@ app.get("/api/engine/tournaments/:id/state", async (c) => {
   const published = !!(arena?.state as any)?.isStarted;
   if (settled && published) await syncEngineArena(c, tournament, [teams, matches]);
 
+  // Only fetched when the rule is on, so an ordinary tournament pays nothing
+  // for a feature it is not using.
+  const confirmations = tournament.require_frame_confirmation
+    ? await store.getTournamentFrameConfirmations(tournamentId).catch(() => [])
+    : [];
+
+  // The code on the screen, if the host has put one there. Reused rather than
+  // reissued so a QR the room has already scanned keeps working.
+  const joinCode = await store.getLiveJoinCodeFor(tournamentId).catch(() => null);
+
   return c.json({
     ok: true,
     phase: tournament.status as Engine.TournamentPhase,
@@ -1958,6 +2050,15 @@ app.get("/api/engine/tournaments/:id/state", async (c) => {
     matches,
     arenaId,
     published,
+    requireFrameConfirmation: tournament.require_frame_confirmation,
+    confirmations: confirmations.map((fc) => ({
+      matchId: fc.match_id,
+      teamId: fc.team_id,
+      agreedWinnerId: fc.agreed_winner_id,
+      at: fc.created_at,
+    })),
+    joinCode: joinCode?.code ?? null,
+    joinUrl: joinCode ? `${publicOrigin(c.env)}/join/${joinCode.code}` : null,
     matchesPerTeam: tournament.max_matches_per_team || 2,
     // Clocks are counted down in the browser against start_time, which is
     // server time; this lets a client with a skewed clock correct for it.
@@ -2314,6 +2415,10 @@ app.post("/api/engine/matches/:id/restart", async (c) => {
   });
   if (!applied) return c.json({ ok: false, message: "Only a live match can be restarted." }, 409);
 
+  // Whatever the players agreed about was the old frame. It no longer exists.
+  await store.clearFrameConfirmations(match.id).catch(() => undefined);
+  await store.updateEngineMatch(match.id, { awaiting_confirmation: false }).catch(() => undefined);
+
   await syncEngineArena(c, access.tournament);
   return c.json({ ok: true });
 });
@@ -2422,7 +2527,23 @@ app.post("/api/engine/matches/:id/score", async (c) => {
   }
 
   if (match.status !== "LIVE") {
+    // A tap the client queued while offline can arrive after the frame ended.
+    // If that exact tap was already applied, the client is replaying an
+    // outbox it has not yet been able to clear, and the honest answer is that
+    // the score is already in — not an error it will keep retrying.
+    if (body.eventId) {
+      const fresh = await store.claimScoreEvent(body.eventId, match.id, body.teamId, body.type);
+      if (!fresh) return c.json({ ok: true, duplicate: true, match });
+    }
     return c.json({ ok: false, message: "This match is not live." }, 409);
+  }
+
+  // Claim the tap before applying it. A client replaying its offline outbox
+  // sends the same event id again; the second claim fails and the score is
+  // left exactly as the first one left it.
+  if (body.eventId) {
+    const fresh = await store.claimScoreEvent(body.eventId, match.id, body.teamId, body.type);
+    if (!fresh) return c.json({ ok: true, duplicate: true, match });
   }
 
   // The clock first: a tap that arrives after it ran out is too late to count,
@@ -2689,7 +2810,7 @@ app.post("/api/stream/broadcast-token", async (c) => {
     exp,
   });
 
-  const origin = c.env.PUBLIC_APP_ORIGIN || allowedOrigins(c.env)[0];
+  const origin = publicOrigin(c.env);
 
   // Everything points at the short code route: it is what the QR encodes, what
   // gets shared, and what someone types. The long signed URL it replaced made
@@ -2956,6 +3077,1169 @@ app.post("/api/stream/feeds/end", async (c) => {
 
   await deleteFeed(c.env.MATCH_FEEDS, claims.arenaId, claims.matchId, body.feedId);
   return c.json({ ok: true });
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+// Phase 1 — what the buyer panel said blocks the sale
+// ════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Which venue, if any, this account may act for.
+ *
+ * Returns the venue, null when none was asked for, and the string "denied"
+ * when one was asked for that this account has no part in. A venue's activity
+ * figures are what a chain owner pays to see, so they must not be writable by
+ * someone who has never worked there.
+ */
+async function resolveVenueForUser(
+  c: Context<AppContext>,
+  venueId: string | null,
+  userId: string
+): Promise<VenueRecord | null | "denied"> {
+  if (!venueId) return null;
+  const store = c.get("store");
+  const venue = await store.getVenue(venueId).catch(() => null);
+  if (!venue) return "denied";
+  const role = await store.getVenueRole(venueId, userId).catch(() => null);
+  if (!role) return "denied";
+  return venue;
+}
+
+/** Venue access at or above one of the roles given. */
+async function requireVenueRole(
+  c: Context<AppContext>,
+  venueId: string,
+  roles: string[]
+): Promise<{ venue: VenueRecord; role: string } | { error: Response }> {
+  const user = requireUser(c);
+  if (!user) return { error: c.json({ ok: false, message: "Authentication required" }, 401) };
+
+  const store = c.get("store");
+  const venue = await store.getVenue(venueId);
+  if (!venue) return { error: c.json({ ok: false, message: "Venue not found" }, 404) };
+
+  // A platform admin can see and fix any venue; that is what the admin console
+  // is for, and a support request should not need an invitation first.
+  if (user.role === "admin") return { venue, role: "owner" };
+
+  const role = await store.getVenueRole(venueId, user.id);
+  if (!role || !roles.includes(role)) {
+    return { error: c.json({ ok: false, message: "You do not have access to this venue." }, 403) };
+  }
+  return { venue, role };
+}
+
+function serializeVenue(v: VenueRecord) {
+  return {
+    id: v.id,
+    name: v.name,
+    city: v.city,
+    chainId: v.chain_id,
+    whatsappGroup: v.whatsapp_group,
+    status: v.status,
+    ownerId: v.owner_id,
+    createdAt: v.created_at,
+  };
+}
+
+// ── 1.3 Both players confirm the frame ──
+
+/**
+ * One side agrees the frame is over and who won it.
+ *
+ * This answers the objection that sank the dispute-settling pitch: a screen
+ * does not referee a frame, someone still types the result — and on a bar
+ * table that someone is usually the owner, whose word is exactly what is in
+ * dispute. With this, the screen carries both players' word.
+ *
+ * A player confirms for their own side. The host may confirm for either, since
+ * on a walk-in night one of the two may not have the app open at all; that is
+ * recorded as the host having done it, so the record says what happened.
+ */
+app.post("/api/engine/matches/:id/confirm", async (c) => {
+  const user = requireUser(c);
+  if (!user) return c.json({ ok: false, message: "Authentication required" }, 401);
+
+  const store = c.get("store");
+  const match = await store.getEngineMatch(c.req.param("id"));
+  if (!match) return c.json({ ok: false, message: "Match not found" }, 404);
+
+  const tournament = await store.getTournament(match.tournament_id);
+  if (!tournament) return c.json({ ok: false, message: "Tournament not found" }, 404);
+
+  const body = parseBody(confirmFrameSchema, await readJson(c));
+  if (body.teamId !== match.team_a_id && body.teamId !== match.team_b_id) {
+    return c.json({ ok: false, message: "teamId is not part of this match" }, 400);
+  }
+
+  if (match.status !== "COMPLETED") {
+    return c.json({ ok: false, message: "This frame has not finished yet." }, 409);
+  }
+
+  const teams = await store.getEngineTeams(match.tournament_id);
+  const isHost = tournament.host_id === user.id || user.role === "admin";
+  const ownSide = teams.find((t) => t.id === body.teamId && t.user_id === user.id);
+  if (!ownSide && !isHost) {
+    return c.json(
+      { ok: false, message: "Only that player, or the host, can confirm for that side." },
+      403
+    );
+  }
+
+  // Disagreeing about the winner is reported rather than quietly accepted: the
+  // whole point is that a contested frame stays visibly contested.
+  if (body.winnerId !== undefined && body.winnerId !== null && body.winnerId !== match.winner_id) {
+    return c.json(
+      {
+        ok: false,
+        code: "winner_disputed",
+        message:
+          "That is not the result the table recorded. Ask the host to restart the frame rather than confirming a different winner.",
+        recordedWinnerId: match.winner_id,
+      },
+      409
+    );
+  }
+
+  await store.confirmFrame(match.id, body.teamId, user.id, match.winner_id);
+  const confirmations = await store.getFrameConfirmations(match.id);
+  const sides = new Set(confirmations.map((fc) => fc.team_id));
+  const bothAgreed = sides.has(match.team_a_id) && sides.has(match.team_b_id);
+
+  // Both sides in: the result becomes real. settleAwaitingConfirmation is the
+  // guard that makes this happen once even if both players tap at the instant.
+  if (bothAgreed && match.awaiting_confirmation) {
+    const mine = await store.settleAwaitingConfirmation(match.id);
+    if (mine) {
+      const settled = { ...match, awaiting_confirmation: false };
+      await recordEngineResult(c, tournament, settled);
+      await syncEngineArena(c, tournament);
+    }
+  }
+
+  return c.json({
+    ok: true,
+    confirmed: [...sides],
+    bothAgreed,
+    awaitingFrom: bothAgreed
+      ? []
+      : [match.team_a_id, match.team_b_id].filter((id) => !sides.has(id)),
+  });
+});
+
+/**
+ * The host settles a frame nobody will confirm.
+ *
+ * A player who has left, a phone that is flat, a walk-in who never had the app
+ * open: the night cannot stop for any of them. The override is recorded as the
+ * host's own confirmation of both sides, so the ledger says the screen is
+ * carrying the owner's word for this one — which is the thing confirmation
+ * exists to make visible.
+ */
+app.post("/api/engine/matches/:id/confirm-override", async (c) => {
+  const store = c.get("store");
+  const match = await store.getEngineMatch(c.req.param("id"));
+  if (!match) return c.json({ ok: false, message: "Match not found" }, 404);
+
+  const access = await requireTournamentManager(c, match.tournament_id);
+  if ("error" in access) return access.error;
+  const { tournament } = access;
+  const user = requireUser(c)!;
+
+  if (match.status !== "COMPLETED") {
+    return c.json({ ok: false, message: "This frame has not finished yet." }, 409);
+  }
+
+  await store.confirmFrame(match.id, match.team_a_id, user.id, match.winner_id);
+  await store.confirmFrame(match.id, match.team_b_id, user.id, match.winner_id);
+
+  if (match.awaiting_confirmation) {
+    const mine = await store.settleAwaitingConfirmation(match.id);
+    if (mine) {
+      await recordEngineResult(c, tournament, { ...match, awaiting_confirmation: false });
+      await syncEngineArena(c, tournament);
+    }
+  }
+
+  return c.json({ ok: true, overriddenBy: user.id });
+});
+
+// ── 1.4 WhatsApp push ──
+
+/**
+ * The bracket, the results or the table as text, with a link that opens
+ * WhatsApp with it already written.
+ *
+ * Public, because it says no more than the tournament page already does, and
+ * because the host wants to push results from whichever device is to hand.
+ * See lib/share-text.ts for why this is a share link and not a Business API
+ * integration.
+ */
+app.get("/api/tournaments/:id/share", async (c) => {
+  const store = c.get("store");
+  const tournamentId = c.req.param("id");
+
+  const tournament = await store.getTournament(tournamentId);
+  if (!tournament) return c.json({ ok: false, message: "Tournament not found" }, 404);
+
+  const requested = (c.req.query("kind") || "bracket").toLowerCase();
+  const kind: ShareKind =
+    requested === "results" || requested === "table" ? (requested as ShareKind) : "bracket";
+
+  let teams: EngineTeamRow[] = [];
+  let matches: EngineMatchRow[] = [];
+  try {
+    [teams, matches] = await Promise.all([
+      store.getEngineTeams(tournamentId),
+      store.getEngineMatches(tournamentId),
+    ]);
+  } catch (err) {
+    // No engine tables yet means nothing has been drawn; an empty bracket is
+    // the honest answer, not a 500.
+    if (!isMissingTableError(err)) throw err;
+  }
+
+  const joinCode = await store.getLiveJoinCodeFor(tournamentId).catch(() => null);
+  const joinUrl = joinCode ? `${publicOrigin(c.env)}/join/${joinCode.code}` : undefined;
+
+  const text = shareText(kind, tournament.name, teams, matches, joinUrl);
+  return c.json({ ok: true, kind, text, whatsappUrl: whatsappShareUrl(text) });
+});
+
+// ── 1.5 Sixty-second setup ──
+
+/**
+ * Run a night in one request.
+ *
+ * Pick a game, pick how many are playing, go. This exists because the panel's
+ * complaint was never that the app lacked features — it was that setting up
+ * took longer than the regulars would wait, and the person holding the phone
+ * had been trained for ninety seconds. Everything a hosted tournament usually
+ * needs several calls for happens here: create, seat the players, start, draw.
+ *
+ * Free to enter, always: entryFeeCents is not a parameter, so there is no path
+ * through this route that could take a stake.
+ */
+app.post("/api/engine/quick-setup", async (c) => {
+  const user = requireUser(c);
+  if (!user) return c.json({ ok: false, message: "Authentication required" }, 401);
+
+  const limited = await rateLimit(c, "quick-setup", 30, 300);
+  if (limited) return limited;
+
+  try {
+    await ensureEngineSchema(c.env.DB);
+  } catch (err) {
+    console.error("Could not ensure the engine schema:", err);
+  }
+
+  const store = c.get("store");
+  const body = parseBody(quickSetupSchema, await readJson(c).catch(() => ({})));
+
+  const venue = await resolveVenueForUser(c, body.venueId ?? null, user.id);
+  if (venue === "denied") {
+    return c.json({ ok: false, message: "You cannot host for that venue." }, 403);
+  }
+
+  // Names if the host had them, Player n for the rest. A blank in the middle
+  // of the list is filled rather than dropped, so the count the host asked for
+  // is the count that gets seated.
+  const supplied = body.players ?? [];
+  const names: string[] = [];
+  for (let i = 0; i < body.size; i++) {
+    const given = (supplied[i] ?? "").trim();
+    names.push(given || `Player ${i + 1}`);
+  }
+
+  const tournament = await store.createTournament({
+    name: body.name || `${venue ? venue.name : "League"} night`,
+    entryFeeCents: 0,
+    maxPlayers: Math.max(body.size, 2),
+    hostId: user.id,
+    tournamentType: "offline",
+    bracketType: body.bracketType,
+    sport: body.sport,
+    venueId: venue?.id ?? null,
+    requireFrameConfirmation: body.requireFrameConfirmation,
+  });
+
+  for (const name of names) {
+    await store.createEngineTeam(tournament.id, name);
+  }
+
+  const teams = await store.getEngineTeams(tournament.id);
+  await store.updateTournamentStatus(tournament.id, "GROUP");
+
+  // Draw the opening fixtures, exactly as the start route does, so the
+  // schedule exists the moment the page opens.
+  const limit = tournament.max_matches_per_team || 2;
+  const { matches: nextMatches, byeTeamId } = Engine.generateNextMatches(teams, [], "GROUP", limit);
+  for (const mData of nextMatches) {
+    const match = await store.createEngineMatch(tournament.id, mData);
+    await store.createEngineMatchup(tournament.id, match.team_a_id, match.team_b_id, match.id);
+  }
+  if (byeTeamId) {
+    const team = teams.find((t) => t.id === byeTeamId);
+    if (team) {
+      await store.updateEngineTeam(byeTeamId, {
+        matches_played: team.matches_played + 1,
+        group_points: team.group_points + 1,
+        bye_assigned: true,
+      });
+    }
+  }
+
+  // A code on the screen from the start, so anyone who walks in later can join
+  // without the host going looking for the button.
+  const code = await issueJoinCode(c, tournament.id, user.id);
+
+  return c.json({
+    ok: true,
+    tournamentId: tournament.id,
+    teams: teams.length,
+    matches: nextMatches.length,
+    joinCode: code,
+    joinUrl: `${publicOrigin(c.env)}/join/${code}`,
+    staffUrl: `${publicOrigin(c.env)}/staff/${tournament.id}`,
+    displayUrl: `${publicOrigin(c.env)}/display/${tournament.id}`,
+  });
+});
+
+// ── 1.7 Join by QR ──
+
+/**
+ * How long a join code stays scannable.
+ *
+ * Six hours covers a long league night with a wide margin, and is short enough
+ * that a photograph of the screen is not a permanent back door into the
+ * tournament.
+ */
+const JOIN_CODE_TTL_SECONDS = 6 * 60 * 60;
+
+/**
+ * Mint a join code for a tournament, or hand back the one already on screen.
+ *
+ * Reused rather than reissued: a room that has already scanned the QR must not
+ * find it dead because the host reopened the display.
+ */
+async function issueJoinCode(
+  c: Context<AppContext>,
+  tournamentId: string,
+  userId: string | null
+): Promise<string> {
+  const store = c.get("store");
+  const existing = await store.getLiveJoinCodeFor(tournamentId).catch(() => null);
+  if (existing) return existing.code;
+
+  const expiresAt = new Date(Date.now() + JOIN_CODE_TTL_SECONDS * 1000).toISOString();
+  // Six characters from the broadcast alphabet, which already excludes the
+  // glyphs people misread off a screen across a room.
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const code = createBroadcastCode();
+    const taken = await store.getJoinCode(code).catch(() => null);
+    if (taken) continue;
+    await store.createJoinCode(code, tournamentId, userId, expiresAt);
+    return code;
+  }
+  throw new Error("Could not allocate a join code");
+}
+
+/** The host puts a code on the screen. */
+app.post("/api/tournaments/:id/join-code", async (c) => {
+  const tournamentId = c.req.param("id");
+  const access = await requireTournamentManager(c, tournamentId);
+  if ("error" in access) return access.error;
+  const user = requireUser(c)!;
+
+  const code = await issueJoinCode(c, tournamentId, user.id);
+  return c.json({
+    ok: true,
+    code,
+    url: `${publicOrigin(c.env)}/join/${code}`,
+    expiresInSeconds: JOIN_CODE_TTL_SECONDS,
+  });
+});
+
+/**
+ * What a scanned code points at.
+ *
+ * Deliberately open: a player who has just scanned a QR off a screen has no
+ * account, and asking them to make one before telling them what they scanned
+ * is how a walk-in becomes a non-entrant.
+ */
+app.get("/api/join/:code", async (c) => {
+  const store = c.get("store");
+  const code = normaliseBroadcastCode(c.req.param("code") || "");
+
+  const record = await store.getJoinCode(code);
+  if (!record) return c.json({ ok: false, message: "That code is not valid." }, 404);
+  if (record.expires_at && record.expires_at < new Date().toISOString()) {
+    return c.json({ ok: false, message: "That code has expired. Ask for a new one." }, 410);
+  }
+
+  const tournament = await store.getTournament(record.tournament_id);
+  if (!tournament) return c.json({ ok: false, message: "That tournament no longer exists." }, 404);
+
+  const teams = await store.getEngineTeams(tournament.id).catch(() => []);
+  const venue = tournament.venue_id
+    ? await store.getVenue(tournament.venue_id).catch(() => null)
+    : null;
+
+  return c.json({
+    ok: true,
+    tournamentId: tournament.id,
+    name: tournament.name,
+    venue: venue?.name ?? null,
+    sport: tournament.sport,
+    status: tournament.status,
+    // Free, always. A code that led to a payment screen would be a stake taken
+    // from someone who scanned a poster.
+    free: tournament.entry_fee_cents === 0,
+    entered: teams.length,
+    capacity: tournament.max_players,
+    open: tournament.status === "open" || tournament.status === "GROUP",
+  });
+});
+
+/**
+ * Take a seat by code. No account, no wallet, no top-up.
+ *
+ * The player types a name and is in. That is the whole flow, and it is why the
+ * route creates an engine team rather than a participant: a participant has an
+ * account, a wallet and a join fee to settle, none of which a walk-in has.
+ */
+app.post("/api/join/:code", async (c) => {
+  const limited = await rateLimit(c, "join-code", 20, 60);
+  if (limited) return limited;
+
+  const store = c.get("store");
+  const code = normaliseBroadcastCode(c.req.param("code") || "");
+  const body = parseBody(joinByCodeSchema, await readJson(c));
+
+  const record = await store.getJoinCode(code);
+  if (!record) return c.json({ ok: false, message: "That code is not valid." }, 404);
+  if (record.expires_at && record.expires_at < new Date().toISOString()) {
+    return c.json({ ok: false, message: "That code has expired. Ask for a new one." }, 410);
+  }
+
+  const tournament = await store.getTournament(record.tournament_id);
+  if (!tournament) return c.json({ ok: false, message: "That tournament no longer exists." }, 404);
+
+  // Belt and braces. Entry fees are already clamped to zero while stakes are
+  // off, but a code must never be the thing that admits someone to a paid
+  // tournament: they scanned a poster, they did not agree to a charge.
+  if (tournament.entry_fee_cents > 0) {
+    return c.json(
+      { ok: false, message: "This tournament is not free to enter, so it cannot be joined by code." },
+      409
+    );
+  }
+
+  if (tournament.status !== "open" && tournament.status !== "GROUP") {
+    return c.json({ ok: false, message: "This tournament is no longer taking entries." }, 409);
+  }
+
+  const seated = await store.countEngineTeams(tournament.id);
+  if (seated >= tournament.max_players) {
+    return c.json({ ok: false, message: "This tournament is full." }, 409);
+  }
+
+  const existing = await store.getEngineTeams(tournament.id);
+  const wanted = body.name.trim();
+  if (existing.some((t) => t.name.trim().toLowerCase() === wanted.toLowerCase())) {
+    return c.json(
+      { ok: false, message: "Someone is already playing under that name. Try another." },
+      409
+    );
+  }
+
+  // A signed-in player keeps their account on the team, so a series table can
+  // add their weeks up; a walk-in is seated as a guest.
+  const user = c.get("user");
+  const team = user
+    ? await store.createEngineTeam(tournament.id, wanted, user.id)
+    : await store.createGuestEngineTeam(tournament.id, wanted);
+
+  // Mid-tournament arrivals get matched against whoever is waiting, exactly as
+  // the add-team route does.
+  if (tournament.status === "GROUP") {
+    const [allTeams, matchups, matches] = await Promise.all([
+      store.getEngineTeams(tournament.id),
+      store.getEngineMatchups(tournament.id),
+      store.getEngineMatches(tournament.id),
+    ]);
+    if (matches.length > 0) {
+      const limit = tournament.max_matches_per_team || 2;
+      const { matches: nextMatches } = Engine.generateNextMatches(allTeams, matchups, "GROUP", limit);
+      for (const nm of nextMatches.filter((m) => m.team_a_id === team.id || m.team_b_id === team.id)) {
+        const match = await store.createEngineMatch(tournament.id, nm);
+        await store.createEngineMatchup(tournament.id, match.team_a_id, match.team_b_id, match.id);
+      }
+    }
+  }
+
+  return c.json({
+    ok: true,
+    tournamentId: tournament.id,
+    teamId: team.id,
+    name: team.name,
+    guest: !user,
+  });
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+// Phase 2 — the venue becomes the customer
+// ════════════════════════════════════════════════════════════════════════════
+
+// ── 2.1 Venue accounts ──
+
+app.post("/api/venues", async (c) => {
+  const user = requireUser(c);
+  if (!user) return c.json({ ok: false, message: "Authentication required" }, 401);
+
+  const store = c.get("store");
+  const body = parseBody(createVenueSchema, await readJson(c));
+
+  // A venue may only be put into a chain by whoever owns that chain.
+  if (body.chainId) {
+    const chain = await store.getChain(body.chainId);
+    if (!chain || (chain.owner_id !== user.id && user.role !== "admin")) {
+      return c.json({ ok: false, message: "You do not own that chain." }, 403);
+    }
+  }
+
+  const venue = await store.createVenue({
+    name: body.name,
+    city: body.city,
+    ownerId: user.id,
+    chainId: body.chainId ?? null,
+    whatsappGroup: body.whatsappGroup ?? null,
+  });
+
+  return c.json({ ok: true, venue: serializeVenue(venue) });
+});
+
+app.get("/api/venues", async (c) => {
+  const user = requireUser(c);
+  if (!user) return c.json({ ok: false, message: "Authentication required" }, 401);
+
+  const store = c.get("store");
+  const venues = await store.listVenuesForUser(user.id);
+
+  // Entitlement is read per venue so a page can say which sites are covered by
+  // a subscription and which are not, without a second round trip.
+  const rows = await Promise.all(
+    venues.map(async (v) => {
+      const sub = await store.entitlingSubscription(v.id, v.chain_id).catch(() => null);
+      return {
+        ...serializeVenue(v),
+        role: await store.getVenueRole(v.id, user.id).catch(() => null),
+        entitled: !!sub && statusEntitles(sub.status),
+        subscriptionStatus: sub?.status ?? null,
+      };
+    })
+  );
+
+  return c.json({ ok: true, venues: rows });
+});
+
+app.get("/api/venues/:id", async (c) => {
+  const access = await requireVenueRole(c, c.req.param("id"), ["owner", "manager", "staff"]);
+  if ("error" in access) return access.error;
+  const { venue, role } = access;
+
+  const store = c.get("store");
+  const [activity, members, sub, chain] = await Promise.all([
+    store.venueActivity(venue.id).catch(() => null),
+    // Staff do not need the roster, and it carries other people's emails.
+    role === "staff" ? Promise.resolve([]) : store.listVenueMembers(venue.id).catch(() => []),
+    store.entitlingSubscription(venue.id, venue.chain_id).catch(() => null),
+    venue.chain_id ? store.getChain(venue.chain_id).catch(() => null) : Promise.resolve(null),
+  ]);
+
+  return c.json({
+    ok: true,
+    venue: serializeVenue(venue),
+    role,
+    chain: chain ? { id: chain.id, name: chain.name } : null,
+    activity,
+    members: members.map((m) => ({
+      userId: m.user_id,
+      name: m.user_name ?? null,
+      email: m.user_email ?? null,
+      role: m.role,
+      since: m.created_at,
+    })),
+    subscription: sub
+      ? {
+          id: sub.id,
+          planCode: sub.plan_code,
+          status: sub.status,
+          entitled: statusEntitles(sub.status),
+          amount: centsToMoney(sub.amount_cents),
+          periodEnd: sub.current_period_end,
+          trialEndsAt: sub.trial_ends_at,
+          // A chain subscription covering this site, rather than its own.
+          viaChain: !!sub.chain_id && sub.chain_id === venue.chain_id,
+        }
+      : null,
+  });
+});
+
+/** POST rather than PATCH: the CORS policy allows GET, POST, PUT and DELETE. */
+app.post("/api/venues/:id/update", async (c) => {
+  const access = await requireVenueRole(c, c.req.param("id"), ["owner", "manager"]);
+  if ("error" in access) return access.error;
+  const user = requireUser(c)!;
+
+  const store = c.get("store");
+  const body = parseBody(updateVenueSchema, await readJson(c));
+
+  if (body.chainId) {
+    const chain = await store.getChain(body.chainId);
+    if (!chain || (chain.owner_id !== user.id && user.role !== "admin")) {
+      return c.json({ ok: false, message: "You do not own that chain." }, 403);
+    }
+  }
+
+  await store.updateVenue(access.venue.id, {
+    name: body.name,
+    city: body.city,
+    chain_id: body.chainId === undefined ? undefined : body.chainId,
+    whatsapp_group: body.whatsappGroup === undefined ? undefined : body.whatsappGroup,
+    status: body.status,
+  });
+
+  const fresh = await store.getVenue(access.venue.id);
+  return c.json({ ok: true, venue: fresh ? serializeVenue(fresh) : null });
+});
+
+/**
+ * Put a member of staff on a venue.
+ *
+ * By email, against an account that already exists: inviting someone who has
+ * not signed up would mean holding an address and sending mail, neither of
+ * which this app does. The owner tells them to sign up, then adds them.
+ */
+app.post("/api/venues/:id/members", async (c) => {
+  const access = await requireVenueRole(c, c.req.param("id"), ["owner", "manager"]);
+  if ("error" in access) return access.error;
+
+  const store = c.get("store");
+  const body = parseBody(venueMemberSchema, await readJson(c));
+
+  const account = await store.getUserByEmail(body.email);
+  if (!account) {
+    return c.json(
+      {
+        ok: false,
+        message:
+          "Nobody has signed up with that email yet. Ask them to create an account, then add them.",
+      },
+      404
+    );
+  }
+
+  await store.addVenueMember(access.venue.id, account.id, body.role);
+  return c.json({ ok: true, userId: account.id, name: account.name, role: body.role });
+});
+
+app.post("/api/venues/:id/members/remove", async (c) => {
+  const access = await requireVenueRole(c, c.req.param("id"), ["owner", "manager"]);
+  if ("error" in access) return access.error;
+
+  const body = parseBody(venueMemberSchema.partial({ role: true }), await readJson(c));
+  const store = c.get("store");
+
+  const account = await store.getUserByEmail(body.email!);
+  if (!account) return c.json({ ok: false, message: "No such account." }, 404);
+
+  // The owner is the account the venue belongs to; removing them would leave a
+  // venue nobody can administer.
+  if (account.id === access.venue.owner_id) {
+    return c.json({ ok: false, message: "The owner cannot be removed from their own venue." }, 409);
+  }
+
+  await store.removeVenueMember(access.venue.id, account.id);
+  return c.json({ ok: true });
+});
+
+/** Every tournament this venue has run. */
+app.get("/api/venues/:id/tournaments", async (c) => {
+  const access = await requireVenueRole(c, c.req.param("id"), ["owner", "manager", "staff"]);
+  if ("error" in access) return access.error;
+
+  const store = c.get("store");
+  const all = await store.listTournaments();
+  const mine = all.filter((t) => t.venue_id === access.venue.id);
+  return c.json({ ok: true, tournaments: mine.map(serializeTournament) });
+});
+
+// ── 2.3 Chain tier ──
+
+app.post("/api/chains", async (c) => {
+  const user = requireUser(c);
+  if (!user) return c.json({ ok: false, message: "Authentication required" }, 401);
+
+  const body = parseBody(createChainSchema, await readJson(c));
+  const chain = await c.get("store").createChain({ name: body.name, ownerId: user.id });
+  return c.json({ ok: true, chain });
+});
+
+app.get("/api/chains", async (c) => {
+  const user = requireUser(c);
+  if (!user) return c.json({ ok: false, message: "Authentication required" }, 401);
+
+  const store = c.get("store");
+  const chains = await store.listChainsForUser(user.id);
+  const rows = await Promise.all(
+    chains.map(async (ch) => ({
+      id: ch.id,
+      name: ch.name,
+      sites: (await store.listVenuesForChain(ch.id).catch(() => [])).length,
+      createdAt: ch.created_at,
+    }))
+  );
+  return c.json({ ok: true, chains: rows });
+});
+
+/**
+ * The chain dashboard: every site, and how busy each one actually is.
+ *
+ * The per-site activity is the point. A chain owner's real question is not how
+ * the chain is doing in aggregate but which rooms have stopped running nights,
+ * because those are the ones about to cancel.
+ */
+app.get("/api/chains/:id/overview", async (c) => {
+  const user = requireUser(c);
+  if (!user) return c.json({ ok: false, message: "Authentication required" }, 401);
+
+  const store = c.get("store");
+  const chain = await store.getChain(c.req.param("id"));
+  if (!chain) return c.json({ ok: false, message: "Chain not found" }, 404);
+  if (chain.owner_id !== user.id && user.role !== "admin") {
+    return c.json({ ok: false, message: "You do not own that chain." }, 403);
+  }
+
+  const venues = await store.listVenuesForChain(chain.id);
+  const sites = await Promise.all(
+    venues.map(async (v) => ({
+      ...serializeVenue(v),
+      activity: await store.venueActivity(v.id).catch(() => null),
+    }))
+  );
+
+  const sub = await store
+    .entitlingSubscription(venues[0]?.id ?? "", chain.id)
+    .catch(() => null);
+
+  return c.json({
+    ok: true,
+    chain: { id: chain.id, name: chain.name },
+    sites,
+    subscription: sub
+      ? {
+          id: sub.id,
+          planCode: sub.plan_code,
+          status: sub.status,
+          entitled: statusEntitles(sub.status),
+          amount: centsToMoney(sub.amount_cents),
+          periodEnd: sub.current_period_end,
+        }
+      : null,
+  });
+});
+
+/** One league table across every venue in the chain. */
+app.get("/api/chains/:id/standings", async (c) => {
+  const user = requireUser(c);
+  if (!user) return c.json({ ok: false, message: "Authentication required" }, 401);
+
+  const store = c.get("store");
+  const chain = await store.getChain(c.req.param("id"));
+  if (!chain) return c.json({ ok: false, message: "Chain not found" }, 404);
+  if (chain.owner_id !== user.id && user.role !== "admin") {
+    return c.json({ ok: false, message: "You do not own that chain." }, 403);
+  }
+
+  const standings = await store.chainStandings(chain.id).catch(() => []);
+  return c.json({ ok: true, standings });
+});
+
+// ── 2.2 Subscription billing ──
+
+/**
+ * What the software costs.
+ *
+ * Always answerable, even where billing is switched off: a venue deciding
+ * whether to pilot needs the price before it needs a checkout.
+ */
+app.get("/api/billing/plans", (c) => {
+  c.header("Cache-Control", "no-store");
+  return c.json({
+    ok: true,
+    enabled: billingEnabled(c.env),
+    trialDays: TRIAL_DAYS,
+    plans: PLANS.map((p) => ({
+      code: p.code,
+      name: p.name,
+      price: centsToMoney(p.rupees * 100),
+      rupees: p.rupees,
+      intervalMonths: p.intervalMonths,
+      perSite: p.chain,
+      minSites: p.minSites,
+      blurb: p.blurb,
+      features: p.features,
+    })),
+    message: billingEnabled(c.env)
+      ? null
+      : "Subscriptions are not open yet. Get in touch and we will set your venue up by hand.",
+  });
+});
+
+/**
+ * Start a subscription for a venue, or for a chain.
+ *
+ * NOT gated by stakesEnabled, and that is deliberate: see lib/billing.ts. A
+ * venue buying tournament software is a business-to-business sale; a player
+ * paying to enter a game is a stake. Only the second is prohibited.
+ */
+app.post("/api/billing/subscribe", async (c) => {
+  const user = requireUser(c);
+  if (!user) return c.json({ ok: false, message: "Authentication required" }, 401);
+
+  if (!billingEnabled(c.env)) {
+    return c.json(
+      {
+        ok: false,
+        code: "billing_disabled",
+        message:
+          "Subscriptions are not open on this deployment. Get in touch and we will set your venue up by hand.",
+      },
+      503
+    );
+  }
+
+  const limited = await rateLimit(c, "subscribe", 10, 600);
+  if (limited) return limited;
+
+  const store = c.get("store");
+  const body = parseBody(subscribeSchema, await readJson(c));
+
+  const plan = findPlan(body.planCode);
+  if (!plan) return c.json({ ok: false, message: "No such plan." }, 400);
+
+  // Who is being billed, and may this account commit them to it.
+  let venueId: string | null = null;
+  let chainId: string | null = null;
+  let sites = 1;
+
+  if (plan.chain) {
+    if (!body.chainId) return c.json({ ok: false, message: "A chain plan needs a chain." }, 400);
+    const chain = await store.getChain(body.chainId);
+    if (!chain || (chain.owner_id !== user.id && user.role !== "admin")) {
+      return c.json({ ok: false, message: "You do not own that chain." }, 403);
+    }
+    chainId = chain.id;
+    const venues = await store.listVenuesForChain(chain.id);
+    sites = Math.max(venues.length, body.sites, plan.minSites);
+  } else {
+    if (!body.venueId) return c.json({ ok: false, message: "A venue plan needs a venue." }, 400);
+    const access = await requireVenueRole(c, body.venueId, ["owner"]);
+    if ("error" in access) return access.error;
+    venueId = access.venue.id;
+  }
+
+  // Already covered: say so rather than selling a second mandate for the same
+  // room, which is a refund conversation later.
+  const existing = await store.entitlingSubscription(venueId ?? "", chainId);
+  if (existing && statusEntitles(existing.status)) {
+    return c.json(
+      {
+        ok: false,
+        code: "already_subscribed",
+        message: "That is already covered by a live subscription.",
+        subscriptionId: existing.id,
+      },
+      409
+    );
+  }
+
+  const { keyId, keySecret } = razorpayCredentials(c.env);
+  const amountPaise = planAmountPaise(plan, sites);
+  const trialEndsAt = new Date(Date.now() + TRIAL_DAYS * 86400 * 1000);
+
+  let providerPlan: { id: string };
+  let providerSubscription: any;
+  try {
+    providerPlan = await createRazorpayPlan(keyId, keySecret, plan, amountPaise);
+    providerSubscription = await createRazorpaySubscription(keyId, keySecret, {
+      planId: providerPlan.id,
+      // The free month expressed the way Razorpay expresses one: the mandate is
+      // authorised now and the first charge falls due after the trial.
+      startAtUnix: Math.floor(trialEndsAt.getTime() / 1000),
+      totalCount: plan.intervalMonths === 12 ? 10 : 120,
+      notes: {
+        plan_code: plan.code,
+        venue_id: venueId ?? "",
+        chain_id: chainId ?? "",
+        sites: String(sites),
+      },
+    });
+  } catch (err) {
+    console.error("Could not create the Razorpay subscription:", err);
+    return c.json(
+      { ok: false, message: "The payment provider would not start that subscription." },
+      502
+    );
+  }
+
+  const record = await store.createSubscription({
+    venueId,
+    chainId,
+    userId: user.id,
+    planCode: plan.code,
+    amountCents: amountPaise,
+    intervalMonths: plan.intervalMonths,
+    providerSubscriptionId: providerSubscription?.id ?? null,
+    providerPlanId: providerPlan.id,
+    status: mapProviderStatus(providerSubscription?.status ?? "created"),
+    trialEndsAt: trialEndsAt.toISOString(),
+  });
+
+  return c.json({
+    ok: true,
+    subscription: {
+      id: record.id,
+      planCode: record.plan_code,
+      status: record.status,
+      amount: centsToMoney(record.amount_cents),
+      sites,
+      trialEndsAt: record.trial_ends_at,
+    },
+    // What the checkout needs. The short URL Razorpay returns is what a venue
+    // owner actually opens to authorise the mandate.
+    keyId,
+    providerSubscriptionId: providerSubscription?.id ?? null,
+    authorisationUrl: providerSubscription?.short_url ?? null,
+  });
+});
+
+app.get("/api/billing/subscriptions", async (c) => {
+  const user = requireUser(c);
+  if (!user) return c.json({ ok: false, message: "Authentication required" }, 401);
+
+  const store = c.get("store");
+  const subs = await store.listSubscriptionsForUser(user.id);
+  return c.json({
+    ok: true,
+    subscriptions: subs.map((sub) => ({
+      id: sub.id,
+      venueId: sub.venue_id,
+      venueName: sub.venue_name ?? null,
+      chainId: sub.chain_id,
+      planCode: sub.plan_code,
+      status: sub.status,
+      entitled: statusEntitles(sub.status),
+      amount: centsToMoney(sub.amount_cents),
+      intervalMonths: sub.interval_months,
+      periodEnd: sub.current_period_end,
+      trialEndsAt: sub.trial_ends_at,
+      cancelledAt: sub.cancelled_at,
+      createdAt: sub.created_at,
+    })),
+  });
+});
+
+/**
+ * Cancel at the end of the period, not immediately.
+ *
+ * A venue that has paid for this month keeps this month. Cancelling mid-cycle
+ * and shutting the scoreboard off is how a refund request and a bad review
+ * arrive together.
+ */
+app.post("/api/billing/subscriptions/:id/cancel", async (c) => {
+  const user = requireUser(c);
+  if (!user) return c.json({ ok: false, message: "Authentication required" }, 401);
+
+  const store = c.get("store");
+  const sub = await store.getSubscription(c.req.param("id"));
+  if (!sub) return c.json({ ok: false, message: "Subscription not found" }, 404);
+  if (sub.user_id !== user.id && user.role !== "admin") {
+    return c.json({ ok: false, message: "That is not your subscription." }, 403);
+  }
+
+  if (sub.provider_subscription_id && billingEnabled(c.env)) {
+    const { keyId, keySecret } = razorpayCredentials(c.env);
+    try {
+      await cancelRazorpaySubscription(keyId, keySecret, sub.provider_subscription_id, true);
+    } catch (err) {
+      console.error("Could not cancel the Razorpay subscription:", err);
+      return c.json(
+        { ok: false, message: "The payment provider would not cancel that subscription." },
+        502
+      );
+    }
+  }
+
+  await store.updateSubscription(sub.id, {
+    status: "cancelling",
+    cancelled_at: new Date().toISOString(),
+  });
+
+  return c.json({
+    ok: true,
+    message: "Cancelled. You keep access until the end of the period you have paid for.",
+  });
+});
+
+/**
+ * Razorpay's subscription webhooks.
+ *
+ * Signature-verified against the raw body, fail-closed on a missing secret,
+ * and de-duplicated on the provider's event id — Razorpay redelivers, and
+ * without the de-duplication a redelivered charge would extend a billing
+ * period twice.
+ */
+app.post("/api/billing/webhook", async (c) => {
+  const secret =
+    (c.env.RAZORPAY_SUBSCRIPTION_WEBHOOK_SECRET ?? "").trim() ||
+    (c.env.RAZORPAY_WEBHOOK_SECRET ?? "").trim();
+  const signature = c.req.header("X-Razorpay-Signature");
+  if (!signature) return c.json({ ok: false, message: "Missing signature" }, 400);
+
+  const raw = await c.req.arrayBuffer();
+  const valid = await verifyWebhookSignature(secret, raw, signature);
+  if (!valid) return c.json({ ok: false, message: "Invalid signature" }, 400);
+
+  let payload: any;
+  try {
+    payload = JSON.parse(new TextDecoder().decode(raw));
+  } catch {
+    return c.json({ ok: false, message: "Malformed body" }, 400);
+  }
+
+  const event: string = payload?.event ?? "unknown";
+  const providerSub = payload?.payload?.subscription?.entity;
+  const store = c.get("store");
+
+  try {
+    await ensureEngineSchema(c.env.DB);
+  } catch (err) {
+    console.error("Could not ensure the billing schema:", err);
+  }
+
+  const record = providerSub?.id
+    ? await store.getSubscriptionByProviderId(providerSub.id).catch(() => null)
+    : null;
+
+  // The key a redelivery is recognised by. Razorpay's own event id where it
+  // sends one, and the subscription id paired with the event name where it
+  // does not — the pair is enough, because the same event does not fire twice
+  // for one subscription with a different meaning.
+  const eventIdHeader = (c.req.header("X-Razorpay-Event-Id") ?? "").trim();
+  const dedupeBasis = eventIdHeader || providerSub?.id || "";
+  const providerEventId = dedupeBasis ? `${dedupeBasis}:${event}` : null;
+
+  // Recorded before anything is acted on, so a redelivery is a no-op even if
+  // the handling below throws.
+  const fresh = await store.recordSubscriptionEvent({
+    subscriptionId: record?.id ?? null,
+    providerEventId,
+    event,
+    payload,
+  });
+  if (!fresh) return c.json({ ok: true, duplicate: true });
+
+  if (!record) {
+    // A subscription we have no row for: logged and acknowledged. Returning an
+    // error would only have Razorpay retry something we still cannot match.
+    console.warn(`Billing webhook ${event} for an unknown subscription`);
+    return c.json({ ok: true, unmatched: true });
+  }
+
+  const updates: Record<string, unknown> = {};
+  if (providerSub?.status) updates.status = mapProviderStatus(providerSub.status);
+  if (providerSub?.current_end) {
+    updates.current_period_end = new Date(providerSub.current_end * 1000).toISOString();
+  }
+  if (event === "subscription.cancelled") {
+    updates.status = "cancelled";
+    updates.cancelled_at = new Date().toISOString();
+  }
+  if (Object.keys(updates).length > 0) await store.updateSubscription(record.id, updates);
+
+  return c.json({ ok: true });
+});
+
+// ── The admin console sees the business ──
+
+app.get("/api/admin/venues", async (c) => {
+  const { admin, deny } = adminOr403(c);
+  if (!admin) return deny;
+
+  const store = c.get("store");
+  const venues = await store.listAllVenues();
+  const rows = await Promise.all(
+    venues.map(async (v) => {
+      const [activity, sub] = await Promise.all([
+        store.venueActivity(v.id).catch(() => null),
+        store.entitlingSubscription(v.id, v.chain_id).catch(() => null),
+      ]);
+      return {
+        ...serializeVenue(v),
+        activity,
+        subscriptionStatus: sub?.status ?? null,
+        entitled: !!sub && statusEntitles(sub.status),
+        monthly: sub ? centsToMoney(sub.amount_cents) : null,
+      };
+    })
+  );
+  return c.json({ ok: true, venues: rows });
+});
+
+/**
+ * Every subscription, and what they add up to.
+ *
+ * The recurring total is the number the whole plan turns on: the exit test for
+ * Phase 1 is three venues paying, and this is where that is read off.
+ */
+app.get("/api/admin/subscriptions", async (c) => {
+  const { admin, deny } = adminOr403(c);
+  if (!admin) return deny;
+
+  const store = c.get("store");
+  const subs = await store.listSubscriptions();
+  const live = subs.filter((sub) => statusEntitles(sub.status) && !sub.cancelled_at);
+
+  // Normalised to a month so an annual plan and a monthly one can be added up.
+  const monthlyCents = live.reduce(
+    (total, sub) => total + Math.round(sub.amount_cents / Math.max(1, sub.interval_months)),
+    0
+  );
+
+  return c.json({
+    ok: true,
+    payingVenues: live.filter((sub) => sub.venue_id).length,
+    payingChains: live.filter((sub) => sub.chain_id).length,
+    recurringMonthly: centsToMoney(monthlyCents),
+    billingEnabled: billingEnabled(c.env),
+    subscriptions: subs.map((sub) => ({
+      id: sub.id,
+      venueId: sub.venue_id,
+      venueName: sub.venue_name ?? null,
+      chainId: sub.chain_id,
+      owner: sub.user_name ?? null,
+      planCode: sub.plan_code,
+      status: sub.status,
+      amount: centsToMoney(sub.amount_cents),
+      intervalMonths: sub.interval_months,
+      periodEnd: sub.current_period_end,
+      trialEndsAt: sub.trial_ends_at,
+      cancelledAt: sub.cancelled_at,
+      createdAt: sub.created_at,
+    })),
+  });
 });
 
 // --- Fallback ---

@@ -97,6 +97,10 @@ export const createTournamentSchema = z.object({
     .enum(["single_elimination", "double_elimination", "round_robin", "group_knockout"])
     .default("single_elimination"),
   password: z.string().max(64).nullish(),
+  /** The venue running this night. Checked against the host's venues. */
+  venueId: z.string().trim().max(64).nullish(),
+  /** Hold each frame until both players agree the result. */
+  requireFrameConfirmation: z.boolean().default(false),
 });
 
 // ── Weekly series ──
@@ -145,6 +149,15 @@ export const addTeamSchema = z.object({
 
 export const engineScoreSchema = z.object({
   teamId: z.string().min(1).max(64),
+  /**
+   * The id this tap was given on the device that made it.
+   *
+   * A tap is an increment, so a client replaying its offline outbox would
+   * otherwise count a second ball. Optional, because a client that is online
+   * and never queues does not need one; when present the server applies the
+   * tap at most once. See lib/d1-store.ts claimScoreEvent.
+   */
+  eventId: z.string().trim().min(8).max(64).optional(),
   // GOAL is football's scoring event; the rest are 8-ball. FOUL is recorded
   // against, and costs, the team that committed it, and the REMOVE_* events
   // undo a miscount. MISTAKE is an older event that credits the team named,
@@ -239,4 +252,81 @@ export const upsertArenaSchema = z.object({
   state: z.unknown(),
   // Unlocked arenas send null, not undefined; treat both as "no PIN".
   pin: z.string().trim().min(4).max(32).nullish(),
+});
+
+// ── Both players confirm the frame ──
+
+export const confirmFrameSchema = z.object({
+  /** Which side is confirming. The host may confirm for either. */
+  teamId: z.string().min(1).max(64),
+  /**
+   * Who the confirming side says won. Checked against what the engine
+   * recorded; a disagreement is reported rather than silently accepted.
+   */
+  winnerId: z.string().min(1).max(64).nullish(),
+});
+
+// ── Sixty-second setup ──
+
+export const quickSetupSchema = z.object({
+  name: z.string().trim().min(2).max(80).optional(),
+  sport: z.enum(["8BALL", "FOOTBALL"]).default("8BALL"),
+  /** How many competitors to seat. The only number the host has to choose. */
+  size: z.coerce.number().int().min(2).max(64).default(8),
+  /** Names, if the host has them. Blanks are filled with Player 1..n. */
+  players: z.array(z.string().trim().max(50)).max(64).optional(),
+  venueId: z.string().trim().max(64).nullish(),
+  /** Hold each frame until both players agree it. */
+  requireFrameConfirmation: z.boolean().default(false),
+  bracketType: z
+    .enum(["single_elimination", "double_elimination", "round_robin", "group_knockout"])
+    .default("single_elimination"),
+});
+
+// ── Join by QR ──
+
+export const joinByCodeSchema = z.object({
+  /**
+   * What the walk-in types in. No account is created, so this is the only
+   * thing that identifies them on the screen.
+   */
+  name: z.string().trim().min(1).max(32),
+});
+
+// ── Venues, chains and staff ──
+
+export const createVenueSchema = z.object({
+  name: z.string().trim().min(2).max(80),
+  city: z.string().trim().max(60).default(""),
+  chainId: z.string().trim().max(64).nullish(),
+  /** A note of which group chat results go to. Not a phone number. */
+  whatsappGroup: z.string().trim().max(120).nullish(),
+});
+
+export const updateVenueSchema = z.object({
+  name: z.string().trim().min(2).max(80).optional(),
+  city: z.string().trim().max(60).optional(),
+  chainId: z.string().trim().max(64).nullish(),
+  whatsappGroup: z.string().trim().max(120).nullish(),
+  status: z.enum(["active", "paused"]).optional(),
+});
+
+export const venueMemberSchema = z.object({
+  /** The staff member's account email; they must already have signed up. */
+  email: z.string().trim().toLowerCase().email().max(254),
+  role: z.enum(["manager", "staff"]).default("staff"),
+});
+
+export const createChainSchema = z.object({
+  name: z.string().trim().min(2).max(80),
+});
+
+// ── Subscription billing ──
+
+export const subscribeSchema = z.object({
+  planCode: z.string().trim().min(2).max(40),
+  venueId: z.string().trim().max(64).nullish(),
+  chainId: z.string().trim().max(64).nullish(),
+  /** Sites to bill for, on a chain plan. Ignored by single-venue plans. */
+  sites: z.coerce.number().int().min(1).max(500).default(1),
 });

@@ -20,8 +20,8 @@
  * data.
  *
  * Kept deliberately in step with apps/api/migrations/0006_engine_tables.sql,
- * 0007_series.sql, 0009_engine_houses.sql, 0010_wallet_description.sql and
- * 0011_payouts_and_bonus.sql; apps/api/migrations/rehearse.py and
+ * 0007_series.sql, 0009_engine_houses.sql, 0010_wallet_description.sql,
+ * 0011_payouts_and_bonus.sql and 0012_venues_offline_and_billing.sql; apps/api/migrations/rehearse.py and
  * rehearse_bootstrap.py check the SQL runs.
  */
 
@@ -122,6 +122,111 @@ const CREATE_STATEMENTS = [
   `CREATE INDEX IF NOT EXISTS idx_series_host ON series(host_id)`,
   `CREATE INDEX IF NOT EXISTS idx_series_status ON series(status, next_event_at)`,
   `CREATE UNIQUE INDEX IF NOT EXISTS idx_series_members_unique ON series_members(series_id, user_id)`,
+
+  // ── Offline-first scoring ──
+  // A score tap is an increment, so replaying one from a client's outbox would
+  // count a second ball. The client mints an id per tap; this table makes the
+  // replay a no-op instead.
+  `CREATE TABLE IF NOT EXISTS engine_score_events (
+    id TEXT PRIMARY KEY,
+    match_id TEXT NOT NULL,
+    team_id TEXT NOT NULL,
+    type TEXT NOT NULL,
+    created_at TEXT NOT NULL
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_score_events_match ON engine_score_events(match_id, created_at)`,
+
+  // ── Both players confirm the frame ──
+  // One row per side. The unique index is the mechanism: a second tap from the
+  // same side cannot stand in for the other player.
+  `CREATE TABLE IF NOT EXISTS engine_frame_confirmations (
+    id TEXT PRIMARY KEY,
+    match_id TEXT NOT NULL,
+    team_id TEXT NOT NULL,
+    user_id TEXT,
+    agreed_winner_id TEXT,
+    created_at TEXT NOT NULL
+  )`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS idx_frame_confirm_unique ON engine_frame_confirmations(match_id, team_id)`,
+
+  // ── Join by QR ──
+  `CREATE TABLE IF NOT EXISTS tournament_join_codes (
+    code TEXT PRIMARY KEY,
+    tournament_id TEXT NOT NULL,
+    created_by TEXT,
+    expires_at TEXT,
+    created_at TEXT NOT NULL
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_join_codes_tournament ON tournament_join_codes(tournament_id)`,
+
+  // ── Chains, venues and the staff who run a night ──
+  `CREATE TABLE IF NOT EXISTS chains (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    owner_id TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_chains_owner ON chains(owner_id)`,
+  `CREATE TABLE IF NOT EXISTS venues (
+    id TEXT PRIMARY KEY,
+    chain_id TEXT,
+    name TEXT NOT NULL,
+    city TEXT NOT NULL DEFAULT '',
+    owner_id TEXT NOT NULL,
+    whatsapp_group TEXT,
+    status TEXT NOT NULL DEFAULT 'active',
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_venues_owner ON venues(owner_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_venues_chain ON venues(chain_id)`,
+  `CREATE TABLE IF NOT EXISTS venue_members (
+    id TEXT PRIMARY KEY,
+    venue_id TEXT NOT NULL,
+    user_id TEXT NOT NULL,
+    role TEXT NOT NULL DEFAULT 'staff',
+    created_at TEXT NOT NULL
+  )`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS idx_venue_members_unique ON venue_members(venue_id, user_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_venue_members_user ON venue_members(user_id)`,
+
+  // ── Subscription billing ──
+  // Business software billed to a venue. Deliberately NOT gated by
+  // STAKES_ENABLED: a venue paying for a scoreboard is a B2B sale, not a
+  // player paying to enter a game. See lib/billing.ts.
+  `CREATE TABLE IF NOT EXISTS venue_subscriptions (
+    id TEXT PRIMARY KEY,
+    venue_id TEXT,
+    chain_id TEXT,
+    user_id TEXT NOT NULL,
+    plan_code TEXT NOT NULL,
+    provider TEXT NOT NULL DEFAULT 'razorpay',
+    provider_subscription_id TEXT,
+    provider_plan_id TEXT,
+    status TEXT NOT NULL DEFAULT 'created',
+    amount_cents INTEGER NOT NULL DEFAULT 0,
+    interval_months INTEGER NOT NULL DEFAULT 1,
+    current_period_end TEXT,
+    trial_ends_at TEXT,
+    cancelled_at TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_subs_venue ON venue_subscriptions(venue_id, status)`,
+  `CREATE INDEX IF NOT EXISTS idx_subs_chain ON venue_subscriptions(chain_id, status)`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS idx_subs_provider ON venue_subscriptions(provider_subscription_id)`,
+  // Every billing webhook, kept once. The unique index on the provider's event
+  // id is what stops a redelivered webhook extending a period twice.
+  `CREATE TABLE IF NOT EXISTS subscription_events (
+    id TEXT PRIMARY KEY,
+    subscription_id TEXT,
+    provider_event_id TEXT,
+    event TEXT NOT NULL,
+    payload TEXT,
+    created_at TEXT NOT NULL
+  )`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS idx_sub_events_provider ON subscription_events(provider_event_id)`,
 ];
 
 /**
@@ -145,12 +250,24 @@ const ADD_COLUMN_STATEMENTS = [
   // Prize payouts are written from the engine routes, and say in the ledger
   // which tournament the money came from and how it was shared.
   `ALTER TABLE wallet_transactions ADD COLUMN description TEXT`,
+  // A tournament belongs to the venue that ran it, once venues exist.
+  `ALTER TABLE tournaments ADD COLUMN venue_id TEXT`,
+  `ALTER TABLE series ADD COLUMN venue_id TEXT`,
+  // Whether a frame has to be agreed by both players before it counts.
+  `ALTER TABLE tournaments ADD COLUMN require_frame_confirmation INTEGER NOT NULL DEFAULT 0`,
+  // Decided, but not yet agreed: COMPLETED for the clock's purposes and still
+  // unsettled for the table's.
+  `ALTER TABLE engine_matches ADD COLUMN awaiting_confirmation INTEGER DEFAULT 0`,
+  // A walk-in who joined by QR is named, not identified. Kept apart from
+  // user_id so a season table never credits their wins to a member.
+  `ALTER TABLE engine_teams ADD COLUMN guest_label TEXT`,
 ];
 
 const INDEX_AFTER_COLUMNS = [
   `CREATE INDEX IF NOT EXISTS idx_tournaments_series ON tournaments(series_id, series_week)`,
   `CREATE INDEX IF NOT EXISTS idx_payouts_user ON payout_requests(user_id, created_at DESC)`,
   `CREATE INDEX IF NOT EXISTS idx_payouts_status ON payout_requests(status, created_at DESC)`,
+  `CREATE INDEX IF NOT EXISTS idx_tournaments_venue ON tournaments(venue_id, created_at DESC)`,
 ];
 
 /**

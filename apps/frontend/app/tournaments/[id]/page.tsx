@@ -19,6 +19,18 @@ interface TournamentState {
   arenaId?: string;
   published?: boolean;
   matchesPerTeam?: number;
+  /** Whether each frame waits for both players to agree it. */
+  requireFrameConfirmation?: boolean;
+  /** Who has agreed what, across the tournament. */
+  confirmations?: Array<{
+    matchId: string;
+    teamId: string;
+    agreedWinnerId: string | null;
+    at: string;
+  }>;
+  /** The join code on the big screen, if the host has put one there. */
+  joinCode?: string | null;
+  joinUrl?: string | null;
   /** Unix seconds on the server when the state was read. */
   serverTime?: number;
 }
@@ -329,6 +341,16 @@ export default function TournamentDetailPage() {
             arenaId={engineState.arenaId ?? ""}
             published={!!engineState.published}
             winnerTakes={String(winnerTakes)}
+            requireFrameConfirmation={!!engineState.requireFrameConfirmation}
+            confirmations={engineState.confirmations ?? []}
+            joinCode={engineState.joinCode ?? null}
+            // Which side this viewer is playing for, so they confirm their own
+            // frame and nobody else's.
+            myTeamId={
+              engineState.teams.find(
+                (t: any) => t.user_id && t.user_id === profileData?.user?.id
+              )?.id ?? null
+            }
             result={result}
             currentTime={currentTime}
             onMatchUpdate={mergeMatch}

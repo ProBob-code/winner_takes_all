@@ -50,6 +50,49 @@
   --radius-lg: 28px;
   --radius-full: 9999px;
 
+  /* ── Phase 2.4: spacing and type scale ──
+   *
+   * Colour was already tokenised; size was not, which is why there are
+   * thousands of one-off inline paddings and font sizes through the pages. New
+   * screens are built on these, and old ones move onto them as they are
+   * touched. Deliberately few steps: a scale with twelve values is a scale
+   * nobody follows.
+   *
+   * Spacing is a 4px base. Nothing in the UI needs to sit between two steps,
+   * and offering the choice is how a scale stops being one. */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --space-8: 4rem;
+
+  /* Type. Every size that has to grow with the viewport does so with clamp,
+   * so a heading is readable on a 390px phone and on a wall-mounted TV
+   * without a media query for each. */
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: clamp(1.25rem, 2.5vw, 1.5rem);
+  --text-2xl: clamp(1.5rem, 4vw, 2rem);
+  --text-3xl: clamp(2rem, 6vw, 3rem);
+  /* The display sizes. Read from across a room, not from a desk. */
+  --text-display: clamp(2.5rem, 9vw, 6rem);
+  --text-score: clamp(4rem, 22vw, 16rem);
+
+  --weight-normal: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+  --weight-black: 900;
+
+  /* The smallest thing a thumb should have to hit. Below this, a member of
+   * staff two drinks into a Friday night misses it. */
+  --touch-min: 48px;
+
   --gradient-primary: linear-gradient(135deg, #7c3aed 0%, #0ea5e9 100%);
   --gradient-gold: linear-gradient(135deg, #b45309 0%, #f59e0b 100%);
 
@@ -3321,4 +3364,679 @@ select.form-control option {
   padding: 0.4rem 0.75rem !important;
   font-size: 0.72rem !important;
   border-radius: 10px !important;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Phases 1 and 2
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Layout helpers, built on the scale tokens ── */
+
+.v-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.h-stack {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  /* Wraps rather than overflowing: every row of controls in this app has to
+     survive a 390px screen, and a row that cannot wrap is the single most
+     common way that fails. */
+  flex-wrap: wrap;
+}
+
+.h-stack.tight { gap: var(--space-2); }
+.h-stack.between { justify-content: space-between; }
+
+/* A grid that genuinely collapses. `minmax(300px, 1fr)` cannot shrink below
+   300px, so on a 390px screen with padding it overflows; min() is what lets
+   the track give way. This was the shape of the mobile bug. */
+.auto-grid {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
+}
+
+.auto-grid.narrow {
+  grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr));
+}
+
+/* ── Forms ── */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.field > label {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--text-secondary);
+}
+
+.field .hint {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+
+.input,
+.select,
+.textarea {
+  width: 100%;
+  min-width: 0;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-sm);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border-color);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: var(--text-base);
+  outline: none;
+  transition: border-color 0.15s ease;
+  /* 48px of thumb, without having to say so at every call site. */
+  min-height: var(--touch-min);
+}
+
+.input:focus,
+.select:focus,
+.textarea:focus {
+  border-color: var(--accent);
+}
+
+.textarea {
+  min-height: 7rem;
+  resize: vertical;
+}
+
+/* ── Chips and stats ── */
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-full);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border-color);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.chip.good { color: #16a34a; border-color: rgba(22, 163, 74, 0.4); }
+.chip.warn { color: #d97706; border-color: rgba(217, 119, 6, 0.4); }
+.chip.bad  { color: #dc2626; border-color: rgba(220, 38, 38, 0.4); }
+.chip.gold { color: var(--gold); border-color: var(--gold-subtle); }
+
+.stat {
+  padding: var(--space-4);
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+  border: 1px solid var(--glass-border-color);
+  min-width: 0;
+}
+
+.stat .stat-value {
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-black);
+  font-family: var(--font-outfit), system-ui, sans-serif;
+  line-height: 1.1;
+}
+
+.stat .stat-label {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-top: var(--space-1);
+}
+
+/* ── 1.2 The offline badge ── */
+
+.net-badge {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  /* Clear of a phone's home indicator. */
+  bottom: calc(var(--space-4) + env(safe-area-inset-bottom, 0px));
+  z-index: 950;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-full);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  box-shadow: var(--shadow-lg);
+  max-width: calc(100vw - 2 * var(--space-4));
+  backdrop-filter: var(--glass-blur);
+}
+
+.net-badge.offline {
+  background: #7c2d12;
+  border: 1px solid #ea580c;
+  color: #fed7aa;
+}
+
+.net-badge.syncing {
+  background: var(--bg-dropdown);
+  border: 1px solid var(--accent);
+  color: var(--text-primary);
+}
+
+.net-badge.problem {
+  background: #7f1d1d;
+  border: 1px solid #dc2626;
+  color: #fecaca;
+}
+
+.net-badge .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+  animation: netPulse 1.4s ease-in-out infinite;
+}
+
+@keyframes netPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.25; }
+}
+
+/* A score that is on this device but not yet on the server. The host needs to
+   be able to tell the two apart at a glance, or they re-tap. */
+.pending-mark {
+  display: inline-block;
+  margin-left: var(--space-1);
+  font-size: 0.7em;
+  vertical-align: super;
+  color: var(--gold);
+  opacity: 0.9;
+}
+
+/* ── 1.3 Frame confirmation ── */
+
+.confirm-panel {
+  padding: var(--space-5);
+  border-radius: var(--radius);
+  background: var(--bg-surface);
+  border: 1px solid var(--gold-subtle);
+}
+
+.confirm-sides {
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
+  margin-top: var(--space-4);
+}
+
+.confirm-side {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--glass-border-color);
+  background: var(--glass-bg);
+  min-width: 0;
+}
+
+.confirm-side.done {
+  border-color: rgba(22, 163, 74, 0.5);
+  background: rgba(22, 163, 74, 0.08);
+}
+
+.confirm-side .who {
+  font-weight: var(--weight-bold);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* ── 1.5 Staff mode ──
+   One screen, big buttons, scoring only. Built for someone trained for ninety
+   seconds, holding a phone, in a dark room. */
+
+.staff {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-primary);
+  padding: env(safe-area-inset-top, 0px) var(--space-3)
+           calc(var(--space-3) + env(safe-area-inset-bottom, 0px));
+  gap: var(--space-3);
+}
+
+.staff-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-1);
+  flex-wrap: wrap;
+}
+
+.staff-clock {
+  font-family: var(--font-outfit), system-ui, sans-serif;
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-black);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The two sides of the table, side by side on anything wide enough and
+   stacked on a phone held in one hand. */
+.staff-sides {
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
+  flex: 1;
+  align-content: start;
+}
+
+.staff-side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius);
+  border: 2px solid var(--glass-border-color);
+  background: var(--bg-card);
+  min-width: 0;
+}
+
+.staff-side.a { border-color: var(--team-red); }
+.staff-side.b { border-color: var(--team-blue); }
+
+.staff-side .name {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+  overflow-wrap: anywhere;
+}
+
+.staff-side .score {
+  font-family: var(--font-outfit), system-ui, sans-serif;
+  font-size: clamp(3rem, 14vw, 5rem);
+  font-weight: var(--weight-black);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The only controls staff get. Nothing here is smaller than a thumb. */
+.staff-btn {
+  min-height: 72px;
+  border-radius: var(--radius-sm);
+  border: 0;
+  font-size: var(--text-lg);
+  font-weight: var(--weight-black);
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  background: var(--accent);
+  color: #fff;
+  /* A double-tap that zooms instead of scoring is maddening at the table. */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.06s ease, filter 0.15s ease;
+}
+
+.staff-btn:active { transform: scale(0.97); }
+.staff-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.staff-btn.big { min-height: 96px; font-size: var(--text-xl); }
+.staff-btn.gold { background: var(--gradient-gold); color: #000; }
+.staff-btn.ghost {
+  background: transparent;
+  border: 1px solid var(--glass-border-color);
+  color: var(--text-secondary);
+  min-height: var(--touch-min);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+}
+
+.staff-row {
+  display: grid;
+  gap: var(--space-2);
+  grid-template-columns: 1fr 1fr;
+}
+
+/* ── 1.6 Big-screen display ──
+   Full bleed, no chrome, readable from across a room. The panel's caveat was
+   that the wall TV is already showing cricket, so this has to work propped on
+   a tablet and degrade to a phone. Everything scales with the viewport. */
+
+.display {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: radial-gradient(ellipse at top, #0a0620 0%, #030014 60%);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  padding: clamp(var(--space-3), 2.5vw, var(--space-6));
+  gap: clamp(var(--space-3), 2vw, var(--space-5));
+  overflow: hidden;
+}
+
+.display-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.display-title {
+  font-family: var(--font-outfit), system-ui, sans-serif;
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-black);
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+}
+
+.display-live {
+  flex: 1;
+  display: grid;
+  gap: clamp(var(--space-3), 2vw, var(--space-5));
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  min-height: 0;
+}
+
+/* On a phone or a narrow prop, the VS column stops being a column. */
+@media (max-width: 760px) {
+  .display-live {
+    grid-template-columns: 1fr;
+    justify-items: stretch;
+  }
+}
+
+.display-team {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  align-items: center;
+  text-align: center;
+  min-width: 0;
+  padding: clamp(var(--space-3), 2vw, var(--space-5));
+  border-radius: var(--radius-lg);
+  border: 2px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.display-team.a { border-color: rgba(239, 68, 68, 0.55); }
+.display-team.b { border-color: rgba(59, 130, 246, 0.55); }
+.display-team.winning { box-shadow: 0 0 60px rgba(255, 215, 0, 0.18); }
+
+.display-team .name {
+  font-size: var(--text-xl);
+  font-weight: var(--weight-bold);
+  overflow-wrap: anywhere;
+  max-width: 100%;
+}
+
+.display-team .score {
+  font-family: var(--font-outfit), system-ui, sans-serif;
+  font-size: var(--text-score);
+  font-weight: var(--weight-black);
+  line-height: 0.9;
+  font-variant-numeric: tabular-nums;
+}
+
+.display-clock {
+  font-family: var(--font-outfit), system-ui, sans-serif;
+  font-size: var(--text-display);
+  font-weight: var(--weight-black);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.display-clock.low { color: #f87171; }
+
+.display-foot {
+  display: grid;
+  gap: clamp(var(--space-3), 2vw, var(--space-5));
+  grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
+  align-items: start;
+}
+
+.display-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: clamp(0.9rem, 1.6vw, 1.4rem);
+}
+
+.display-table th,
+.display-table td {
+  padding: var(--space-2) var(--space-3);
+  text-align: left;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  white-space: nowrap;
+}
+
+.display-table th {
+  font-size: 0.75em;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #9ca3af;
+  font-weight: var(--weight-semibold);
+}
+
+.display-table td:first-child {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+/* The join QR, on the screen so a walk-in can enter without asking. */
+.display-join {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 215, 0, 0.25);
+  flex-wrap: wrap;
+}
+
+.display-join .qr {
+  background: #fff;
+  padding: var(--space-2);
+  border-radius: var(--radius-sm);
+  line-height: 0;
+  flex-shrink: 0;
+}
+
+.display-join .code {
+  font-family: var(--font-outfit), system-ui, sans-serif;
+  font-size: clamp(1.5rem, 4vw, 2.5rem);
+  font-weight: var(--weight-black);
+  letter-spacing: 0.15em;
+}
+
+/* ── 1.7 Join by QR, the player's side ── */
+
+.join-page {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: calc(var(--space-5) + env(safe-area-inset-top, 0px)) var(--space-4)
+           calc(var(--space-5) + env(safe-area-inset-bottom, 0px));
+  background: var(--bg-primary);
+}
+
+.join-card {
+  width: 100%;
+  max-width: 26rem;
+  padding: var(--space-6);
+  border-radius: var(--radius-lg);
+  background: var(--bg-card);
+  border: 1px solid var(--glass-border-color);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* ── 2.1 / 2.3 Venue and chain tables ── */
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+
+.data-table th,
+.data-table td {
+  padding: var(--space-3);
+  text-align: left;
+  border-bottom: 1px solid var(--glass-border-color);
+}
+
+.data-table th {
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  font-weight: var(--weight-semibold);
+  white-space: nowrap;
+}
+
+/* Tables are the one thing allowed to be wider than the screen, each in its
+   own scroller, so the page body never scrolls sideways. */
+.table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-inline: calc(-1 * var(--space-2));
+  padding-inline: var(--space-2);
+}
+
+/* ── 2.2 Pricing ── */
+
+.plan-grid {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
+}
+
+.plan {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  border-radius: var(--radius);
+  border: 1px solid var(--glass-border-color);
+  background: var(--bg-card);
+  min-width: 0;
+}
+
+.plan.featured {
+  border-color: var(--gold);
+  box-shadow: 0 0 40px var(--gold-subtle);
+}
+
+.plan .price {
+  font-family: var(--font-outfit), system-ui, sans-serif;
+  font-size: var(--text-3xl);
+  font-weight: var(--weight-black);
+  line-height: 1;
+}
+
+.plan .per {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  font-weight: var(--weight-normal);
+}
+
+.plan ul {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  flex: 1;
+}
+
+.plan li {
+  display: flex;
+  gap: var(--space-2);
+  align-items: flex-start;
+}
+
+.plan li::before {
+  content: "✓";
+  color: var(--gold);
+  font-weight: var(--weight-bold);
+  flex-shrink: 0;
+}
+
+/* ── 1.1 The playbook ── */
+
+.playbook {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.playbook-week {
+  padding: var(--space-5);
+  border-radius: var(--radius);
+  border: 1px solid var(--glass-border-color);
+  background: var(--bg-card);
+  display: flex;
+  gap: var(--space-5);
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.playbook-week .no {
+  font-family: var(--font-outfit), system-ui, sans-serif;
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-black);
+  color: var(--gold);
+  opacity: 0.45;
+  min-width: 3.5rem;
+}
+
+.playbook-week .body {
+  flex: 1 1 18rem;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.playbook-week h3 {
+  font-size: var(--text-xl);
+  font-weight: var(--weight-bold);
+}
+
+.playbook-week ul {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  line-height: 1.7;
+}
+
+.playbook-week li {
+  display: flex;
+  gap: var(--space-2);
+  align-items: flex-start;
+}
+
+.playbook-week li::before {
+  content: "→";
+  color: var(--accent);
+  flex-shrink: 0;
 }

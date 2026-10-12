@@ -21,6 +21,11 @@ import { PoolMatchEngine } from "./pool-match-engine";
 import { FootballScoreboard } from "./match-components";
 import { BroadcastCode } from "./broadcast-code";
 import { LiveFeedViewer } from "./live-feed-viewer";
+import { WhatsappPush } from "./whatsapp-push";
+import { FrameConfirm, type FrameConfirmation } from "./frame-confirm";
+import { NightLinks } from "./night-links";
+import { enqueueWrite, startOutbox, subscribeToOutbox, pendingWrites } from "@/lib/outbox";
+import { projectPending, type LocalScoreEvent, type PendingTap } from "@/lib/local-score";
 import type { Match, Team } from "./football-match-engine";
 import "./tournament-engine.css";
 
@@ -56,6 +61,14 @@ export interface ArenaMatch {
   winner_id: string | null;
   match_order: number;
   ended_by?: "SCORE" | "TIME" | null;
+  /**
+   * Decided, but not yet agreed by both players.
+   *
+   * COMPLETED as far as the clock and the bracket are concerned, and still
+   * unsettled as far as the table is concerned. Only ever set on a tournament
+   * that asked for frame confirmation.
+   */
+  awaiting_confirmation?: boolean;
 }
 
 export type ArenaScoreEvent =
@@ -95,6 +108,14 @@ interface HostedArenaProps {
   published: boolean;
   /** What the winners will share, once the platform has taken its cut. */
   winnerTakes: string;
+  /** Whether each frame waits for both players to agree it. */
+  requireFrameConfirmation?: boolean;
+  /** Who has agreed what, across the tournament. */
+  confirmations?: FrameConfirmation[];
+  /** The join code on the screen, if the host has put one there. */
+  joinCode?: string | null;
+  /** The engine team this viewer is playing for, if any. */
+  myTeamId?: string | null;
   /** Set once the tournament has been closed and its pot paid out. */
   result: TournamentResult | null;
   /** Unix seconds on the server's clock, ticked by the parent. */
@@ -154,6 +175,10 @@ export function HostedArena({
   arenaId,
   published,
   winnerTakes,
+  requireFrameConfirmation = false,
+  confirmations = [],
+  joinCode = null,
+  myTeamId = null,
   result,
   currentTime,
   onMatchUpdate,
@@ -217,9 +242,52 @@ export function HostedArena({
     [onRefresh]
   );
 
+  /**
+   * Everything still sitting in this device's outbox for the live frame.
+   *
+   * The board shows the server's last word with these applied on top, so a tap
+   * registers instantly — and still registers with no signal at all. The next
+   * poll replaces the projection wholly; nothing here is persisted.
+   */
+  const [queuedTaps, setQueuedTaps] = useState<PendingTap[]>([]);
+
+  const readQueue = useCallback(async () => {
+    const entries = await pendingWrites();
+    const taps: PendingTap[] = [];
+    for (const entry of entries) {
+      const body = entry.body as any;
+      const matchId = /\/engine\/matches\/([^/]+)\/score/.exec(entry.path)?.[1];
+      if (!matchId || !body?.teamId || !body?.type) continue;
+      taps.push({ matchId, teamId: body.teamId, type: body.type as LocalScoreEvent });
+    }
+    setQueuedTaps(taps);
+  }, []);
+
+  useEffect(() => {
+    startOutbox();
+    void readQueue();
+    return subscribeToOutbox(() => void readQueue());
+  }, [readQueue]);
+
+  /**
+   * Score a tap.
+   *
+   * Queued, not sent. This returns once the tap is safely in IndexedDB rather
+   * than when the server has it, so a score never waits on a bar's wifi —
+   * which is the complaint that made two of twenty buyers refuse the product
+   * outright. The tap carries an id the server claims exactly once, so
+   * replaying the queue after a flaky connection cannot count a second ball.
+   */
   const recordScore = async (matchId: string, teamId: string, type: ArenaScoreEvent) => {
-    const payload = await send(`/engine/matches/${matchId}/score`, { teamId, type });
-    if (payload?.match) onMatchUpdate(payload.match);
+    await enqueueWrite({
+      path: `/engine/matches/${matchId}/score`,
+      body: { teamId, type },
+      label: `${type} for ${getTeamName(teamId)}`,
+    });
+    await readQueue();
+    // Still ask for the real state, so a tap that goes straight through shows
+    // the server's answer rather than only the projection.
+    onRefresh();
   };
 
   const setActiveTeam = (matchId: string, teamId: string) =>
@@ -266,10 +334,35 @@ export function HostedArena({
 
   // ── Derived state ──
 
-  const liveMatch = matches.find((m) => m.status === "LIVE") || null;
+  const serverLiveMatch = matches.find((m) => m.status === "LIVE") || null;
+
+  // The board the host actually sees: the server's last word with everything
+  // still in this device's outbox applied on top. A tap therefore shows at
+  // once, and shows with no signal at all. Not written anywhere — the next
+  // poll replaces it, which is how a projection that turns out wrong gets
+  // visibly corrected rather than persisted.
+  const projection = serverLiveMatch
+    ? projectPending(serverLiveMatch as any, queuedTaps)
+    : null;
+  const liveMatch = (projection?.match as ArenaMatch | null) ?? serverLiveMatch;
+  /** How many of the taps on the board have not reached the server yet. */
+  const unsentOnBoard = projection?.applied ?? 0;
+
   const queue = matches
     .filter((m) => m.status === "CREATED")
     .sort((a, b) => a.match_order - b.match_order);
+
+  /**
+   * The most recent frame that is decided but still waiting for both players.
+   *
+   * Only ever non-null on a tournament that asked for confirmation, so an
+   * ordinary night never sees this panel at all.
+   */
+  const awaitingFrame = requireFrameConfirmation
+    ? matches
+        .filter((m) => m.status === "COMPLETED" && m.awaiting_confirmation)
+        .sort((a, b) => b.match_order - a.match_order)[0] ?? null
+    : null;
   const played = matches.filter((m) => m.status === "COMPLETED");
   const finalMatch = matches.find((m) => m.phase === "FINAL") || null;
   const semis = matches.filter((m) => m.phase === "SEMI");
@@ -691,6 +784,46 @@ export function HostedArena({
         <p className="muted" style={{ fontSize: "0.85rem", margin: "0 0 12px" }}>{notice}</p>
       )}
 
+      {/* Which screen goes where, and the QR walk-ins scan. */}
+      <NightLinks
+        tournamentId={tournamentId}
+        joinCode={joinCode}
+        isHost={isHost}
+        onIssued={onRefresh}
+      />
+
+      {/* A frame that is over but not yet agreed. Holds the result off the
+          table until both sides confirm — the answer to "a screen doesn't
+          referee a frame, someone still types the result". */}
+      {awaitingFrame && (
+        <div style={{ marginBottom: "var(--space-4)" }}>
+          <FrameConfirm
+            matchId={awaitingFrame.id}
+            teamAId={awaitingFrame.team_a_id}
+            teamBId={awaitingFrame.team_b_id}
+            teamAName={getTeamName(awaitingFrame.team_a_id)}
+            teamBName={getTeamName(awaitingFrame.team_b_id)}
+            winnerId={awaitingFrame.winner_id}
+            confirmations={confirmations}
+            myTeamId={myTeamId}
+            isHost={isHost}
+            onConfirmed={onRefresh}
+          />
+        </div>
+      )}
+
+      {/* Scores on the board that this device is still holding. Said plainly,
+          because the alternative is a host re-tapping and double-counting. */}
+      {unsentOnBoard > 0 && (
+        <p
+          className="muted"
+          style={{ fontSize: "0.85rem", margin: "0 0 12px", color: "var(--gold)" }}
+        >
+          {unsentOnBoard} {unsentOnBoard === 1 ? "score is" : "scores are"} saved on this
+          device and still to send. The board already counts them — do not tap again.
+        </p>
+      )}
+
       {/* ── Arena ── */}
       {activeSubTab === "arena" && (
         <div className="live-arena-v2">
@@ -872,6 +1005,12 @@ export function HostedArena({
       )}
 
       {/* ── Schedule ── */}
+      {isHost && (
+        <div className="panel" style={{ marginTop: "var(--space-4)" }}>
+          <WhatsappPush tournamentId={tournamentId} />
+        </div>
+      )}
+
       {activeSubTab === "schedule" && (
         <div className="tournament-schedule-view">
           <div className="schedule-header">

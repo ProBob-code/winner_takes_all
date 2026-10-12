@@ -1,14 +1,34 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { Sidebar } from "@/components/sidebar";
 import { Topbar } from "@/components/topbar";
 import { MobileNav } from "@/components/mobile-nav";
+import { NetworkBadge } from "@/components/network-badge";
 import Link from "next/link";
 import { getApiUrl } from "@/lib/api-config";
 
+/**
+ * Routes that get no chrome at all.
+ *
+ * The big-screen display has to be full bleed to be readable from across a
+ * room; staff mode is one screen of big buttons for someone trained for ninety
+ * seconds; the join page is the first thing a walk-in ever sees and asking
+ * them to parse a sidebar is how a walk-in becomes a non-entrant. A sidebar,
+ * a footer of policy links and a mobile nav bar would each take space these
+ * three cannot spare.
+ */
+const BARE_ROUTES = ["/display/", "/staff/", "/join/"];
+
+function isBare(pathname: string | null): boolean {
+  if (!pathname) return false;
+  return BARE_ROUTES.some((prefix) => pathname.startsWith(prefix));
+}
+
 export function LayoutClient({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<any>(null);
+  const pathname = usePathname();
 
   useEffect(() => {
     const apiUrl = getApiUrl();
@@ -19,6 +39,17 @@ export function LayoutClient({ children }: { children: React.ReactNode }) {
       })
       .catch(err => console.error("Global user fetch error:", err));
   }, []);
+
+  // Full bleed, and still with the connection badge: these are precisely the
+  // screens being held when a bar's wifi drops.
+  if (isBare(pathname)) {
+    return (
+      <>
+        {children}
+        <NetworkBadge />
+      </>
+    );
+  }
 
   return (
     <div className="app-container">
@@ -75,6 +106,9 @@ export function LayoutClient({ children }: { children: React.ReactNode }) {
       </div>
 
       <MobileNav user={user} />
+      {/* Registers the offline helper and says, when it matters, that scores
+          tapped on this device are safe. Silent when the network is fine. */}
+      <NetworkBadge />
     </div>
   );
 }

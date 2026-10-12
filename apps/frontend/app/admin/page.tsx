@@ -7,10 +7,22 @@ import Link from "next/link";
 import { backendFetch } from "@/lib/backend";
 import { formatMoney } from "@/lib/format";
 
-type Tab = "overview" | "payouts" | "users" | "transactions" | "tournaments";
+type Tab =
+  | "overview"
+  | "payouts"
+  | "users"
+  | "transactions"
+  | "tournaments"
+  | "venues"
+  | "billing";
 
 const TABS: Array<{ id: Tab; label: string }> = [
   { id: "overview", label: "Overview" },
+  // The two tabs that watch the business as it is after Phase 0: venues
+  // are the customer and subscriptions are the revenue. Placed ahead of
+  // payouts and the ledger, which are now wind-down concerns.
+  { id: "venues", label: "Venues" },
+  { id: "billing", label: "Revenue" },
   { id: "payouts", label: "Payouts" },
   { id: "users", label: "Members" },
   { id: "transactions", label: "Ledger" },
@@ -45,6 +57,8 @@ export default function AdminPage() {
   const [payouts, setPayouts] = useState<any[] | null>(null);
   const [users, setUsers] = useState<any[] | null>(null);
   const [ledger, setLedger] = useState<any[] | null>(null);
+  const [venues, setVenues] = useState<any[] | null>(null);
+  const [billing, setBilling] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -62,6 +76,20 @@ export default function AdminPage() {
       setPayouts(p.payouts);
       setUsers(u.users);
       setLedger(t.transactions);
+
+      // Separately, and forgiving: these read tables added in migration 0012,
+      // and a database that has not had it applied should cost the rest of the
+      // console nothing.
+      try {
+        const [v, b] = await Promise.all([
+          getJson("/admin/venues"),
+          getJson("/admin/subscriptions"),
+        ]);
+        setVenues(v.venues);
+        setBilling(b);
+      } catch (err) {
+        console.warn("Venue and billing figures are unavailable:", err);
+      }
     } catch (err: any) {
       setError(err?.message || "Could not load the admin console.");
     } finally {
@@ -209,6 +237,144 @@ export default function AdminPage() {
                 </tbody>
               </table>
             </div>
+          </div>
+        )}
+
+        {tab === "venues" && (
+          <div className="panel" style={{ padding: "1.25rem" }}>
+            <h3 style={{ marginTop: 0 }}>Venues</h3>
+            <p className="muted" style={{ fontSize: "0.85rem", marginTop: "-0.4rem" }}>
+              The customer, after Phase 0. A venue that has stopped running nights is a
+              venue about to cancel, so the last night is the column to read.
+            </p>
+            {venues === null ? (
+              <p className="muted">Venue figures are unavailable — migration 0012 may not have run.</p>
+            ) : (
+              <div className="admin-table-wrap">
+                <table className="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Venue</th><th>Town</th><th>Nights</th><th>Frames</th>
+                      <th>Players</th><th>Last night</th><th>Subscription</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {venues.map((v: any) => {
+                      const last = v.activity?.lastNightAt
+                        ? Math.floor((Date.now() - new Date(v.activity.lastNightAt).getTime()) / 86400000)
+                        : null;
+                      return (
+                        <tr key={v.id}>
+                          <td><Link href={`/venues/${v.id}`}>{v.name}</Link></td>
+                          <td className="muted admin-sub">{v.city || "—"}</td>
+                          <td>{v.activity?.tournaments ?? 0}</td>
+                          <td>{v.activity?.matches ?? 0}</td>
+                          <td>{v.activity?.players ?? 0}</td>
+                          <td
+                            className="admin-sub"
+                            style={{ color: last === null || last > 21 ? "#f87171" : undefined }}
+                          >
+                            {last === null ? "never" : last <= 1 ? "today" : `${last}d ago`}
+                          </td>
+                          <td className="admin-sub">
+                            {v.entitled ? (v.monthly ? formatMoney(v.monthly) : "covered") : "—"}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    {venues.length === 0 && (
+                      <tr><td colSpan={7} className="muted">No venues yet.</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {tab === "billing" && (
+          <div className="panel" style={{ padding: "1.25rem" }}>
+            <h3 style={{ marginTop: 0 }}>Recurring revenue</h3>
+            {billing === null ? (
+              <p className="muted">Billing figures are unavailable — migration 0012 may not have run.</p>
+            ) : (
+              <>
+                {/* The exit test for Phase 1 is three venues paying after their
+                    free month. This is where it is read off. */}
+                <div className="auto-grid narrow" style={{ marginBottom: "1.25rem" }}>
+                  <div className="stat">
+                    <div className="stat-value">{billing.payingVenues ?? 0}</div>
+                    <div className="stat-label">paying venues</div>
+                  </div>
+                  <div className="stat">
+                    <div className="stat-value">{billing.payingChains ?? 0}</div>
+                    <div className="stat-label">paying chains</div>
+                  </div>
+                  <div className="stat">
+                    <div className="stat-value">
+                      {billing.recurringMonthly ? formatMoney(billing.recurringMonthly) : "₹0"}
+                    </div>
+                    <div className="stat-label">per month</div>
+                  </div>
+                  <div className="stat">
+                    <div
+                      className="stat-value"
+                      style={{ fontSize: "var(--text-xl)", color: billing.billingEnabled ? undefined : "#f87171" }}
+                    >
+                      {billing.billingEnabled ? "open" : "closed"}
+                    </div>
+                    <div className="stat-label">checkout</div>
+                  </div>
+                </div>
+
+                {(billing.payingVenues ?? 0) < 3 && (
+                  <p
+                    className="muted"
+                    style={{ fontSize: "0.85rem", marginBottom: "1rem", color: "var(--gold)" }}
+                  >
+                    Phase 1&apos;s exit test is three venues paying after their free month.
+                    Currently {billing.payingVenues ?? 0}.
+                  </p>
+                )}
+
+                <div className="admin-table-wrap">
+                  <table className="admin-table">
+                    <thead>
+                      <tr>
+                        <th>Venue</th><th>Owner</th><th>Plan</th><th>Status</th>
+                        <th style={{ textAlign: "right" }}>Amount</th><th>Free until</th><th>Next due</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(billing.subscriptions ?? []).map((sub: any) => (
+                        <tr key={sub.id}>
+                          <td>
+                            {sub.venueId ? (
+                              <Link href={`/venues/${sub.venueId}`}>{sub.venueName || sub.venueId}</Link>
+                            ) : (
+                              <span className="muted">chain</span>
+                            )}
+                          </td>
+                          <td className="muted admin-sub">{sub.owner || "—"}</td>
+                          <td className="admin-sub">{sub.planCode}</td>
+                          <td className="admin-sub">{sub.status}</td>
+                          <td style={{ textAlign: "right" }}>{formatMoney(sub.amount)}</td>
+                          <td className="muted admin-sub">
+                            {sub.trialEndsAt ? new Date(sub.trialEndsAt).toLocaleDateString("en-IN") : "—"}
+                          </td>
+                          <td className="muted admin-sub">
+                            {sub.periodEnd ? new Date(sub.periodEnd).toLocaleDateString("en-IN") : "—"}
+                          </td>
+                        </tr>
+                      ))}
+                      {(billing.subscriptions ?? []).length === 0 && (
+                        <tr><td colSpan={7} className="muted">Nobody is subscribed yet.</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
           </div>
         )}
 

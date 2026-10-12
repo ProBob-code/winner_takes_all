@@ -6,6 +6,7 @@
     "/_next/image*",
     "/favicon.ico",
     "/robots.txt",
+    "/sw.js",
     "/og-image.jpg",
     "/assets/*",
     "/8ball/*",

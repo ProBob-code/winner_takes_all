@@ -40,6 +40,24 @@ export interface Env {
    * have to be able to get them back. See `windDownOnly()`.
    */
   STAKES_ENABLED?: string;
+  /**
+   * Whether this deployment may sell a venue subscription.
+   *
+   * Separate from STAKES_ENABLED on purpose. A venue paying for tournament
+   * software is a business-to-business sale of software; a player paying to
+   * enter a game is a stake. The Online Gaming Act 2025 prohibits the second
+   * and says nothing about the first, so gating venue billing on the stakes
+   * switch would shut off the one revenue line that is lawful. Also
+   * default-off: a deployment with no Razorpay keys should not offer a
+   * subscription it cannot take. See lib/billing.ts.
+   */
+  BILLING_ENABLED?: string;
+  /**
+   * Signs the subscription webhooks. Usually the same secret as
+   * RAZORPAY_WEBHOOK_SECRET; kept separate so a deployment can rotate the
+   * billing webhook without touching anything else.
+   */
+  RAZORPAY_SUBSCRIPTION_WEBHOOK_SECRET?: string;
   ALLOWED_ORIGINS?: string;
   REALTIME_API_BASE?: string;
   /** Origin used to build the scannable broadcast URL. */

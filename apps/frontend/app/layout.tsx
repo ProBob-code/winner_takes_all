@@ -1,4 +1,5 @@
 import "./globals.css";
+import { Suspense } from "react";
 import { Inter, Outfit } from "next/font/google";
 import { LayoutClient } from "@/components/layout-client";
 import { Metadata } from "next";
@@ -55,9 +56,16 @@ export default function RootLayout({
         <script src="https://checkout.razorpay.com/v1/checkout.js" async></script>
       </head>
       <body className={inter.className} style={{ background: "var(--bg-primary)", color: "var(--text-primary)", margin: 0, padding: 0 }}>
-        <LayoutClient>
-          {children}
-        </LayoutClient>
+        {/* LayoutClient reads the pathname, to drop the sidebar, footer and
+            mobile nav on the three full-bleed routes (the big screen, staff
+            mode and the join page). usePathname has to sit inside a Suspense
+            boundary or prerendering trips Next's workUnitAsyncStorage
+            invariant on every page in the app. */}
+        <Suspense fallback={null}>
+          <LayoutClient>
+            {children}
+          </LayoutClient>
+        </Suspense>
       </body>
     </html>
   );
