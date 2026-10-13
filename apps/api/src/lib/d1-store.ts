@@ -1984,6 +1984,22 @@ export class D1Store {
     return r?.total ?? 0;
   }
 
+  /**
+   * What this account has earned since midnight UTC from a particular set of
+   * reasons, for a sub-cap that applies to only some of them.
+   */
+  async coinsEarnedTodayFor(userId: string, reasons: string[]): Promise<number> {
+    if (reasons.length === 0) return 0;
+    const since = new Date();
+    since.setUTCHours(0, 0, 0, 0);
+    const slots = reasons.map(() => "?").join(", ");
+    const r = await this.db.prepare(
+      `SELECT COALESCE(SUM(amount), 0) AS total FROM coin_ledger
+       WHERE user_id = ? AND created_at >= ? AND reason IN (${slots})`
+    ).bind(userId, since.toISOString(), ...reasons).first<any>();
+    return r?.total ?? 0;
+  }
+
   async getCoinLedger(userId: string, limit = 50): Promise<CoinLedgerRecord[]> {
     const { results } = await this.db.prepare(
       `SELECT * FROM coin_ledger WHERE user_id = ? ORDER BY created_at DESC LIMIT ?`

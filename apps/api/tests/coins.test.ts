@@ -9,6 +9,11 @@ import {
   applyDailyCap,
   awardsForFrame,
   awardsForNight,
+  awardsForOnlineGame,
+  ONLINE_DAILY_CAP,
+  ONLINE_REASONS,
+  MIN_ONLINE_SECONDS,
+  MIN_ONLINE_SHOTS,
   awardsForSeason,
   titleFor,
   nextTitle,
@@ -207,6 +212,92 @@ describe("the denomination", () => {
       COIN_AWARDS.NIGHT_WON;
     expect(heavyNight).toBe(430_000);
     expect(heavyNight).toBeLessThan(DAILY_COIN_CAP);
+  });
+});
+
+describe("online play earns, but offline is clearly worth more", () => {
+  it("pays something for finishing a game, win or lose", () => {
+    const lost = awardsForOnlineGame({ won: false, mode: 1 });
+    expect(totalOf(lost)).toBe(COIN_AWARDS.ONLINE_PLAYED);
+    expect(totalOf(lost)).toBeGreaterThan(0);
+  });
+
+  it("pays more for winning than for turning up", () => {
+    const won = awardsForOnlineGame({ won: true, mode: 1 });
+    const lost = awardsForOnlineGame({ won: false, mode: 1 });
+    expect(totalOf(won)).toBeGreaterThan(totalOf(lost));
+  });
+
+  it("is worth roughly a tenth of the same result at a venue", () => {
+    // The product is league nights in rooms, and the schedule should say so.
+    const onlineWin = totalOf(awardsForOnlineGame({ won: true, mode: 1 }));
+    const venueWin = COIN_AWARDS.FRAME_PLAYED + COIN_AWARDS.FRAME_WON;
+    expect(onlineWin).toBeLessThan(venueWin);
+    expect(venueWin / onlineWin).toBeGreaterThanOrEqual(5);
+  });
+
+  it("caps a whole day of browser play below a single league night", () => {
+    // The sharpest statement of the same priority: grinding the AI all day
+    // cannot beat turning up once.
+    const oneNight =
+      COIN_AWARDS.NIGHT_PLAYED +
+      8 * (COIN_AWARDS.FRAME_PLAYED + COIN_AWARDS.FRAME_WON) +
+      COIN_AWARDS.NIGHT_WON;
+    expect(ONLINE_DAILY_CAP).toBeLessThan(oneNight);
+  });
+
+  it("keeps the online ceiling far below the overall one", () => {
+    expect(ONLINE_DAILY_CAP).toBeLessThan(DAILY_COIN_CAP / 10);
+  });
+
+  it("pays a little more for beating a harder AI", () => {
+    const easy = totalOf(awardsForOnlineGame({ won: true, mode: 1, aiRating: 1 }));
+    const hard = totalOf(awardsForOnlineGame({ won: true, mode: 1, aiRating: 3 }));
+    expect(hard).toBeGreaterThan(easy);
+    // A step, not a multiplier: the hardest is worth half as much again, not
+    // ten times, or the easy setting becomes pointless.
+    expect(hard / easy).toBeLessThan(2);
+  });
+
+  it("does not let a silly difficulty inflate the award", () => {
+    const absurd = totalOf(awardsForOnlineGame({ won: true, mode: 1, aiRating: 99 }));
+    const hard = totalOf(awardsForOnlineGame({ won: true, mode: 1, aiRating: 3 }));
+    expect(absurd).toBe(hard);
+  });
+
+  it("pays two players on one device the same as the AI, since neither is verifiable", () => {
+    const vsAi = totalOf(awardsForOnlineGame({ won: true, mode: 1, aiRating: 1 }));
+    const vsFriend = totalOf(awardsForOnlineGame({ won: true, mode: 2 }));
+    expect(vsFriend).toBe(vsAi);
+  });
+
+  it("never pays a negative amount, so an online loss costs nothing either", () => {
+    for (const mode of [1, 2] as const) {
+      for (const won of [true, false]) {
+        for (const award of awardsForOnlineGame({ won, mode })) {
+          expect(award.amount).toBeGreaterThan(0);
+        }
+      }
+    }
+  });
+
+  it("counts only the online reasons against the online ceiling", () => {
+    expect(ONLINE_REASONS).toContain("ONLINE_PLAYED");
+    expect(ONLINE_REASONS).toContain("ONLINE_WON");
+    expect(ONLINE_REASONS).not.toContain("FRAME_WON");
+    expect(ONLINE_REASONS).not.toContain("NIGHT_WON");
+  });
+
+  it("requires a game to have lasted and taken shots before it can count", () => {
+    expect(MIN_ONLINE_SECONDS).toBeGreaterThan(0);
+    expect(MIN_ONLINE_SHOTS).toBeGreaterThan(0);
+  });
+
+  it("holds the online ceiling to a sane number of wins a day", () => {
+    const perWin = totalOf(awardsForOnlineGame({ won: true, mode: 1, aiRating: 1 }));
+    const winsToCap = ONLINE_DAILY_CAP / perWin;
+    expect(winsToCap).toBeGreaterThan(5);
+    expect(winsToCap).toBeLessThan(30);
   });
 });
 

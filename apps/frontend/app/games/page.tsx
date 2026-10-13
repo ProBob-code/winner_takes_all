@@ -33,7 +33,7 @@ export default function GamesPage() {
 
         {activeTab === "arena" ? (
           <div className="tournament-grid slide-in">
-            <Link href="/8ball/index.html" className="premium-card">
+            <Link href="/play/8ball" className="premium-card">
               <div className="card-glass"></div>
               <div className="card-content">
                 <div className="card-header">
@@ -47,7 +47,9 @@ export default function GamesPage() {
                 <div className="card-footer">
                   <div className="entry-info">
                     <span className="label">GAME MODE</span>
-                    <span className="value free">FREE PLAY</span>
+                    {/* Free to play, and it earns — but a fraction of what a
+                        league night does, which is the point. */}
+                    <span className="value free">FREE · EARNS COINS</span>
                   </div>
                   <div className="action-circle">→</div>
                 </div>

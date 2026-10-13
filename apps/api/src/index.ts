@@ -71,6 +71,11 @@ import {
   awardsForNight,
   titleFor,
   nextTitle,
+  awardsForOnlineGame,
+  ONLINE_DAILY_CAP,
+  ONLINE_REASONS,
+  MIN_ONLINE_SECONDS,
+  MIN_ONLINE_SHOTS,
   type CoinAward,
 } from "./lib/coins";
 import { checkRateLimit, clientKey } from "./lib/rate-limit";
@@ -106,6 +111,7 @@ import {
   adminRoleSchema,
   adminBonusSchema,
   adminResetPasswordSchema,
+  claimOnlineGameSchema,
   confirmFrameSchema,
   quickSetupSchema,
   joinByCodeSchema,
@@ -4390,6 +4396,7 @@ app.get("/api/coins/rules", (c) => {
     rules: COIN_RULES,
     awards: COIN_AWARDS,
     dailyCap: DAILY_COIN_CAP,
+    onlineDailyCap: ONLINE_DAILY_CAP,
     minPlayers: MIN_REAL_PLAYERS_FOR_COINS,
     titles: COIN_TITLES,
     // Said plainly, in the API as well as on the page, because this is the
@@ -4464,6 +4471,96 @@ app.get("/api/coins/leaderboard", async (c) => {
       balance: row.balance,
       title: titleFor(row.balance),
     })),
+  });
+});
+
+/**
+ * Claim the coins for a game finished in the browser.
+ *
+ * ── THE HONEST CAVEAT ──
+ * This result is reported by the player's own device, and nothing here can
+ * verify it. A determined person can call this endpoint directly and say they
+ * won. That is not a flaw to be patched so much as a property of running the
+ * game on the client, and it is exactly why the online awards are an order of
+ * magnitude below the offline ones and sit under their own tight daily cap:
+ * the defence is that the prize is not worth the trouble, not that the gate
+ * cannot be picked.
+ *
+ * What is checked is the cheap, obvious stuff — one claim per game, a game
+ * that lasted long enough and took enough shots to have been played at all,
+ * a rate limit, and the cap. A venue frame, by contrast, is recorded by the
+ * engine from a host's taps and is worth ten times as much.
+ */
+app.post("/api/coins/claim-online", async (c) => {
+  const user = requireUser(c);
+  if (!user) return c.json({ ok: false, message: "Authentication required" }, 401);
+
+  const limited = await rateLimit(c, "coins-online", 40, 3600);
+  if (limited) return limited;
+
+  const store = c.get("store");
+  const body = parseBody(claimOnlineGameSchema, await readJson(c));
+
+  // A game that lasted four seconds and took one shot was not played.
+  if (body.seconds < MIN_ONLINE_SECONDS || body.shots < MIN_ONLINE_SHOTS) {
+    return c.json({
+      ok: true,
+      awarded: 0,
+      awards: [],
+      message: "That game was too short to count.",
+    });
+  }
+
+  const earnedOnlineToday = await store
+    .coinsEarnedTodayFor(user.id, ONLINE_REASONS)
+    .catch(() => 0);
+
+  if (earnedOnlineToday >= ONLINE_DAILY_CAP) {
+    return c.json({
+      ok: true,
+      awarded: 0,
+      awards: [],
+      cappedOut: true,
+      message:
+        "You have earned all the coins browser play gives today. Play a league night — a night at a venue is worth far more.",
+    });
+  }
+
+  const wanted = awardsForOnlineGame({
+    won: body.won,
+    mode: body.mode,
+    aiRating: body.aiRating,
+  });
+
+  // Two ceilings apply: the online-only one and the overall daily cap.
+  const byOnlineCap = applyDailyCap(wanted, earnedOnlineToday, ONLINE_DAILY_CAP);
+  const earnedToday = await store.coinsEarnedToday(user.id).catch(() => 0);
+  const { granted } = applyDailyCap(byOnlineCap.granted, earnedToday);
+
+  const paid: Array<{ reason: string; amount: number; description: string }> = [];
+  for (const award of granted) {
+    const applied = await store.awardCoins({
+      userId: user.id,
+      reason: award.reason,
+      amount: award.amount,
+      description: award.description,
+      // Keyed on the session the page minted, so the same finished game
+      // cannot be claimed twice however many times the message arrives.
+      referenceType: "online_game",
+      referenceId: body.sessionId,
+    });
+    if (applied !== null) paid.push(award);
+  }
+
+  const balance = await store.getCoinBalance(user.id);
+
+  return c.json({
+    ok: true,
+    awarded: paid.reduce((sum, a) => sum + a.amount, 0),
+    awards: paid,
+    balance: balance.balance,
+    title: titleFor(balance.balance),
+    onlineRemainingToday: Math.max(0, ONLINE_DAILY_CAP - earnedOnlineToday),
   });
 });
 

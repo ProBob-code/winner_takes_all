@@ -330,3 +330,21 @@ export const subscribeSchema = z.object({
   /** Sites to bill for, on a chain plan. Ignored by single-venue plans. */
   sites: z.coerce.number().int().min(1).max(500).default(1),
 });
+
+// ── Browser play ──
+
+export const claimOnlineGameSchema = z.object({
+  /**
+   * An id the page mints when the game starts, so one finished game can be
+   * claimed exactly once however many times the message arrives.
+   */
+  sessionId: z.string().trim().min(8).max(64),
+  /** 1 = against the AI, 2 = two players on one device. */
+  mode: z.union([z.literal(1), z.literal(2)]),
+  won: z.boolean(),
+  /** The AI's difficulty as the game had it set. Ignored outside AI mode. */
+  aiRating: z.coerce.number().int().min(1).max(5).optional(),
+  /** How long the game ran, in seconds, and how many shots were taken. */
+  seconds: z.coerce.number().int().min(0).max(86_400),
+  shots: z.coerce.number().int().min(0).max(10_000),
+});

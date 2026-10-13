@@ -19,7 +19,7 @@ import { getApiUrl } from "@/lib/api-config";
  * a footer of policy links and a mobile nav bar would each take space these
  * three cannot spare.
  */
-const BARE_ROUTES = ["/display/", "/staff/", "/join/"];
+const BARE_ROUTES = ["/display/", "/staff/", "/join/", "/play/"];
 
 function isBare(pathname: string | null): boolean {
   if (!pathname) return false;

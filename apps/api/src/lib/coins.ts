@@ -77,7 +77,11 @@ export type CoinReason =
   | "NIGHT_WON"
   | "CLEARANCE"
   | "STREAK"
-  | "SEASON_WON";
+  | "SEASON_WON"
+  /** Finished a game in the browser, against the AI or a friend on the sofa. */
+  | "ONLINE_PLAYED"
+  /** Won one. */
+  | "ONLINE_WON";
 
 /**
  * The unit the schedule is denominated in.
@@ -120,7 +124,46 @@ export const COIN_AWARDS: Record<CoinReason, number> = {
   STREAK: 75 * COIN_UNIT,
   /** Topping a season's table. */
   SEASON_WON: 500 * COIN_UNIT,
+
+  // ── Online play ──
+  //
+  // Deliberately an order of magnitude below the offline awards, for two
+  // reasons that happen to point the same way.
+  //
+  // The first is commercial: the product is sold on league nights in rooms,
+  // and the coin schedule should say so. A night at a venue is worth more
+  // than an evening on the sofa because the night is the thing being built.
+  //
+  // The second is that an offline result is trustworthy and an online one is
+  // not. A frame in a venue is recorded by the engine from a host's taps; a
+  // browser game is reported by the player's own device, and nothing stops
+  // someone forging that report. Small awards and a tight cap are the honest
+  // response to a number we cannot verify: worth having, never worth farming.
+  ONLINE_PLAYED: 1 * COIN_UNIT,
+  ONLINE_WON: 2 * COIN_UNIT,
 };
+
+/**
+ * The most that can be earned from browser play in one day.
+ *
+ * Separate from, and far below, DAILY_COIN_CAP. Roughly ten wins — enough
+ * that practising between league nights counts for something, little enough
+ * that a bot playing the AI overnight cannot out-earn one real evening at a
+ * venue. A single league night is worth more than two weeks of this.
+ */
+export const ONLINE_DAILY_CAP = 25 * COIN_UNIT;
+
+/** The reasons that count against ONLINE_DAILY_CAP rather than the main one. */
+export const ONLINE_REASONS: CoinReason[] = ["ONLINE_PLAYED", "ONLINE_WON"];
+
+/**
+ * The shortest a browser game can be and still count.
+ *
+ * A "game" that finished in four seconds was not played. Paired with a
+ * minimum number of shots, this is what stops the obvious script.
+ */
+export const MIN_ONLINE_SECONDS = 30;
+export const MIN_ONLINE_SHOTS = 4;
 
 /**
  * What a coin is explicitly not, kept as data so the UI and the policy page
@@ -220,6 +263,48 @@ export function awardsForNight(tournamentName?: string): CoinAward[] {
       description: tournamentName ? `Won ${tournamentName}` : "Won the night",
     },
   ];
+}
+
+/**
+ * What one finished browser game earns.
+ *
+ * Both modes the game offers pay the same, and that is deliberate even though
+ * one has an AI opponent and one has a friend on the same sofa: both are a
+ * single device reporting its own result, so neither is any more verifiable
+ * than the other. Beating a harder AI pays a little more, because the one
+ * thing the report does tell us is which difficulty was selected, and
+ * rewarding the easiest setting most would be the wrong incentive.
+ */
+export function awardsForOnlineGame(args: {
+  won: boolean;
+  /** 1 = vs AI, 2 = two players on one device. */
+  mode: 1 | 2;
+  /** The AI's difficulty, 1 upwards. Ignored outside AI mode. */
+  aiRating?: number;
+}): CoinAward[] {
+  const awards: CoinAward[] = [
+    {
+      reason: "ONLINE_PLAYED",
+      amount: COIN_AWARDS.ONLINE_PLAYED,
+      description: args.mode === 1 ? "Played the AI" : "Played a friend",
+    },
+  ];
+
+  if (!args.won) return awards;
+
+  // A modest step per difficulty — one whole coin unit a level, so beating the
+  // hardest AI is worth about two thirds more than beating the easiest rather
+  // than several times more. Kept in whole units like every other figure here.
+  const difficulty = args.mode === 1 ? Math.min(Math.max(args.aiRating ?? 1, 1), 3) : 1;
+  const bonus = (difficulty - 1) * COIN_UNIT;
+
+  awards.push({
+    reason: "ONLINE_WON",
+    amount: COIN_AWARDS.ONLINE_WON + bonus,
+    description: args.mode === 1 ? `Beat the AI${difficulty > 1 ? ` (level ${difficulty})` : ""}` : "Won a game",
+  });
+
+  return awards;
 }
 
 /** What topping a season's table earns. */
