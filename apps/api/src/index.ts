@@ -72,6 +72,9 @@ import {
   titleFor,
   nextTitle,
   awardsForOnlineGame,
+  awardsForStreak,
+  awardsForSeason,
+  STREAK_NIGHTS,
   ONLINE_DAILY_CAP,
   ONLINE_REASONS,
   MIN_ONLINE_SECONDS,
@@ -1536,6 +1539,12 @@ app.post("/api/series/:id/end", async (c) => {
   }
 
   await store.updateSeries(series.id, { status: "ended", next_event_at: null });
+
+  // Closing the season is what settles it, so this is where the title — and
+  // the coins that go with it — are awarded. Keyed on the series, so ending an
+  // already-ended season pays nobody twice.
+  await awardSeasonCoins(c, series);
+
   return c.json({ ok: true });
 });
 
@@ -1996,6 +2005,19 @@ async function awardFrameCoins(
         tournamentName: tournament.name,
       });
 
+      // A run of nights at one venue. Only checked on the night's first
+      // frame, so it costs one query a player a night rather than one a frame,
+      // and only for a tournament a venue actually owns.
+      if (firstOfNight && tournament.venue_id) {
+        const nights = await store
+          .consecutiveVenueNights(userId, tournament.venue_id)
+          .catch(() => 0);
+        if (nights > 0 && nights % STREAK_NIGHTS === 0) {
+          const venue = await store.getVenue(tournament.venue_id).catch(() => null);
+          wanted.push(...awardsForStreak(nights, venue?.name));
+        }
+      }
+
       const earnedToday = await store.coinsEarnedToday(userId);
       const { granted } = applyDailyCap(wanted, earnedToday);
 
@@ -2007,13 +2029,69 @@ async function awardFrameCoins(
           description: award.description,
           // The reference is what makes an award idempotent. A per-night award
           // keys on the tournament; a per-frame award keys on the frame.
-          referenceType: award.reason === "NIGHT_PLAYED" ? "tournament" : "match",
-          referenceId: award.reason === "NIGHT_PLAYED" ? tournament.id : match.id,
+          // Per-night awards key on the tournament, per-frame awards on the
+          // frame, so each pays exactly once however often it is recomputed.
+          referenceType:
+            award.reason === "NIGHT_PLAYED" || award.reason === "STREAK"
+              ? "tournament"
+              : "match",
+          referenceId:
+            award.reason === "NIGHT_PLAYED" || award.reason === "STREAK"
+              ? tournament.id
+              : match.id,
         });
       }
     }
   } catch (err) {
     console.error("Could not award coins for a frame:", err);
+  }
+}
+
+/**
+ * Pay the coins for topping a season's table, when the host closes it.
+ *
+ * Everyone tied at the top is paid, rather than one of them being picked
+ * arbitrarily — the standings already sort on weeks won, then match wins, then
+ * score, and a genuine tie after all three is a shared title.
+ */
+async function awardSeasonCoins(
+  c: Context<AppContext>,
+  series: SeriesRecord
+): Promise<void> {
+  try {
+    const store = c.get("store");
+    const [teams, progress] = await Promise.all([
+      store.getSeriesEngineTeams(series.id),
+      store.getSeriesMatchProgress(series.id),
+    ]);
+
+    const standings = computeSeasonStandings(teams, progress);
+    const top = standings[0];
+    if (!top) return;
+
+    // Everyone level with the leader on all three sort keys.
+    const champions = standings.filter(
+      (row) =>
+        row.weeksWon === top.weeksWon &&
+        row.matchWins === top.matchWins &&
+        row.totalScore === top.totalScore
+    );
+
+    for (const champion of champions) {
+      if (!champion.userId) continue;
+      for (const award of awardsForSeason(series.name)) {
+        await store.awardCoins({
+          userId: champion.userId,
+          reason: award.reason,
+          amount: award.amount,
+          description: award.description,
+          referenceType: "series",
+          referenceId: series.id,
+        });
+      }
+    }
+  } catch (err) {
+    console.error("Could not award coins for a season:", err);
   }
 }
 

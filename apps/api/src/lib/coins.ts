@@ -166,6 +166,30 @@ export const MIN_ONLINE_SECONDS = 30;
 export const MIN_ONLINE_SHOTS = 4;
 
 /**
+ * How many league nights in a row at one venue earn the streak bonus.
+ *
+ * Three, and it pays again at six, nine and so on rather than every night
+ * after the third — a bonus that fires every week is not a streak bonus, it
+ * is a higher attendance award wearing the name. Counted over the nights that
+ * venue actually ran, so a venue skipping a week does not break anybody's run.
+ */
+export const STREAK_NIGHTS = 3;
+
+/** What an unbroken run of nights earns, when it lands on a multiple. */
+export function awardsForStreak(nights: number, venueName?: string): CoinAward[] {
+  if (nights <= 0 || nights % STREAK_NIGHTS !== 0) return [];
+  return [
+    {
+      reason: "STREAK",
+      amount: COIN_AWARDS.STREAK,
+      description: venueName
+        ? `${nights} nights running at ${venueName}`
+        : `${nights} league nights running`,
+    },
+  ];
+}
+
+/**
  * What a coin is explicitly not, kept as data so the UI and the policy page
  * state the same thing and cannot drift apart from each other.
  */

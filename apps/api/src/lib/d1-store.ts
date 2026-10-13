@@ -2000,6 +2000,38 @@ export class D1Store {
     return r?.total ?? 0;
   }
 
+  /**
+   * How many of a venue's most recent nights this account played, unbroken,
+   * counting back from the latest.
+   *
+   * Counted over the nights the venue actually ran rather than over calendar
+   * weeks, so a venue that skips a week does not break anybody's run — the
+   * player did not miss anything. A night they sat out ends the count.
+   */
+  async consecutiveVenueNights(
+    userId: string,
+    venueId: string,
+    lookback = 30
+  ): Promise<number> {
+    const { results } = await this.db.prepare(
+      `SELECT t.id AS id,
+              MAX(CASE WHEN et.user_id = ? THEN 1 ELSE 0 END) AS attended
+       FROM tournaments t
+       LEFT JOIN engine_teams et ON et.tournament_id = t.id
+       WHERE t.venue_id = ?
+       GROUP BY t.id, t.created_at
+       ORDER BY t.created_at DESC
+       LIMIT ?`
+    ).bind(userId, venueId, lookback).all<any>();
+
+    let run = 0;
+    for (const row of results) {
+      if (Number(row.attended) !== 1) break;
+      run++;
+    }
+    return run;
+  }
+
   async getCoinLedger(userId: string, limit = 50): Promise<CoinLedgerRecord[]> {
     const { results } = await this.db.prepare(
       `SELECT * FROM coin_ledger WHERE user_id = ? ORDER BY created_at DESC LIMIT ?`

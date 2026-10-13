@@ -65,8 +65,14 @@ const EARN_LABELS: Array<{ key: string; label: string; note: string }> = [
   { key: "FRAME_WON", label: "Win a frame", note: "On top of playing it" },
   { key: "CLEARANCE", label: "Clear the table", note: "All seven and the black, one frame" },
   { key: "NIGHT_WON", label: "Win the night", note: "Take the whole tournament" },
-  { key: "STREAK", label: "Three nights running", note: "Same venue, three weeks" },
+  // Counted over the nights the venue actually ran, not calendar weeks — a
+  // venue skipping a week does not break anyone's run.
+  { key: "STREAK", label: "Three nights running", note: "Three of a venue's nights in a row" },
   { key: "SEASON_WON", label: "Win the season", note: "Top of the table when it ends" },
+  // Worth a fraction of the venue awards, and capped separately. The schedule
+  // is where the product says league nights matter more than the sofa.
+  { key: "ONLINE_PLAYED", label: "Play online", note: "Finish a game in the browser" },
+  { key: "ONLINE_WON", label: "Win online", note: "More for a harder AI" },
 ];
 
 /**

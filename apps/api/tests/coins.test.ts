@@ -15,6 +15,8 @@ import {
   MIN_ONLINE_SECONDS,
   MIN_ONLINE_SHOTS,
   awardsForSeason,
+  awardsForStreak,
+  STREAK_NIGHTS,
   titleFor,
   nextTitle,
   totalOf,
@@ -298,6 +300,53 @@ describe("online play earns, but offline is clearly worth more", () => {
     const winsToCap = ONLINE_DAILY_CAP / perWin;
     expect(winsToCap).toBeGreaterThan(5);
     expect(winsToCap).toBeLessThan(30);
+  });
+});
+
+describe("the streak bonus", () => {
+  it("pays nothing before the run is long enough", () => {
+    for (let n = 0; n < STREAK_NIGHTS; n++) {
+      expect(awardsForStreak(n)).toEqual([]);
+    }
+  });
+
+  it("pays on the third night", () => {
+    const awards = awardsForStreak(STREAK_NIGHTS);
+    expect(totalOf(awards)).toBe(COIN_AWARDS.STREAK);
+  });
+
+  it("pays again every third night, not every night after the third", () => {
+    // A bonus that fires every week is not a streak bonus, it is a higher
+    // attendance award wearing the name.
+    const paid: number[] = [];
+    for (let n = 1; n <= 12; n++) {
+      if (awardsForStreak(n).length > 0) paid.push(n);
+    }
+    expect(paid).toEqual([3, 6, 9, 12]);
+  });
+
+  it("never pays for a negative or nonsense run", () => {
+    expect(awardsForStreak(-3)).toEqual([]);
+    expect(awardsForStreak(0)).toEqual([]);
+  });
+
+  it("names the venue when it knows it", () => {
+    const [award] = awardsForStreak(STREAK_NIGHTS, "The Corner Pocket");
+    expect(award.description).toContain("The Corner Pocket");
+    expect(award.description).toContain(String(STREAK_NIGHTS));
+  });
+
+  it("still reads sensibly with no venue name", () => {
+    const [award] = awardsForStreak(STREAK_NIGHTS);
+    expect(award.description.length).toBeGreaterThan(5);
+    expect(award.amount).toBeGreaterThan(0);
+  });
+
+  it("is worth less than winning a night, and more than winning a frame", () => {
+    // Turning up repeatedly should beat a single good result, without
+    // outranking actually taking a tournament.
+    expect(COIN_AWARDS.STREAK).toBeGreaterThan(COIN_AWARDS.FRAME_WON);
+    expect(COIN_AWARDS.STREAK).toBeLessThan(COIN_AWARDS.NIGHT_WON);
   });
 });
 
