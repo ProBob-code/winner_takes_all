@@ -303,19 +303,10 @@ export default function VenueDetailPage() {
                 )}
               </>
             ) : (
-              <>
-                <p className="muted" style={{ fontSize: "var(--text-sm)" }}>
-                  This venue is not on a subscription. Everything still works — nothing
-                  here is locked — but a subscription is how the software gets paid for.
-                </p>
-                <Link
-                  className="button"
-                  href={`/pricing?venue=${venue.id}`}
-                  style={{ textDecoration: "none", alignSelf: "flex-start" }}
-                >
-                  See the plans
-                </Link>
-              </>
+              <p className="muted" style={{ fontSize: "var(--text-sm)" }}>
+                This venue is not on a subscription, and nothing here is locked. Every
+                feature works today.
+              </p>
             )}
           </div>
 

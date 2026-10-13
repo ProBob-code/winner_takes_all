@@ -84,6 +84,18 @@ export interface SubscriptionRecord {
   venue_name?: string; user_name?: string;
 }
 
+export interface CoinBalanceRecord {
+  user_id: string; balance: number; lifetime: number; updated_at: string;
+  /** Joined for the leaderboard. */
+  user_name?: string;
+}
+
+export interface CoinLedgerRecord {
+  id: string; user_id: string; reason: string; amount: number;
+  balance_after: number; description: string | null;
+  reference_type: string | null; reference_id: string | null; created_at: string;
+}
+
 export interface FrameConfirmationRecord {
   match_id: string; team_id: string; user_id: string | null;
   agreed_winner_id: string | null; created_at: string;
@@ -1886,5 +1898,141 @@ export class D1Store {
        WHERE subscription_id = ? ORDER BY created_at DESC LIMIT ?`
     ).bind(subscriptionId, limit).all<any>();
     return results as any;
+  }
+
+  // ── The WTA Coin ──
+  //
+  // There is deliberately no credit, debit, transfer, purchase or withdrawal
+  // method here. The only way a coin comes into existence is awardCoins(),
+  // from a result the engine itself recorded. See lib/coins.ts for why.
+
+  async getCoinBalance(userId: string): Promise<CoinBalanceRecord> {
+    const r = await this.db.prepare(`SELECT * FROM coin_balances WHERE user_id = ?`)
+      .bind(userId).first<any>();
+    return r ?? {
+      user_id: userId, balance: 0, lifetime: 0, updated_at: new Date().toISOString(),
+    };
+  }
+
+  /**
+   * Pay one award, once.
+   *
+   * The ledger insert comes first and is guarded by the unique index on
+   * (user, reason, reference) — so a frame that is settled twice, replayed
+   * from an outbox, or re-finished after a restart pays exactly once. Only a
+   * claim that actually wrote a row goes on to move the balance.
+   *
+   * Returns the new balance, or null when this award had already been paid.
+   */
+  async awardCoins(args: {
+    userId: string;
+    reason: string;
+    amount: number;
+    description?: string;
+    referenceType?: string | null;
+    referenceId?: string | null;
+  }): Promise<number | null> {
+    if (!Number.isInteger(args.amount) || args.amount <= 0) return null;
+
+    const now = new Date().toISOString();
+    // A null in a SQLite unique index does not compare equal to another null,
+    // so an award with no reference would never be de-duplicated. Empty
+    // strings do compare, which is what these fall back to.
+    const refType = args.referenceType ?? "";
+    const refId = args.referenceId ?? "";
+
+    const claim = await this.db.prepare(
+      `INSERT OR IGNORE INTO coin_ledger
+         (id, user_id, reason, amount, balance_after, description, reference_type, reference_id, created_at)
+       VALUES (?, ?, ?, ?, 0, ?, ?, ?, ?)`
+    ).bind(
+      createId("coin"), args.userId, args.reason, args.amount,
+      args.description ?? null, refType, refId, now
+    ).run();
+
+    if ((claim.meta?.changes ?? 0) === 0) return null;
+
+    await this.db.prepare(
+      `INSERT INTO coin_balances (user_id, balance, lifetime, updated_at)
+       VALUES (?, ?, ?, ?)
+       ON CONFLICT(user_id) DO UPDATE SET
+         balance = balance + excluded.balance,
+         lifetime = lifetime + excluded.lifetime,
+         updated_at = excluded.updated_at`
+    ).bind(args.userId, args.amount, args.amount, now).run();
+
+    const fresh = await this.getCoinBalance(args.userId);
+
+    // Written back so the ledger a player reads shows the running total, not
+    // the zero the claim was inserted with.
+    await this.db.prepare(
+      `UPDATE coin_ledger SET balance_after = ?
+       WHERE user_id = ? AND reason = ? AND reference_type = ? AND reference_id = ?`
+    ).bind(fresh.balance, args.userId, args.reason, refType, refId).run();
+
+    return fresh.balance;
+  }
+
+  /** What this account has earned since midnight UTC, for the daily cap. */
+  async coinsEarnedToday(userId: string): Promise<number> {
+    const since = new Date();
+    since.setUTCHours(0, 0, 0, 0);
+    const r = await this.db.prepare(
+      `SELECT COALESCE(SUM(amount), 0) AS total FROM coin_ledger
+       WHERE user_id = ? AND created_at >= ?`
+    ).bind(userId, since.toISOString()).first<any>();
+    return r?.total ?? 0;
+  }
+
+  async getCoinLedger(userId: string, limit = 50): Promise<CoinLedgerRecord[]> {
+    const { results } = await this.db.prepare(
+      `SELECT * FROM coin_ledger WHERE user_id = ? ORDER BY created_at DESC LIMIT ?`
+    ).bind(userId, limit).all<any>();
+    return results as CoinLedgerRecord[];
+  }
+
+  /** Whether this account has already been paid for turning up tonight. */
+  async hasNightAward(userId: string, tournamentId: string): Promise<boolean> {
+    const r = await this.db.prepare(
+      `SELECT 1 AS hit FROM coin_ledger
+       WHERE user_id = ? AND reason = 'NIGHT_PLAYED'
+         AND reference_type = 'tournament' AND reference_id = ?
+       LIMIT 1`
+    ).bind(userId, tournamentId).first<any>();
+    return !!r;
+  }
+
+  async coinLeaderboard(limit = 50): Promise<CoinBalanceRecord[]> {
+    const { results } = await this.db.prepare(
+      `SELECT cb.*, u.name AS user_name FROM coin_balances cb
+       LEFT JOIN users u ON u.id = cb.user_id
+       ORDER BY cb.balance DESC, cb.updated_at ASC
+       LIMIT ?`
+    ).bind(limit).all<any>();
+    return results as CoinBalanceRecord[];
+  }
+
+  /** Where this account sits on the leaderboard. 1-based; 0 when unranked. */
+  async coinRank(userId: string): Promise<number> {
+    const me = await this.getCoinBalance(userId);
+    if (me.balance <= 0) return 0;
+    const r = await this.db.prepare(
+      `SELECT COUNT(*) AS ahead FROM coin_balances WHERE balance > ?`
+    ).bind(me.balance).first<any>();
+    return (r?.ahead ?? 0) + 1;
+  }
+
+  /**
+   * How many distinct signed-in accounts are competing in a tournament.
+   *
+   * The anti-farming guard: a bracket of one real person and seven typed-in
+   * names is a practice session, and practice does not pay.
+   */
+  async countRealCompetitors(tournamentId: string): Promise<number> {
+    const r = await this.db.prepare(
+      `SELECT COUNT(DISTINCT user_id) AS n FROM engine_teams
+       WHERE tournament_id = ? AND user_id IS NOT NULL`
+    ).bind(tournamentId).first<any>();
+    return r?.n ?? 0;
   }
 }

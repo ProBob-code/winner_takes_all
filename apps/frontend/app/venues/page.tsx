@@ -243,9 +243,6 @@ export default function VenuesPage() {
             of them, so a player&apos;s record follows them between rooms instead of
             restarting at each.
           </p>
-          <Link className="button-secondary" href="/pricing" style={{ textDecoration: "none", alignSelf: "flex-start" }}>
-            See what it costs
-          </Link>
         </div>
       </div>
     </main>

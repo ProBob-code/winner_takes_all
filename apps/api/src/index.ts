@@ -60,6 +60,19 @@ import {
   statusEntitles,
 } from "./lib/billing";
 import { shareText, whatsappShareUrl, type ShareKind } from "./lib/share-text";
+import {
+  COIN_AWARDS,
+  COIN_RULES,
+  COIN_TITLES,
+  DAILY_COIN_CAP,
+  MIN_REAL_PLAYERS_FOR_COINS,
+  applyDailyCap,
+  awardsForFrame,
+  awardsForNight,
+  titleFor,
+  nextTitle,
+  type CoinAward,
+} from "./lib/coins";
 import { checkRateLimit, clientKey } from "./lib/rate-limit";
 import * as Engine from "./lib/tournament-engine";
 import {
@@ -205,7 +218,14 @@ app.use("/api/admin/*", async (c, next) => {
 
 // Venues, chains, billing, join codes and the share text all read tables added
 // in 0012, so they get the same safety net.
-for (const family of ["/api/venues/*", "/api/chains/*", "/api/billing/*", "/api/join/*", "/api/tournaments/*"]) {
+for (const family of [
+  "/api/venues/*",
+  "/api/chains/*",
+  "/api/billing/*",
+  "/api/join/*",
+  "/api/tournaments/*",
+  "/api/coins/*",
+]) {
   app.use(family, async (c, next) => {
     try {
       await ensureEngineSchema(c.env.DB);
@@ -1877,6 +1897,10 @@ async function settleTournament(
 
   await payTournamentPrizes(c, tournament, result);
 
+  // Whoever took the night earns for it. Guarded on the tournament id, so a
+  // tournament settled twice crowns the same people once.
+  await awardNightCoins(c, tournament, result.winners.map((w) => w.userId));
+
   // The tournament is over, so it stops being something to watch or film.
   await setEngineArenaLive(c, tournament, false);
 
@@ -1916,6 +1940,106 @@ async function setEngineArenaLive(
  * its final is decided. Only ever called by the request whose guarded write
  * actually finished the match, so a result is never counted twice.
  */
+/**
+ * Pay the WTA Coins a finished frame earned, to the accounts that played it.
+ *
+ * Only signed-in accounts earn: a walk-in who joined by QR has no account to
+ * credit, and crediting the guest name instead would let anyone mint coins by
+ * entering under a new name each week.
+ *
+ * Deliberately forgiving. Coins are recognition, not money — if this throws,
+ * the frame, the table and the tournament are all still correct, and losing an
+ * award is not worth failing a league night over.
+ */
+async function awardFrameCoins(
+  c: Context<AppContext>,
+  tournament: TournamentRecord,
+  match: EngineMatchRow
+): Promise<void> {
+  try {
+    const store = c.get("store");
+
+    // A bracket of one real person and seven typed-in names is a practice
+    // session, and practice does not pay.
+    const realPlayers = await store.countRealCompetitors(tournament.id);
+    if (realPlayers < MIN_REAL_PLAYERS_FOR_COINS) return;
+
+    const teams = await store.getEngineTeams(tournament.id);
+    const sides = [match.team_a_id, match.team_b_id];
+
+    for (const teamId of sides) {
+      const team = teams.find((t) => t.id === teamId);
+      const userId = team?.user_id;
+      if (!userId) continue;
+
+      const firstOfNight = !(await store.hasNightAward(userId, tournament.id));
+
+      // A clearance is all seven and the black in the one frame. 8-ball only;
+      // football has no equivalent.
+      const isTeamA = teamId === match.team_a_id;
+      const clearance =
+        tournament.sport !== "FOOTBALL" &&
+        match.winner_id === teamId &&
+        (isTeamA ? match.balls_potted_a : match.balls_potted_b) >= 7 &&
+        (isTeamA ? match.black_potted_a : match.black_potted_b);
+
+      const wanted = awardsForFrame({
+        won: match.winner_id === teamId,
+        firstOfNight,
+        clearance,
+        tournamentName: tournament.name,
+      });
+
+      const earnedToday = await store.coinsEarnedToday(userId);
+      const { granted } = applyDailyCap(wanted, earnedToday);
+
+      for (const award of granted) {
+        await store.awardCoins({
+          userId,
+          reason: award.reason,
+          amount: award.amount,
+          description: award.description,
+          // The reference is what makes an award idempotent. A per-night award
+          // keys on the tournament; a per-frame award keys on the frame.
+          referenceType: award.reason === "NIGHT_PLAYED" ? "tournament" : "match",
+          referenceId: award.reason === "NIGHT_PLAYED" ? tournament.id : match.id,
+        });
+      }
+    }
+  } catch (err) {
+    console.error("Could not award coins for a frame:", err);
+  }
+}
+
+/** Pay the coins for taking the night, to whoever won it. */
+async function awardNightCoins(
+  c: Context<AppContext>,
+  tournament: TournamentRecord,
+  winnerUserIds: Array<string | null>
+): Promise<void> {
+  try {
+    const store = c.get("store");
+    const realPlayers = await store.countRealCompetitors(tournament.id);
+    if (realPlayers < MIN_REAL_PLAYERS_FOR_COINS) return;
+
+    for (const userId of winnerUserIds) {
+      if (!userId) continue;
+      for (const award of awardsForNight(tournament.name)) {
+        await store.awardCoins({
+          userId,
+          reason: award.reason,
+          amount: award.amount,
+          description: award.description,
+          referenceType: "tournament",
+          referenceId: tournament.id,
+        });
+      }
+    }
+  } catch (err) {
+    console.error("Could not award coins for a night:", err);
+  }
+}
+
 async function recordEngineResult(
   c: Context<AppContext>,
   tournament: TournamentRecord,
@@ -1936,6 +2060,10 @@ async function recordEngineResult(
   for (const delta of Engine.resultDeltas(match, engineSport(tournament))) {
     await store.addEngineTeamResult(delta.teamId, delta);
   }
+
+  // The same moment the table counts the frame, the players earn for it. Both
+  // are guarded against paying twice, so a re-settled frame changes neither.
+  await awardFrameCoins(c, tournament, match);
 
   // Winning the grand final ends the tournament: it closes, and the pot is
   // paid out, without the host having to do anything.
@@ -4238,6 +4366,103 @@ app.get("/api/admin/subscriptions", async (c) => {
       trialEndsAt: sub.trial_ends_at,
       cancelledAt: sub.cancelled_at,
       createdAt: sub.created_at,
+    })),
+  });
+});
+
+// ── The WTA Coin ──
+//
+// Read-only, every one of them. There is no route here that credits, debits,
+// buys, sells, transfers or redeems a coin, and that is the point: a coin is
+// awarded by the engine for a frame that was actually played, and by nothing
+// else. See lib/coins.ts for the Act this is shaped around.
+
+/**
+ * What a coin is and how it is earned. Public, and deliberately so — a
+ * currency whose rules are not published is one nobody can check.
+ */
+app.get("/api/coins/rules", (c) => {
+  c.header("Cache-Control", "no-store");
+  return c.json({
+    ok: true,
+    name: "WTA Coin",
+    symbol: "WTA",
+    rules: COIN_RULES,
+    awards: COIN_AWARDS,
+    dailyCap: DAILY_COIN_CAP,
+    minPlayers: MIN_REAL_PLAYERS_FOR_COINS,
+    titles: COIN_TITLES,
+    // Said plainly, in the API as well as on the page, because this is the
+    // sentence that keeps the whole thing lawful.
+    notice:
+      "WTA Coins have no cash value. They cannot be bought, sold, transferred, withdrawn or staked. They are a record of what you have played, like a league table.",
+  });
+});
+
+app.get("/api/coins/me", async (c) => {
+  const user = requireUser(c);
+  if (!user) return c.json({ ok: false, message: "Authentication required" }, 401);
+
+  const store = c.get("store");
+  const [balance, rank, earnedToday] = await Promise.all([
+    store.getCoinBalance(user.id),
+    store.coinRank(user.id).catch(() => 0),
+    store.coinsEarnedToday(user.id).catch(() => 0),
+  ]);
+
+  return c.json({
+    ok: true,
+    balance: balance.balance,
+    lifetime: balance.lifetime,
+    rank,
+    title: titleFor(balance.balance),
+    next: nextTitle(balance.balance),
+    earnedToday,
+    dailyCap: DAILY_COIN_CAP,
+    rules: COIN_RULES,
+  });
+});
+
+/**
+ * The player's own ledger.
+ *
+ * Every award, with what it was for and the running total after it, so a
+ * player can check the arithmetic themselves. A balance nobody can audit is
+ * just a number the app asserts.
+ */
+app.get("/api/coins/ledger", async (c) => {
+  const user = requireUser(c);
+  if (!user) return c.json({ ok: false, message: "Authentication required" }, 401);
+
+  const limit = Math.min(Number(c.req.query("limit") ?? 50) || 50, 200);
+  const entries = await c.get("store").getCoinLedger(user.id, limit);
+
+  return c.json({
+    ok: true,
+    entries: entries.map((e) => ({
+      id: e.id,
+      reason: e.reason,
+      amount: e.amount,
+      balanceAfter: e.balance_after,
+      description: e.description,
+      at: e.created_at,
+    })),
+  });
+});
+
+/** Who has earned the most. Public: it is a league table, not an account. */
+app.get("/api/coins/leaderboard", async (c) => {
+  const limit = Math.min(Number(c.req.query("limit") ?? 50) || 50, 100);
+  const rows = await c.get("store").coinLeaderboard(limit);
+
+  return c.json({
+    ok: true,
+    leaders: rows.map((row, i) => ({
+      rank: i + 1,
+      userId: row.user_id,
+      name: row.user_name ?? "Unknown",
+      balance: row.balance,
+      title: titleFor(row.balance),
     })),
   });
 });

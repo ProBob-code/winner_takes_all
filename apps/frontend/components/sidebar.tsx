@@ -66,6 +66,7 @@ export function Sidebar({ user: initialUser }: { user: any }) {
     { label: "Games", href: "/games", icon: "🕹️" },
     { label: "Tournaments", href: "/tournaments", icon: "🎮" },
     { label: "Rankings", href: "/leaderboard", icon: "🏆" },
+    { label: "WTA Coins", href: "/coins", icon: "🪙" },
     { label: "Profile", href: "/profile", icon: "👤" },
     { label: "Organizer Account", href: "/wallet", icon: "💳" }
   ] : [
@@ -76,7 +77,7 @@ export function Sidebar({ user: initialUser }: { user: any }) {
     // Both are useful before signing up, and the playbook is the thing that
     // converts a venue with no league night at all.
     { label: "Playbook", href: "/playbook", icon: "📖" },
-    { label: "Pricing", href: "/pricing", icon: "🏷️" }
+    { label: "WTA Coins", href: "/coins", icon: "🪙" }
   ];
 
   const [isOpen, setIsOpen] = useState(false);

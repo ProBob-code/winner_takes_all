@@ -12,7 +12,7 @@ export function MobileNav({ user }: { user: any }) {
     // night, not to browse.
     { label: "Run", href: "/run", icon: "⚡" },
     { label: "Tourney", href: "/tournaments", icon: "🎮" },
-    { label: "Venues", href: "/venues", icon: "🏠" },
+    { label: "Coins", href: "/coins", icon: "🪙" },
     { label: "Leader", href: "/leaderboard", icon: "🏆" },
     { label: "Me", href: "/profile", icon: "👤" }
   ] : [

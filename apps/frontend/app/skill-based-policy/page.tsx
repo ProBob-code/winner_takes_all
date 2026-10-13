@@ -24,6 +24,16 @@ export default function NoStakesPolicyPage() {
         "No prize is funded by pooling money from entrants. Where a tournament carries a prize, it is provided by the organising venue or a sponsor, and is awarded by them directly. The platform neither holds nor distributes prize money.",
     },
     {
+      title: "WTA Coins are not money",
+      content:
+        "Players earn WTA Coins for turning up and playing. A coin has no cash value and no exchange rate. It cannot be bought, sold, transferred to another player, withdrawn, redeemed for money or goods, or staked on the outcome of anything. Losing a frame never costs a coin — a frame can only ever earn them. A balance is a record of what somebody has played, in the same way a league table is, and it is deliberately held in a separate ledger that is never joined to any record of money.",
+    },
+    {
+      title: "Why the coin is built that way",
+      content:
+        "The Promotion and Regulation of Online Gaming Act, 2025 prohibits a game played for money or other stakes, and defines other stakes to include credits, coins and tokens equivalent or convertible to money. A coin that could be purchased, cashed out or wagered would therefore be a stake, whatever it was called. So this one is none of those things: there is no route in this service that turns money into coins or coins into money, and no way to risk a coin on a result.",
+    },
+    {
       title: "What the platform actually does",
       content:
         "Winner Takes All is tournament software. It draws brackets, keeps score for the games it supports, maintains league tables across a series, and displays all of this on a screen. It is sold to venues and organisers as business software, on a subscription.",
@@ -65,7 +75,8 @@ export default function NoStakesPolicyPage() {
             </span>
           </h1>
           <p className="muted" style={{ fontSize: "1.1rem" }}>
-            No entry fees. No wallet. No pooled prize money.
+            No entry fees. No wallet. No pooled prize money. WTA Coins have no cash
+            value.
           </p>
         </header>
 

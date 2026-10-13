@@ -229,14 +229,14 @@ export default function PlaybookPage() {
             <Link className="button" href="/run" style={{ textDecoration: "none" }}>
               Run a night now
             </Link>
-            <Link className="button-secondary" href="/pricing" style={{ textDecoration: "none" }}>
-              What it costs
+            <Link className="button-secondary" href="/coins" style={{ textDecoration: "none" }}>
+              What players earn
             </Link>
           </div>
           <p className="muted" style={{ marginTop: "var(--space-4)", fontSize: "var(--text-sm)" }}>
             Entry is free on Winner Takes All and always will be — no entry fees, no
-            wallet, no pooled prize money. The venue pays for the software; players pay
-            nothing.
+            wallet, no pooled prize money. Players earn WTA Coins for turning up and
+            playing, which have no cash value and cannot be bought or withdrawn.
           </p>
         </section>
       </div>

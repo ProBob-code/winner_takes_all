@@ -21,7 +21,8 @@
  *
  * Kept deliberately in step with apps/api/migrations/0006_engine_tables.sql,
  * 0007_series.sql, 0009_engine_houses.sql, 0010_wallet_description.sql,
- * 0011_payouts_and_bonus.sql and 0012_venues_offline_and_billing.sql; apps/api/migrations/rehearse.py and
+ * 0011_payouts_and_bonus.sql, 0012_venues_offline_and_billing.sql and
+ * 0013_wta_coins.sql; apps/api/migrations/rehearse.py and
  * rehearse_bootstrap.py check the SQL runs.
  */
 
@@ -227,6 +228,35 @@ const CREATE_STATEMENTS = [
     created_at TEXT NOT NULL
   )`,
   `CREATE UNIQUE INDEX IF NOT EXISTS idx_sub_events_provider ON subscription_events(provider_event_id)`,
+
+  // ── The WTA Coin ──
+  // Deliberately separate from wallets and wallet_transactions, and never
+  // joined to them. A coin cannot be bought, cashed out, transferred or
+  // wagered, and there is no exchange rate between the two ledgers; keeping
+  // them apart in the schema is what makes that structural rather than a
+  // convention. See lib/coins.ts.
+  `CREATE TABLE IF NOT EXISTS coin_balances (
+    user_id TEXT PRIMARY KEY,
+    balance INTEGER NOT NULL DEFAULT 0,
+    lifetime INTEGER NOT NULL DEFAULT 0,
+    updated_at TEXT NOT NULL
+  )`,
+  `CREATE TABLE IF NOT EXISTS coin_ledger (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    reason TEXT NOT NULL,
+    amount INTEGER NOT NULL,
+    balance_after INTEGER NOT NULL,
+    description TEXT,
+    reference_type TEXT,
+    reference_id TEXT,
+    created_at TEXT NOT NULL
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_coin_ledger_user ON coin_ledger(user_id, created_at DESC)`,
+  // Stops one frame paying twice when a client replays its outbox, a poll
+  // settles a match a second time, or a host restarts and re-finishes a frame.
+  `CREATE UNIQUE INDEX IF NOT EXISTS idx_coin_ledger_once ON coin_ledger(user_id, reason, reference_type, reference_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_coin_balances_rank ON coin_balances(balance DESC)`,
 ];
 
 /**

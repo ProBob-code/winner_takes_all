@@ -88,7 +88,7 @@ export function LayoutClient({ children }: { children: React.ReactNode }) {
               The platform provides tools for tournament hosting, bracket management, scheduling, rankings, and event operations.
             </p>
             <p style={{ fontWeight: 600, color: "var(--text-primary)" }}>
-              W.T.A does not take entry fees, hold player funds, or pool prize money. Tournaments are free to enter; any prize is provided and awarded by the organising venue. No stake of any kind is accepted through this platform.
+              W.T.A does not take entry fees, hold player funds, or pool prize money. Tournaments are free to enter; any prize is provided and awarded by the organising venue. No stake of any kind is accepted through this platform. WTA Coins are a record of play with no cash value: they cannot be bought, withdrawn, transferred or wagered.
             </p>
           </div>
           <div style={{ color: "var(--text-muted)", fontSize: "0.8rem", marginTop: "2rem" }}>
