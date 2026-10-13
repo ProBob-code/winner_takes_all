@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   COIN_AWARDS,
+  COIN_UNIT,
   COIN_RULES,
   COIN_TITLES,
   DAILY_COIN_CAP,
@@ -159,6 +160,53 @@ describe("anti-farming", () => {
   it("needs more than one real account before anything pays", () => {
     // A bracket of one real person and seven typed-in names is practice.
     expect(MIN_REAL_PLAYERS_FOR_COINS).toBeGreaterThanOrEqual(2);
+  });
+});
+
+describe("the denomination", () => {
+  it("quotes every award in whole thousands", () => {
+    // The schedule is written as a multiple of COIN_UNIT so a redenomination
+    // cannot leave one award behind at the old scale.
+    for (const [reason, amount] of Object.entries(COIN_AWARDS)) {
+      expect(amount % COIN_UNIT, `${reason} is not a whole unit`).toBe(0);
+    }
+  });
+
+  it("pays the figures the schedule promises", () => {
+    expect(COIN_AWARDS.FRAME_PLAYED).toBe(5_000);
+    expect(COIN_AWARDS.FRAME_WON).toBe(15_000);
+    expect(COIN_AWARDS.NIGHT_PLAYED).toBe(10_000);
+    expect(COIN_AWARDS.NIGHT_WON).toBe(100_000);
+    expect(COIN_AWARDS.CLEARANCE).toBe(50_000);
+    expect(COIN_AWARDS.STREAK).toBe(75_000);
+    expect(COIN_AWARDS.SEASON_WON).toBe(500_000);
+  });
+
+  it("scales the cap and the titles with the awards", () => {
+    expect(DAILY_COIN_CAP).toBe(1_000_000);
+    expect(COIN_TITLES[COIN_TITLES.length - 1].at).toBe(20_000_000);
+    for (const step of COIN_TITLES) {
+      expect(step.at % COIN_UNIT).toBe(0);
+    }
+  });
+
+  it("leaves every ratio exactly as it was before the rescale", () => {
+    // A redenomination that changed a ratio would be a balance change wearing
+    // a redenomination's clothes. These are the ratios from the original
+    // schedule, and they must survive any future change to COIN_UNIT.
+    expect(COIN_AWARDS.FRAME_WON / COIN_AWARDS.FRAME_PLAYED).toBe(3);
+    expect(COIN_AWARDS.NIGHT_WON / COIN_AWARDS.FRAME_PLAYED).toBe(20);
+    expect(COIN_AWARDS.SEASON_WON / COIN_AWARDS.NIGHT_WON).toBe(5);
+    expect(DAILY_COIN_CAP / COIN_AWARDS.NIGHT_WON).toBe(10);
+  });
+
+  it("keeps a whole night comfortably inside the cap at the new scale", () => {
+    const heavyNight =
+      COIN_AWARDS.NIGHT_PLAYED +
+      16 * (COIN_AWARDS.FRAME_PLAYED + COIN_AWARDS.FRAME_WON) +
+      COIN_AWARDS.NIGHT_WON;
+    expect(heavyNight).toBe(430_000);
+    expect(heavyNight).toBeLessThan(DAILY_COIN_CAP);
   });
 });
 

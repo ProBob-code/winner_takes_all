@@ -24,6 +24,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { backendFetch } from "@/lib/backend";
 import { CoinMark } from "@/components/coin-mark";
+import { formatCoins, formatCoinsExact } from "@/lib/format";
 
 interface Me {
   balance: number;
@@ -68,7 +69,14 @@ const EARN_LABELS: Array<{ key: string; label: string; note: string }> = [
   { key: "SEASON_WON", label: "Win the season", note: "Top of the table when it ends" },
 ];
 
-const coins = (n: number) => n.toLocaleString("en-IN");
+/**
+ * Headline figures shorten — a balance is five or six digits from the first
+ * league night, and "430K" is read at a glance where "4,30,000" is not. The
+ * ledger uses the exact form instead: a figure a player cannot check is a
+ * figure they have to take on trust, which is the opposite of the point.
+ */
+const coins = formatCoins;
+const exact = formatCoinsExact;
 
 export default function CoinsPage() {
   const router = useRouter();
@@ -197,7 +205,7 @@ export default function CoinsPage() {
                         {coins(me.balance)}
                       </div>
                       <div className="muted" style={{ fontSize: "var(--text-sm)" }}>
-                        WTA Coins
+                        {exact(me.balance)} WTA Coins
                       </div>
                     </div>
                   </div>
@@ -315,10 +323,10 @@ export default function CoinsPage() {
                         })}
                       </td>
                       <td style={{ textAlign: "right", color: "var(--gold)", fontWeight: 700 }}>
-                        +{coins(e.amount)}
+                        +{exact(e.amount)}
                       </td>
                       <td style={{ textAlign: "right" }} className="muted">
-                        {coins(e.balanceAfter)}
+                        {exact(e.balanceAfter)}
                       </td>
                     </tr>
                   ))}

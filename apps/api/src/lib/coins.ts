@@ -37,6 +37,26 @@
  * someone turn coins into money, goods, or a larger number of coins by
  * risking them, it crosses the line. See COIN_RULES below.
  *
+ * ── A PLANNED FEATURE THAT WOULD CROSS IT ──
+ *
+ * There is an intention to let players redeem coins for gifts or discounts
+ * once the product is funded. Read against the test above, that is the case
+ * the test exists to catch: a coin that takes ₹200 off a bill has an implied
+ * exchange rate, and a token with an exchange rate is at least arguably
+ * "convertible to money" within the Act's definition of other stakes — which
+ * would make every tournament that awarded it an online money game.
+ *
+ * This is not a reason not to build it. It is a reason to get a written
+ * opinion from an Indian gaming lawyer on that one narrow question *before*
+ * building it rather than after, because the answer decides whether the
+ * feature is a loyalty scheme or an offence, and the offence is non-bailable.
+ *
+ * The schema is already shaped to accommodate it either way: `balance` and
+ * `lifetime` are stored separately, so a redemption can draw a balance down
+ * while titles and history, which are computed from lifetime earnings,
+ * survive untouched. Nothing here needs rewriting to add a sink — only
+ * deciding.
+ *
  * ════════════════════════════════════════════════════════════════════════════
  * WHAT THE ECONOMY IS FOR
  * ════════════════════════════════════════════════════════════════════════════
@@ -60,29 +80,46 @@ export type CoinReason =
   | "SEASON_WON";
 
 /**
+ * The unit the schedule is denominated in.
+ *
+ * Purely presentational. Everything below is quoted in thousands because a
+ * five-figure balance reads as a currency worth accumulating where a
+ * two-figure one reads as a tally — the same instinct every mobile game
+ * follows. It changes no ratio and no fairness property: multiplying every
+ * award, the cap and every title threshold by the same constant leaves the
+ * economy mathematically identical to the one before it.
+ *
+ * If this ever changes again, change it *here* and nowhere else. Every figure
+ * in this file is expressed as a multiple of it, so a redenomination cannot
+ * leave one award or one title behind at the old scale.
+ */
+export const COIN_UNIT = 1_000;
+
+/**
  * The award schedule.
  *
  * Weighted towards attendance over victory, for the reason above. The ratio
  * that matters: a player who turns up and loses all four of their frames takes
- * 10 + 4×5 = 30 coins, while a player who turns up and wins all four takes
- * 10 + 4×(5+15) = 90. Three times as much for winning everything, not thirty —
- * enough to be worth chasing, not enough to make a losing night pointless.
+ * 10k + 4×5k = 30k coins, while a player who turns up and wins all four takes
+ * 10k + 4×(5k+15k) = 90k. Three times as much for winning everything, not
+ * thirty — enough to be worth chasing, not enough to make a losing night
+ * pointless.
  */
 export const COIN_AWARDS: Record<CoinReason, number> = {
   /** Playing a frame at all, win or lose. Never negative. */
-  FRAME_PLAYED: 5,
-  /** On top of FRAME_PLAYED, so a win is worth 20 in total. */
-  FRAME_WON: 15,
+  FRAME_PLAYED: 5 * COIN_UNIT,
+  /** On top of FRAME_PLAYED, so a win is worth 20k in total. */
+  FRAME_WON: 15 * COIN_UNIT,
   /** Turning up: paid once per night, on a player's first frame. */
-  NIGHT_PLAYED: 10,
+  NIGHT_PLAYED: 10 * COIN_UNIT,
   /** Taking the night. */
-  NIGHT_WON: 100,
+  NIGHT_WON: 100 * COIN_UNIT,
   /** Clearing all seven and the black in one frame, 8-ball only. */
-  CLEARANCE: 50,
+  CLEARANCE: 50 * COIN_UNIT,
   /** Three league nights in a row at the same venue. */
-  STREAK: 75,
+  STREAK: 75 * COIN_UNIT,
   /** Topping a season's table. */
-  SEASON_WON: 500,
+  SEASON_WON: 500 * COIN_UNIT,
 };
 
 /**
@@ -105,9 +142,9 @@ export const COIN_RULES = {
  * freely, so without a cap an account could run empty brackets against itself
  * all night and mint an unbounded balance, which would make every leaderboard
  * meaningless. Set well above a real league night: a heavy night of sixteen
- * frames plus the win is around 430.
+ * frames plus the win is around 430k.
  */
-export const DAILY_COIN_CAP = 1000;
+export const DAILY_COIN_CAP = 1_000 * COIN_UNIT;
 
 /**
  * The fewest distinct signed-in accounts a tournament needs before it pays
@@ -244,11 +281,11 @@ export function totalOf(awards: CoinAward[]): number {
  */
 export const COIN_TITLES: Array<{ at: number; title: string }> = [
   { at: 0, title: "New in" },
-  { at: 250, title: "Regular" },
-  { at: 1_000, title: "Contender" },
-  { at: 3_000, title: "Shark" },
-  { at: 8_000, title: "Hustler" },
-  { at: 20_000, title: "Legend" },
+  { at: 250 * COIN_UNIT, title: "Regular" },
+  { at: 1_000 * COIN_UNIT, title: "Contender" },
+  { at: 3_000 * COIN_UNIT, title: "Shark" },
+  { at: 8_000 * COIN_UNIT, title: "Hustler" },
+  { at: 20_000 * COIN_UNIT, title: "Legend" },
 ];
 
 export function titleFor(balance: number): string {
