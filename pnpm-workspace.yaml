@@ -2,12 +2,31 @@ packages:
   - "apps/*"
   - "packages/*"
 
-# Explicit allowlist of dependencies permitted to run install scripts.
-# (Previously this file also had a placeholder `allowBuilds` block whose
-# values were literally the string "set this to true or false" — never
-# filled in — which made every non-interactive `pnpm install`/`pnpm -r`
-# invocation stop and prompt for approval. This list is the actual
-# mechanism pnpm uses; the broken block has been removed.)
+# Dependencies permitted to run install scripts.
+#
+# TWO KEYS, ON PURPOSE. pnpm 9 — which CI uses — reads `onlyBuiltDependencies`.
+# pnpm 11 — which this machine has — reads `allowBuilds` and ignores the list,
+# so with only the list present it refuses every build script with
+# ERR_PNPM_IGNORED_BUILDS and then writes an `allowBuilds` stub whose values are
+# the literal string "set this to true or false". That stub makes every
+# non-interactive `pnpm install` / `pnpm -r` stop and prompt, which is what
+# broke `pnpm build` (and so the OpenNext build) on this machine.
+#
+# Filling the stub in with real booleans is the fix. Keeping both keys means one
+# file works for pnpm 9 and pnpm 11 without either needing `pnpm approve-builds`
+# run by hand. If pnpm adds a package to the stub again, give it a real boolean
+# here rather than leaving the placeholder.
+#
+# All five are build tools whose postinstall scripts compile or fetch a native
+# binary, and all five are needed: esbuild and workerd for wrangler, sharp for
+# Next's image handling, deasync and vercel transitively.
+allowBuilds:
+  deasync: true
+  esbuild: true
+  sharp: true
+  vercel: true
+  workerd: true
+
 onlyBuiltDependencies:
   - esbuild
   - sharp
