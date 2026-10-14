@@ -53,10 +53,10 @@ export function Topbar({ user: initialUser }: { user?: any }) {
             <div style={{ 
               display: "flex", 
               alignItems: "center", 
-              background: "rgba(255, 183, 0, 0.1)", 
-              padding: "0.25rem 0.5rem", 
-              borderRadius: "8px", 
-              border: "1px solid rgba(255, 183, 0, 0.2)",
+              background: "var(--gold-subtle)",
+              padding: "0.25rem 0.5rem",
+              borderRadius: "8px",
+              border: "1px solid var(--glass-border-color-hover)",
               gap: "0.3rem",
               flexShrink: 0
             }}>
@@ -64,7 +64,7 @@ export function Topbar({ user: initialUser }: { user?: any }) {
                   closed, so once the wind-down refunds land this disappears by
                   itself rather than advertising a wallet nobody can top up. */}
               <CoinMark size={14} />
-              <span style={{ fontWeight: 800, color: "var(--gold-light)", fontSize: "0.8rem" }}>{Number(user.walletBalance || 0).toFixed(0)}</span>
+              <span style={{ fontWeight: 800, color: "var(--gold)", fontSize: "0.8rem" }}>{Number(user.walletBalance || 0).toFixed(0)}</span>
             </div>
             )}
             <Link href="/dashboard" className="topbar-link desktop-only" style={{ fontWeight: 600, color: "var(--text-primary)", fontSize: "0.85rem" }}>
@@ -73,7 +73,15 @@ export function Topbar({ user: initialUser }: { user?: any }) {
             <button 
               onClick={() => setShowLogoutConfirm(true)}
               className="button button-sm" 
-              style={{ background: "rgba(255, 77, 77, 0.1)", color: "#ff8080", border: "1px solid rgba(255, 77, 77, 0.2)", padding: "0.4rem 0.8rem", height: "auto" }}
+              // Tokens rather than a fixed pink: on a pearl ground the old
+              // colour was close to invisible.
+              style={{
+                background: "var(--red-subtle)",
+                color: "var(--red)",
+                border: "1px solid var(--red)",
+                padding: "0.4rem 0.8rem",
+                height: "auto",
+              }}
               disabled={isLoggingOut}
             >
               {isLoggingOut ? "..." : "Logout"}

@@ -4690,3 +4690,61 @@ select.form-control option {
 .light-mode .topbar-link:hover {
   color: var(--accent);
 }
+
+/* ── Everything in the top bar, legible in both modes ──
+   The bar had accumulated fixed colours chosen when there was only a dark
+   theme: a pink logout, an amber balance chip, link colours that assumed a
+   dark ground. These put the whole row on the tokens so it follows whichever
+   theme is on. */
+
+.topbar-link {
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.topbar-link:hover,
+.topbar-link.active {
+  color: var(--accent);
+}
+
+/* The signed-in name sits beside the links and should read as primary. */
+.topbar .topbar-link.desktop-only {
+  color: var(--text-primary);
+}
+
+/* The avatar initial sits on the accent, so it needs a colour that works on
+   gold in both themes rather than plain white. */
+.user-initial {
+  background: var(--gradient-gold);
+  color: #16150f;
+  font-weight: 800;
+}
+
+/* The bell and the theme toggle are icon-only; without an explicit colour
+   they inherit whatever the bar last set. */
+.notification-bell {
+  color: var(--text-secondary);
+  border: 1px solid var(--glass-border-color);
+  background: var(--glass-bg);
+}
+
+.notification-bell:hover {
+  color: var(--accent);
+  border-color: var(--glass-border-color-hover);
+}
+
+.notification-bell svg {
+  stroke: currentColor;
+  fill: none;
+}
+
+/* The search field, where it appears. */
+.topbar-search {
+  background: var(--bg-inset);
+  border: 1px solid var(--glass-border-color);
+  color: var(--text-primary);
+}
+
+.topbar-search::placeholder {
+  color: var(--text-muted);
+}
