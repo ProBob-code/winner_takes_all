@@ -66,8 +66,6 @@ interface VenueDetail {
   subscription: Subscription | null;
 }
 
-const money = (amount: string) => `₹${Number(amount || 0).toLocaleString("en-IN")}`;
-
 const whenever = (iso: string | null) => {
   if (!iso) return "never";
   const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
@@ -275,41 +273,6 @@ export default function VenueDetailPage() {
         {error && <p style={{ color: "#f87171", marginBottom: "var(--space-4)" }}>{error}</p>}
 
         <div className="auto-grid">
-          <div className="panel v-stack">
-            <h2 style={{ fontSize: "var(--text-lg)", fontWeight: 700 }}>Subscription</h2>
-            {subscription ? (
-              <>
-                <div className="h-stack tight">
-                  <span className={`chip ${subscription.entitled ? "good" : "bad"}`}>
-                    {subscription.status}
-                  </span>
-                  {subscription.viaChain && <span className="chip">via the chain</span>}
-                </div>
-                <div>
-                  <span style={{ fontSize: "var(--text-2xl)", fontWeight: 900 }}>
-                    {money(subscription.amount.amount)}
-                  </span>
-                  <span className="muted"> / period</span>
-                </div>
-                {subscription.trialEndsAt && (
-                  <p className="muted" style={{ fontSize: "var(--text-sm)" }}>
-                    Free until {new Date(subscription.trialEndsAt).toLocaleDateString("en-IN")}
-                  </p>
-                )}
-                {subscription.periodEnd && (
-                  <p className="muted" style={{ fontSize: "var(--text-sm)" }}>
-                    Next due {new Date(subscription.periodEnd).toLocaleDateString("en-IN")}
-                  </p>
-                )}
-              </>
-            ) : (
-              <p className="muted" style={{ fontSize: "var(--text-sm)" }}>
-                This venue is not on a subscription, and nothing here is locked. Every
-                feature works today.
-              </p>
-            )}
-          </div>
-
           <div className="panel v-stack">
             <h2 style={{ fontSize: "var(--text-lg)", fontWeight: 700 }}>The group chat</h2>
             <p className="muted" style={{ fontSize: "var(--text-sm)" }}>

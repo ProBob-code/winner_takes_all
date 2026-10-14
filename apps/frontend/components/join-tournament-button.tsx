@@ -67,7 +67,7 @@ export function JoinTournamentButton({
       left: 0,
       right: 0,
       bottom: 0,
-      background: "rgba(0, 0, 0, 0.7)",
+      background: "var(--bg-inset)",
       backdropFilter: "blur(8px)",
       display: "flex",
       alignItems: "center",
@@ -100,7 +100,7 @@ export function JoinTournamentButton({
             width: "100%",
             padding: "1rem",
             borderRadius: "12px",
-            background: "rgba(0,0,0,0.3)",
+            background: "var(--bg-inset)",
             border: "1px solid var(--red-subtle)",
             color: "white",
             marginBottom: "1.5rem",
@@ -185,7 +185,7 @@ export function JoinTournamentButton({
               marginLeft: "auto", 
               background: "transparent", 
               border: "none", 
-              color: "rgba(255,255,255,0.3)", 
+              color: "var(--text-secondary)", 
               cursor: "pointer",
               fontSize: "1.2rem"
             }}

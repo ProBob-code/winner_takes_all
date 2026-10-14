@@ -59,8 +59,8 @@
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border-color);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -104,8 +104,8 @@
   flex: 1;
   padding: 2rem;
   border-radius: 24px;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border-color);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -122,7 +122,7 @@
 .team-arena-card.blue { border-left: 4px solid #3b82f6; }
 
 .team-arena-card.active {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--glass-bg);
   border: 2px solid #fff;
   transform: scale(1.05);
   box-shadow: 0 0 50px rgba(255, 255, 255, 0.1), inset 0 0 20px rgba(255,255,255,0.05);
@@ -190,7 +190,7 @@
 
 .q-btn {
   background: var(--bg-inset);
-  border: 1px solid rgba(255,255,255,0.1);
+  border: 1px solid var(--glass-border-color);
   color: white;
   width: 32px;
   height: 32px;
@@ -441,7 +441,7 @@ select.premium-input-v2 option {
   cursor: pointer;
 }
 
-.step-btn:hover { background: rgba(255,255,255,0.1); color: var(--gold); }
+.step-btn:hover { background: var(--glass-bg); color: var(--gold); }
 
 .roster-panel {
   background: var(--bg-surface);
@@ -491,7 +491,7 @@ select.premium-input-v2 option {
   display: flex;
   align-items: center;
   gap: 1rem;
-  background: rgba(255,255,255,0.03);
+  background: var(--glass-bg);
   padding: 0.75rem 1.25rem;
   border-radius: 12px;
   border: 1px solid var(--border-color);
@@ -708,10 +708,10 @@ select.premium-input-v2 option {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  background: rgba(0,0,0,0.4);
+  background: var(--bg-inset);
   padding: 0.6rem 1.5rem;
   border-radius: 100px;
-  border: 1px solid rgba(255,255,255,0.1);
+  border: 1px solid var(--glass-border-color);
   font-size: 0.8rem;
   font-weight: 900;
   letter-spacing: 1px;
@@ -782,7 +782,7 @@ select.premium-input-v2 option {
   justify-content: center;
   font-weight: 900;
   font-size: 1.2rem;
-  background: rgba(255,255,255,0.05);
+  background: var(--glass-bg);
 }
 
 .red .team-initials { color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); background: rgba(239, 68, 68, 0.1); }
@@ -828,7 +828,7 @@ select.premium-input-v2 option {
 }
 
 .ball-btn { background: var(--bg-inset); color: var(--text-primary); border: 1px solid var(--border-color); }
-.black-btn { background: #000; color: white; border: 1px solid rgba(255,255,255,0.1); }
+.black-btn { background: #000; color: white; border: 1px solid var(--glass-border-color); }
 
 .red .ball-btn { background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); }
 .blue .ball-btn { background: rgba(59, 130, 246, 0.1); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.3); }
@@ -893,7 +893,7 @@ select.premium-input-v2 option {
   left: 0 !important;
   right: 0 !important;
   bottom: 0 !important;
-  background: rgba(0, 0, 0, 0.7);
+  background: var(--bg-inset);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   z-index: 100000;
@@ -1180,8 +1180,8 @@ select.premium-input-v2 option {
 }
 
 .standing-card-v2 {
-  background: rgba(255,255,255,0.02);
-  border: 1px solid rgba(255,255,255,0.05);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border-color);
   border-radius: 24px;
   padding: 1.5rem;
   display: flex;
@@ -1192,7 +1192,7 @@ select.premium-input-v2 option {
 
 .standing-card-v2:hover {
   transform: translateY(-5px);
-  background: rgba(255,255,255,0.04);
+  background: var(--glass-bg);
 }
 
 .standing-card-v2.gold { border-color: var(--gold); background: linear-gradient(135deg, rgba(245, 158, 11, 0.05), transparent); }
@@ -1247,12 +1247,12 @@ select.premium-input-v2 option {
 }
 
 .mini-team-chip {
-  background: rgba(255,255,255,0.05);
+  background: var(--glass-bg);
   padding: 6px 12px;
   border-radius: 100px;
   font-size: 0.7rem;
   font-weight: 700;
-  border: 1px solid rgba(255,255,255,0.05);
+  border: 1px solid var(--glass-border-color);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -1276,7 +1276,7 @@ select.premium-input-v2 option {
   margin-top: 3rem;
   background: rgba(13, 17, 23, 0.6);
   backdrop-filter: blur(20px);
-  border: 1px solid rgba(255,255,255,0.05);
+  border: 1px solid var(--glass-border-color);
   border-radius: 24px;
   padding: 1.5rem 2rem;
   overflow: hidden;
@@ -1297,8 +1297,8 @@ select.premium-input-v2 option {
 }
 
 .shuffle-btn {
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.1);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border-color);
   color: var(--gold);
   padding: 4px 12px;
   border-radius: 8px;
@@ -1320,10 +1320,10 @@ select.premium-input-v2 option {
   display: flex;
   align-items: center;
   gap: 10px;
-  background: rgba(255,255,255,0.03);
+  background: var(--glass-bg);
   padding: 8px 16px;
   border-radius: 12px;
-  border: 1px solid rgba(255,255,255,0.05);
+  border: 1px solid var(--glass-border-color);
   font-size: 0.75rem;
   font-weight: 700;
 }
@@ -1352,10 +1352,10 @@ select.premium-input-v2 option {
   display: flex;
   align-items: center;
   gap: 1rem;
-  background: rgba(255,255,255,0.02);
+  background: var(--glass-bg);
   padding: 0.75rem 1.5rem;
   border-radius: 12px;
-  border: 1px solid rgba(255,255,255,0.03);
+  border: 1px solid var(--glass-border-color);
 }
 
 .mid-queue-item .q-pair { font-size: 0.8rem; font-weight: 700; }
@@ -1490,14 +1490,14 @@ select.premium-input-v2 option {
 
 /* Manual Pairing Suite */
 .manual-pairing-card {
-  background: rgba(255,255,255,0.02);
-  border: 1px dashed rgba(255,255,255,0.1);
+  background: var(--glass-bg);
+  border: 1px dashed var(--glass-border-color);
   border-radius: 24px;
   padding: 2rem;
   transition: 0.3s;
 }
 
-.manual-pairing-card:hover { background: rgba(255,255,255,0.04); border-style: solid; }
+.manual-pairing-card:hover { background: var(--glass-bg); border-style: solid; }
 
 .p-header { margin-bottom: 1.5rem; }
 .p-muted { font-size: 0.7rem; opacity: 0.3; margin-top: 4px; font-weight: 800; letter-spacing: 0.5px; }
@@ -1517,7 +1517,7 @@ select.premium-input-v2 option {
 
 .p-select {
   flex: 1;
-  background: rgba(0,0,0,0.4);
+  background: var(--bg-inset);
   cursor: pointer;
 }
 
@@ -1530,10 +1530,10 @@ select.premium-input-v2 option {
 
 .house-selector {
   display: flex;
-  background: rgba(0,0,0,0.3);
+  background: var(--bg-inset);
   padding: 4px;
   border-radius: 12px;
-  border: 1px solid rgba(255,255,255,0.05);
+  border: 1px solid var(--glass-border-color);
 }
 
 .house-opt {
@@ -1543,7 +1543,7 @@ select.premium-input-v2 option {
   font-size: 1.4rem;
   border: none;
   background: transparent;
-  color: rgba(255,255,255,0.2);
+  color: var(--text-secondary);
   transition: 0.3s;
   display: flex;
   align-items: center;
@@ -1573,10 +1573,10 @@ select.premium-input-v2 option {
   display: flex;
   align-items: center;
   gap: 12px;
-  background: rgba(0,0,0,0.3);
+  background: var(--bg-inset);
   padding: 8px 16px;
   border-radius: 12px;
-  border: 1px solid rgba(255,255,255,0.05);
+  border: 1px solid var(--glass-border-color);
   width: fit-content;
 }
 
@@ -1590,8 +1590,8 @@ select.premium-input-v2 option {
 }
 
 .timer-scroller-v2 .s-btn {
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.1);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border-color);
   color: white;
   width: 24px;
   height: 24px;
@@ -1607,8 +1607,8 @@ select.premium-input-v2 option {
 .timer-scroller-v2 .s-btn:hover { background: var(--gold); color: black; }
 
 .t-adj {
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.1);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border-color);
   color: white;
   width: 28px;
   height: 28px;
@@ -1664,8 +1664,8 @@ select.premium-input-v2 option {
   position: fixed;
   top: 1rem;
   left: 1rem;
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.1);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border-color);
   padding: 6px 12px;
   border-radius: 8px;
   font-size: 0.6rem;
@@ -1681,10 +1681,10 @@ select.premium-input-v2 option {
   display: flex;
   align-items: center;
   gap: 12px;
-  background: rgba(255,255,255,0.03);
+  background: var(--glass-bg);
   padding: 4px 12px;
   border-radius: 100px;
-  border: 1px solid rgba(255,255,255,0.05);
+  border: 1px solid var(--glass-border-color);
 }
 
 .p-btn {
@@ -1727,8 +1727,8 @@ select.premium-input-v2 option {
 
 .victory-podium {
   text-align: center;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border-color);
   padding: 4rem;
   border-radius: 40px;
   box-shadow: 0 50px 100px rgba(0,0,0,0.8);
@@ -1776,7 +1776,7 @@ select.premium-input-v2 option {
   gap: 4rem;
   margin-bottom: 3rem;
   padding: 2rem;
-  background: rgba(255,255,255,0.03);
+  background: var(--glass-bg);
   border-radius: 24px;
 }
 
@@ -1976,10 +1976,10 @@ select.premium-input-v2 option {
 .share-link-wrapper {
   display: flex;
   gap: 0.5rem;
-  background: rgba(0,0,0,0.3);
+  background: var(--bg-inset);
   padding: 0.5rem;
   border-radius: 16px;
-  border: 1px solid rgba(255,255,255,0.05);
+  border: 1px solid var(--glass-border-color);
 }
 
 .share-link-wrapper input {
@@ -2102,7 +2102,7 @@ select.premium-input-v2 option {
     margin-top: 1rem;
     border-left: none;
     padding-left: 0;
-    border-top: 1px solid rgba(255,255,255,0.05);
+    border-top: 1px solid var(--glass-border-color);
     padding-top: 1.5rem;
   }
 
@@ -2123,7 +2123,7 @@ select.premium-input-v2 option {
 .house-selector {
   display: flex;
   gap: 4px;
-  background: rgba(0,0,0,0.2);
+  background: var(--bg-inset);
   padding: 4px;
   border-radius: 8px;
   margin-left: 1rem;
@@ -2145,7 +2145,7 @@ select.premium-input-v2 option {
   font-size: 0.8rem;
 }
 
-.house-opt.active { opacity: 1; background: rgba(255,255,255,0.1); color: var(--gold); }
+.house-opt.active { opacity: 1; background: var(--glass-bg); color: var(--gold); }
 
 /* Tournament Schedule View */
 .tournament-schedule-view {
@@ -2170,14 +2170,14 @@ select.premium-input-v2 option {
   display: flex;
   align-items: center;
   gap: 1.5rem;
-  background: rgba(255,255,255,0.03);
+  background: var(--glass-bg);
   padding: 1.25rem 2rem;
   border-radius: 20px;
-  border: 1px solid rgba(255,255,255,0.05);
+  border: 1px solid var(--glass-border-color);
   transition: 0.3s;
 }
 
-.schedule-item-card:hover { transform: translateX(10px); background: rgba(255,255,255,0.05); }
+.schedule-item-card:hover { transform: translateX(10px); background: var(--glass-bg); }
 
 .s-handle {
   font-size: 1.2rem;
@@ -2212,8 +2212,8 @@ select.premium-input-v2 option {
   width: 32px;
   height: 32px;
   border-radius: 8px;
-  border: 1px solid rgba(255,255,255,0.1);
-  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--glass-border-color);
+  background: var(--glass-bg);
   color: white;
   cursor: pointer;
   display: flex;
@@ -2230,10 +2230,10 @@ select.premium-input-v2 option {
 }
 
 .team-status-chip {
-  background: rgba(255,255,255,0.02);
+  background: var(--glass-bg);
   padding: 1rem;
   border-radius: 16px;
-  border: 1px solid rgba(255,255,255,0.05);
+  border: 1px solid var(--glass-border-color);
   text-align: center;
 }
 
@@ -2272,7 +2272,7 @@ select.premium-input-v2 option {
 }
 
 .edit-team-input {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--glass-bg);
   border: 1px solid var(--gold);
   border-radius: 4px;
   color: white;
@@ -2283,7 +2283,7 @@ select.premium-input-v2 option {
 }
 
 .edit-team-input-inline {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--glass-bg);
   border: 1px solid var(--gold);
   border-radius: 4px;
   color: white;
@@ -2343,8 +2343,8 @@ select.premium-input-v2 option {
   width: 44px;
   height: 44px;
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border-color);
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   display: flex;
@@ -2354,7 +2354,7 @@ select.premium-input-v2 option {
 }
 
 .lock-trigger.locked { background: rgba(245, 158, 11, 0.1); border-color: var(--gold); box-shadow: 0 0 15px rgba(245, 158, 11, 0.2); }
-.lock-trigger:hover { transform: translateY(-2px); border-color: rgba(255,255,255,0.3); }
+.lock-trigger:hover { transform: translateY(-2px); border-color: var(--text-secondary); }
 
 .team-status-chip {
   position: relative;
@@ -2374,12 +2374,12 @@ select.premium-input-v2 option {
   justify-content: center;
   margin-top: 10px;
   padding-top: 10px;
-  border-top: 1px solid rgba(255,255,255,0.05);
+  border-top: 1px solid var(--glass-border-color);
 }
 
 .t-edit, .t-remove {
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.05);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border-color);
   border-radius: 8px;
   padding: 4px 10px;
   font-size: 0.8rem;
@@ -2389,7 +2389,7 @@ select.premium-input-v2 option {
 
 .t-edit { color: var(--gold); }
 .t-remove { color: #ef4444; }
-.t-edit:hover, .t-remove:hover { background: rgba(255,255,255,0.1); transform: translateY(-1px); }
+.t-edit:hover, .t-remove:hover { background: var(--glass-bg); transform: translateY(-1px); }
 
 .center-text { text-align: center; }
 
@@ -2409,7 +2409,7 @@ select.premium-input-v2 option {
 .victory-overlay {
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0, 0, 0, 0.85);
+  background: var(--bg-inset);
   backdrop-filter: blur(10px);
   z-index: 3000;
   display: flex;
@@ -2419,7 +2419,7 @@ select.premium-input-v2 option {
 }
 
 [data-theme='light'] .victory-overlay {
-  background: rgba(255, 255, 255, 0.85);
+  background: var(--glass-bg);
 }
 
 .victory-podium {
@@ -2478,7 +2478,7 @@ select.premium-input-v2 option {
   border-radius: 24px;
   position: relative;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--glass-border-color);
   transition: transform 0.3s ease;
 }
 
@@ -2564,10 +2564,10 @@ select.premium-input-v2 option {
 
 /* --- Team Setup --- */
 .team-members-setup {
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--glass-bg);
   padding: 1rem;
   border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--glass-border-color);
 }
 
 .members-grid {
@@ -2583,8 +2583,8 @@ select.premium-input-v2 option {
 }
 
 .premium-input-v2-sm {
-  background: rgba(0, 0, 0, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--bg-inset);
+  border: 1px solid var(--glass-border-color);
   padding: 0.6rem 0.8rem;
   border-radius: 8px;
   color: white;
@@ -2608,7 +2608,7 @@ select.premium-input-v2 option {
 
 .add-member-trigger {
   background: transparent;
-  border: 1px dashed rgba(255, 255, 255, 0.2);
+  border: 1px dashed var(--glass-border-color);
   color: var(--gold);
   padding: 0.5rem;
   border-radius: 8px;
@@ -2655,8 +2655,8 @@ select.premium-input-v2 option {
 }
 
 .player-chip {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border-color);
   padding: 4px 10px;
   border-radius: 100px;
   font-size: 0.65rem;
@@ -2674,8 +2674,8 @@ select.premium-input-v2 option {
 }
 
 .player-chip:hover:not(.active) {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.2);
+  background: var(--glass-bg);
+  border-color: var(--text-secondary);
 }
 
 /* --- Tournament Completion Summary --- */
@@ -2693,8 +2693,8 @@ select.premium-input-v2 option {
 }
 
 .summary-item {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border-color);
   padding: 1.5rem;
   border-radius: 16px;
   text-align: left;
@@ -2735,8 +2735,8 @@ select.premium-input-v2 option {
 }
 
 .standing-card-v2 {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border-color);
   border-radius: 24px;
   padding: 1.5rem;
   display: grid;
@@ -2748,8 +2748,8 @@ select.premium-input-v2 option {
 }
 
 .standing-card-v2:hover {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.15);
+  background: var(--glass-bg);
+  border-color: var(--text-secondary);
 }
 
 .standing-card-v2.gold { border-left: 4px solid var(--gold); background: linear-gradient(90deg, rgba(245, 158, 11, 0.05) 0%, transparent 100%); }
@@ -2815,7 +2815,7 @@ select.premium-input-v2 option {
   grid-column: 1 / -1;
   margin-top: 1rem;
   padding-top: 1.5rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  border-top: 1px solid var(--glass-border-color);
 }
 
 .breakdown-header {
@@ -2834,8 +2834,8 @@ select.premium-input-v2 option {
 }
 
 .p-breakdown-row {
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border-color);
   padding: 1rem;
   border-radius: 16px;
   display: flex;
@@ -2944,7 +2944,7 @@ select.premium-input-v2 option {
   max-width: 850px;
   margin: 0 auto 4rem;
   background: linear-gradient(180deg, #0f172a 0%, #020617 100%);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--glass-border-color);
   border-radius: 24px;
   padding: 1.5rem 2.5rem;
   box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8),
@@ -3018,13 +3018,13 @@ select.premium-input-v2 option {
   line-height: 1;
 }
 
-.divider { font-size: 2.5rem; color: rgba(255, 255, 255, 0.1); font-weight: 200; }
+.divider { font-size: 2.5rem; color: var(--text-secondary); font-weight: 200; }
 
 .sb-meta {
   display: flex;
   align-items: center;
   gap: 12px;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--glass-bg);
   padding: 4px 12px;
   border-radius: 100px;
 }
@@ -3051,7 +3051,7 @@ select.premium-input-v2 option {
   background: #064e3b;
   background-image: linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
   background-size: 20% 100%;
-  border: 4px solid rgba(255, 255, 255, 0.1);
+  border: 4px solid var(--glass-border-color);
   border-radius: 20px;
   position: relative;
   overflow: hidden;
@@ -3115,7 +3115,7 @@ select.premium-input-v2 option {
   padding: 2.5rem;
   position: relative;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--glass-border-color);
   box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
   transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -3147,10 +3147,10 @@ select.premium-input-v2 option {
 .score-sub { font-size: 0.75rem; font-weight: 900; color: #f59e0b; letter-spacing: 5px; margin-top: 0.5rem; }
 
 .stats-dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2.5rem; }
-.dashboard-item { background: rgba(255,255,255,0.03); padding: 1.25rem; border-radius: 20px; border: 1px solid rgba(255,255,255,0.05); }
+.dashboard-item { background: var(--glass-bg); padding: 1.25rem; border-radius: 20px; border: 1px solid var(--glass-border-color); }
 .d-label { font-size: 0.55rem; font-weight: 900; color: #94a3b8; letter-spacing: 1px; margin-bottom: 4px; }
 .d-val { font-size: 1.5rem; font-weight: 950; color: white; }
-.d-progress { height: 6px; background: rgba(255,255,255,0.05); border-radius: 100px; margin-top: 10px; overflow: hidden; }
+.d-progress { height: 6px; background: var(--glass-bg); border-radius: 100px; margin-top: 10px; overflow: hidden; }
 .d-fill { height: 100%; box-shadow: 0 0 10px currentColor; }
 
 .card-actions { display: grid; grid-template-columns: 1fr; gap: 1rem; }
@@ -3173,9 +3173,9 @@ select.premium-input-v2 option {
 .goal-trigger:hover { transform: translateY(-3px); box-shadow: 0 15px 30px rgba(217, 119, 6, 0.4); }
 
 .undo-trigger {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--glass-bg);
   color: #94a3b8;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--glass-border-color);
   padding: 0.75rem;
   border-radius: 12px;
   font-weight: 900;
@@ -3287,7 +3287,7 @@ select.premium-input-v2 option {
 }
 
 .football-extra-time-control .premium-input-v2-sm {
-  background: rgba(0, 0, 0, 0.5);
+  background: var(--bg-inset);
   border: 1px solid #10b981;
   color: #10b981;
   font-weight: 950;
@@ -3351,11 +3351,11 @@ select.premium-input-v2 option {
 
 /* --- PLAYER LIST & SUBS --- */
 .player-item:hover {
-  background: rgba(255,255,255,0.02);
+  background: var(--glass-bg);
 }
 
 .sub-btn:hover {
-  background: rgba(255,255,255,0.2) !important;
+  background: var(--glass-bg) !important;
   color: #fff !important;
 }
 
@@ -3387,7 +3387,7 @@ select.premium-input-v2 option {
 
   .lineup-column {
     padding-bottom: 1.5rem;
-    border-bottom: 1px solid rgba(255,255,255,0.1);
+    border-bottom: 1px solid var(--glass-border-color);
   }
   
   .lineup-column:last-child {

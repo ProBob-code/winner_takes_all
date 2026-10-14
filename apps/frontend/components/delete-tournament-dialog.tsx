@@ -99,7 +99,7 @@ export function DeleteTournamentDialog({ tournamentId, tournamentName }: DeleteT
       left: 0,
       right: 0,
       bottom: 0,
-      background: "rgba(0, 0, 0, 0.9)",
+      background: "var(--bg-inset)",
       backdropFilter: "blur(20px)",
       display: "flex",
       alignItems: "center",
@@ -141,13 +141,13 @@ export function DeleteTournamentDialog({ tournamentId, tournamentName }: DeleteT
           </h2>
 
           <div style={{ 
-            background: "rgba(0,0,0,0.3)", 
+            background: "var(--bg-inset)", 
             padding: "1.5rem", 
             borderRadius: "16px",
-            border: "1px solid rgba(255,255,255,0.05)",
+            border: "1px solid var(--glass-border-color)",
             marginBottom: "2rem"
           }}>
-            <p style={{ color: "rgba(255, 255, 255, 0.5)", marginBottom: "0.5rem", fontSize: "0.9rem" }}>
+            <p style={{ color: "var(--text-secondary)", marginBottom: "0.5rem", fontSize: "0.9rem" }}>
               You are about to permanently delete:
             </p>
             <div style={{ 
@@ -162,7 +162,7 @@ export function DeleteTournamentDialog({ tournamentId, tournamentName }: DeleteT
           </div>
 
           <p style={{ 
-            color: "rgba(255, 255, 255, 0.6)", 
+            color: "var(--text-secondary)", 
             lineHeight: "1.6",
             marginBottom: "2.5rem",
             fontSize: "0.95rem"

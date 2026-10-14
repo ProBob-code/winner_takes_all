@@ -216,7 +216,7 @@ export default function TournamentDetailPage() {
                 <span className="status-badge" style={{ background: "rgba(59,130,246,0.12)", color: "#60a5fa" }}>
                   {isFootball ? "FOOTBALL" : "8-BALL"}
                 </span>
-                <span className="status-badge" style={{ background: "rgba(255,255,255,0.05)", color: "var(--text-muted)" }}>
+                <span className="status-badge" style={{ background: "var(--glass-bg)", color: "var(--text-muted)" }}>
                   {formatLabel}
                 </span>
                 <span
@@ -291,7 +291,7 @@ export default function TournamentDetailPage() {
             style={{
               position: "relative", display: "grid", gap: "1px", marginTop: "1.75rem",
               gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
-              background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.06)",
+              background: "var(--glass-bg)", border: "1px solid var(--glass-border-color)",
               borderRadius: "12px", overflow: "hidden",
             }}
           >
@@ -432,7 +432,7 @@ export default function TournamentDetailPage() {
               style={{
                 display: "flex", justifyContent: "space-between", gap: "1rem",
                 marginTop: "0.6rem", paddingTop: "0.9rem",
-                borderTop: "1px solid rgba(255,255,255,0.08)",
+                borderTop: "1px solid var(--glass-border-color)",
               }}
             >
               <span style={{ fontWeight: 900 }}>Winner takes</span>

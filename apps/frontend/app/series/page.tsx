@@ -149,7 +149,7 @@ export default function SeriesListPage() {
                       ENTRY, PER WEEK
                     </div>
                     <div style={{ fontWeight: 900, color: "var(--gold)" }}>
-                      {Number(s.entryFee.amount) === 0 ? "FREE" : `₹${s.entryFee.amount}`}
+                      {Number(s.entryFee.amount) === 0 ? "FREE" : "ARCHIVED"}
                     </div>
                   </div>
                   <div className="action-circle">→</div>

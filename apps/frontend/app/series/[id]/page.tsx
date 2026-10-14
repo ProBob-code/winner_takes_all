@@ -205,7 +205,7 @@ export default function SeriesDetailPage() {
             </span>
             <span
               className="status-badge"
-              style={{ background: "rgba(255,255,255,0.05)", color: "var(--text-muted)" }}
+              style={{ background: "var(--glass-bg)", color: "var(--text-muted)" }}
             >
               {series.rosterMode === "locked" ? "🔒 LOCKED ROSTER" : "OPEN ENTRY"}
             </span>
@@ -221,12 +221,12 @@ export default function SeriesDetailPage() {
             style={{
               display: "grid", gap: "1px", marginTop: "1.75rem",
               gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
-              background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.06)",
+              background: "var(--glass-bg)", border: "1px solid var(--glass-border-color)",
               borderRadius: "12px", overflow: "hidden",
             }}
           >
             {[
-              { label: "ENTRY, PER WEEK", value: Number(series.entryFee.amount) === 0 ? "FREE" : `₹${series.entryFee.amount}`, gold: true },
+              { label: "ENTRY, PER WEEK", value: Number(series.entryFee.amount) === 0 ? "FREE" : "ARCHIVED", gold: true },
               { label: "WEEKS SO FAR", value: String(series.weeksCreated) },
               { label: "NEXT WEEK OPENS", value: series.status === "active" ? formatWhen(series.nextEventAt) : "—" },
               { label: "PLAYERS, PER WEEK", value: String(series.maxPlayers) },
@@ -360,8 +360,8 @@ export default function SeriesDetailPage() {
                   style={{
                     display: "flex", alignItems: "center", gap: "14px",
                     padding: "14px 16px", borderRadius: "10px", textDecoration: "none",
-                    background: "rgba(255,255,255,0.02)",
-                    border: "1px solid rgba(255,255,255,0.05)",
+                    background: "var(--glass-bg)",
+                    border: "1px solid var(--glass-border-color)",
                   }}
                 >
                   <span style={{ fontFamily: "monospace", opacity: 0.5, minWidth: "4.5rem" }}>
@@ -369,7 +369,7 @@ export default function SeriesDetailPage() {
                   </span>
                   <span style={{ flex: 1, fontWeight: 800 }}>{w.name}</span>
                   <span className="muted" style={{ fontSize: "0.8rem" }}>
-                    {w.joinedPlayers}/{w.maxPlayers} · ₹{w.prizePool.amount}
+                    {w.joinedPlayers}/{w.maxPlayers}
                   </span>
                   <span className={`status-badge ${w.status}`}>{w.status.toUpperCase()}</span>
                 </Link>
@@ -391,7 +391,7 @@ export default function SeriesDetailPage() {
                 <span
                   key={m.user_id}
                   className="status-badge"
-                  style={{ background: "rgba(255,255,255,0.05)", color: "var(--text)" }}
+                  style={{ background: "var(--glass-bg)", color: "var(--text)" }}
                 >
                   {m.user_name}
                   {m.user_id === series.hostId ? " · HOST" : ""}

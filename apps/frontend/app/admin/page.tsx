@@ -463,7 +463,7 @@ export default function AdminPage() {
 
 function Stat({ label, value, sub, accent }: { label: string; value: string; sub?: string; accent?: string }) {
   return (
-    <div style={{ background: "rgba(255,255,255,0.02)", padding: "1rem", borderRadius: "16px", border: "1px solid rgba(255,255,255,0.05)" }}>
+    <div style={{ background: "var(--glass-bg)", padding: "1rem", borderRadius: "16px", border: "1px solid var(--glass-border-color)" }}>
       <div className="muted" style={{ fontSize: "0.68rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: "1px" }}>{label}</div>
       <div style={{ fontSize: "1.45rem", fontWeight: 900, color: accent, overflowWrap: "anywhere" }}>{value}</div>
       {sub && <div className="muted" style={{ fontSize: "0.7rem" }}>{sub}</div>}
@@ -487,7 +487,7 @@ function PayoutQueue({ payouts, onSettle }: { payouts: any[]; onSettle: (fn: () 
         {pending.length === 0 && <p className="muted">Nothing pending.</p>}
         <div className="stack" style={{ gap: "0.85rem", marginTop: "1rem" }}>
           {pending.map((p) => (
-            <div key={p.id} style={{ background: "rgba(255,255,255,0.02)", padding: "1rem", borderRadius: "14px", border: "1px solid rgba(255,255,255,0.06)" }}>
+            <div key={p.id} style={{ background: "var(--glass-bg)", padding: "1rem", borderRadius: "14px", border: "1px solid var(--glass-border-color)" }}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: "1rem", flexWrap: "wrap" }}>
                 <div style={{ minWidth: 0 }}>
                   <strong>{p.user?.name || p.user?.email || p.id}</strong>
@@ -618,7 +618,7 @@ function Members({ users, onAct }: { users: any[]; onAct: (fn: () => Promise<unk
       </div>
 
       {open && (
-        <div style={{ background: "rgba(255,255,255,0.02)", padding: "1rem", borderRadius: "14px", marginTop: "1rem", border: "1px solid rgba(255,255,255,0.06)" }}>
+        <div style={{ background: "var(--glass-bg)", padding: "1rem", borderRadius: "14px", marginTop: "1rem", border: "1px solid var(--glass-border-color)" }}>
           <h4 style={{ marginTop: 0 }}>{shown.find((u) => u.id === open)?.name}</h4>
 
           <div className="admin-stat-grid" style={{ gap: "0.75rem" }}>

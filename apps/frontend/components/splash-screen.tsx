@@ -4,23 +4,25 @@
  * The splash: a fuse burns in, detonates on the wordmark, and the wordmark
  * collapses from "Winner.Takes.All" to "W.T.A".
  *
- * Lifted from the reference design (WTA Platform.dc.html) and rebuilt as a
- * component. The timing is the reference's: the whole thing runs 1.6s, the
- * impact lands at 60% of 1.3s, and the overlay fades out over the last 18%.
+ * SHOWN ON EVERY LOAD, EVERYWHERE.
  *
- * SHOWN ONCE A SESSION, not once a page. A splash that replays on every
- * navigation stops being an entrance and becomes an obstacle, and this app is
- * used by someone standing at a pool table who wants the scoreboard now. It is
- * also skipped entirely for anyone who has asked not to be moved, and for the
- * full-bleed routes — the big screen, staff mode and the join page are all
- * things people look at mid-night, where a splash would be an interruption
- * rather than a welcome.
+ * It used to be gated to once a session and skipped on the full-bleed routes,
+ * which is why it seemed never to appear: sessionStorage survives a reload, so
+ * after the first view in a tab it never ran again. Both gates are gone.
+ *
+ * It still does not replay on client-side navigation between pages — this runs
+ * on mount of the layout, which happens once per document load. That is the
+ * behaviour you want: it is an entrance to the app, not a transition between
+ * its pages, and a 1.6s animation between every tap would make the app
+ * unusable behind a bar.
+ *
+ * REDUCED MOTION gets a still version rather than nothing. The animation is a
+ * detonation with a screen shake, which is exactly what that preference exists
+ * to prevent, but the splash should still appear for everyone — so those
+ * viewers get the wordmark, held and faded, with no movement.
  */
 
 import { useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
-
-const SESSION_KEY = "wta-splash-seen";
 
 /** Where the particles fly. Eight, alternating amber and red. */
 const PARTICLES = [
@@ -34,69 +36,59 @@ const PARTICLES = [
   { tx: "-70px", ty: "6px", color: "oklch(70% 0.15 25)" },
 ];
 
-/** Routes that never get a splash. Matches the layout's bare routes. */
-const NEVER = ["/display/", "/staff/", "/join/", "/play/"];
-
 export function SplashScreen() {
-  const pathname = usePathname();
   const [visible, setVisible] = useState(false);
+  const [still, setStill] = useState(false);
 
   useEffect(() => {
-    if (NEVER.some((prefix) => pathname?.startsWith(prefix))) return;
-
-    // Respect a reduced-motion preference: this animation is nothing but
-    // motion, so the honest response is to skip it rather than soften it.
+    let reduced = false;
     try {
-      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     } catch {
-      /* no matchMedia; carry on */
+      /* no matchMedia; treat as full motion */
     }
 
-    try {
-      if (sessionStorage.getItem(SESSION_KEY)) return;
-      sessionStorage.setItem(SESSION_KEY, "1");
-    } catch {
-      // Private windows and blocked site data throw here. Showing the splash
-      // once per load is a better failure than crashing the app over it.
-    }
-
+    setStill(reduced);
     setVisible(true);
-    const done = window.setTimeout(() => setVisible(false), 1650);
+
+    const done = window.setTimeout(() => setVisible(false), reduced ? 1200 : 1650);
     return () => window.clearTimeout(done);
-    // Deliberately on mount only: this is a session entrance, not a route one.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (!visible) return null;
 
   return (
-    <div className="wta-splash" role="presentation" aria-hidden="true">
+    <div
+      className={`wta-splash${still ? " still" : ""}`}
+      role="presentation"
+      aria-hidden="true"
+    >
       <div className="wta-splash-grid" />
 
       <div className="wta-splash-stage">
-        {/* The fuse, travelling in from the lower left. */}
-        <span className="wta-fuse" />
-        {/* The impact, at 60%. */}
-        <span className="wta-shockwave" />
-        <span className="wta-flash" />
-
-        {PARTICLES.map((p, i) => (
-          <span
-            key={i}
-            className="wta-particle"
-            style={
-              { "--tx": p.tx, "--ty": p.ty, background: p.color } as React.CSSProperties
-            }
-          />
-        ))}
-
-        <span className="wta-wordmark-full">
-          <i>Winner</i>
-          <b>.</b>
-          <u>Takes</u>
-          <b>.</b>
-          <i>All</i>
-        </span>
+        {!still && (
+          <>
+            <span className="wta-fuse" />
+            <span className="wta-shockwave" />
+            <span className="wta-flash" />
+            {PARTICLES.map((p, i) => (
+              <span
+                key={i}
+                className="wta-particle"
+                style={
+                  { "--tx": p.tx, "--ty": p.ty, background: p.color } as React.CSSProperties
+                }
+              />
+            ))}
+            <span className="wta-wordmark-full">
+              <i>Winner</i>
+              <b>.</b>
+              <u>Takes</u>
+              <b>.</b>
+              <i>All</i>
+            </span>
+          </>
+        )}
 
         <span className="wta-wordmark-short">
           <i>W</i>

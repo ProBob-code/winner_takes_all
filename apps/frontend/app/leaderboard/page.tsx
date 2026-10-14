@@ -3,6 +3,7 @@
 export const dynamic = "force-dynamic";
 
 import { useEffect, useState } from "react";
+import { formatCoins } from "@/lib/format";
 import { getApiUrl } from "@/lib/api-config";
 
 type LeaderboardEntry = {
@@ -28,7 +29,8 @@ const initials = (name: string) =>
     .join("")
     .toUpperCase() || "?";
 
-const inr = (amount: string | number) => `₹${Number(amount || 0).toLocaleString("en-IN")}`;
+/* Coins, not rupees — nothing on this board is money. */
+const inr = (amount: string | number) => formatCoins(Number(amount || 0));
 
 export default function LeaderboardPage() {
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);

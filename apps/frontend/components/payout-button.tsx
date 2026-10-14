@@ -131,7 +131,7 @@ export function PayoutButton({ withdrawable, bonus, feePercent, onRequested }: P
                 </div>
               ) : (
                 <>
-                  <div style={{ background: "rgba(255,255,255,0.03)", borderRadius: "14px", padding: "1rem", marginBottom: "1.25rem" }}>
+                  <div style={{ background: "var(--glass-bg)", borderRadius: "14px", padding: "1rem", marginBottom: "1.25rem" }}>
                     <div className="muted" style={{ fontSize: "0.7rem", fontWeight: 700, letterSpacing: "1px" }}>AVAILABLE TO WITHDRAW</div>
                     <div style={{ fontSize: "1.6rem", fontWeight: 900, color: "var(--green-light)" }}>{formatMoney(withdrawable)}</div>
                     {bonusHeld > 0 && (
@@ -170,7 +170,7 @@ export function PayoutButton({ withdrawable, bonus, feePercent, onRequested }: P
 
                   {/* Shown before they commit: a deduction nobody explained is
                       how disputes start. */}
-                  <div style={{ background: "rgba(255,255,255,0.03)", borderRadius: "14px", padding: "1rem", marginBottom: "1.25rem", fontSize: "0.88rem" }}>
+                  <div style={{ background: "var(--glass-bg)", borderRadius: "14px", padding: "1rem", marginBottom: "1.25rem", fontSize: "0.88rem" }}>
                     <Row label="You withdraw" value={`₹${(valid ? entered : 0).toFixed(2)}`} />
                     <Row label={`Handling charge (${feePercent}%)`} value={`− ₹${feeRupees.toFixed(2)}`} muted />
                     <div style={{ height: 1, background: "var(--glass-bg-hover)", margin: "0.65rem 0" }} />

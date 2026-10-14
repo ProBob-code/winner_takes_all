@@ -202,7 +202,7 @@ export default function ScreeningPage() {
       <div className="shell" style={{ maxWidth: "1200px", width: "100%", margin: "0 auto" }}>
         
         {/* Header Block */}
-        <div className="panel page-card slide-in mb-8" style={{ padding: "2.5rem 3rem", background: "rgba(9, 9, 22, 0.45)", borderRadius: "16px", border: "1px solid rgba(255,255,255,0.06)" }}>
+        <div className="panel page-card slide-in mb-8" style={{ padding: "2.5rem 3rem", background: "rgba(9, 9, 22, 0.45)", borderRadius: "16px", border: "1px solid var(--glass-border-color)" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "20px" }}>
             <div>
               <span className="section-label-v2 mb-2 block glow-text" style={{ fontSize: "0.85rem", letterSpacing: "2px" }}>📺 MULTIPLEX ARENA BROADCAST</span>
@@ -218,7 +218,7 @@ export default function ScreeningPage() {
         </div>
 
         {/* Filters Panel */}
-        <div className="glass-morphism mb-8 animate-in" style={{ padding: "20px 24px", borderRadius: "12px", background: "rgba(255,255,255,0.01)", border: "1px solid rgba(255,255,255,0.05)", display: "flex", gap: "15px", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between" }}>
+        <div className="glass-morphism mb-8 animate-in" style={{ padding: "20px 24px", borderRadius: "12px", background: "var(--glass-bg)", border: "1px solid var(--glass-border-color)", display: "flex", gap: "15px", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
             <button 
               className={`button ${sportFilter === "ALL" ? "button-gold" : "button-secondary"}`}
@@ -250,7 +250,7 @@ export default function ScreeningPage() {
               className="premium-input-v2"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              style={{ width: "100%", padding: "10px 16px", borderRadius: "8px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.08)", color: "#fff" }}
+              style={{ width: "100%", padding: "10px 16px", borderRadius: "8px", background: "var(--glass-bg)", border: "1px solid var(--glass-border-color)", color: "#fff" }}
             />
           </div>
         </div>

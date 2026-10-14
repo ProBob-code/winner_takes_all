@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { CoinMark } from "@/components/coin-mark";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useState, useEffect } from "react";
 import { getApiUrl } from "@/lib/api-config";
@@ -62,7 +63,7 @@ export function Topbar({ user: initialUser }: { user?: any }) {
               {/* Shown only while there is still a balance to return. Stakes are
                   closed, so once the wind-down refunds land this disappears by
                   itself rather than advertising a wallet nobody can top up. */}
-              <span style={{ fontSize: "0.65rem", fontWeight: 700, color: "var(--gold-light)", opacity: 0.8 }}>₹</span>
+              <CoinMark size={14} />
               <span style={{ fontWeight: 800, color: "var(--gold-light)", fontSize: "0.8rem" }}>{Number(user.walletBalance || 0).toFixed(0)}</span>
             </div>
             )}

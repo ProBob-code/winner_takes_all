@@ -143,7 +143,7 @@ export function BroadcastCode({ arenaId, matchId, pin, onClose }: Props) {
                 width: "120px",
                 height: "3px",
                 borderRadius: "2px",
-                background: "rgba(255,255,255,0.08)",
+                background: "var(--glass-bg)",
                 overflow: "hidden",
               }}
             >

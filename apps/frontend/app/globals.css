@@ -29,42 +29,51 @@
    ══════════════════════════════════════════════════════════════════════════ */
 
 :root, [data-theme='light'], .light-mode {
-  /* Warm paper rather than white: a pure white ground makes amber look dirty. */
-  --bg-primary: oklch(99% 0.004 92);
-  --bg-secondary: oklch(96% 0.008 92);
-  --bg-card: oklch(100% 0 0);
-  --bg-card-hover: oklch(97.5% 0.008 92);
-  --bg-surface: oklch(96.5% 0.01 92);
-  --bg-topbar: oklch(99% 0.004 92 / 0.9);
-  --bg-dropdown: oklch(100% 0 0);
-  --bg-inset: oklch(96% 0.008 92);
+  /* Peppy, not paper. The ground is a warm butter yellow rather than white,
+     which is what makes light mode feel like the same product as the dark one
+     instead of a bleached version of it. Cards sit a shade lighter so they
+     still lift off it. No black anywhere in this theme — the darkest value is
+     a warm near-brown, because true black on yellow reads as a printing error
+     rather than as a design. */
+  --bg-primary: oklch(95% 0.055 95);
+  --bg-secondary: oklch(92% 0.07 93);
+  --bg-card: oklch(98.5% 0.025 95);
+  --bg-card-hover: oklch(97% 0.04 95);
+  --bg-surface: oklch(96% 0.045 95);
+  --bg-topbar: oklch(95% 0.055 95 / 0.92);
+  --bg-dropdown: oklch(98.5% 0.025 95);
+  --bg-inset: oklch(92% 0.07 93);
 
-  --text-primary: oklch(20% 0.012 260);
-  --text-secondary: oklch(44% 0.012 260);
-  --text-muted: oklch(58% 0.012 260);
+  --text-primary: oklch(24% 0.05 55);
+  --text-secondary: oklch(43% 0.06 50);
+  --text-muted: oklch(55% 0.06 55);
 
-  --border-color: oklch(90% 0.01 92);
-  --border-glow: oklch(62% 0.2 25 / 0.12);
-  --glass-bg: oklch(100% 0 0 / 0.72);
-  --glass-bg-hover: oklch(62% 0.2 25 / 0.05);
-  --glass-border-color: oklch(20% 0.012 260 / 0.09);
-  --glass-border-color-hover: oklch(62% 0.2 25 / 0.32);
+  --border-color: oklch(84% 0.09 90);
+  --border-glow: oklch(55% 0.22 27 / 0.18);
+  --glass-bg: oklch(98.5% 0.025 95 / 0.8);
+  --glass-bg-hover: oklch(55% 0.22 27 / 0.07);
+  --glass-border-color: oklch(24% 0.05 55 / 0.14);
+  --glass-border-color-hover: oklch(55% 0.22 27 / 0.42);
   --glass-blur: blur(20px);
 
-  /* Darkened from the dark theme's red so it holds contrast on paper. */
-  --accent: oklch(54% 0.21 25);
-  --accent-light: oklch(62% 0.2 25);
-  --accent-subtle: oklch(54% 0.21 25 / 0.08);
+  /* A strong red, because on a yellow ground a timid one turns orange. */
+  --accent: oklch(53% 0.22 27);
+  --accent-light: oklch(61% 0.21 27);
+  --accent-subtle: oklch(53% 0.22 27 / 0.1);
 
-  /* Amber has to go a long way down in light mode to stay legible on white. */
-  --gold: oklch(58% 0.14 75);
-  --gold-light: oklch(70% 0.16 85);
-  --gold-subtle: oklch(80% 0.16 92 / 0.16);
+  /* Amber goes well down in light mode: the ground is already amber, so the
+     accent version has to be darker than it to read as a mark rather than as
+     a slightly different patch of background. */
+  --gold: oklch(52% 0.13 70);
+  --gold-light: oklch(64% 0.15 80);
+  --gold-subtle: oklch(72% 0.15 88 / 0.3);
 
-  --shadow-sm: 0 2px 8px oklch(20% 0.012 260 / 0.06);
-  --shadow-md: 0 10px 25px oklch(20% 0.012 260 / 0.09);
-  --shadow-lg: 0 20px 50px oklch(20% 0.012 260 / 0.14);
-  --shadow-glow: 0 0 24px oklch(62% 0.2 25 / 0.14);
+  /* Shadows carry the ground's warmth. A neutral grey shadow on yellow looks
+     like dirt. */
+  --shadow-sm: 0 2px 8px oklch(40% 0.1 60 / 0.12);
+  --shadow-md: 0 10px 25px oklch(40% 0.1 60 / 0.16);
+  --shadow-lg: 0 20px 50px oklch(35% 0.12 55 / 0.22);
+  --shadow-glow: 0 0 24px oklch(53% 0.22 27 / 0.18);
 
   --radius: 18px;
   --radius-sm: 10px;
@@ -115,21 +124,39 @@
   --touch-min: 48px;
 
   /* The two accents together, which is the brand mark in gradient form. */
-  --gradient-primary: linear-gradient(135deg, oklch(54% 0.21 25) 0%, oklch(70% 0.16 60) 100%);
-  --gradient-gold: linear-gradient(135deg, oklch(58% 0.14 75) 0%, oklch(80% 0.16 92) 100%);
+  --gradient-primary: linear-gradient(135deg, oklch(53% 0.22 27) 0%, oklch(72% 0.16 85) 100%);
+  --gradient-gold: linear-gradient(135deg, oklch(60% 0.16 70) 0%, oklch(78% 0.16 92) 100%);
 
   /* The two sides of a table. Red stays red; the opposing side moves off blue
      to amber, so a match reads in the product's own two colours. */
-  --team-red: oklch(54% 0.21 25);
-  --team-red-glow: oklch(54% 0.21 25 / 0.15);
-  --team-red-bg: oklch(94% 0.04 25);
+  --team-red: oklch(53% 0.22 27);
+  --team-red-glow: oklch(53% 0.22 27 / 0.18);
+  --team-red-bg: oklch(90% 0.08 30);
 
-  --team-blue: oklch(58% 0.14 75);
-  --team-blue-glow: oklch(58% 0.14 75 / 0.15);
-  --team-blue-bg: oklch(95% 0.05 85);
+  --team-blue: oklch(58% 0.14 80);
+  --team-blue-glow: oklch(58% 0.14 80 / 0.18);
+  --team-blue-bg: oklch(90% 0.1 90);
 
-  --vs-orb-bg: oklch(100% 0 0);
-  --vs-orb-border: oklch(90% 0.01 92);
+  --vs-orb-bg: oklch(98.5% 0.025 95);
+  --vs-orb-border: oklch(84% 0.09 90);
+
+  /* ── Everything else folded onto the two hues ──
+     The UI still referenced green, cyan and blue in about forty places —
+     status pills, positive figures, stream badges. On a yellow-and-red product
+     each of those was a third and fourth colour arriving unannounced, so they
+     all resolve to amber or red now. Kept as names rather than find-and-
+     replaced, because "green" at a call site still means "this is the good
+     outcome", and that intent is worth preserving even when the colour is
+     amber. */
+  --green: oklch(52% 0.13 70);
+  --green-light: oklch(60% 0.15 75);
+  --green-subtle: oklch(72% 0.15 88 / 0.25);
+  --cyan: oklch(53% 0.22 27);
+  --cyan-subtle: oklch(53% 0.22 27 / 0.1);
+  --blue: oklch(53% 0.22 27);
+  --red: oklch(53% 0.22 27);
+  --red-light: oklch(61% 0.21 27);
+  --red-subtle: oklch(53% 0.22 27 / 0.1);
 }
 
 [data-theme='dark'] {
@@ -182,6 +209,17 @@
 
   --vs-orb-bg: oklch(100% 0 0 / 0.08);
   --vs-orb-border: oklch(30% 0.014 260 / 0.6);
+
+  /* The same folding as the light theme: no third or fourth hue. */
+  --green: oklch(80% 0.16 92);
+  --green-light: oklch(85% 0.17 92);
+  --green-subtle: oklch(80% 0.16 92 / 0.14);
+  --cyan: oklch(70% 0.15 25);
+  --cyan-subtle: oklch(70% 0.15 25 / 0.14);
+  --blue: oklch(80% 0.16 92);
+  --red: oklch(65% 0.2 25);
+  --red-light: oklch(72% 0.18 25);
+  --red-subtle: oklch(65% 0.2 25 / 0.14);
 }
 
 html {
@@ -496,9 +534,10 @@ a:hover {
   transition: opacity 0.5s ease;
 }
 .light-mode .sidebar-dust {
+  /* Was a blue-to-lilac wash, which is two hues this product does not have.
+     The sidebar takes the theme's own warm ground instead. */
   opacity: 1;
-  /* Distinct non-white vibrant glassy background for light mode */
-  background: linear-gradient(135deg, rgba(215, 230, 255, 0.9) 0%, rgba(235, 220, 255, 0.9) 100%);
+  background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
   backdrop-filter: blur(10px);
 }
 
@@ -519,8 +558,8 @@ a:hover {
 }
 
 .light-mode .sidebar {
-  background: rgba(240, 247, 255, 0.8);
-  border-right: 1px solid color-mix(in oklab, var(--accent) 10%, transparent);
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border-color);
 }
 
 .sidebar-brand {
@@ -553,8 +592,10 @@ a:hover {
 
 .light-mode .sidebar-brand {
   background: none;
-  -webkit-text-fill-color: #000000;
-  color: #000000;
+  /* Warm near-black, not pure: on an amber ground true black reads as a
+     printing error rather than as ink. */
+  -webkit-text-fill-color: oklch(24% 0.05 55);
+  color: oklch(24% 0.05 55);
 }
 
 .sidebar-brand .logo-icon {
@@ -883,8 +924,8 @@ a:hover {
 
 .button-success {
   background: linear-gradient(135deg, var(--green-light), var(--green));
-  color: #000;
-  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);
+  color: oklch(24% 0.05 55);
+  box-shadow: 0 4px 14px color-mix(in oklab, var(--gold) 35%, transparent);
 }
 
 .button-success:hover {
@@ -905,8 +946,8 @@ a:hover {
 
 .button-gold {
   background: var(--gradient-gold);
-  color: #000;
-  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.4);
+  color: oklch(24% 0.05 55);
+  box-shadow: 0 4px 14px color-mix(in oklab, var(--gold) 35%, transparent);
 }
 
 .button-gold:hover {
@@ -1345,7 +1386,7 @@ a:hover {
 .status-completed {
   background: var(--accent-subtle);
   color: var(--accent-light);
-  border-color: rgba(167, 139, 250, 0.3);
+  border-color: color-mix(in oklab, var(--accent) 45%, transparent);
 }
 
 .status-cancelled {
@@ -1431,7 +1472,7 @@ label {
 }
 
 .bracket-container::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--bg-inset);
   border-radius: 4px;
 }
 
@@ -1750,7 +1791,7 @@ label {
 
 .lifeline-btn.used {
   opacity: 0.3;
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--bg-inset);
   border-color: transparent;
 }
 
@@ -1816,7 +1857,7 @@ label {
   text-align: center;
   font-size: 2rem;
   font-weight: 800;
-  background: rgba(0, 0, 0, 0.3);
+  background: var(--bg-inset);
   border: 2px solid var(--glass-border-color);
   border-radius: var(--radius-sm);
   color: var(--text-primary);
@@ -2104,8 +2145,8 @@ label {
 }
 
 .pod-inner {
-  background: rgba(255,255,255,0.02);
-  border: 1px solid rgba(255,255,255,0.05);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border-color);
   border-radius: 40px;
   padding: 3rem;
   position: relative;
@@ -2133,13 +2174,13 @@ label {
   width: 64px;
   height: 64px;
   border-radius: 20px;
-  background: rgba(255,255,255,0.05);
+  background: var(--glass-bg);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 1.5rem;
   font-weight: 900;
-  border: 1px solid rgba(255,255,255,0.1);
+  border: 1px solid var(--glass-border-color);
 }
 
 .red .team-initials { color: #ef4444; border-color: rgba(239, 68, 68, 0.3); }
@@ -2219,7 +2260,7 @@ label {
   background: rgba(10, 6, 28, 0.8);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid var(--glass-border-color);
   position: sticky;
   top: 0;
   z-index: 1001;
@@ -2232,7 +2273,7 @@ label {
     background: rgba(8, 5, 18, 0.98) !important;
     backdrop-filter: blur(10px) !important;
     -webkit-backdrop-filter: blur(10px) !important;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-bottom: 1px solid var(--glass-border-color) !important;
   }
 }
 
@@ -2370,9 +2411,9 @@ label {
   z-index: 1;
 }
 .wallet-balance-card .razorpay-button {
-  background: rgba(255,255,255,0.2);
+  background: var(--glass-bg);
   color: white;
-  border: 1px solid rgba(255,255,255,0.4);
+  border: 1px solid var(--glass-border-color);
   backdrop-filter: blur(8px);
   padding: 0.75rem 1.5rem;
   border-radius: var(--radius-full);
@@ -2383,13 +2424,13 @@ label {
   z-index: 1;
 }
 .wallet-balance-card .razorpay-button:hover {
-  background: rgba(255,255,255,0.3);
+  background: var(--glass-bg);
   transform: translateY(-2px);
 }
 .payment-overlay {
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
+  background: var(--bg-inset);
   backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
@@ -2684,7 +2725,7 @@ select.form-control option {
 /* Wallet Revamp Styles */
 .wallet-hero {
   background: linear-gradient(135deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.9));
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--glass-border-color);
   padding: 3rem;
   border-radius: 1.5rem;
   text-align: center;
@@ -2705,8 +2746,8 @@ select.form-control option {
 }
 
 .value-chip {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border-color);
   padding: 1.25rem;
   border-radius: 1rem;
   cursor: pointer;
@@ -2719,7 +2760,7 @@ select.form-control option {
 }
 
 .value-chip:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--glass-bg);
   border-color: var(--accent);
   transform: translateY(-4px);
   box-shadow: 0 10px 20px rgba(0,0,0,0.2);
@@ -2749,7 +2790,7 @@ select.form-control option {
 .payment-modal-v2 {
   background: rgba(15, 15, 20, 0.9);
   backdrop-filter: blur(25px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--glass-border-color);
   padding: 2.5rem;
   border-radius: 2rem;
   width: 100%;
@@ -2776,7 +2817,7 @@ select.form-control option {
   background: rgba(5, 1, 26, 0.85);
   backdrop-filter: blur(28px) saturate(180%);
   -webkit-backdrop-filter: blur(28px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid var(--glass-border-color);
   border-radius: 26px;
   justify-content: space-around;
   align-items: center;
@@ -3370,7 +3411,7 @@ select.form-control option {
 
 .admin-table td {
   padding: 0.7rem 0.75rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid var(--glass-border-color);
   vertical-align: top;
 }
 
@@ -3788,8 +3829,8 @@ select.form-control option {
   min-width: 0;
   padding: clamp(var(--space-3), 2vw, var(--space-5));
   border-radius: var(--radius-lg);
-  border: 2px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.03);
+  border: 2px solid var(--glass-border-color);
+  background: var(--glass-bg);
 }
 
 .display-team.a { border-color: rgba(239, 68, 68, 0.55); }
@@ -3839,7 +3880,7 @@ select.form-control option {
 .display-table td {
   padding: var(--space-2) var(--space-3);
   text-align: left;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid var(--glass-border-color);
   white-space: nowrap;
 }
 
@@ -3863,7 +3904,7 @@ select.form-control option {
   gap: var(--space-4);
   padding: var(--space-4);
   border-radius: var(--radius);
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--glass-bg);
   border: 1px solid rgba(255, 215, 0, 0.25);
   flex-wrap: wrap;
 }
@@ -4297,8 +4338,21 @@ select.form-control option {
 .wta-splash-dots span:nth-child(2) { animation-delay: .15s }
 .wta-splash-dots span:nth-child(3) { animation-delay: .3s }
 
-@media (prefers-reduced-motion: reduce) {
-  .wta-splash { display: none }
+/* Reduced motion gets the wordmark, held and faded, with nothing that moves.
+   The splash still appears for everyone; it simply stops detonating. */
+.wta-splash.still,
+.wta-splash.still * {
+  animation: none !important;
+}
+
+.wta-splash.still {
+  animation: wtaSplashFade 1.2s ease forwards !important;
+}
+
+.wta-splash.still .wta-wordmark-short {
+  opacity: 1;
+  transform: none;
+  filter: none;
 }
 
 /* ══════════════════════════════════════════════════════════════════════════

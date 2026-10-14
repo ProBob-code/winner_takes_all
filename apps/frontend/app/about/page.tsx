@@ -43,7 +43,7 @@ export default function AboutPage() {
         </section>
 
         <section style={{ textAlign: "center" }}>
-          <div className="panel" style={{ padding: "5rem 3rem", background: "linear-gradient(145deg, color-mix(in oklab, var(--accent) 10%, transparent), rgba(6, 182, 212, 0.05))", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "40px" }}>
+          <div className="panel" style={{ padding: "5rem 3rem", background: "linear-gradient(145deg, color-mix(in oklab, var(--accent) 10%, transparent), rgba(6, 182, 212, 0.05))", border: "1px solid var(--glass-border-color)", borderRadius: "40px" }}>
             <h2 style={{ fontSize: "2.5rem", fontWeight: 900, marginBottom: "1.5rem" }}>Global Infrastructure</h2>
             <p className="muted" style={{ maxWidth: "700px", margin: "0 auto 3rem", fontSize: "1.1rem", lineHeight: 1.8 }}>
               From Bangalore to the world, W.T.A provides the backbone for the next generation of professional organizers who demand elite tools.

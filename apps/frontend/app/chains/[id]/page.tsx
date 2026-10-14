@@ -62,8 +62,6 @@ interface Overview {
   } | null;
 }
 
-const money = (amount: string) => `₹${Number(amount || 0).toLocaleString("en-IN")}`;
-
 /** How long since this site last ran anything, and whether that is a worry. */
 function quietFor(iso: string | null): { label: string; tone: "good" | "warn" | "bad" } {
   if (!iso) return { label: "never run a night", tone: "bad" };
@@ -171,16 +169,6 @@ export default function ChainDashboardPage() {
               {sites.length} {sites.length === 1 ? "site" : "sites"}
             </p>
           </div>
-          {subscription && (
-            <div style={{ textAlign: "right" }}>
-              <span className={`chip ${subscription.entitled ? "good" : "bad"}`}>
-                {subscription.status}
-              </span>
-              <div style={{ fontWeight: 900, marginTop: "var(--space-2)" }}>
-                {money(subscription.amount.amount)}
-              </div>
-            </div>
-          )}
         </div>
 
         <div className="auto-grid narrow" style={{ marginBottom: "var(--space-5)" }}>

@@ -68,7 +68,7 @@ export default function HostTournamentForm() {
       {success && (
         <div className="panel p-4 slide-in" style={{ marginBottom: "1.5rem", borderColor: "var(--green-subtle)", background: "rgba(16, 185, 129, 0.1)" }}>
           <p className="text-green" style={{ textAlign: "center", marginBottom: "1rem", fontWeight: 600 }}>{success}</p>
-          <div style={{ background: "rgba(0,0,0,0.2)", padding: "1rem", borderRadius: "1rem" }}>
+          <div style={{ background: "var(--bg-inset)", padding: "1rem", borderRadius: "1rem" }}>
             <p className="muted" style={{ fontSize: "0.85rem", marginBottom: "0.5rem" }}>Invite others to join:</p>
             <ShareTournament tournamentId={success.split("ID: ")[1]} tournamentName={formData.name} />
           </div>
@@ -211,7 +211,7 @@ export default function HostTournamentForm() {
               value={formData.password}
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               className="form-control"
-              style={{ width: "100%", padding: "0.75rem 1rem", borderRadius: "0.5rem", background: "rgba(0,0,0,0.2)", border: "1px solid var(--red-subtle)", color: "var(--text-primary)" }}
+              style={{ width: "100%", padding: "0.75rem 1rem", borderRadius: "0.5rem", background: "var(--bg-inset)", border: "1px solid var(--red-subtle)", color: "var(--text-primary)" }}
             />
           </div>
         )}

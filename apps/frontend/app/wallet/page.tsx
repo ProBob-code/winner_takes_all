@@ -136,7 +136,11 @@ export default function WalletPage() {
           <div className="stack" style={{ gap: "2rem" }}>
             {/* Main Balance Card */}
             <div className="panel" style={{ 
-              background: "linear-gradient(135deg, rgba(20, 10, 60, 0.8) 0%, rgba(5, 2, 20, 0.9) 100%)",
+              // Was a hard-coded dark gradient, which put a near-black slab on
+              // a light page with black text on top of it. Built from the
+              // tokens so it follows the theme.
+              background:
+                "linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-card) 100%)",
               padding: "clamp(1.25rem, 5vw, 2.5rem)",
               borderRadius: "clamp(20px, 4vw, 32px)",
               border: "1px solid var(--glass-border-color-hover)",
@@ -146,7 +150,7 @@ export default function WalletPage() {
             }}>
               {/* Background Accents */}
               <div style={{ position: "absolute", top: "-100px", right: "-100px", width: "300px", height: "300px", background: "var(--accent)", filter: "blur(120px)", opacity: 0.1, pointerEvents: "none" }}></div>
-              <div style={{ position: "absolute", bottom: "-100px", left: "-100px", width: "250px", height: "250px", background: "var(--cyan)", filter: "blur(100px)", opacity: 0.05, pointerEvents: "none" }}></div>
+              <div style={{ position: "absolute", bottom: "-100px", left: "-100px", width: "250px", height: "250px", background: "var(--gold)", filter: "blur(100px)", opacity: 0.05, pointerEvents: "none" }}></div>
               
               <div style={{ position: "relative", zIndex: 1 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "2rem", gap: "1rem", flexWrap: "wrap" }}>
@@ -159,10 +163,10 @@ export default function WalletPage() {
                     </div>
                   </div>
                   <div style={{ 
-                    background: "rgba(255,255,255,0.05)", 
+                    background: "var(--glass-bg)", 
                     padding: "1rem", 
                     borderRadius: "20px", 
-                    border: "1px solid rgba(255,255,255,0.1)",
+                    border: "1px solid var(--glass-border-color)",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center"
@@ -171,7 +175,7 @@ export default function WalletPage() {
                   </div>
                 </div>
 
-                <div className="meta-row" style={{ display: "flex", gap: "2rem", flexWrap: "wrap", marginBottom: "2rem", borderTop: "1px solid rgba(255,255,255,0.05)", paddingTop: "1.5rem" }}>
+                <div className="meta-row" style={{ display: "flex", gap: "2rem", flexWrap: "wrap", marginBottom: "2rem", borderTop: "1px solid var(--glass-border-color)", paddingTop: "1.5rem" }}>
                    <div>
                      <div className="muted" style={{ fontSize: "0.75rem", fontWeight: 600 }}>CURRENCY</div>
                      <div style={{ fontWeight: 700 }}>INR / Balance</div>
@@ -292,7 +296,7 @@ export default function WalletPage() {
                 ].map((row) => (
                   <div
                     key={row.label}
-                    style={{ background: "rgba(255,255,255,0.02)", padding: "1rem", borderRadius: "16px", border: "1px solid rgba(255,255,255,0.05)" }}
+                    style={{ background: "var(--glass-bg)", padding: "1rem", borderRadius: "16px", border: "1px solid var(--glass-border-color)" }}
                   >
                     <div className="muted" style={{ fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase" }}>{row.label}</div>
                     <div style={{ fontSize: "1.5rem", fontWeight: 800, color: row.color }}>
@@ -302,7 +306,7 @@ export default function WalletPage() {
                 ))}
 
                 {/* The three above should land on the balance at the top. */}
-                <div style={{ display: "flex", justifyContent: "space-between", gap: "1rem", padding: "0.75rem 1rem 0", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: "1rem", padding: "0.75rem 1rem 0", borderTop: "1px solid var(--glass-border-color)" }}>
                   <span className="muted" style={{ fontSize: "0.75rem", fontWeight: 700 }}>NET MOVEMENT</span>
                   <span style={{ fontWeight: 900, fontVariantNumeric: "tabular-nums" }}>
                     {formatMoney(stats.deposits + stats.winnings + stats.refunds - stats.entries - stats.withdrawn)}
@@ -319,7 +323,7 @@ export default function WalletPage() {
                 </p>
                 <div className="stack" style={{ gap: "0.75rem" }}>
                   {wallet.payouts.map((p: any) => (
-                    <div key={p.id} style={{ background: "rgba(255,255,255,0.02)", padding: "0.85rem", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.05)" }}>
+                    <div key={p.id} style={{ background: "var(--glass-bg)", padding: "0.85rem", borderRadius: "12px", border: "1px solid var(--glass-border-color)" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", gap: "0.75rem", flexWrap: "wrap" }}>
                         <strong>{formatMoney(p.net)}</strong>
                         <span

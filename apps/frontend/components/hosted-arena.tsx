@@ -15,6 +15,7 @@
  */
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { formatCoins } from "@/lib/format";
 import { createPortal } from "react-dom";
 import { backendFetch } from "@/lib/backend";
 import { PoolMatchEngine } from "./pool-match-engine";
@@ -91,7 +92,9 @@ export interface TournamentResult {
   }>;
 }
 
-const money = (amount: string) => `₹${Number(amount || 0).toLocaleString("en-IN")}`;
+/* What a winner takes, in coins. No pot is pooled and no money changes
+   hands, so a figure in rupees here described nothing. */
+const money = (amount: string) => formatCoins(Number(amount || 0));
 
 interface HostedArenaProps {
   tournamentId: string;
@@ -709,7 +712,7 @@ export function HostedArena({
               <>
                 <div className="v-crown">🤝</div>
                 <h1 className="v-name-xl glow-text">STALEMATE</h1>
-                <div className="v-label" style={{ letterSpacing: "8px", color: "rgba(255,255,255,0.4)", marginBottom: "3rem", fontWeight: 950 }}>
+                <div className="v-label" style={{ letterSpacing: "8px", color: "var(--text-secondary)", marginBottom: "3rem", fontWeight: 950 }}>
                   DRAW DECLARED
                 </div>
               </>
@@ -910,8 +913,8 @@ export function HostedArena({
                     margin: "16px 0",
                     padding: "20px",
                     borderRadius: "12px",
-                    background: "rgba(255,255,255,0.02)",
-                    border: "1px solid rgba(255,255,255,0.06)",
+                    background: "var(--glass-bg)",
+                    border: "1px solid var(--glass-border-color)",
                   }}
                 >
                   <BroadcastCode
@@ -972,7 +975,7 @@ export function HostedArena({
               )}
 
               {published && (
-                <div className="mt-8" style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "20px", width: "100%" }}>
+                <div className="mt-8" style={{ borderTop: "1px solid var(--glass-border-color)", paddingTop: "20px", width: "100%" }}>
                   <LiveFeedViewer arenaId={arenaId} matchId={liveMatch.id} isLive={true} />
                 </div>
               )}
@@ -1177,7 +1180,7 @@ export function HostedArena({
                 margin: "1.25rem 0",
                 padding: "1rem",
                 borderRadius: "10px",
-                background: "rgba(255,255,255,0.03)",
+                background: "var(--glass-bg)",
                 textAlign: "left",
               }}
             >

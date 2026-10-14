@@ -3,6 +3,7 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
+import { formatCoins } from "@/lib/format";
 import { useEffect, useState } from "react";
 import { getApiUrl } from "@/lib/api-config";
 import { QuickTournament } from "@/components/quick-tournament";
@@ -215,7 +216,9 @@ export default function TournamentsPage() {
                             <div className="entry-info">
                               <span className="label">PARTICIPATION FEE</span>
                               <span className={`value ${isFree ? 'free' : 'paid'}`}>
-                                {isFree ? "FREE" : `₹${t.entryFee.amount}`}
+                                {/* Every tournament is free; a legacy fee is
+                                    shown as what it is rather than in money. */}
+                                {isFree ? "FREE" : "ARCHIVED"}
                               </span>
                             </div>
                             <div className="action-circle">
@@ -279,7 +282,9 @@ export default function TournamentsPage() {
                         <div className="past-prize">
                           <span className="past-prize-label">PRIZE POT</span>
                           <span className="past-prize-value">
-                            ₹{Number(t.result?.prize?.amount ?? t.prizePool?.amount ?? 0).toLocaleString("en-IN")}
+                            {formatCoins(
+                              Number(t.result?.prize?.amount ?? t.prizePool?.amount ?? 0)
+                            )}
                           </span>
                           {shared && <span className="past-prize-split">split {t.result.splitWays} ways</span>}
                         </div>

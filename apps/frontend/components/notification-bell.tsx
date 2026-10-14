@@ -63,7 +63,7 @@ export function NotificationBell() {
       )}
       {isOpen && (
         <div className="notification-dropdown" onClick={e => e.stopPropagation()}>
-          <div style={{ padding: ".875rem 1rem", borderBottom: "1px solid rgba(255,255,255,.05)", fontWeight: 700, fontSize: ".9rem" }}>
+          <div style={{ padding: ".875rem 1rem", borderBottom: "1px solid var(--glass-border-color)", fontWeight: 700, fontSize: ".9rem" }}>
             Notifications
           </div>
           <div className="notification-list">

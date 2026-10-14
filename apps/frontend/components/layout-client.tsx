@@ -71,7 +71,7 @@ export function LayoutClient({ children }: { children: React.ReactNode }) {
           marginTop: "auto",
           color: "#cbd5e1", 
           fontSize: "0.9rem",
-          background: "rgba(0,0,0,0.5)"
+          background: "var(--bg-inset)"
         }}>
           <div style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", gap: "1.5rem", marginBottom: "2.5rem", color: "var(--accent-secondary)" }}>
             <Link href="/about" style={{ color: "inherit", textDecoration: "none", fontWeight: 600 }}>About Us</Link>

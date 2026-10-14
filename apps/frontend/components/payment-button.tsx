@@ -356,7 +356,7 @@ export function PaymentButton({ onSuccess }: PaymentButtonProps) {
                 <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
                   <div style={{ fontSize: "0.8rem", fontWeight: 700, color: "var(--text-muted)", marginBottom: "-0.5rem", textTransform: "uppercase", letterSpacing: "1px" }}>Order Details</div>
 
-                  <div style={{ padding: "1.25rem", background: "rgba(0,0,0,0.2)", borderRadius: "16px", border: "1px solid var(--glass-border-color)" }}>
+                  <div style={{ padding: "1.25rem", background: "var(--bg-inset)", borderRadius: "16px", border: "1px solid var(--glass-border-color)" }}>
                     <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginBottom: "0.25rem" }}>ORDER TOTAL</div>
                     <div style={{ fontSize: "1.5rem", fontWeight: 800 }}>₹{selectedAmount.toFixed(2)}</div>
                   </div>

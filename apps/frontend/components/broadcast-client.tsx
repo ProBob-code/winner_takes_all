@@ -337,7 +337,7 @@ export function BroadcastClient({ arenaId, matchId, token }: Props) {
             padding: "2rem",
             background: "rgba(9, 9, 22, 0.55)",
             borderRadius: "16px",
-            border: "1px solid rgba(255,255,255,0.06)",
+            border: "1px solid var(--glass-border-color)",
           }}
         >
           <span className="section-label-v2 glow-text" style={{ letterSpacing: "2px" }}>
@@ -418,7 +418,7 @@ export function BroadcastClient({ arenaId, matchId, token }: Props) {
                     marginTop: "12px",
                     padding: "10px 14px",
                     borderRadius: "8px",
-                    background: "rgba(255,255,255,0.03)",
+                    background: "var(--glass-bg)",
                     fontSize: "0.78rem",
                     fontFamily: "monospace",
                   }}

@@ -203,8 +203,8 @@ export function LiveFeedViewer({ arenaId, matchId, isLive }: Props) {
         style={{
           padding: "14px",
           borderRadius: "10px",
-          background: "rgba(255,255,255,0.02)",
-          border: "1px dashed rgba(255,255,255,0.08)",
+          background: "var(--glass-bg)",
+          border: "1px dashed var(--glass-border-color)",
           fontSize: "0.8rem",
           textAlign: "center",
         }}
@@ -290,7 +290,7 @@ export function LiveFeedViewer({ arenaId, matchId, isLive }: Props) {
                   left: "10px",
                   padding: "4px 10px",
                   borderRadius: "6px",
-                  background: "rgba(0,0,0,0.6)",
+                  background: "var(--bg-inset)",
                   fontSize: "0.75rem",
                   fontWeight: 700,
                 }}
@@ -308,7 +308,7 @@ export function LiveFeedViewer({ arenaId, matchId, isLive }: Props) {
                 marginTop: "8px",
                 padding: "8px 12px",
                 borderRadius: "8px",
-                background: "rgba(255,255,255,0.03)",
+                background: "var(--glass-bg)",
                 fontSize: "0.74rem",
                 fontFamily: "monospace",
               }}
@@ -333,7 +333,7 @@ export function LiveFeedViewer({ arenaId, matchId, isLive }: Props) {
                   title={`Switch to ${caption(feed)}`}
                   style={{
                     padding: 0,
-                    border: "1px solid rgba(255,255,255,0.1)",
+                    border: "1px solid var(--glass-border-color)",
                     borderRadius: "8px",
                     overflow: "hidden",
                     background: "#000",
@@ -372,7 +372,7 @@ export function LiveFeedViewer({ arenaId, matchId, isLive }: Props) {
                       left: 0,
                       right: 0,
                       padding: "4px 6px",
-                      background: "rgba(0,0,0,0.65)",
+                      background: "var(--bg-inset)",
                       fontSize: "0.65rem",
                       fontWeight: 700,
                       whiteSpace: "nowrap",

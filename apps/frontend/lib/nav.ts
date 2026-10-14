@@ -38,7 +38,11 @@ export const MEMBER_NAV: NavItem[] = [
   { label: "Rankings", short: "Ranks", href: "/leaderboard", icon: "🏆" },
   { label: "Playbook", short: "Guide", href: "/playbook", icon: "📖" },
   { label: "Profile", short: "Me", href: "/profile", icon: "👤" },
-  { label: "Organizer Account", short: "Account", href: "/wallet", icon: "💳" },
+  // The wallet is deliberately absent. It is the wind-down surface — real
+  // rupees, a withdrawal queue, a top-up path that returns 410 — and with
+  // every balance zeroed and signup no longer minting one, it is a page about
+  // money that no longer exists. The route still resolves for an admin and for
+  // any link already in the wild.
 ];
 
 /** Signed out. */

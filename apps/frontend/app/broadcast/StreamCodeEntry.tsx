@@ -26,7 +26,7 @@ export function StreamCodeEntry() {
             padding: "2.5rem 2rem",
             background: "rgba(9, 9, 22, 0.55)",
             borderRadius: "16px",
-            border: "1px solid rgba(255,255,255,0.06)",
+            border: "1px solid var(--glass-border-color)",
             textAlign: "center",
           }}
         >
@@ -66,8 +66,8 @@ export function StreamCodeEntry() {
                 textAlign: "center",
                 textTransform: "uppercase",
                 fontFamily: "monospace",
-                background: "rgba(0,0,0,0.3)",
-                border: "1px solid rgba(255,255,255,0.15)",
+                background: "var(--bg-inset)",
+                border: "1px solid var(--glass-border-color)",
                 borderRadius: "12px",
                 color: "#fff",
               }}
