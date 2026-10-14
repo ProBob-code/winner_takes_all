@@ -70,9 +70,9 @@ const EARN_LABELS: Array<{ key: string; label: string; note: string }> = [
   { key: "STREAK", label: "Three nights running", note: "Three of a venue's nights in a row" },
   { key: "SEASON_WON", label: "Win the season", note: "Top of the table when it ends" },
   // Worth a fraction of the venue awards, and capped separately. The schedule
-  // is where the product says league nights matter more than the sofa.
-  { key: "ONLINE_PLAYED", label: "Play online", note: "Finish a game in the browser" },
-  { key: "ONLINE_WON", label: "Win online", note: "More for a harder AI" },
+  // is where the product says league nights matter more than the sofa. Note
+  // there is no "play online" row: losing to the machine pays nothing.
+  { key: "ONLINE_WON", label: "Beat the machine", note: "Winner only — more for a harder AI" },
 ];
 
 /**

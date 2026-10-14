@@ -260,8 +260,10 @@ export default function PlayEightBallPage() {
         }}
       >
         <p className="muted" style={{ fontSize: "var(--text-xs)", textAlign: "center" }}>
-          Browser games earn a fraction of what a league night does, and have their own
-          daily limit. WTA Coins have no cash value and cannot be bought or withdrawn.
+          Only the winner earns — beat the machine and the coins are yours, lose and
+          nothing is paid. Browser games are worth a fraction of a league night and have
+          their own daily limit. WTA Coins have no cash value and cannot be bought or
+          withdrawn.
         </p>
       </footer>
     </main>

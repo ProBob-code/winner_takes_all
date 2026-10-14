@@ -218,24 +218,34 @@ describe("the denomination", () => {
 });
 
 describe("online play earns, but offline is clearly worth more", () => {
-  it("pays something for finishing a game, win or lose", () => {
-    const lost = awardsForOnlineGame({ won: false, mode: 1 });
-    expect(totalOf(lost)).toBe(COIN_AWARDS.ONLINE_PLAYED);
-    expect(totalOf(lost)).toBeGreaterThan(0);
+  it("pays nothing at all when the machine wins", () => {
+    // Only the winner keeps the coins. A participation award here would mint
+    // currency for leaving a game running against the computer.
+    expect(awardsForOnlineGame({ won: false, mode: 1 })).toEqual([]);
+    expect(totalOf(awardsForOnlineGame({ won: false, mode: 1 }))).toBe(0);
   });
 
-  it("pays more for winning than for turning up", () => {
-    const won = awardsForOnlineGame({ won: true, mode: 1 });
-    const lost = awardsForOnlineGame({ won: false, mode: 1 });
-    expect(totalOf(won)).toBeGreaterThan(totalOf(lost));
+  it("pays nothing when a friend on the same sofa wins either", () => {
+    expect(awardsForOnlineGame({ won: false, mode: 2 })).toEqual([]);
   });
 
-  it("is worth roughly a tenth of the same result at a venue", () => {
+  it("pays the winner", () => {
+    expect(totalOf(awardsForOnlineGame({ won: true, mode: 1 }))).toBeGreaterThan(0);
+  });
+
+  it("is worth a fraction of the same result at a venue", () => {
     // The product is league nights in rooms, and the schedule should say so.
     const onlineWin = totalOf(awardsForOnlineGame({ won: true, mode: 1 }));
     const venueWin = COIN_AWARDS.FRAME_PLAYED + COIN_AWARDS.FRAME_WON;
     expect(onlineWin).toBeLessThan(venueWin);
     expect(venueWin / onlineWin).toBeGreaterThanOrEqual(5);
+  });
+
+  it("still pays a venue frame that was lost, unlike a browser game", () => {
+    // The distinction the whole schedule turns on: turning up to a room is
+    // worth paying for, losing to a computer at home is not.
+    expect(totalOf(awardsForFrame({ won: false, firstOfNight: false }))).toBeGreaterThan(0);
+    expect(totalOf(awardsForOnlineGame({ won: false, mode: 1 }))).toBe(0);
   });
 
   it("caps a whole day of browser play below a single league night", () => {
@@ -281,6 +291,13 @@ describe("online play earns, but offline is clearly worth more", () => {
         }
       }
     }
+  });
+
+  it("keeps ONLINE_PLAYED counting against the cap, though nothing awards it", () => {
+    // It was paid before browser play became winner-only, and those ledger
+    // rows still have to count or an account that earned them could exceed
+    // the day's ceiling.
+    expect(ONLINE_REASONS).toContain("ONLINE_PLAYED");
   });
 
   it("counts only the online reasons against the online ceiling", () => {

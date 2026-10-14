@@ -78,9 +78,14 @@ export type CoinReason =
   | "CLEARANCE"
   | "STREAK"
   | "SEASON_WON"
-  /** Finished a game in the browser, against the AI or a friend on the sofa. */
-  | "ONLINE_PLAYED"
-  /** Won one. */
+  /**
+   * Won a game in the browser, against the AI or a friend on the sofa.
+   *
+   * There is deliberately no ONLINE_PLAYED to go with it. Turning up is worth
+   * paying for at a venue; losing to a computer at home is not, and a
+   * participation award there is just free currency for leaving a game
+   * running. Browser play pays the winner and nobody else.
+   */
   | "ONLINE_WON";
 
 /**
@@ -127,8 +132,8 @@ export const COIN_AWARDS: Record<CoinReason, number> = {
 
   // ── Online play ──
   //
-  // Deliberately an order of magnitude below the offline awards, for two
-  // reasons that happen to point the same way.
+  // Paid only to the winner, and deliberately an order of magnitude below the
+  // offline awards. Three reasons that happen to point the same way.
   //
   // The first is commercial: the product is sold on league nights in rooms,
   // and the coin schedule should say so. A night at a venue is worth more
@@ -138,9 +143,18 @@ export const COIN_AWARDS: Record<CoinReason, number> = {
   // not. A frame in a venue is recorded by the engine from a host's taps; a
   // browser game is reported by the player's own device, and nothing stops
   // someone forging that report. Small awards and a tight cap are the honest
-  // response to a number we cannot verify: worth having, never worth farming.
-  ONLINE_PLAYED: 1 * COIN_UNIT,
-  ONLINE_WON: 2 * COIN_UNIT,
+  // response to a number we cannot verify.
+  //
+  // The third is that there is no participation award here at all. Turning up
+  // is the thing worth paying for at a venue, which is why a losing frame
+  // still earns there. Losing to a computer at home is not the same act, and
+  // paying for it would mint coins for leaving a game running.
+  // Three units, not two. With the participation award gone, a one-unit
+  // difficulty step against a two-unit base made beating the hardest AI
+  // worth exactly double the easiest — a multiplier, not a step, which
+  // makes the easy setting pointless. Three keeps the step meaningful and
+  // the spread sane at roughly two thirds.
+  ONLINE_WON: 3 * COIN_UNIT,
 };
 
 /**
@@ -153,8 +167,15 @@ export const COIN_AWARDS: Record<CoinReason, number> = {
  */
 export const ONLINE_DAILY_CAP = 25 * COIN_UNIT;
 
-/** The reasons that count against ONLINE_DAILY_CAP rather than the main one. */
-export const ONLINE_REASONS: CoinReason[] = ["ONLINE_PLAYED", "ONLINE_WON"];
+/**
+ * The reasons that count against ONLINE_DAILY_CAP rather than the main one.
+ *
+ * Typed as plain strings rather than CoinReason because ONLINE_PLAYED no
+ * longer exists as an award but still exists in the ledger, where it was paid
+ * before browser play became winner-only. It has to keep counting against the
+ * cap or an account that earned it could exceed the ceiling for the day.
+ */
+export const ONLINE_REASONS: string[] = ["ONLINE_PLAYED", "ONLINE_WON"];
 
 /**
  * The shortest a browser game can be and still count.
@@ -298,12 +319,16 @@ export function awardsForNight(tournamentName?: string): CoinAward[] {
 /**
  * What one finished browser game earns.
  *
- * Both modes the game offers pay the same, and that is deliberate even though
- * one has an AI opponent and one has a friend on the same sofa: both are a
- * single device reporting its own result, so neither is any more verifiable
- * than the other. Beating a harder AI pays a little more, because the one
- * thing the report does tell us is which difficulty was selected, and
- * rewarding the easiest setting most would be the wrong incentive.
+ * Nothing at all unless the player won it. If the machine takes the game, the
+ * machine does not get paid and neither does the person it beat — only the
+ * winner keeps the coins.
+ *
+ * Both modes pay the same on a win, and that is deliberate even though one has
+ * an AI opponent and one has a friend on the same sofa: both are a single
+ * device reporting its own result, so neither is any more verifiable than the
+ * other. Beating a harder AI pays a little more, because difficulty is the one
+ * thing the report does tell us truthfully, and rewarding the easiest setting
+ * most would be the wrong incentive.
  */
 export function awardsForOnlineGame(args: {
   won: boolean;
@@ -312,29 +337,24 @@ export function awardsForOnlineGame(args: {
   /** The AI's difficulty, 1 upwards. Ignored outside AI mode. */
   aiRating?: number;
 }): CoinAward[] {
-  const awards: CoinAward[] = [
-    {
-      reason: "ONLINE_PLAYED",
-      amount: COIN_AWARDS.ONLINE_PLAYED,
-      description: args.mode === 1 ? "Played the AI" : "Played a friend",
-    },
-  ];
-
-  if (!args.won) return awards;
+  if (!args.won) return [];
 
   // A modest step per difficulty — one whole coin unit a level, so beating the
-  // hardest AI is worth about two thirds more than beating the easiest rather
+  // hardest AI is worth about half as much again as beating the easiest rather
   // than several times more. Kept in whole units like every other figure here.
   const difficulty = args.mode === 1 ? Math.min(Math.max(args.aiRating ?? 1, 1), 3) : 1;
   const bonus = (difficulty - 1) * COIN_UNIT;
 
-  awards.push({
-    reason: "ONLINE_WON",
-    amount: COIN_AWARDS.ONLINE_WON + bonus,
-    description: args.mode === 1 ? `Beat the AI${difficulty > 1 ? ` (level ${difficulty})` : ""}` : "Won a game",
-  });
-
-  return awards;
+  return [
+    {
+      reason: "ONLINE_WON",
+      amount: COIN_AWARDS.ONLINE_WON + bonus,
+      description:
+        args.mode === 1
+          ? `Beat the AI${difficulty > 1 ? ` (level ${difficulty})` : ""}`
+          : "Won a game",
+    },
+  ];
 }
 
 /** What topping a season's table earns. */

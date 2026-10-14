@@ -4638,6 +4638,18 @@ app.post("/api/coins/claim-online", async (c) => {
   const earnedToday = await store.coinsEarnedToday(user.id).catch(() => 0);
   const { granted } = applyDailyCap(byOnlineCap.granted, earnedToday);
 
+  // Losing earns nothing at all in the browser, so say that rather than
+  // returning an empty success the page has to guess at.
+  if (wanted.length === 0) {
+    return c.json({
+      ok: true,
+      awarded: 0,
+      awards: [],
+      lost: true,
+      message: "The machine took that one. Only the winner keeps the coins.",
+    });
+  }
+
   const paid: Array<{ reason: string; amount: number; description: string }> = [];
   for (const award of granted) {
     const applied = await store.awardCoins({
