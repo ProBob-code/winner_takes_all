@@ -29,76 +29,41 @@
    ══════════════════════════════════════════════════════════════════════════ */
 
 :root, [data-theme='light'], .light-mode {
-  /* ── Light ──
-     Flat, loud and high contrast. The cream version was washed out and read
-     as shabby; beige is gone entirely. The ground is a clean near-white with
-     the faintest cool cast so the yellow stays acid rather than turning to
-     butter, and the colour arrives in blocks — a hot red and an electric
-     yellow — against heavy near-black outlines.
-     This is sticker art, not a gradient: edges are drawn, shadows are hard
-     offsets with no blur, and nothing is translucent. */
-  --bg-primary: oklch(97.5% 0.004 250);
-  --bg-secondary: oklch(94% 0.006 250);
-  --bg-card: oklch(100% 0 0);
-  --bg-card-hover: oklch(97% 0.02 100);
-  --bg-surface: oklch(96% 0.005 250);
-  --bg-topbar: oklch(100% 0 0 / 0.94);
-  --bg-dropdown: oklch(100% 0 0);
-  --bg-inset: oklch(93% 0.006 250);
+  /* 🎨 Premium Light Mode - "Liquid Silver" - High Contrast & Premium Clarity */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f1f5f9;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f8fafc;
+  --bg-surface: #f1f5f9;
+  --bg-topbar: rgba(255, 255, 255, 0.9);
+  --bg-dropdown: #ffffff;
+  --bg-inset: #f1f5f9;
 
-  --text-primary: oklch(16% 0.012 260);
-  --text-secondary: oklch(38% 0.012 260);
-  --text-muted: oklch(52% 0.012 260);
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
 
-  /* The outline is the design. 2px of near-black around everything is what
-     makes a flat colour read as a sticker rather than as a flat colour. */
-  --ink: oklch(16% 0.012 260);
-  --border-color: oklch(16% 0.012 260);
-  --border-glow: oklch(58% 0.25 28 / 0.35);
-  --glass-bg: oklch(100% 0 0);
-  --glass-bg-hover: oklch(92% 0.17 100);
-  --glass-border-color: oklch(16% 0.012 260 / 0.16);
-  --glass-border-color-hover: oklch(58% 0.25 28);
+  --border-color: #e2e8f0;
+  --border-glow: rgba(124, 58, 237, 0.1);
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-bg-hover: rgba(124, 58, 237, 0.05);
+  --glass-border-color: rgba(0, 0, 0, 0.08);
+  --glass-border-color-hover: rgba(124, 58, 237, 0.3);
+  --glass-blur: blur(20px);
 
-  --accent: oklch(58% 0.25 28);
-  --accent-light: oklch(66% 0.23 30);
-  --accent-subtle: oklch(58% 0.25 28 / 0.12);
+  --accent: #7c3aed;
+  --accent-light: #8b5cf6;
+  --accent-subtle: rgba(124, 58, 237, 0.08);
 
-  --gold: oklch(84% 0.19 100);
-  --gold-light: oklch(90% 0.18 102);
-  --gold-subtle: oklch(88% 0.19 100 / 0.35);
+  --gold: #b45309;
+  --gold-light: #d97706;
+  --gold-subtle: rgba(180, 83, 9, 0.08);
 
-  /* Hard offsets, no blur. A soft shadow would undo the whole look. */
-  --shadow-sm: 2px 2px 0 var(--ink);
-  --shadow-md: 4px 4px 0 var(--ink);
-  --shadow-lg: 7px 7px 0 var(--ink);
-  --shadow-glow: 4px 4px 0 var(--accent);
-
-  --gradient-primary: linear-gradient(135deg, oklch(58% 0.25 28) 0%, oklch(84% 0.19 100) 100%);
-  --gradient-gold: linear-gradient(135deg, oklch(84% 0.19 100) 0%, oklch(92% 0.17 103) 100%);
-
-  --team-red: oklch(58% 0.25 28);
-  --team-red-glow: oklch(58% 0.25 28 / 0.25);
-  --team-red-bg: oklch(88% 0.11 30);
-
-  --team-blue: oklch(84% 0.19 100);
-  --team-blue-glow: oklch(84% 0.19 100 / 0.3);
-  --team-blue-bg: oklch(93% 0.15 101);
-
-  --vs-orb-bg: oklch(100% 0 0);
-  --vs-orb-border: oklch(16% 0.012 260);
-
-  /* No third or fourth hue: everything folds onto the two. */
-  --green: oklch(62% 0.16 95);
-  --green-light: oklch(84% 0.19 100);
-  --green-subtle: oklch(88% 0.19 100 / 0.3);
-  --cyan: oklch(58% 0.25 28);
-  --cyan-subtle: oklch(58% 0.25 28 / 0.12);
-  --blue: oklch(58% 0.25 28);
-  --red: oklch(58% 0.25 28);
-  --red-light: oklch(66% 0.23 30);
-  --red-subtle: oklch(58% 0.25 28 / 0.12);
-
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 10px 25px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 20px 50px rgba(0, 0, 0, 0.12);
+  --shadow-glow: 0 0 20px rgba(124, 58, 237, 0.1);
+  
   --radius: 18px;
   --radius-sm: 10px;
   --radius-lg: 28px;
@@ -146,71 +111,73 @@
   /* The smallest thing a thumb should have to hit. Below this, a member of
    * staff two drinks into a Friday night misses it. */
   --touch-min: 48px;
+
+  --gradient-primary: linear-gradient(135deg, #7c3aed 0%, #0ea5e9 100%);
+  --gradient-gold: linear-gradient(135deg, #b45309 0%, #f59e0b 100%);
+
+  /* Universal Red vs Blue Stadium Theme */
+  --team-red: #ef4444;
+  --team-red-glow: rgba(239, 68, 68, 0.15);
+  --team-red-bg: #fee2e2;
+  
+  --team-blue: #3b82f6;
+  --team-blue-glow: rgba(59, 130, 246, 0.15);
+  --team-blue-bg: #dbeafe;
+  
+  --vs-orb-bg: #ffffff;
+  --vs-orb-border: #e2e8f0;
 }
 
 [data-theme='dark'] {
-  /* ── Dark ──
-     Night wall. A properly black ground so the yellow reads as spray under a
-     streetlight rather than as a muted ochre, cards a clear step above it, and
-     the same heavy outlines — in bone rather than ink — holding everything
-     together. */
-  --bg-primary: oklch(12% 0.012 70);
-  --bg-secondary: oklch(15.5% 0.014 70);
-  --bg-card: oklch(18.5% 0.016 70);
-  --bg-card-hover: oklch(22% 0.02 70);
-  --bg-surface: oklch(16.5% 0.015 70);
-  --bg-topbar: oklch(12% 0.012 70 / 0.92);
-  --bg-dropdown: oklch(17.5% 0.016 70);
-  --bg-inset: oklch(9% 0.008 70);
+  /* 🌌 Premium Dark Mode - "Liquid Midnight" */
+  --bg-primary: #030014;
+  --bg-secondary: #05011a;
+  --bg-card: rgba(10, 6, 28, 0.4);
+  --bg-card-hover: rgba(20, 15, 60, 0.6);
+  --bg-surface: rgba(139, 92, 246, 0.03);
+  --bg-topbar: rgba(3, 0, 20, 0.85);
+  --bg-dropdown: rgba(5, 1, 26, 0.98);
+  --bg-inset: rgba(0, 0, 0, 0.5);
 
-  --text-primary: oklch(97% 0.01 95);
-  --text-secondary: oklch(76% 0.015 90);
-  --text-muted: oklch(62% 0.018 90);
+  --text-primary: #ffffff;
+  --text-secondary: #b3b3b3;
+  --text-muted: #666666;
 
-  --ink: oklch(6% 0.004 70);
-  --border-color: oklch(36% 0.03 85);
-  --border-glow: oklch(88% 0.19 100 / 0.5);
-  --glass-bg: oklch(100% 0 0 / 0.05);
-  --glass-bg-hover: oklch(88% 0.19 100 / 0.14);
-  --glass-border-color: oklch(36% 0.03 85);
-  --glass-border-color-hover: oklch(88% 0.19 100);
+  --border-color: rgba(139, 92, 246, 0.15);
+  --border-glow: rgba(139, 92, 246, 0.4);
+  --glass-bg: rgba(255, 255, 255, 0.03);
+  --glass-bg-hover: rgba(139, 92, 246, 0.08);
+  --glass-border-color: rgba(255, 255, 255, 0.05);
+  --glass-border-color-hover: rgba(139, 92, 246, 0.4);
+  --glass-blur: blur(24px);
 
-  --accent: oklch(64% 0.26 28);
-  --accent-light: oklch(72% 0.22 30);
-  --accent-subtle: oklch(64% 0.26 28 / 0.18);
+  --accent: #bb86fc;
+  --accent-light: #d4b1ff;
+  --accent-subtle: rgba(187, 134, 252, 0.1);
 
-  --gold: oklch(88% 0.19 100);
-  --gold-light: oklch(93% 0.18 103);
-  --gold-subtle: oklch(88% 0.19 100 / 0.18);
+  --gold: #ffb700;
+  --gold-light: #ffd700;
+  --gold-subtle: rgba(255, 183, 0, 0.1);
 
-  --shadow-sm: 2px 2px 0 var(--ink);
-  --shadow-md: 4px 4px 0 var(--ink);
-  --shadow-lg: 7px 7px 0 var(--ink);
-  --shadow-glow: 0 0 28px oklch(88% 0.19 100 / 0.35);
+  --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.8);
+  --shadow-md: 0 12px 32px rgba(0, 0, 0, 0.9);
+  --shadow-lg: 0 24px 64px rgba(0, 0, 0, 1);
+  --shadow-glow: 0 0 30px rgba(187, 134, 252, 0.2);
+  
+  --gradient-primary: linear-gradient(135deg, #bb86fc 0%, #03dac6 100%);
+  --gradient-gold: linear-gradient(135deg, #ffb700 0%, #ffd700 100%);
 
-  --gradient-primary: linear-gradient(135deg, oklch(64% 0.26 28) 0%, oklch(88% 0.19 100) 100%);
-  --gradient-gold: linear-gradient(135deg, oklch(82% 0.18 96) 0%, oklch(93% 0.18 103) 100%);
-
-  --team-red: oklch(64% 0.26 28);
-  --team-red-glow: oklch(64% 0.26 28 / 0.35);
-  --team-red-bg: oklch(64% 0.26 28 / 0.18);
-
-  --team-blue: oklch(88% 0.19 100);
-  --team-blue-glow: oklch(88% 0.19 100 / 0.35);
-  --team-blue-bg: oklch(88% 0.19 100 / 0.18);
-
-  --vs-orb-bg: oklch(100% 0 0 / 0.08);
-  --vs-orb-border: oklch(36% 0.03 85);
-
-  --green: oklch(88% 0.19 100);
-  --green-light: oklch(93% 0.18 103);
-  --green-subtle: oklch(88% 0.19 100 / 0.18);
-  --cyan: oklch(72% 0.22 30);
-  --cyan-subtle: oklch(72% 0.22 30 / 0.18);
-  --blue: oklch(88% 0.19 100);
-  --red: oklch(64% 0.26 28);
-  --red-light: oklch(72% 0.22 30);
-  --red-subtle: oklch(64% 0.26 28 / 0.18);
+  /* Universal Red vs Blue Stadium Theme (Dark Mode Optimized) */
+  --team-red: #f87171;
+  --team-red-glow: rgba(248, 113, 113, 0.3);
+  --team-red-bg: rgba(248, 113, 113, 0.15);
+  
+  --team-blue: #60a5fa;
+  --team-blue-glow: rgba(96, 165, 250, 0.3);
+  --team-blue-bg: rgba(96, 165, 250, 0.15);
+  
+  --vs-orb-bg: rgba(255, 255, 255, 0.08);
+  --vs-orb-border: rgba(255, 255, 255, 0.15);
 }
 
 html {
@@ -4304,11 +4271,12 @@ select.form-control option {
   animation: wtaAbbrevText 1.3s ease forwards;
 }
 
-/* Red / white / amber, which is the mark. */
+/* Accent / white / gold, which is the mark. Taken from the theme rather than
+   hard-coded, so the entrance matches whatever the app is wearing. */
 .wta-wordmark-full i,
-.wta-wordmark-short i { font-style: normal; color: oklch(62% 0.2 25); }
+.wta-wordmark-short i { font-style: normal; color: var(--accent); }
 .wta-wordmark-full u,
-.wta-wordmark-short u { text-decoration: none; color: oklch(85% 0.17 92); }
+.wta-wordmark-short u { text-decoration: none; color: var(--gold); }
 .wta-wordmark-full b,
 .wta-wordmark-short b { font-weight: 700; color: oklch(96% 0.005 260); }
 
@@ -4322,7 +4290,7 @@ select.form-control option {
   width: 6px;
   height: 6px;
   border-radius: 999px;
-  background: oklch(80% 0.16 92);
+  background: var(--gold);
   animation: wtaSplashDot 1s ease-in-out infinite;
 }
 
@@ -4444,59 +4412,6 @@ select.form-control option {
 @media (max-width: 1024px) {
   .mobile-sheet { display: flex }
   .mobile-sheet-backdrop { display: block }
-}
-
-/* ══════════════════════════════════════════════════════════════════════════
-   Theme corrections
-   ══════════════════════════════════════════════════════════════════════════
-
-   The chrome carried hard-coded near-black and near-white from before the
-   palette existed, so in light mode the sidebar and bottom bar stayed dark
-   against a warm page. These pull them back onto the tokens, which is what
-   makes light mode actually look light.
-   ══════════════════════════════════════════════════════════════════════════ */
-
-.sidebar {
-  background: var(--bg-secondary);
-  border-right: 1px solid var(--border-color);
-}
-
-.mobile-nav {
-  background: var(--bg-dropdown);
-  border: 1px solid var(--glass-border-color);
-}
-
-.topbar {
-  background: var(--bg-topbar);
-  border-bottom: 1px solid var(--border-color);
-}
-
-/* The sidebar's starfield is a dark-mode conceit; on paper it is grit. */
-:root:not([data-theme="dark"]) .sidebar-galaxy,
-:root:not([data-theme="dark"]) .sidebar-dust,
-:root:not([data-theme="dark"]) .sidebar-star-layer,
-[data-theme="light"] .sidebar-galaxy,
-[data-theme="light"] .sidebar-dust,
-[data-theme="light"] .sidebar-star-layer {
-  display: none;
-}
-
-/* Panels in light mode need a real edge: a glass border over white is
-   invisible, and every card ran together. */
-[data-theme="light"] .panel,
-:root:not([data-theme="dark"]) .panel {
-  border-color: var(--border-color);
-  box-shadow: var(--shadow-sm);
-}
-
-/* Gold on white is unreadable at small sizes, so anything using it for text
-   drops to the darker amber the light palette defines. */
-[data-theme="light"] .text-gradient,
-:root:not([data-theme="dark"]) .text-gradient {
-  background: var(--gradient-gold);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -4631,481 +4546,91 @@ select.form-control option {
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
-   Character
+   Shimmer and skeletons
    ══════════════════════════════════════════════════════════════════════════
 
-   The palette was correct and the result was still bland: clean, evenly
-   weighted, nothing for the eye to catch on. A competitive brand in red and
-   amber should feel like one. This layer gives the app its voice — bold
-   headings in the two colours, panels with a real edge, a racing stripe where
-   something matters — and does it on the shared classes so every page gets it
-   without being touched individually.
+   The dashboard's loading state has been asking for `.shimmer` and
+   `.skeleton` since it was written, and neither existed — an append that was
+   lost in a shell pipeline, so the placeholders rendered as empty boxes.
+   Built on the tokens, so they follow whatever the palette happens to be.
+
+   Two things, kept apart on purpose: `.shimmer` decorates a surface that is
+   already there, `.skeleton` stands in for one that is not.
    ══════════════════════════════════════════════════════════════════════════ */
 
-/* ── Headings carry the brand ── */
-
-.page h1,
-.shell > h1 {
-  letter-spacing: -0.03em;
-  line-height: 1.05;
+@keyframes wtaScan {
+  0% { left: -40% }
+  100% { left: 140% }
 }
 
-/* A section heading earns a short amber rule under it. Cheap, and it gives a
-   long page the rhythm it was missing. */
-.shell section > h2,
-.shell > section h2,
-.page-card h2 {
+@keyframes wtaSkeleton {
+  0% { background-position: -200% 0 }
+  100% { background-position: 200% 0 }
+}
+
+.shimmer {
   position: relative;
-  padding-bottom: var(--space-3);
+  overflow: hidden;
+  isolation: isolate;
 }
 
-.shell section > h2::after,
-.shell > section h2::after,
-.page-card h2::after {
+.shimmer::after {
   content: "";
   position: absolute;
-  left: 0;
+  top: 0;
   bottom: 0;
-  width: 2.5rem;
-  height: 3px;
-  border-radius: 999px;
-  background: var(--gradient-primary);
-}
-
-/* ── Panels get an edge rather than floating ── */
-
-.panel {
-  position: relative;
-  border: 1px solid var(--border-color);
-  background: var(--bg-card);
-  border-radius: var(--radius);
-  transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
-}
-
-.panel:hover {
-  border-color: var(--glass-border-color-hover);
-}
-
-/* ── The racing stripe ──
-   A diagonal red-and-amber hatch, for the one surface on a screen that is the
-   point of it. Used sparingly: on everything it would be noise. */
-.striped {
-  position: relative;
-  overflow: hidden;
-}
-
-.striped::before {
-  content: "";
-  position: absolute;
-  inset: 0 auto 0 0;
-  width: 5px;
-  background: repeating-linear-gradient(
-    135deg,
-    var(--accent) 0 8px,
-    var(--gold-light) 8px 16px
-  );
-}
-
-/* ── Buttons with some punch ── */
-
-.button {
-  background: var(--gradient-primary);
-  color: oklch(99% 0.01 85);
-  border: 0;
-  font-weight: var(--weight-bold);
-  letter-spacing: 0.01em;
-  box-shadow: 0 4px 14px color-mix(in oklab, var(--accent) 28%, transparent);
-  transition: transform 0.15s ease, box-shadow 0.18s ease, filter 0.18s ease;
-}
-
-.button:hover {
-  transform: translateY(-2px);
-  filter: saturate(1.1);
-  box-shadow: 0 8px 22px color-mix(in oklab, var(--accent) 36%, transparent);
-}
-
-.button:active { transform: translateY(0) }
-
-.button-secondary {
-  background: var(--bg-card);
-  border: 1.5px solid var(--border-color);
-  color: var(--text-primary);
-  font-weight: var(--weight-semibold);
-  transition: border-color 0.18s ease, transform 0.15s ease, background 0.18s ease;
-}
-
-.button-secondary:hover {
-  border-color: var(--accent);
-  background: var(--bg-card-hover);
-  transform: translateY(-2px);
-}
-
-/* ── Chips read as badges, not as grey text ── */
-
-.chip {
-  border-width: 1.5px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  font-size: 0.68rem;
-}
-
-.chip.gold {
-  background: var(--gold-subtle);
-  border-color: color-mix(in oklab, var(--gold-light) 55%, transparent);
-  color: var(--gold);
-}
-
-.chip.good {
-  background: var(--gold-subtle);
-  border-color: color-mix(in oklab, var(--gold-light) 50%, transparent);
-  color: var(--gold);
-}
-
-.chip.bad,
-.chip.warn {
-  background: var(--accent-subtle);
-  border-color: color-mix(in oklab, var(--accent) 45%, transparent);
-  color: var(--accent);
-}
-
-/* ── Figures look like figures ── */
-
-.stat {
-  border: 1px solid var(--border-color);
-  background: var(--bg-card);
-  position: relative;
-  overflow: hidden;
-}
-
-.stat::before {
-  content: "";
-  position: absolute;
-  inset: 0 0 auto 0;
-  height: 2px;
-  background: var(--gradient-gold);
-  opacity: 0.8;
-}
-
-.stat .stat-value {
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.02em;
-}
-
-/* ── Tables ── */
-
-.data-table th {
-  color: var(--text-muted);
-  border-bottom: 2px solid var(--border-color);
-}
-
-.data-table tbody tr {
-  transition: background 0.15s ease;
-}
-
-.data-table tbody tr:hover {
-  background: var(--bg-card-hover);
-}
-
-/* ── The sidebar separates from the page ── */
-
-.light-mode .sidebar,
-:root:not([data-theme="dark"]) .sidebar {
-  background: var(--bg-secondary);
-  border-right: 1px solid var(--border-color);
-}
-
-/* The active rail, in the brand's own colours. */
-.sidebar-link.active {
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-left: 3px solid var(--accent);
-  color: var(--text-primary);
-  font-weight: var(--weight-bold);
-}
-
-/* ── The starfield was built for a purple night sky ── */
-
-.sidebar-star-layer,
-.sidebar-galaxy::before {
-  filter: hue-rotate(185deg) saturate(1.4);
-}
-
-/* ══════════════════════════════════════════════════════════════════════════
-   Street
-   ══════════════════════════════════════════════════════════════════════════
-
-   Sticker art, not a dashboard. Flat colour, drawn edges, hard offset shadows
-   with no blur, and type that only knows how to shout. The previous pass was
-   tasteful and that was the problem — it read as shabby rather than as
-   anything. This layer is deliberately loud.
-
-   Everything hangs off the shared classes, so a page picks it up without being
-   edited.
-   ══════════════════════════════════════════════════════════════════════════ */
-
-/* The old variable names still exist all over the codebase, so they are
-   aliased to the new faces rather than chased through every file. */
-:root {
-  --font-outfit: var(--font-display);
-  --font-inter: var(--font-body);
-}
-
-body {
-  font-family: var(--font-body), system-ui, sans-serif;
-}
-
-/* ── Type that shouts ── */
-
-h1, h2, h3,
-.hero-figure,
-.stat .stat-value,
-.display-title,
-.staff-clock {
-  font-family: var(--font-display), Impact, system-ui, sans-serif;
-  font-weight: 400;        /* Anton has one weight, and it is heavy */
-  letter-spacing: 0.01em;
-  text-transform: uppercase;
-  line-height: 1.02;
-}
-
-h1 {
-  /* Anton is condensed, so it carries a larger size without crowding. */
-  font-size: clamp(2.4rem, 7vw, 4rem);
-}
-
-h2 { font-size: clamp(1.5rem, 4vw, 2.25rem) }
-h3 { font-size: clamp(1.15rem, 2.6vw, 1.5rem) }
-
-/* The section rule becomes a thick painted bar. */
-.shell section > h2::after,
-.shell > section h2::after,
-.page-card h2::after {
-  width: 3.5rem;
-  height: 6px;
-  border-radius: 0;
-  background: var(--accent);
-}
-
-/* ── Drawn edges and hard shadows ── */
-
-.panel,
-.action-card,
-.hero-card,
-.stat,
-.join-card,
-.plan,
-.confirm-panel,
-.playbook-week {
-  border: 2px solid var(--border-color);
-  border-radius: 14px;
-  box-shadow: var(--shadow-md);
-  background: var(--bg-card);
-}
-
-.panel:hover,
-.action-card:hover {
-  box-shadow: var(--shadow-lg);
-  transform: translate(-2px, -2px);
-  border-color: var(--accent);
-}
-
-/* The hero keeps its blocks of colour but loses the soft wash. */
-.hero-card {
-  background: var(--bg-card);
-}
-
-.hero-card::before {
-  height: 8px;
-  background: repeating-linear-gradient(
-    135deg,
-    var(--accent) 0 14px,
-    var(--gold) 14px 28px
-  );
-}
-
-.stat::before { height: 6px }
-
-/* ── Buttons as stickers ── */
-
-.button,
-.button-secondary,
-.button-gold,
-.button-danger,
-.button-success {
-  border: 2px solid var(--border-color);
-  border-radius: 999px;
-  box-shadow: var(--shadow-sm);
-  font-family: var(--font-display), Impact, system-ui, sans-serif;
-  font-weight: 400;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  transition: transform 0.1s ease, box-shadow 0.1s ease;
-}
-
-.button {
-  background: var(--accent);
-  color: oklch(99% 0.01 95);
-}
-
-.button-secondary {
-  background: var(--gold);
-  color: oklch(16% 0.012 260);
-}
-
-.button:hover,
-.button-secondary:hover,
-.button-gold:hover,
-.button-danger:hover,
-.button-success:hover {
-  transform: translate(-2px, -2px);
-  box-shadow: var(--shadow-md);
-  filter: none;
-}
-
-.button:active,
-.button-secondary:active {
-  transform: translate(1px, 1px);
-  box-shadow: none;
-}
-
-/* ── Chips as stuck-on labels ── */
-
-.chip {
-  border: 2px solid var(--border-color);
-  border-radius: 6px;
-  font-family: var(--font-display), Impact, system-ui, sans-serif;
-  font-weight: 400;
-  letter-spacing: 0.08em;
-  padding: 0.25rem 0.55rem;
-  box-shadow: 1px 1px 0 var(--ink);
-}
-
-/* A slight tilt, alternating, so a row of them looks stuck on rather than
-   laid out. Only in a row — a lone chip sitting crooked just looks broken. */
-.h-stack > .chip:nth-child(odd) { transform: rotate(-1.5deg) }
-.h-stack > .chip:nth-child(even) { transform: rotate(1deg) }
-
-.chip.gold { background: var(--gold); color: oklch(16% 0.012 260) }
-.chip.good { background: var(--gold); color: oklch(16% 0.012 260) }
-.chip.bad,
-.chip.warn { background: var(--accent); color: oklch(99% 0.01 95) }
-
-/* ── The spray grain ──
-   A fine noise over the whole page, which is what stops flat colour looking
-   like a wireframe. Cheap: one inline SVG, no request. */
-body::after {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: 1;
+  left: -40%;
+  width: 35%;
   pointer-events: none;
-  opacity: 0.035;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+  transform: skewX(-18deg);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in oklab, var(--accent) 12%, transparent),
+    transparent
+  );
+  animation: wtaScan 3.6s ease-in-out infinite;
 }
 
-[data-theme='dark'] body::after { opacity: 0.05 }
-
-/* ── Chrome ── */
-
-.sidebar,
-.light-mode .sidebar,
-:root:not([data-theme="dark"]) .sidebar {
-  background: var(--bg-secondary);
-  border-right: 2px solid var(--border-color);
+/* Slower and fainter, for a large surface where a quick sweep reads as a bug. */
+.shimmer.subtle::after {
+  animation-duration: 6s;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
 }
 
-.topbar {
-  border-bottom: 2px solid var(--border-color);
+.shimmer.gold::after {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in oklab, var(--gold) 22%, transparent),
+    transparent
+  );
+  animation-duration: 2.4s;
 }
 
-.sidebar-link.active {
-  background: var(--gold);
-  color: oklch(16% 0.012 260);
-  border: 2px solid var(--border-color);
-  border-radius: 10px;
-  box-shadow: 2px 2px 0 var(--ink);
-  font-weight: 700;
+/** A placeholder that is loading. Never put text inside one. */
+.skeleton {
+  border-radius: var(--radius-sm);
+  background: linear-gradient(
+    90deg,
+    var(--bg-surface) 25%,
+    var(--glass-bg-hover) 37%,
+    var(--bg-surface) 63%
+  );
+  background-size: 200% 100%;
+  animation: wtaSkeleton 1.4s ease-in-out infinite;
+  color: transparent !important;
+  user-select: none;
+  min-height: 0.85em;
 }
 
-.mobile-nav {
-  border: 2px solid var(--border-color);
-  box-shadow: var(--shadow-md);
-}
+.skeleton.text { height: 0.85em; margin: 0.35em 0 }
+.skeleton.line-sm { width: 40% }
+.skeleton.line-md { width: 65% }
+.skeleton.line-lg { width: 90% }
 
-.mobile-nav-link.active {
-  color: var(--accent);
-}
-
-/* The data table gets a painted header rule. */
-.data-table th {
-  border-bottom: 3px solid var(--border-color);
-  font-family: var(--font-display), Impact, system-ui, sans-serif;
-  letter-spacing: 0.08em;
-}
-
-/* The starfield belongs to the old space theme and fights a painted wall. */
-.sidebar-galaxy,
-.sidebar-dust,
-.sidebar-star-layer {
-  display: none;
-}
-
-/* The splash wordmark takes the display face. */
-.wta-wordmark-full,
-.wta-wordmark-short {
-  font-family: var(--font-display), Impact, system-ui, sans-serif;
-  font-weight: 400;
-}
-
-/* ── Legibility corrections for the flat palette ── */
-
-/* The wordmark was a gold gradient clipped to the text, which is bright and
-   unreadable on a white ground. In light mode it takes ink with a red stop
-   instead; in dark it keeps the gold, where gold is exactly right. */
-:root:not([data-theme="dark"]) .topbar-brand,
-[data-theme="light"] .topbar-brand,
-.light-mode .topbar-brand {
-  background: linear-gradient(135deg, var(--ink) 0%, var(--accent) 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-/* Sidebar labels were a muted secondary, which against the lighter rail read
-   as washed out. They take the primary ink and only drop back on the inactive
-   state's hover. */
-.sidebar-link {
-  color: var(--text-secondary);
-  font-family: var(--font-body), system-ui, sans-serif;
-  font-weight: 600;
-}
-
-:root:not([data-theme="dark"]) .sidebar-link,
-[data-theme="light"] .sidebar-link,
-.light-mode .sidebar-link {
-  color: var(--text-primary);
-}
-
-.sidebar-link:hover {
-  color: var(--accent);
-}
-
-.sidebar-link.active,
-.sidebar-link.active:hover {
-  color: oklch(16% 0.012 260);
-}
-
-/* Table headers were set in the display face at a muted colour, which at that
-   size is close to unreadable. Darker, and a size up. */
-.data-table th,
-.display-table th {
-  color: var(--text-primary);
-  font-size: var(--text-xs);
-  opacity: 0.75;
-}
-
-/* The brand crown keeps its gold in both themes — it is a mark, not text. */
-.topbar-brand .logo-icon,
-.sidebar-brand .logo-icon {
-  -webkit-text-fill-color: initial;
+@media (prefers-reduced-motion: reduce) {
+  .shimmer::after,
+  .skeleton { animation: none }
+  .shimmer::after { opacity: 0 }
 }

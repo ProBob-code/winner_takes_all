@@ -1,20 +1,11 @@
 import "./globals.css";
 import { Suspense } from "react";
-import { Anton, Space_Grotesk } from "next/font/google";
+import { Inter, Outfit } from "next/font/google";
 import { LayoutClient } from "@/components/layout-client";
 import { Metadata } from "next";
 
-/**
- * Anton for anything that shouts, Space Grotesk for anything that is read.
- *
- * Inter and Outfit were quiet and even — correct for a dashboard, wrong for a
- * product whose whole look is street posters and spray paint. Anton is a
- * condensed poster face with no light weights at all, which is the point: it
- * only knows how to be loud. Space Grotesk carries the body text with enough
- * oddity in its letterforms to sit beside it without looking corporate.
- */
-const display = Anton({ subsets: ["latin"], weight: "400", variable: "--font-display" });
-const body = Space_Grotesk({ subsets: ["latin"], variable: "--font-body" });
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
+const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit" });
 
 export const viewport = {
   width: "device-width",
@@ -59,12 +50,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${display.variable} ${body.variable}`}>
+    <html lang="en" className={`${inter.variable} ${outfit.variable}`}>
       <head>
         <link rel="icon" href="data:image/svg+xml,<svg width='32' height='32' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'><path d='M2 19L5 7L10 12L12 5L14 12L19 7L22 19H2Z' fill='%23FFD700'/></svg>" />
         <script src="https://checkout.razorpay.com/v1/checkout.js" async></script>
       </head>
-      <body className={body.className} style={{ background: "var(--bg-primary)", color: "var(--text-primary)", margin: 0, padding: 0 }}>
+      <body className={inter.className} style={{ background: "var(--bg-primary)", color: "var(--text-primary)", margin: 0, padding: 0 }}>
         {/* LayoutClient reads the pathname, to drop the sidebar, footer and
             mobile nav on the three full-bleed routes (the big screen, staff
             mode and the join page). usePathname has to sit inside a Suspense

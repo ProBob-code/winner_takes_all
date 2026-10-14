@@ -24,16 +24,20 @@
 
 import { useEffect, useState } from "react";
 
-/** Where the particles fly. Eight, alternating amber and red. */
+/**
+ * Where the particles fly. Eight, alternating the theme's gold and accent, so
+ * the burst matches whatever the app is wearing rather than the colours of
+ * whichever palette happened to be current when this was written.
+ */
 const PARTICLES = [
-  { tx: "54px", ty: "-40px", color: "oklch(85% 0.17 92)" },
-  { tx: "-62px", ty: "-28px", color: "oklch(62% 0.2 25)" },
-  { tx: "70px", ty: "22px", color: "oklch(80% 0.16 92)" },
-  { tx: "-48px", ty: "44px", color: "oklch(70% 0.15 25)" },
-  { tx: "18px", ty: "-58px", color: "oklch(85% 0.17 92)" },
-  { tx: "-24px", ty: "-52px", color: "oklch(62% 0.2 25)" },
-  { tx: "40px", ty: "52px", color: "oklch(80% 0.16 92)" },
-  { tx: "-70px", ty: "6px", color: "oklch(70% 0.15 25)" },
+  { tx: "54px", ty: "-40px", color: "var(--gold-light)" },
+  { tx: "-62px", ty: "-28px", color: "var(--accent)" },
+  { tx: "70px", ty: "22px", color: "var(--gold)" },
+  { tx: "-48px", ty: "44px", color: "var(--accent-light)" },
+  { tx: "18px", ty: "-58px", color: "var(--gold-light)" },
+  { tx: "-24px", ty: "-52px", color: "var(--accent)" },
+  { tx: "40px", ty: "52px", color: "var(--gold)" },
+  { tx: "-70px", ty: "6px", color: "var(--accent-light)" },
 ];
 
 export function SplashScreen() {
