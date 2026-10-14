@@ -2106,7 +2106,7 @@ export function QuickTournament() {
                 {arenaId && (
                   <button
                     className="extra-time-btn"
-                    style={{ background: 'rgba(139, 92, 246, 0.12)', color: '#a78bfa', border: '1px solid rgba(139, 92, 246, 0.3)' }}
+                    style={{ background: 'color-mix(in oklab, var(--accent) 12%, transparent)', color: '#a78bfa', border: '1px solid color-mix(in oklab, var(--accent) 30%, transparent)' }}
                     onClick={() => setShowBroadcastCode(!showBroadcastCode)}
                     title={syncError ? "Share the arena first so it exists on the spectator network" : undefined}
                   >

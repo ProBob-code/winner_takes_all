@@ -64,7 +64,7 @@ export default function ProfilePage() {
           </div>
           <div className="profile-hero-info" style={{ paddingLeft: "1rem" }}>
             <h2 className="glow-text" style={{ fontSize: "2.8rem", letterSpacing: "-1px" }}>{user.name || "Guest Player"}</h2>
-            <div className="profile-badge" style={{ background: "rgba(139, 92, 246, 0.15)", border: "1px solid rgba(139, 92, 246, 0.3)", color: "var(--accent-light)", marginTop: "0.25rem", padding: "0.3rem 0.8rem", fontSize: "0.9rem" }}>
+            <div className="profile-badge" style={{ background: "color-mix(in oklab, var(--accent) 15%, transparent)", border: "1px solid color-mix(in oklab, var(--accent) 30%, transparent)", color: "var(--accent-light)", marginTop: "0.25rem", padding: "0.3rem 0.8rem", fontSize: "0.9rem" }}>
               <span style={{opacity: 0.7}}>ID:</span> {user.id}
             </div>
           </div>
@@ -113,7 +113,7 @@ export default function ProfilePage() {
                 </div>
                 <div className="info-row" style={{ padding: "1.25rem 1.5rem", background: "rgba(0,0,0,0.2)", backdropFilter: "blur(5px)" }}>
                   <span className="info-label">Current Role</span>
-                  <span className="info-value text-accent" style={{ background: "rgba(139, 92, 246, 0.2)", padding: "0.2rem 0.8rem", borderRadius: "1rem" }}>Player</span>
+                  <span className="info-value text-accent" style={{ background: "color-mix(in oklab, var(--accent) 20%, transparent)", padding: "0.2rem 0.8rem", borderRadius: "1rem" }}>Player</span>
                 </div>
               </div>
             </div>

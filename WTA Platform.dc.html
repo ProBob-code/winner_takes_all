@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  body{margin:0;background:oklch(14% 0.012 260);}
+  ::selection{background:oklch(80% 0.16 92);color:oklch(14% 0.012 260);}
+  @keyframes livePulse{0%,100%{opacity:1}50%{opacity:.35}}
+  @keyframes heroScan{0%{left:-5%}100%{left:105%}}
+  @keyframes splashFade{0%{opacity:1}82%{opacity:1}100%{opacity:0}}
+  @keyframes splashBar{0%{transform:translateX(-100%)}50%{transform:translateX(150%)}100%{transform:translateX(350%)}}
+  @keyframes wtaFuseSpark{
+    0%{opacity:0;transform:translate(-90px,46px) scale(.55)}
+    5%{opacity:1;transform:translate(-86px,44px) scale(.6)}
+    10%{opacity:.5;transform:translate(-80px,41px) scale(.7)}
+    15%{opacity:1;transform:translate(-74px,38px) scale(.65)}
+    22%{opacity:.6;transform:translate(-64px,33px) scale(.75)}
+    28%{opacity:1;transform:translate(-54px,28px) scale(.7)}
+    35%{opacity:.55;transform:translate(-42px,22px) scale(.85)}
+    42%{opacity:1;transform:translate(-30px,16px) scale(.75)}
+    48%{opacity:.6;transform:translate(-20px,10px) scale(.9)}
+    53%{opacity:1;transform:translate(-10px,5px) scale(.85)}
+    57%{opacity:1;transform:translate(-2px,1px) scale(1.3)}
+    60%{opacity:0;transform:translate(0,0) scale(1.6)}
+    100%{opacity:0}
+  }
+  @keyframes wtaImpactFlash{0%,58%{opacity:0;transform:scale(.2)}61%{opacity:.95;transform:scale(1)}72%{opacity:0;transform:scale(2.5)}100%{opacity:0}}
+  @keyframes wtaParticle{
+    0%,58%{opacity:0;transform:translate(-50%,-50%) scale(.4)}
+    62%{opacity:1;transform:translate(calc(-50% + var(--tx)*.15),calc(-50% + var(--ty)*.15)) scale(1.3)}
+    82%{opacity:.7}
+    100%{opacity:0;transform:translate(calc(-50% + var(--tx)),calc(-50% + var(--ty))) scale(.25)}
+  }
+  @keyframes wtaShockwave{0%,58%{opacity:0;transform:scale(.3);border-width:3px}61%{opacity:1;transform:scale(1);border-width:2px}74%{opacity:0;transform:scale(4.2);border-width:.5px}100%{opacity:0}}
+  @keyframes wtaShake{0%,57%{transform:translate(0,0)}60%{transform:translate(-4px,3px)}63%{transform:translate(5px,-3px)}66%{transform:translate(-3px,2px)}69%{transform:translate(2px,-1px)}72%{transform:translate(0,0)}100%{transform:translate(0,0)}}
+  @keyframes wtaFullText{
+    0%,58%{opacity:1;transform:translate(0,0) scale(1);filter:blur(0)}
+    60%{opacity:1;transform:translate(3px,-2px) scale(1.05);filter:blur(2px)}
+    62%{opacity:0;transform:translate(-7px,4px) scale(.84);filter:blur(8px)}
+    100%{opacity:0}
+  }
+  @keyframes wtaAbbrevText{
+    0%,60%{opacity:0;transform:scale(1.7);filter:blur(5px)}
+    64%{opacity:1;transform:scale(1.2);filter:blur(0)}
+    73%{transform:scale(.93)}
+    85%{transform:scale(1.04)}
+    100%{opacity:1;transform:scale(1)}
+  }
+  @keyframes splashDot{0%,100%{opacity:.25;transform:scale(.8)}50%{opacity:1;transform:scale(1.15)}}
+  a{color:oklch(80% 0.16 92);}
+  a:hover{color:oklch(88% 0.14 92);}
+</style>
+</helmet>
+<div style="font-family:'Manrope',sans-serif;background:oklch(14% 0.012 260);color:oklch(96% 0.005 260);min-height:100vh;position:relative;">
+
+  <sc-if value="{{ splashVisible }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;inset:0;z-index:9999;background:oklch(14% 0.012 260);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:22px;animation:splashFade 1.6s ease forwards, wtaShake 1.3s ease forwards;">
+      <div style="position:absolute;inset:0;background-image:repeating-linear-gradient(90deg,oklch(100% 0 0 / 0.03) 0px,oklch(100% 0 0 / 0.03) 1px,transparent 1px,transparent 80px);pointer-events:none;"></div>
+      <div style="position:relative;height:70px;display:flex;align-items:center;justify-content:center;width:100%;overflow:visible;">
+        <div style="position:absolute;left:50%;top:50%;width:10px;height:10px;margin-left:-5px;margin-top:-5px;border-radius:999px;background:radial-gradient(circle, oklch(98% 0.05 90) 0%, oklch(75% 0.2 55) 55%, oklch(55% 0.2 30) 100%);box-shadow:0 0 10px oklch(80% 0.2 50 / .9), 0 0 18px oklch(70% 0.2 40 / .6);animation:wtaFuseSpark 1.3s linear forwards;"></div>
+        <div style="position:absolute;left:50%;top:50%;width:16px;height:16px;margin-left:-8px;margin-top:-8px;border-radius:999px;border:2px solid oklch(75% 0.18 45);animation:wtaShockwave 1.3s ease forwards;"></div>
+        <div style="position:absolute;left:50%;top:50%;width:90px;height:90px;margin-left:-45px;margin-top:-45px;border-radius:999px;background:radial-gradient(circle, oklch(97% 0.05 90 / .95) 0%, oklch(75% 0.19 45 / .6) 40%, transparent 72%);animation:wtaImpactFlash 1.3s ease forwards;"></div>
+        <sc-for list="{{ particles }}" as="p" hint-placeholder-count="8">
+          <div style="position:absolute;left:50%;top:50%;width:5px;height:5px;border-radius:999px;background:{{ p.color }};--tx:{{ p.tx }};--ty:{{ p.ty }};animation:wtaParticle 1.3s cubic-bezier(.2,.8,.3,1) forwards;"></div>
+        </sc-for>
+        <div style="position:absolute;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:33px;letter-spacing:1.5px;white-space:nowrap;animation:wtaFullText 1.3s ease forwards;"><span style="color:oklch(62% 0.2 25)">Winner</span><span style="color:oklch(96% 0.005 260)">.</span><span style="color:oklch(85% 0.17 92)">Takes</span><span style="color:oklch(96% 0.005 260)">.</span><span style="color:oklch(62% 0.2 25)">All</span></div>
+        <div style="position:absolute;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:48px;letter-spacing:1px;animation:wtaAbbrevText 1.3s ease forwards;"><span style="color:oklch(62% 0.2 25)">W</span><span style="color:oklch(96% 0.005 260)">.</span><span style="color:oklch(85% 0.17 92)">T</span><span style="color:oklch(96% 0.005 260)">.</span><span style="color:oklch(62% 0.2 25)">A</span></div>
+      </div>
+      <div style="display:flex;gap:6px;">
+        <sc-for list="{{ loadDots }}" as="d" hint-placeholder-count="3">
+          <div style="width:5px;height:5px;border-radius:999px;background:oklch(80% 0.16 92);animation:splashDot .9s ease-in-out infinite;animation-delay:{{ d.delay }};"></div>
+        </sc-for>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- HEADER -->
+  <header style="position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-content:space-between;padding:0 32px;height:72px;background:oklch(14% 0.012 260 / 0.92);backdrop-filter:blur(10px);border-bottom:1px solid oklch(30% 0.014 260 / 0.5);">
+    <div style="display:flex;align-items:center;gap:40px;">
+      <div onMouseEnter="{{ onLogoEnter }}" onMouseLeave="{{ onLogoLeave }}" style="position:relative;height:30px;width:{{ logoWidth }};transition:width .3s cubic-bezier(.2,.8,.2,1);cursor:pointer;overflow:visible;">
+        <span style="position:absolute;left:0;top:50%;transform:translateY(-50%);font-family:'Rajdhani',sans-serif;font-weight:700;font-size:24px;letter-spacing:0.5px;white-space:nowrap;opacity:{{ abbrevOpacity }};transition:opacity .2s;"><span style="color:oklch(62% 0.2 25)">W</span><span style="color:oklch(90% 0.005 260)">.</span><span style="color:oklch(85% 0.17 92)">T</span><span style="color:oklch(90% 0.005 260)">.</span><span style="color:oklch(62% 0.2 25)">A</span></span>
+        <span style="position:absolute;left:0;top:50%;transform:translateY(-50%);font-family:'Rajdhani',sans-serif;font-weight:700;font-size:22px;letter-spacing:0.3px;white-space:nowrap;opacity:{{ fullOpacity }};transition:opacity .2s;"><span style="color:oklch(62% 0.2 25)">Winner</span><span style="color:oklch(90% 0.005 260)">.</span><span style="color:oklch(85% 0.17 92)">Takes</span><span style="color:oklch(90% 0.005 260)">.</span><span style="color:oklch(62% 0.2 25)">All</span></span>
+      </div>
+      <nav style="display:flex;gap:4px;">
+        <sc-for list="{{ navItems }}" as="item" hint-placeholder-count="5">
+          <div onClick="{{ item.onClick }}" style="padding:10px 16px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;color:{{ item.color }};background:{{ item.bg }};transition:background .15s;" style-hover="background:oklch(24% 0.014 260);">{{ item.label }}</div>
+        </sc-for>
+      </nav>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <div style="padding:10px 20px;border-radius:8px;font-size:14px;font-weight:700;color:oklch(90% 0.005 260);cursor:pointer;">Log In</div>
+      <div style="padding:10px 22px;border-radius:8px;font-size:14px;font-weight:700;background:oklch(80% 0.16 92);color:oklch(14% 0.012 260);cursor:pointer;transition:box-shadow .18s,transform .18s;" style-hover="box-shadow:0 6px 20px oklch(80% 0.16 92 / .4);transform:translateY(-2px);">Sign Up</div>
+    </div>
+  </header>
+
+  <!-- HOME -->
+  <sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
+  <div>
+    <section style="position:relative;padding:120px 32px 100px;overflow:hidden;background:radial-gradient(ellipse 900px 500px at 50% -10%, oklch(30% 0.05 92 / 0.35), transparent),oklch(14% 0.012 260);">
+      <div style="position:absolute;inset:0;background-image:repeating-linear-gradient(90deg,oklch(100% 0 0 / 0.03) 0px,oklch(100% 0 0 / 0.03) 1px,transparent 1px,transparent 80px);pointer-events:none;"></div>
+      <div style="position:absolute;inset:0;overflow:hidden;pointer-events:none;"><div style="position:absolute;top:0;bottom:0;width:2px;background:linear-gradient(180deg,transparent,oklch(80% 0.16 92 / .35),transparent);animation:heroScan 5s linear infinite;"></div></div>
+      <div style="max-width:1100px;margin:0 auto;position:relative;text-align:center;display:flex;flex-direction:column;align-items:center;gap:24px;">
+        <div style="display:flex;align-items:center;gap:8px;padding:6px 14px;border-radius:999px;border:1px solid oklch(30% 0.014 260 / 0.6);font-size:13px;font-weight:600;color:oklch(80% 0.16 92);">
+          <span style="width:7px;height:7px;border-radius:999px;background:oklch(62% 0.19 25);animation:livePulse 1.4s infinite;"></span>
+          482 tournaments running right now
+        </div>
+        <h1 style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:84px;line-height:0.95;margin:0;letter-spacing:-1.5px;text-wrap:pretty;text-transform:uppercase;">Compete.<br><span style="color:oklch(80% 0.16 92);text-shadow:0 0 30px oklch(80% 0.16 92 / .5);">Dominate.</span> Get Paid.</h1>
+        <p style="max-width:560px;font-size:18px;line-height:1.6;color:oklch(70% 0.01 260);margin:0;">Tournament infrastructure for esports organizers and competitive communities — brackets, scheduling, rankings, and live event ops in one platform.</p>
+        <div style="display:flex;gap:14px;margin-top:8px;">
+          <div onClick="{{ goTournaments }}" style="padding:16px 32px;border-radius:10px;background:oklch(80% 0.16 92);color:oklch(14% 0.012 260);font-weight:800;font-size:15px;cursor:pointer;transition:transform .18s,box-shadow .18s;" style-hover="transform:translateY(-3px) scale(1.03);box-shadow:0 10px 30px oklch(80% 0.16 92 / .35);">Browse Tournaments</div>
+          <div style="padding:16px 32px;border-radius:10px;border:1px solid oklch(35% 0.014 260);color:oklch(96% 0.005 260);font-weight:700;font-size:15px;cursor:pointer;transition:transform .18s,border-color .18s;" style-hover="transform:translateY(-3px) scale(1.03);border-color:oklch(80% 0.16 92);">Host an Event</div>
+        </div>
+      </div>
+      <div style="max-width:1100px;margin:72px auto 0;position:relative;display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:oklch(30% 0.014 260 / 0.5);border:1px solid oklch(30% 0.014 260 / 0.5);border-radius:16px;overflow:hidden;">
+        <sc-for list="{{ stats }}" as="s" hint-placeholder-count="4">
+          <div style="background:oklch(17% 0.012 260);padding:28px 20px;text-align:center;transition:background .2s;" style-hover="background:oklch(20% 0.014 260);">
+            <div style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:34px;color:oklch(96% 0.005 260);">{{ s.value }}</div>
+            <div style="font-size:13px;color:oklch(60% 0.01 260);margin-top:4px;font-weight:600;">{{ s.label }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+
+    <section style="max-width:1200px;margin:0 auto;padding:80px 32px 20px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <span style="width:8px;height:8px;border-radius:999px;background:oklch(62% 0.19 25);animation:livePulse 1.4s infinite;"></span>
+          <h2 style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:28px;margin:0;letter-spacing:0.3px;">LIVE NOW</h2>
+        </div>
+        <div onClick="{{ goTournaments }}" style="font-size:14px;font-weight:700;color:oklch(80% 0.16 92);cursor:pointer;">View all →</div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px;">
+        <sc-for list="{{ liveTournaments }}" as="t" hint-placeholder-count="3">
+          <div onClick="{{ goDetail }}" style="background:oklch(18% 0.012 260);border:1px solid oklch(30% 0.014 260 / 0.5);border-radius:14px;overflow:hidden;cursor:pointer;transition:transform .2s,border-color .2s,box-shadow .2s;" style-hover="transform:translateY(-6px);border-color:oklch(62% 0.19 25 / .6);box-shadow:0 14px 32px oklch(10% 0 0 / .5);">
+            <div style="height:140px;background:repeating-linear-gradient(135deg,{{ t.stripeA }} 0px,{{ t.stripeA }} 14px,{{ t.stripeB }} 14px,{{ t.stripeB }} 28px);display:flex;align-items:flex-start;justify-content:space-between;padding:14px;box-sizing:border-box;">
+              <div style="display:flex;align-items:center;gap:6px;padding:5px 10px;border-radius:6px;background:oklch(20% 0.01 20 / 0.85);font-size:11px;font-weight:800;letter-spacing:0.5px;color:oklch(90% 0.1 25);">
+                <span style="width:6px;height:6px;border-radius:999px;background:oklch(65% 0.2 25);animation:livePulse 1.4s infinite;"></span>LIVE
+              </div>
+              <div style="font-family:monospace;font-size:10px;color:oklch(95% 0.005 260 / 0.7);background:oklch(14% 0 0 / 0.5);padding:4px 8px;border-radius:6px;">{{ t.game }} THUMBNAIL</div>
+            </div>
+            <div style="padding:18px 20px 20px;">
+              <div style="font-weight:700;font-size:16px;margin-bottom:6px;">{{ t.name }}</div>
+              <div style="display:flex;justify-content:space-between;font-size:13px;color:oklch(65% 0.01 260);">
+                <span>{{ t.players }} players</span>
+                <span style="color:oklch(80% 0.16 92);font-weight:700;">{{ t.prize }}</span>
+              </div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+
+    <section style="max-width:1200px;margin:0 auto;padding:60px 32px 100px;">
+      <h2 style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:28px;margin:0 0 28px;letter-spacing:0.3px;">TOP GAMES</h2>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:16px;">
+        <sc-for list="{{ games }}" as="g" hint-placeholder-count="6">
+          <div style="border-radius:12px;overflow:hidden;border:1px solid oklch(30% 0.014 260 / 0.5);cursor:pointer;transition:transform .2s,border-color .2s;" style-hover="transform:translateY(-5px) scale(1.02);border-color:oklch(80% 0.16 92 / .6);">
+            <div style="height:110px;background:repeating-linear-gradient(45deg,{{ g.stripeA }} 0px,{{ g.stripeA }} 10px,{{ g.stripeB }} 10px,{{ g.stripeB }} 20px);display:flex;align-items:center;justify-content:center;">
+              <span style="font-family:monospace;font-size:10px;color:oklch(95% 0 0 / 0.75);background:oklch(14% 0 0 / 0.45);padding:4px 8px;border-radius:6px;">GAME ART</span>
+            </div>
+            <div style="padding:12px 14px;background:oklch(18% 0.012 260);">
+              <div style="font-weight:700;font-size:14px;">{{ g.name }}</div>
+              <div style="font-size:12px;color:oklch(60% 0.01 260);margin-top:2px;">{{ g.count }} tournaments</div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+  </div>
+  </sc-if>
+
+  <!-- TOURNAMENTS -->
+  <sc-if value="{{ isTournaments }}" hint-placeholder-val="{{ false }}">
+  <div style="max-width:1200px;margin:0 auto;padding:48px 32px 100px;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:32px;flex-wrap:wrap;gap:16px;">
+      <div>
+        <h1 style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:38px;margin:0;">Tournaments</h1>
+        <p style="color:oklch(65% 0.01 260);margin:6px 0 0;font-size:15px;">Find a bracket, register, and compete.</p>
+      </div>
+      <div style="padding:14px 26px;border-radius:10px;background:oklch(80% 0.16 92);color:oklch(14% 0.012 260);font-weight:800;font-size:14px;cursor:pointer;transition:box-shadow .18s,transform .18s;" style-hover="box-shadow:0 8px 24px oklch(80% 0.16 92 / .4);transform:translateY(-2px);">+ Create Tournament</div>
+    </div>
+    <div style="display:flex;gap:10px;margin-bottom:28px;flex-wrap:wrap;">
+      <sc-for list="{{ filters }}" as="f" hint-placeholder-count="4">
+        <div style="padding:9px 18px;border-radius:999px;font-size:13px;font-weight:700;cursor:pointer;background:{{ f.bg }};color:{{ f.color }};border:1px solid {{ f.border }};">{{ f.label }}</div>
+      </sc-for>
+      <div style="margin-left:auto;padding:9px 18px;border-radius:999px;font-size:13px;font-weight:600;border:1px solid oklch(30% 0.014 260 / 0.5);color:oklch(65% 0.01 260);">Search tournaments…</div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px;">
+      <sc-for list="{{ allTournaments }}" as="t" hint-placeholder-count="6">
+        <div onClick="{{ goDetail }}" style="background:oklch(18% 0.012 260);border:1px solid oklch(30% 0.014 260 / 0.5);border-radius:14px;overflow:hidden;cursor:pointer;transition:transform .2s,border-color .2s,box-shadow .2s;" style-hover="transform:translateY(-6px);border-color:oklch(80% 0.16 92 / .5);box-shadow:0 14px 32px oklch(10% 0 0 / .5);">
+          <div style="height:130px;background:repeating-linear-gradient(135deg,{{ t.stripeA }} 0px,{{ t.stripeA }} 14px,{{ t.stripeB }} 14px,{{ t.stripeB }} 28px);display:flex;align-items:flex-start;justify-content:space-between;padding:14px;box-sizing:border-box;">
+            <div style="padding:5px 10px;border-radius:6px;background:{{ t.badgeBg }};font-size:11px;font-weight:800;letter-spacing:0.5px;color:{{ t.badgeColor }};">{{ t.status }}</div>
+            <div style="font-family:monospace;font-size:10px;color:oklch(95% 0.005 260 / 0.7);background:oklch(14% 0 0 / 0.5);padding:4px 8px;border-radius:6px;">{{ t.game }}</div>
+          </div>
+          <div style="padding:18px 20px 20px;">
+            <div style="font-weight:700;font-size:16px;margin-bottom:8px;">{{ t.name }}</div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;color:oklch(65% 0.01 260);margin-bottom:12px;">
+              <span>{{ t.players }} players</span>
+              <span>{{ t.date }}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding-top:12px;border-top:1px solid oklch(30% 0.014 260 / 0.5);">
+              <span style="color:oklch(80% 0.16 92);font-weight:800;font-size:15px;">{{ t.prize }}</span>
+              <span style="font-size:13px;font-weight:700;color:oklch(90% 0.005 260);">Join →</span>
+            </div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- DETAIL -->
+  <sc-if value="{{ isDetail }}" hint-placeholder-val="{{ false }}">
+  <div>
+    <div style="height:220px;background:repeating-linear-gradient(135deg,oklch(30% 0.05 92 / 0.5) 0px,oklch(30% 0.05 92 / 0.5) 16px,oklch(20% 0.01 260) 16px,oklch(20% 0.01 260) 32px);position:relative;display:flex;align-items:flex-end;">
+      <div style="position:absolute;inset:0;background:linear-gradient(0deg,oklch(14% 0.012 260) 0%,transparent 70%);"></div>
+      <div style="position:relative;max-width:1200px;margin:0 auto;padding:0 32px 28px;width:100%;box-sizing:border-box;">
+        <div onClick="{{ goTournaments }}" style="font-size:13px;font-weight:700;color:oklch(70% 0.01 260);cursor:pointer;margin-bottom:12px;">← All Tournaments</div>
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+          <div style="padding:5px 12px;border-radius:6px;background:oklch(35% 0.14 25 / 0.9);font-size:11px;font-weight:800;color:oklch(92% 0.08 25);">LIVE — ROUND 3</div>
+          <div style="font-family:monospace;font-size:11px;color:oklch(70% 0.01 260);">VALORANT</div>
+        </div>
+        <h1 style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:40px;margin:0;">Midnight Circuit Finals</h1>
+      </div>
+    </div>
+
+    <div style="max-width:1200px;margin:0 auto;padding:32px 32px 100px;display:grid;grid-template-columns:1fr 300px;gap:32px;">
+      <div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:oklch(30% 0.014 260 / 0.5);border:1px solid oklch(30% 0.014 260 / 0.5);border-radius:12px;overflow:hidden;margin-bottom:36px;">
+          <div style="background:oklch(18% 0.012 260);padding:18px;text-align:center;">
+            <div style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:24px;color:oklch(80% 0.16 92);">$50,000</div>
+            <div style="font-size:12px;color:oklch(60% 0.01 260);font-weight:600;margin-top:2px;">Prize Pool</div>
+          </div>
+          <div style="background:oklch(18% 0.012 260);padding:18px;text-align:center;">
+            <div style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:24px;">64</div>
+            <div style="font-size:12px;color:oklch(60% 0.01 260);font-weight:600;margin-top:2px;">Teams</div>
+          </div>
+          <div style="background:oklch(18% 0.012 260);padding:18px;text-align:center;">
+            <div style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:24px;">Single Elim</div>
+            <div style="font-size:12px;color:oklch(60% 0.01 260);font-weight:600;margin-top:2px;">Format</div>
+          </div>
+        </div>
+
+        <h2 style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:22px;margin:0 0 20px;">Bracket</h2>
+        <div style="display:flex;gap:32px;overflow-x:auto;padding-bottom:12px;">
+          <sc-for list="{{ bracketRounds }}" as="round" hint-placeholder-count="4">
+            <div style="display:flex;flex-direction:column;justify-content:space-around;gap:16px;min-width:180px;">
+              <div style="font-size:12px;font-weight:700;color:oklch(60% 0.01 260);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">{{ round.label }}</div>
+              <sc-for list="{{ round.matches }}" as="m" hint-placeholder-count="2">
+                <div style="background:oklch(18% 0.012 260);border:1px solid oklch(30% 0.014 260 / 0.5);border-radius:8px;overflow:hidden;">
+                  <div style="display:flex;justify-content:space-between;padding:9px 12px;font-size:13px;font-weight:{{ m.w1 }};background:{{ m.bg1 }};">
+                    <span>{{ m.p1 }}</span><span>{{ m.s1 }}</span>
+                  </div>
+                  <div style="display:flex;justify-content:space-between;padding:9px 12px;font-size:13px;font-weight:{{ m.w2 }};background:{{ m.bg2 }};border-top:1px solid oklch(30% 0.014 260 / 0.5);">
+                    <span>{{ m.p2 }}</span><span>{{ m.s2 }}</span>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:20px;">
+        <div style="background:oklch(18% 0.012 260);border:1px solid oklch(30% 0.014 260 / 0.5);border-radius:12px;padding:20px;">
+          <div style="font-weight:700;font-size:14px;margin-bottom:14px;">Registration</div>
+          <div style="font-size:13px;color:oklch(65% 0.01 260);margin-bottom:16px;line-height:1.5;">Closes in 2 days · 64/64 slots filled</div>
+          <div style="padding:13px;border-radius:8px;background:oklch(30% 0.01 260);color:oklch(60% 0.01 260);text-align:center;font-weight:700;font-size:14px;">Registration Closed</div>
+        </div>
+        <div style="background:oklch(18% 0.012 260);border:1px solid oklch(30% 0.014 260 / 0.5);border-radius:12px;padding:20px;">
+          <div style="font-weight:700;font-size:14px;margin-bottom:14px;">Organizer</div>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div style="width:40px;height:40px;border-radius:999px;background:repeating-linear-gradient(45deg,oklch(45% 0.05 260) 0,oklch(45% 0.05 260) 4px,oklch(38% 0.04 260) 4px,oklch(38% 0.04 260) 8px);"></div>
+            <div>
+              <div style="font-weight:700;font-size:13px;">Circuit Gaming Co.</div>
+              <div style="font-size:12px;color:oklch(60% 0.01 260);">Verified Organizer</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- LEADERBOARD -->
+  <sc-if value="{{ isLeaderboard }}" hint-placeholder-val="{{ false }}">
+  <div style="max-width:900px;margin:0 auto;padding:48px 32px 100px;">
+    <h1 style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:38px;margin:0 0 6px;">Leaderboard</h1>
+    <p style="color:oklch(65% 0.01 260);margin:0 0 32px;font-size:15px;">Global rankings — Valorant Circuit, Season 4</p>
+    <div style="background:oklch(18% 0.012 260);border:1px solid oklch(30% 0.014 260 / 0.5);border-radius:14px;overflow:hidden;">
+      <div style="display:grid;grid-template-columns:56px 1fr 90px 90px 100px;padding:14px 20px;font-size:12px;font-weight:700;color:oklch(55% 0.01 260);text-transform:uppercase;letter-spacing:0.5px;border-bottom:1px solid oklch(30% 0.014 260 / 0.5);">
+        <div>#</div><div>Player</div><div>W-L</div><div>Win %</div><div>Points</div>
+      </div>
+      <sc-for list="{{ leaderboard }}" as="p" hint-placeholder-count="8">
+        <div style="display:grid;grid-template-columns:56px 1fr 90px 90px 100px;align-items:center;padding:14px 20px;border-bottom:1px solid oklch(26% 0.012 260 / 0.6);background:{{ p.rowBg }};">
+          <div style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:18px;color:{{ p.rankColor }};">{{ p.rank }}</div>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div style="width:34px;height:34px;border-radius:999px;background:repeating-linear-gradient(45deg,{{ p.stripeA }} 0,{{ p.stripeA }} 4px,{{ p.stripeB }} 4px,{{ p.stripeB }} 8px);flex-shrink:0;"></div>
+            <div style="font-weight:700;font-size:14px;">{{ p.name }}</div>
+          </div>
+          <div style="font-size:13px;color:oklch(65% 0.01 260);">{{ p.record }}</div>
+          <div style="font-size:13px;color:oklch(65% 0.01 260);">{{ p.winPct }}</div>
+          <div style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:16px;color:oklch(80% 0.16 92);">{{ p.points }}</div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- LIVE -->
+  <sc-if value="{{ isLive }}" hint-placeholder-val="{{ false }}">
+  <div style="max-width:1200px;margin:0 auto;padding:32px 32px 100px;display:grid;grid-template-columns:1fr 320px;gap:24px;">
+    <div>
+      <div style="aspect-ratio:16/9;border-radius:14px;overflow:hidden;background:repeating-linear-gradient(45deg,oklch(20% 0.01 260) 0,oklch(20% 0.01 260) 18px,oklch(16% 0.01 260) 18px,oklch(16% 0.01 260) 36px);display:flex;align-items:center;justify-content:center;position:relative;">
+        <span style="font-family:monospace;font-size:13px;color:oklch(95% 0 0 / 0.6);background:oklch(14% 0 0 / 0.5);padding:8px 16px;border-radius:8px;">LIVE STREAM PLAYER</span>
+        <div style="position:absolute;top:16px;left:16px;display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:6px;background:oklch(20% 0.01 20 / 0.85);font-size:12px;font-weight:800;color:oklch(90% 0.1 25);">
+          <span style="width:7px;height:7px;border-radius:999px;background:oklch(65% 0.2 25);animation:livePulse 1.4s infinite;"></span>LIVE
+        </div>
+        <div style="position:absolute;top:16px;right:16px;padding:6px 12px;border-radius:6px;background:oklch(14% 0 0 / 0.6);font-size:12px;font-weight:700;">👁 18.2K</div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:20px;padding:20px;background:oklch(18% 0.012 260);border:1px solid oklch(30% 0.014 260 / 0.5);border-radius:12px;">
+        <div style="display:flex;align-items:center;gap:20px;">
+          <div style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:20px;">Nova Esports</div>
+          <div style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:26px;color:oklch(80% 0.16 92);">7 — 5</div>
+          <div style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:20px;">Ashen Five</div>
+        </div>
+        <div style="font-size:13px;font-weight:700;color:oklch(65% 0.01 260);">Map 2 · Overtime</div>
+      </div>
+      <div style="margin-top:20px;">
+        <div style="font-weight:700;font-size:15px;margin-bottom:12px;">Midnight Circuit Finals — Grand Final</div>
+        <p style="color:oklch(65% 0.01 260);font-size:14px;line-height:1.6;margin:0;">Best-of-five grand final. Winner takes the $50,000 prize pool and a direct seed into next season's Championship Circuit.</p>
+      </div>
+    </div>
+    <div style="background:oklch(18% 0.012 260);border:1px solid oklch(30% 0.014 260 / 0.5);border-radius:12px;padding:16px;display:flex;flex-direction:column;height:600px;">
+      <div style="font-weight:700;font-size:13px;padding-bottom:12px;border-bottom:1px solid oklch(30% 0.014 260 / 0.5);margin-bottom:12px;">Live Chat</div>
+      <div style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:10px;">
+        <sc-for list="{{ chatMessages }}" as="c" hint-placeholder-count="10">
+          <div style="font-size:13px;line-height:1.4;"><span style="font-weight:700;color:{{ c.color }};">{{ c.user }}</span> <span style="color:oklch(80% 0.01 260);">{{ c.text }}</span></div>
+        </sc-for>
+      </div>
+      <div style="margin-top:12px;padding:10px 14px;border-radius:8px;border:1px solid oklch(30% 0.014 260 / 0.5);font-size:13px;color:oklch(50% 0.01 260);">Send a message…</div>
+    </div>
+  </div>
+  </sc-if>
+
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { tab: 'home', splashVisible: false, logoHover: false };
+
+  onLogoEnter = () => this.setState({ logoHover: true });
+  onLogoLeave = () => this.setState({ logoHover: false });
+
+  setTab = (t) => () => {
+    if (t === this.state.tab) return;
+    clearTimeout(this._splashTimer);
+    this.setState({ tab: t, splashVisible: true });
+    this._splashTimer = setTimeout(() => this.setState({ splashVisible: false }), 1600);
+  };
+
+  renderVals() {
+    const tab = this.state.tab;
+    const navDef = [
+      ['home','Home'],['tournaments','Tournaments'],['leaderboard','Leaderboard'],['live','Live Screening'],['games','Games']
+    ];
+    const navItems = navDef.map(([id,label]) => ({
+      label, onClick: this.setTab(id),
+      color: tab===id ? 'oklch(14% 0.012 260)' : 'oklch(85% 0.005 260)',
+      bg: tab===id ? 'oklch(80% 0.16 92)' : 'transparent'
+    }));
+
+    const stats = [
+      {value:'482', label:'Active Tournaments'},
+      {value:'$2.1M', label:'Prize Pool Distributed'},
+      {value:'118K', label:'Registered Players'},
+      {value:'6,400', label:'Organizers'}
+    ];
+
+    const games = [
+      {name:'Valorant', count:142, stripeA:'oklch(30% 0.1 25 / 0.5)', stripeB:'oklch(20% 0.01 260)'},
+      {name:'League of Legends', count:98, stripeA:'oklch(30% 0.1 92 / 0.5)', stripeB:'oklch(20% 0.01 260)'},
+      {name:'CS2', count:76, stripeA:'oklch(30% 0.1 250 / 0.5)', stripeB:'oklch(20% 0.01 260)'},
+      {name:'Rocket League', count:54, stripeA:'oklch(30% 0.1 180 / 0.5)', stripeB:'oklch(20% 0.01 260)'},
+      {name:'Fortnite', count:61, stripeA:'oklch(30% 0.1 320 / 0.5)', stripeB:'oklch(20% 0.01 260)'},
+      {name:'Apex Legends', count:38, stripeA:'oklch(30% 0.1 130 / 0.5)', stripeB:'oklch(20% 0.01 260)'}
+    ];
+
+    const mkT = (name, game, players, prize, status, date) => {
+      const hueMap = {Valorant:25, 'League of Legends':92, CS2:250, 'Rocket League':180, Fortnite:320, 'Apex Legends':130};
+      const hue = hueMap[game] || 92;
+      const badges = {
+        LIVE: {bg:'oklch(35% 0.14 25 / 0.9)', color:'oklch(92% 0.08 25)'},
+        UPCOMING: {bg:'oklch(35% 0.1 250 / 0.9)', color:'oklch(90% 0.08 250)'},
+        COMPLETED: {bg:'oklch(30% 0.01 260 / 0.9)', color:'oklch(70% 0.01 260)'}
+      };
+      const b = badges[status];
+      return {name, game, players, prize, status, date,
+        stripeA:`oklch(30% 0.1 ${hue} / 0.5)`, stripeB:'oklch(20% 0.01 260)',
+        badgeBg:b.bg, badgeColor:b.color};
+    };
+
+    const liveTournaments = [
+      mkT('Midnight Circuit Finals','Valorant','64','$50,000','LIVE','Today'),
+      mkT('Summit Clash Open','CS2','32','$12,000','LIVE','Today'),
+      mkT('Rift Rivals Cup','League of Legends','48','$18,500','LIVE','Today')
+    ];
+
+    const allTournaments = [
+      ...liveTournaments,
+      mkT('Weekend Warriors','Rocket League','16','$4,000','UPCOMING','Sat, Sep 12'),
+      mkT('Apex Proving Grounds','Apex Legends','60','$9,000','UPCOMING','Sep 14'),
+      mkT('Fortnite Duo Series','Fortnite','128','$7,500','COMPLETED','Sep 1')
+    ];
+
+    const filterDefs = [
+      ['All', true],['Live', false],['Upcoming', false],['Completed', false]
+    ];
+    const filters = filterDefs.map(([label,active]) => ({
+      label,
+      bg: active ? 'oklch(80% 0.16 92)' : 'transparent',
+      color: active ? 'oklch(14% 0.012 260)' : 'oklch(80% 0.01 260)',
+      border: active ? 'transparent' : 'oklch(30% 0.014 260 / 0.5)'
+    }));
+
+    const bracketRounds = [
+      {label:'Quarterfinal', matches:[
+        {p1:'Nova Esports', s1:'2', p2:'Vertex GG', s2:'0', w1:800, w2:400, bg1:'oklch(23% 0.02 92 / 0.4)', bg2:'transparent'},
+        {p1:'Ashen Five', s1:'2', p2:'Ridgeline', s2:'1', w1:800, w2:400, bg1:'oklch(23% 0.02 92 / 0.4)', bg2:'transparent'}
+      ]},
+      {label:'Semifinal', matches:[
+        {p1:'Nova Esports', s1:'2', p2:'Ashen Five', s2:'1', w1:800, w2:400, bg1:'oklch(23% 0.02 92 / 0.4)', bg2:'transparent'}
+      ]},
+      {label:'Final', matches:[
+        {p1:'Nova Esports', s1:'7', p2:'Ashen Five', s2:'5', w1:700, w2:700, bg1:'transparent', bg2:'transparent'}
+      ]},
+      {label:'Champion', matches:[
+        {p1:'TBD', s1:'', p2:'', s2:'', w1:700, w2:400, bg1:'transparent', bg2:'transparent'}
+      ]}
+    ];
+
+    const names = ['ShadowByte','Lumen','Kestrel','Vantage','Nyx','Ferox','Halcyon','Wraith'];
+    const leaderboard = names.map((name,i) => {
+      const rank = i+1;
+      const isTop = rank <= 3;
+      return {
+        rank, name,
+        record: `${42-i*3}-${8+i*2}`,
+        winPct: `${84-i*4}%`,
+        points: 2480 - i*180,
+        rowBg: isTop ? 'oklch(22% 0.03 92 / 0.35)' : 'transparent',
+        rankColor: isTop ? 'oklch(80% 0.16 92)' : 'oklch(70% 0.01 260)',
+        stripeA: `oklch(35% 0.05 ${(i*45)%360} / 0.6)`, stripeB: 'oklch(24% 0.02 260)'
+      };
+    });
+
+    const chatUsers = [
+      ['xX_Frag_Xx','oklch(70% 0.15 25)','let\'s gooo nova!!'],
+      ['clutchqueen','oklch(70% 0.15 92)','that ace was insane'],
+      ['viewer4021','oklch(70% 0.1 260)','ashen needs to rotate'],
+      ['gg_wp','oklch(70% 0.15 150)','overtime lets go'],
+      ['SpecOps','oklch(70% 0.1 300)','who wins this map'],
+      ['drift','oklch(70% 0.15 25)','nova defense is unreal'],
+      ['pixel','oklch(70% 0.1 200)','$50k on the line'],
+      ['echo99','oklch(70% 0.15 92)','MVP contender right there'],
+      ['nightowl','oklch(70% 0.1 260)','ez clap'],
+      ['ridge','oklch(70% 0.15 150)','close series so far']
+    ];
+    const chatMessages = chatUsers.map(([user,color,text]) => ({user, color, text}));
+
+    return {
+      splashVisible: this.state.splashVisible,
+      onLogoEnter: this.onLogoEnter, onLogoLeave: this.onLogoLeave,
+      logoWidth: this.state.logoHover ? '215px' : '58px',
+      abbrevOpacity: this.state.logoHover ? 0 : 1,
+      fullOpacity: this.state.logoHover ? 1 : 0,
+      loadDots: [{delay:'0s'},{delay:'0.15s'},{delay:'0.3s'}],
+      particles: Array.from({length:8}).map((_,i) => {
+        const angle = (i / 8) * Math.PI * 2;
+        const radius = 60 + (i % 3) * 12;
+        const colors = ['oklch(80% 0.18 45)','oklch(85% 0.16 70)','oklch(90% 0.14 92)'];
+        return { tx: `${(Math.cos(angle)*radius).toFixed(0)}px`, ty: `${(Math.sin(angle)*radius).toFixed(0)}px`, color: colors[i % colors.length] };
+      }),
+      isHome: tab==='home', isTournaments: tab==='tournaments' || tab==='games',
+      isDetail: tab==='detail', isLeaderboard: tab==='leaderboard', isLive: tab==='live',
+      navItems, stats, games, liveTournaments, allTournaments, filters, bracketRounds, leaderboard, chatMessages,
+      goTournaments: this.setTab('tournaments'),
+      goDetail: this.setTab('detail')
+    };
+  }
+}
+
+</script>
+</body>
+</html>

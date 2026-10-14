@@ -142,7 +142,7 @@ export default function WalletPage() {
               border: "1px solid var(--glass-border-color-hover)",
               position: "relative",
               overflow: "hidden",
-              boxShadow: "0 20px 50px rgba(0,0,0,0.5), inset 0 0 40px rgba(187, 134, 252, 0.05)"
+              boxShadow: "0 20px 50px rgba(0,0,0,0.5), inset 0 0 40px color-mix(in oklab, var(--accent) 5%, transparent)"
             }}>
               {/* Background Accents */}
               <div style={{ position: "absolute", top: "-100px", right: "-100px", width: "300px", height: "300px", background: "var(--accent)", filter: "blur(120px)", opacity: 0.1, pointerEvents: "none" }}></div>

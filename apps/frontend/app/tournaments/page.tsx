@@ -334,11 +334,11 @@ export default function TournamentsPage() {
         .tab-switcher-v2 :global(.tab-btn.active) {
           background: var(--gradient-primary);
           color: white;
-          box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+          box-shadow: 0 4px 15px color-mix(in oklab, var(--accent) 30%, transparent);
         }
 
         .guest-banner-v2 {
-          background: linear-gradient(90deg, rgba(139, 92, 246, 0.1), rgba(6, 182, 212, 0.1));
+          background: linear-gradient(90deg, color-mix(in oklab, var(--accent) 10%, transparent), rgba(6, 182, 212, 0.1));
           border: 1px solid var(--border-glow);
           border-radius: 24px;
           padding: 2rem;

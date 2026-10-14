@@ -45,7 +45,7 @@ export default function CommunityGuidelinesPage() {
           ))}
         </div>
 
-        <div className="panel" style={{ marginTop: "4rem", padding: "2.5rem", textAlign: "center", border: "1px dashed var(--accent-subtle)", background: "rgba(139, 92, 246, 0.02)" }}>
+        <div className="panel" style={{ marginTop: "4rem", padding: "2.5rem", textAlign: "center", border: "1px dashed var(--accent-subtle)", background: "color-mix(in oklab, var(--accent) 2%, transparent)" }}>
            <p className="muted" style={{ fontSize: "0.95rem" }}>
              Failure to adhere to these guidelines results in immediate account review and potential termination of all Platform access.
            </p>

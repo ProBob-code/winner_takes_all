@@ -869,7 +869,7 @@ export function HostedArena({
                     </button>
                     <button
                       className="extra-time-btn"
-                      style={{ background: "rgba(139, 92, 246, 0.12)", color: "#a78bfa", border: "1px solid rgba(139, 92, 246, 0.3)" }}
+                      style={{ background: "color-mix(in oklab, var(--accent) 12%, transparent)", color: "#a78bfa", border: "1px solid color-mix(in oklab, var(--accent) 30%, transparent)" }}
                       onClick={toggleStream}
                       disabled={busy}
                       title={published ? "Put a camera on this match" : "Goes on air, then shows a code for a camera"}

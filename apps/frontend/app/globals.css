@@ -9,42 +9,63 @@
   padding: 0;
 }
 
+/* ══════════════════════════════════════════════════════════════════════════
+   THE PALETTE — amber and red
+   ══════════════════════════════════════════════════════════════════════════
+
+   Two hues carry the whole product: amber (oklch hue 92) and red (hue 25),
+   against a near-neutral ground carrying the faintest blue (hue 260) so the
+   warm accents read as warm rather than muddy. Taken from the reference
+   design, WTA Platform.dc.html.
+
+   Written in oklch because the two accents have to hold the same apparent
+   brightness as each other in light and in dark; in hex that is guesswork,
+   here it is the first number. Every custom property keeps the name it had,
+   so nothing downstream needed rewriting to change the colour of the app.
+
+   --accent is red and --gold is amber. Those names are used in hundreds of
+   places and renaming them would have been a far larger change than this one
+   deserves.
+   ══════════════════════════════════════════════════════════════════════════ */
+
 :root, [data-theme='light'], .light-mode {
-  /* 🎨 Premium Light Mode - "Liquid Silver" - High Contrast & Premium Clarity */
-  --bg-primary: #ffffff;
-  --bg-secondary: #f1f5f9;
-  --bg-card: #ffffff;
-  --bg-card-hover: #f8fafc;
-  --bg-surface: #f1f5f9;
-  --bg-topbar: rgba(255, 255, 255, 0.9);
-  --bg-dropdown: #ffffff;
-  --bg-inset: #f1f5f9;
+  /* Warm paper rather than white: a pure white ground makes amber look dirty. */
+  --bg-primary: oklch(99% 0.004 92);
+  --bg-secondary: oklch(96% 0.008 92);
+  --bg-card: oklch(100% 0 0);
+  --bg-card-hover: oklch(97.5% 0.008 92);
+  --bg-surface: oklch(96.5% 0.01 92);
+  --bg-topbar: oklch(99% 0.004 92 / 0.9);
+  --bg-dropdown: oklch(100% 0 0);
+  --bg-inset: oklch(96% 0.008 92);
 
-  --text-primary: #0f172a;
-  --text-secondary: #475569;
-  --text-muted: #64748b;
+  --text-primary: oklch(20% 0.012 260);
+  --text-secondary: oklch(44% 0.012 260);
+  --text-muted: oklch(58% 0.012 260);
 
-  --border-color: #e2e8f0;
-  --border-glow: rgba(124, 58, 237, 0.1);
-  --glass-bg: rgba(255, 255, 255, 0.7);
-  --glass-bg-hover: rgba(124, 58, 237, 0.05);
-  --glass-border-color: rgba(0, 0, 0, 0.08);
-  --glass-border-color-hover: rgba(124, 58, 237, 0.3);
+  --border-color: oklch(90% 0.01 92);
+  --border-glow: oklch(62% 0.2 25 / 0.12);
+  --glass-bg: oklch(100% 0 0 / 0.72);
+  --glass-bg-hover: oklch(62% 0.2 25 / 0.05);
+  --glass-border-color: oklch(20% 0.012 260 / 0.09);
+  --glass-border-color-hover: oklch(62% 0.2 25 / 0.32);
   --glass-blur: blur(20px);
 
-  --accent: #7c3aed;
-  --accent-light: #8b5cf6;
-  --accent-subtle: rgba(124, 58, 237, 0.08);
+  /* Darkened from the dark theme's red so it holds contrast on paper. */
+  --accent: oklch(54% 0.21 25);
+  --accent-light: oklch(62% 0.2 25);
+  --accent-subtle: oklch(54% 0.21 25 / 0.08);
 
-  --gold: #b45309;
-  --gold-light: #d97706;
-  --gold-subtle: rgba(180, 83, 9, 0.08);
+  /* Amber has to go a long way down in light mode to stay legible on white. */
+  --gold: oklch(58% 0.14 75);
+  --gold-light: oklch(70% 0.16 85);
+  --gold-subtle: oklch(80% 0.16 92 / 0.16);
 
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 10px 25px rgba(0, 0, 0, 0.08);
-  --shadow-lg: 0 20px 50px rgba(0, 0, 0, 0.12);
-  --shadow-glow: 0 0 20px rgba(124, 58, 237, 0.1);
-  
+  --shadow-sm: 0 2px 8px oklch(20% 0.012 260 / 0.06);
+  --shadow-md: 0 10px 25px oklch(20% 0.012 260 / 0.09);
+  --shadow-lg: 0 20px 50px oklch(20% 0.012 260 / 0.14);
+  --shadow-glow: 0 0 24px oklch(62% 0.2 25 / 0.14);
+
   --radius: 18px;
   --radius-sm: 10px;
   --radius-lg: 28px;
@@ -93,72 +114,74 @@
    * staff two drinks into a Friday night misses it. */
   --touch-min: 48px;
 
-  --gradient-primary: linear-gradient(135deg, #7c3aed 0%, #0ea5e9 100%);
-  --gradient-gold: linear-gradient(135deg, #b45309 0%, #f59e0b 100%);
+  /* The two accents together, which is the brand mark in gradient form. */
+  --gradient-primary: linear-gradient(135deg, oklch(54% 0.21 25) 0%, oklch(70% 0.16 60) 100%);
+  --gradient-gold: linear-gradient(135deg, oklch(58% 0.14 75) 0%, oklch(80% 0.16 92) 100%);
 
-  /* Universal Red vs Blue Stadium Theme */
-  --team-red: #ef4444;
-  --team-red-glow: rgba(239, 68, 68, 0.15);
-  --team-red-bg: #fee2e2;
-  
-  --team-blue: #3b82f6;
-  --team-blue-glow: rgba(59, 130, 246, 0.15);
-  --team-blue-bg: #dbeafe;
-  
-  --vs-orb-bg: #ffffff;
-  --vs-orb-border: #e2e8f0;
+  /* The two sides of a table. Red stays red; the opposing side moves off blue
+     to amber, so a match reads in the product's own two colours. */
+  --team-red: oklch(54% 0.21 25);
+  --team-red-glow: oklch(54% 0.21 25 / 0.15);
+  --team-red-bg: oklch(94% 0.04 25);
+
+  --team-blue: oklch(58% 0.14 75);
+  --team-blue-glow: oklch(58% 0.14 75 / 0.15);
+  --team-blue-bg: oklch(95% 0.05 85);
+
+  --vs-orb-bg: oklch(100% 0 0);
+  --vs-orb-border: oklch(90% 0.01 92);
 }
 
 [data-theme='dark'] {
-  /* 🌌 Premium Dark Mode - "Liquid Midnight" */
-  --bg-primary: #030014;
-  --bg-secondary: #05011a;
-  --bg-card: rgba(10, 6, 28, 0.4);
-  --bg-card-hover: rgba(20, 15, 60, 0.6);
-  --bg-surface: rgba(139, 92, 246, 0.03);
-  --bg-topbar: rgba(3, 0, 20, 0.85);
-  --bg-dropdown: rgba(5, 1, 26, 0.98);
-  --bg-inset: rgba(0, 0, 0, 0.5);
+  /* The reference design's own grounds, verbatim. Near-neutral with a trace
+     of blue, which is what lets amber and red sit on it without going muddy. */
+  --bg-primary: oklch(14% 0.012 260);
+  --bg-secondary: oklch(18% 0.012 260);
+  --bg-card: oklch(20% 0.01 260 / 0.72);
+  --bg-card-hover: oklch(24% 0.012 260 / 0.85);
+  --bg-surface: oklch(20% 0.01 260);
+  --bg-topbar: oklch(14% 0.012 260 / 0.88);
+  --bg-dropdown: oklch(18% 0.012 260);
+  --bg-inset: oklch(14% 0 0 / 0.5);
 
-  --text-primary: #ffffff;
-  --text-secondary: #b3b3b3;
-  --text-muted: #666666;
+  --text-primary: oklch(96% 0.005 260);
+  --text-secondary: oklch(70% 0.01 260);
+  --text-muted: oklch(60% 0.01 260);
 
-  --border-color: rgba(139, 92, 246, 0.15);
-  --border-glow: rgba(139, 92, 246, 0.4);
-  --glass-bg: rgba(255, 255, 255, 0.03);
-  --glass-bg-hover: rgba(139, 92, 246, 0.08);
-  --glass-border-color: rgba(255, 255, 255, 0.05);
-  --glass-border-color-hover: rgba(139, 92, 246, 0.4);
+  --border-color: oklch(30% 0.014 260 / 0.5);
+  --border-glow: oklch(80% 0.16 92 / 0.35);
+  --glass-bg: oklch(100% 0 0 / 0.03);
+  --glass-bg-hover: oklch(80% 0.16 92 / 0.08);
+  --glass-border-color: oklch(30% 0.014 260 / 0.5);
+  --glass-border-color-hover: oklch(80% 0.16 92 / 0.4);
   --glass-blur: blur(24px);
 
-  --accent: #bb86fc;
-  --accent-light: #d4b1ff;
-  --accent-subtle: rgba(187, 134, 252, 0.1);
+  --accent: oklch(62% 0.2 25);
+  --accent-light: oklch(70% 0.15 25);
+  --accent-subtle: oklch(62% 0.2 25 / 0.12);
 
-  --gold: #ffb700;
-  --gold-light: #ffd700;
-  --gold-subtle: rgba(255, 183, 0, 0.1);
+  --gold: oklch(80% 0.16 92);
+  --gold-light: oklch(85% 0.17 92);
+  --gold-subtle: oklch(80% 0.16 92 / 0.12);
 
-  --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.8);
-  --shadow-md: 0 12px 32px rgba(0, 0, 0, 0.9);
-  --shadow-lg: 0 24px 64px rgba(0, 0, 0, 1);
-  --shadow-glow: 0 0 30px rgba(187, 134, 252, 0.2);
-  
-  --gradient-primary: linear-gradient(135deg, #bb86fc 0%, #03dac6 100%);
-  --gradient-gold: linear-gradient(135deg, #ffb700 0%, #ffd700 100%);
+  --shadow-sm: 0 4px 12px oklch(0% 0 0 / 0.6);
+  --shadow-md: 0 12px 32px oklch(0% 0 0 / 0.7);
+  --shadow-lg: 0 24px 64px oklch(0% 0 0 / 0.8);
+  --shadow-glow: 0 0 30px oklch(80% 0.16 92 / 0.18);
 
-  /* Universal Red vs Blue Stadium Theme (Dark Mode Optimized) */
-  --team-red: #f87171;
-  --team-red-glow: rgba(248, 113, 113, 0.3);
-  --team-red-bg: rgba(248, 113, 113, 0.15);
-  
-  --team-blue: #60a5fa;
-  --team-blue-glow: rgba(96, 165, 250, 0.3);
-  --team-blue-bg: rgba(96, 165, 250, 0.15);
-  
-  --vs-orb-bg: rgba(255, 255, 255, 0.08);
-  --vs-orb-border: rgba(255, 255, 255, 0.15);
+  --gradient-primary: linear-gradient(135deg, oklch(62% 0.2 25) 0%, oklch(80% 0.16 92) 100%);
+  --gradient-gold: linear-gradient(135deg, oklch(70% 0.15 92) 0%, oklch(85% 0.17 92) 100%);
+
+  --team-red: oklch(65% 0.2 25);
+  --team-red-glow: oklch(65% 0.2 25 / 0.3);
+  --team-red-bg: oklch(65% 0.2 25 / 0.15);
+
+  --team-blue: oklch(80% 0.16 92);
+  --team-blue-glow: oklch(80% 0.16 92 / 0.3);
+  --team-blue-bg: oklch(80% 0.16 92 / 0.15);
+
+  --vs-orb-bg: oklch(100% 0 0 / 0.08);
+  --vs-orb-border: oklch(30% 0.014 260 / 0.6);
 }
 
 html {
@@ -188,7 +211,7 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(187, 134, 252, 0.2);
+  background: color-mix(in oklab, var(--accent) 20%, transparent);
   border-radius: 20px;
   border: 1px solid transparent;
   background-clip: content-box;
@@ -202,7 +225,7 @@ body {
 /* For Firefox */
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(187, 134, 252, 0.3) transparent;
+  scrollbar-color: color-mix(in oklab, var(--accent) 30%, transparent) transparent;
 }
 
 body::before, body::after {
@@ -215,22 +238,22 @@ body::before, body::after {
 }
 
 body::before {
-  background: 
-    radial-gradient(circle at 0% 0%, rgba(187, 134, 252, 0.15), transparent 40%),
+  background:
+    radial-gradient(circle at 0% 0%, color-mix(in oklab, var(--accent) 15%, transparent), transparent 40%),
     radial-gradient(circle at 100% 0%, rgba(3, 218, 198, 0.15), transparent 40%),
-    radial-gradient(circle at 100% 100%, rgba(187, 134, 252, 0.15), transparent 40%),
+    radial-gradient(circle at 100% 100%, color-mix(in oklab, var(--accent) 15%, transparent), transparent 40%),
     radial-gradient(circle at 0% 100%, rgba(3, 218, 198, 0.15), transparent 40%);
 }
 
 .light-mode body::before {
-  background: 
-    radial-gradient(circle at 0% 0%, rgba(139, 92, 246, 0.05), transparent 50%),
+  background:
+    radial-gradient(circle at 0% 0%, color-mix(in oklab, var(--accent) 5%, transparent), transparent 50%),
     radial-gradient(circle at 100% 100%, rgba(6, 182, 212, 0.05), transparent 50%),
     radial-gradient(circle at 50% 50%, rgba(244, 114, 182, 0.03), transparent 60%);
 }
 
 .light-mode body::after {
-  background: 
+  background:
     linear-gradient(135deg, rgba(255,255,255,0.4) 0%, transparent 100%);
   opacity: 0.8;
 }
@@ -305,7 +328,7 @@ a:hover {
   align-items: center;
   padding: 3rem;
   border-radius: var(--radius-lg);
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(6, 182, 212, 0.05));
+  background: linear-gradient(135deg, color-mix(in oklab, var(--accent) 10%, transparent), rgba(6, 182, 212, 0.05));
   border: 1px solid var(--border-color);
   position: relative;
   overflow: hidden;
@@ -445,8 +468,8 @@ a:hover {
   content: "";
   position: absolute;
   top: 0; left: 0; right: 0; bottom: 0;
-  background: 
-    radial-gradient(ellipse at top right, rgba(139, 92, 246, 0.35), transparent 50%),
+  background:
+    radial-gradient(ellipse at top right, color-mix(in oklab, var(--accent) 35%, transparent), transparent 50%),
     radial-gradient(ellipse at bottom left, rgba(6, 182, 212, 0.25), transparent 50%),
     linear-gradient(180deg, transparent, #0a0520);
   opacity: 0.8;
@@ -497,7 +520,7 @@ a:hover {
 
 .light-mode .sidebar {
   background: rgba(240, 247, 255, 0.8);
-  border-right: 1px solid rgba(139, 92, 246, 0.1);
+  border-right: 1px solid color-mix(in oklab, var(--accent) 10%, transparent);
 }
 
 .sidebar-brand {
@@ -525,7 +548,7 @@ a:hover {
 
 .sidebar-toggle-btn:hover {
   transform: scale(1.1);
-  background: rgba(139, 92, 246, 0.2);
+  background: color-mix(in oklab, var(--accent) 20%, transparent);
 }
 
 .light-mode .sidebar-brand {
@@ -834,12 +857,12 @@ a:hover {
 .button {
   background: var(--gradient-primary);
   color: var(--text-primary);
-  box-shadow: 0 4px 14px rgba(139, 92, 246, 0.4);
+  box-shadow: 0 4px 14px color-mix(in oklab, var(--accent) 40%, transparent);
 }
 
 .button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.6);
+  box-shadow: 0 6px 20px color-mix(in oklab, var(--accent) 60%, transparent);
   color: var(--text-primary);
 }
 
@@ -1167,7 +1190,7 @@ a:hover {
 
 .notification-item.unread {
   border-left: 3px solid var(--accent-light);
-  background: linear-gradient(90deg, rgba(139, 92, 246, 0.1) 0%, transparent 100%);
+  background: linear-gradient(90deg, color-mix(in oklab, var(--accent) 10%, transparent) 0%, transparent 100%);
 }
 
 .notification-title {
@@ -1231,7 +1254,7 @@ a:hover {
   left: -50%;
   width: 200%;
   height: 200%;
-  background: radial-gradient(circle, rgba(139, 92, 246, 0.1) 0%, transparent 70%);
+  background: radial-gradient(circle, color-mix(in oklab, var(--accent) 10%, transparent) 0%, transparent 70%);
   opacity: 0;
   transition: opacity 0.5s ease;
   z-index: -1;
@@ -1240,7 +1263,7 @@ a:hover {
 
 .tournament-card:hover {
   border-color: var(--accent);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5), 0 0 20px rgba(139, 92, 246, 0.2);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5), 0 0 20px color-mix(in oklab, var(--accent) 20%, transparent);
   transform: translateY(-6px);
 }
 
@@ -1378,7 +1401,7 @@ textarea:focus {
   outline: none;
   background: var(--glass-bg-hover);
   border-color: var(--accent-light);
-  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 20%, transparent);
 }
 
 label {
@@ -1892,7 +1915,7 @@ label {
   border-radius: var(--radius-sm) var(--radius-sm) 4px 4px;
   position: relative;
   overflow: hidden;
-  box-shadow: 
+  box-shadow:
     var(--inner-glow),
     0 10px 30px rgba(0, 0, 0, 0.5),
     inset 0 1px 1px rgba(255, 255, 255, 0.1);
@@ -1911,12 +1934,12 @@ label {
   box-shadow: 0 0 15px var(--accent);
 }
 
-.podium-place.podium-1st .podium-pillar { 
-  height: 240px; 
-  order: 2; 
-  background: linear-gradient(135deg, rgba(187, 134, 252, 0.1), rgba(10, 6, 28, 0.8));
-  border-color: rgba(187, 134, 252, 0.3);
-  box-shadow: var(--inner-glow), 0 15px 45px rgba(187, 134, 252, 0.2);
+.podium-place.podium-1st .podium-pillar {
+  height: 240px;
+  order: 2;
+  background: linear-gradient(135deg, color-mix(in oklab, var(--accent) 10%, transparent), rgba(10, 6, 28, 0.8));
+  border-color: color-mix(in oklab, var(--accent) 30%, transparent);
+  box-shadow: var(--inner-glow), 0 15px 45px color-mix(in oklab, var(--accent) 20%, transparent);
 }
 .podium-place.podium-2nd .podium-pillar { height: 180px; order: 1; }
 .podium-place.podium-3rd .podium-pillar { height: 140px; order: 3; }
@@ -1972,7 +1995,7 @@ label {
 .leaderboard-table tr:hover td {
   background: var(--bg-card-hover);
   border-color: var(--accent);
-  box-shadow: 
+  box-shadow:
     var(--inner-glow),
     0 15px 35px rgba(0, 0, 0, 0.4),
     0 0 25px var(--accent-subtle);
@@ -2228,12 +2251,12 @@ label {
 .waiting-spinner {
   width: 48px;
   height: 48px;
-  border: 3px solid rgba(139, 92, 246, 0.1);
+  border: 3px solid color-mix(in oklab, var(--accent) 10%, transparent);
   border-top-color: var(--accent-light);
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin-bottom: 1.5rem;
-  box-shadow: 0 0 15px rgba(139, 92, 246, 0.2);
+  box-shadow: 0 0 15px color-mix(in oklab, var(--accent) 20%, transparent);
 }
 
 @keyframes spin {
@@ -2636,7 +2659,7 @@ label {
 
 .form-control:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 20%, transparent);
   background: rgba(30, 30, 40, 0.9);
 }
 
@@ -2677,7 +2700,7 @@ select.form-control option {
   left: -50%;
   width: 200%;
   height: 200%;
-  background: radial-gradient(circle, rgba(139, 92, 246, 0.1) 0%, transparent 70%);
+  background: radial-gradient(circle, color-mix(in oklab, var(--accent) 10%, transparent) 0%, transparent 70%);
   animation: rotate 20s linear infinite;
 }
 
@@ -2703,9 +2726,9 @@ select.form-control option {
 }
 
 .value-chip.selected {
-  background: rgba(139, 92, 246, 0.15);
+  background: color-mix(in oklab, var(--accent) 15%, transparent);
   border-color: var(--accent);
-  box-shadow: 0 0 20px rgba(139, 92, 246, 0.2);
+  box-shadow: 0 0 20px color-mix(in oklab, var(--accent) 20%, transparent);
 }
 
 .best-value-tag {
@@ -2759,9 +2782,9 @@ select.form-control option {
   align-items: center;
   padding: 0.75rem;
   z-index: 5000;
-  box-shadow: 
+  box-shadow:
     0 25px 60px rgba(0, 0, 0, 0.8),
-    0 0 30px rgba(187, 134, 252, 0.1),
+    0 0 30px color-mix(in oklab, var(--accent) 10%, transparent),
     inset 0 0 0 1px rgba(255, 255, 255, 0.05);
 }
 
@@ -3074,14 +3097,14 @@ select.form-control option {
   position: relative;
   width: 100%;
   height: 400px;
-  background: radial-gradient(circle at center, rgba(139, 92, 246, 0.05) 0%, rgba(8, 5, 18, 0.4) 70%);
+  background: radial-gradient(circle at center, color-mix(in oklab, var(--accent) 5%, transparent) 0%, rgba(8, 5, 18, 0.4) 70%);
   border-radius: var(--radius);
   overflow: hidden;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(139, 92, 246, 0.1);
+  border: 1px solid color-mix(in oklab, var(--accent) 10%, transparent);
   box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.5);
 }
 
@@ -3091,9 +3114,9 @@ select.form-control option {
   left: 0;
   width: 100%;
   height: 100%;
-  background-image: 
-    linear-gradient(rgba(139, 92, 246, 0.1) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(139, 92, 246, 0.1) 1px, transparent 1px);
+  background-image:
+    linear-gradient(color-mix(in oklab, var(--accent) 10%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in oklab, var(--accent) 10%, transparent) 1px, transparent 1px);
   background-size: 40px 40px;
   background-position: center center;
   perspective: 1000px;
@@ -3175,10 +3198,10 @@ select.form-control option {
   margin-top: 2rem;
   z-index: 10;
   text-align: center;
-  background: rgba(139, 92, 246, 0.05);
+  background: color-mix(in oklab, var(--accent) 5%, transparent);
   padding: 1.5rem 3rem;
   border-radius: 20px;
-  border: 1px solid rgba(139, 92, 246, 0.1);
+  border: 1px solid color-mix(in oklab, var(--accent) 10%, transparent);
   backdrop-filter: blur(4px);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
 }
@@ -3196,7 +3219,7 @@ select.form-control option {
   letter-spacing: 0.15em;
   text-transform: uppercase;
   margin-bottom: 0.75rem;
-  filter: drop-shadow(0 0 10px rgba(139, 92, 246, 0.4));
+  filter: drop-shadow(0 0 10px color-mix(in oklab, var(--accent) 40%, transparent));
 }
 
 .status-sub {
@@ -3227,8 +3250,8 @@ select.form-control option {
   background: repeating-linear-gradient(
     rgba(18, 16, 16, 0) 0,
     rgba(18, 16, 16, 0) 50%,
-    rgba(139, 92, 246, 0.02) 50%,
-    rgba(139, 92, 246, 0.02) 100%
+    color-mix(in oklab, var(--accent) 2%, transparent) 50%,
+    color-mix(in oklab, var(--accent) 2%, transparent) 100%
   );
   background-size: 100% 4px;
   pointer-events: none;
@@ -4039,4 +4062,241 @@ select.form-control option {
   content: "→";
   color: var(--accent);
   flex-shrink: 0;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   The splash
+   ══════════════════════════════════════════════════════════════════════════
+
+   A fuse burns in from the lower left, detonates on the wordmark, and the
+   wordmark collapses from "Winner.Takes.All" to "W.T.A". Timing is the
+   reference design's: the impact lands at 60% of a 1.3s run and the overlay
+   fades over the last 18% of 1.6s.
+
+   See components/splash-screen.tsx, which shows it once a session and skips it
+   on the full-bleed routes and for anyone who has asked not to be moved.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+@keyframes wtaSplashFade { 0%, 82% { opacity: 1 } 100% { opacity: 0 } }
+
+@keyframes wtaShake {
+  0%, 57% { transform: translate(0, 0) }
+  60% { transform: translate(-4px, 3px) }
+  63% { transform: translate(5px, -3px) }
+  66% { transform: translate(-3px, 2px) }
+  69% { transform: translate(2px, -1px) }
+  72%, 100% { transform: translate(0, 0) }
+}
+
+/* The fuse travels up and right, sputtering as it goes. */
+@keyframes wtaFuseSpark {
+  0%   { opacity: 0;  transform: translate(-90px, 46px) scale(.55) }
+  5%   { opacity: 1;  transform: translate(-86px, 44px) scale(.6) }
+  10%  { opacity: .5; transform: translate(-80px, 41px) scale(.7) }
+  15%  { opacity: 1;  transform: translate(-74px, 38px) scale(.65) }
+  22%  { opacity: .6; transform: translate(-64px, 33px) scale(.75) }
+  28%  { opacity: 1;  transform: translate(-54px, 28px) scale(.7) }
+  35%  { opacity: .55;transform: translate(-42px, 22px) scale(.85) }
+  42%  { opacity: 1;  transform: translate(-30px, 16px) scale(.75) }
+  48%  { opacity: .6; transform: translate(-20px, 10px) scale(.9) }
+  53%  { opacity: 1;  transform: translate(-10px, 5px) scale(.85) }
+  57%  { opacity: 1;  transform: translate(-2px, 1px) scale(1.3) }
+  60%  { opacity: 0;  transform: translate(0, 0) scale(1.6) }
+  100% { opacity: 0 }
+}
+
+@keyframes wtaImpactFlash {
+  0%, 58% { opacity: 0; transform: scale(.2) }
+  61% { opacity: .95; transform: scale(1) }
+  72% { opacity: 0; transform: scale(2.5) }
+  100% { opacity: 0 }
+}
+
+@keyframes wtaShockwave {
+  0%, 58% { opacity: 0; transform: scale(.3); border-width: 3px }
+  61% { opacity: 1; transform: scale(1); border-width: 2px }
+  74% { opacity: 0; transform: scale(4.2); border-width: .5px }
+  100% { opacity: 0 }
+}
+
+@keyframes wtaParticle {
+  0%, 58% { opacity: 0; transform: translate(-50%, -50%) scale(.4) }
+  62% { opacity: 1; transform: translate(calc(-50% + var(--tx) * .15), calc(-50% + var(--ty) * .15)) scale(1.3) }
+  82% { opacity: .7 }
+  100% { opacity: 0; transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty))) scale(.25) }
+}
+
+/* The long wordmark is blown apart by the impact... */
+@keyframes wtaFullText {
+  0%, 58% { opacity: 1; transform: translate(0, 0) scale(1); filter: blur(0) }
+  60% { opacity: 1; transform: translate(3px, -2px) scale(1.05); filter: blur(2px) }
+  62% { opacity: 0; transform: translate(-7px, 4px) scale(.84); filter: blur(8px) }
+  100% { opacity: 0 }
+}
+
+/* ...and the short one lands in its place. */
+@keyframes wtaAbbrevText {
+  0%, 60% { opacity: 0; transform: scale(1.7); filter: blur(5px) }
+  64% { opacity: 1; transform: scale(1.2); filter: blur(0) }
+  73% { transform: scale(.93) }
+  85% { transform: scale(1.04) }
+  100% { opacity: 1; transform: scale(1) }
+}
+
+@keyframes wtaSplashDot {
+  0%, 100% { opacity: .25; transform: translateY(0) }
+  50% { opacity: 1; transform: translateY(-4px) }
+}
+
+.wta-splash {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  background: oklch(14% 0.012 260);
+  animation: wtaSplashFade 1.6s ease forwards, wtaShake 1.3s ease forwards;
+  /* It is leaving in 1.6s; nothing under it should be clickable meanwhile. */
+  pointer-events: none;
+}
+
+/* Faint vertical rules, so the ground is not a flat black rectangle. */
+.wta-splash-grid {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: repeating-linear-gradient(
+    90deg,
+    oklch(100% 0 0 / 0.03) 0px,
+    oklch(100% 0 0 / 0.03) 1px,
+    transparent 1px,
+    transparent 80px
+  );
+}
+
+.wta-splash-stage {
+  position: relative;
+  height: 70px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+}
+
+.wta-splash-stage > span {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+}
+
+.wta-fuse {
+  width: 10px;
+  height: 10px;
+  margin: -5px 0 0 -5px;
+  border-radius: 999px;
+  background: radial-gradient(
+    circle,
+    oklch(98% 0.05 90) 0%,
+    oklch(75% 0.2 55) 55%,
+    oklch(55% 0.2 30) 100%
+  );
+  box-shadow: 0 0 10px oklch(80% 0.2 50 / .9), 0 0 18px oklch(70% 0.2 40 / .6);
+  animation: wtaFuseSpark 1.3s linear forwards;
+}
+
+.wta-shockwave {
+  width: 16px;
+  height: 16px;
+  margin: -8px 0 0 -8px;
+  border-radius: 999px;
+  border: 2px solid oklch(75% 0.18 45);
+  animation: wtaShockwave 1.3s ease forwards;
+}
+
+.wta-flash {
+  width: 90px;
+  height: 90px;
+  margin: -45px 0 0 -45px;
+  border-radius: 999px;
+  background: radial-gradient(
+    circle,
+    oklch(97% 0.05 90 / .95) 0%,
+    oklch(75% 0.19 45 / .6) 40%,
+    transparent 72%
+  );
+  animation: wtaImpactFlash 1.3s ease forwards;
+}
+
+.wta-particle {
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  animation: wtaParticle 1.3s cubic-bezier(.2, .8, .3, 1) forwards;
+}
+
+/* The two wordmarks share a slot; only one is visible at a time.
+ *
+ * Centred by layout rather than by transform. Both are animated, and every
+ * keyframe sets `transform` outright — a translate(-50%, -50%) used for
+ * centring is wiped out the moment the animation starts, which left the
+ * wordmark sitting visibly right of centre for the whole splash. */
+.wta-splash-stage > .wta-wordmark-full,
+.wta-splash-stage > .wta-wordmark-short {
+  /* Scoped to beat `.wta-splash-stage > span`, which sets left/top to 50%
+     and otherwise wins on specificity. */
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-outfit), system-ui, sans-serif;
+  font-weight: 700;
+  white-space: nowrap;
+  letter-spacing: 1.5px;
+}
+
+.wta-wordmark-full {
+  font-size: clamp(22px, 7vw, 33px);
+  animation: wtaFullText 1.3s ease forwards;
+}
+
+.wta-wordmark-short {
+  font-size: clamp(34px, 11vw, 48px);
+  letter-spacing: 1px;
+  animation: wtaAbbrevText 1.3s ease forwards;
+}
+
+/* Red / white / amber, which is the mark. */
+.wta-wordmark-full i,
+.wta-wordmark-short i { font-style: normal; color: oklch(62% 0.2 25); }
+.wta-wordmark-full u,
+.wta-wordmark-short u { text-decoration: none; color: oklch(85% 0.17 92); }
+.wta-wordmark-full b,
+.wta-wordmark-short b { font-weight: 700; color: oklch(96% 0.005 260); }
+
+.wta-splash-dots {
+  position: relative;
+  display: flex;
+  gap: 6px;
+}
+
+.wta-splash-dots span {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: oklch(80% 0.16 92);
+  animation: wtaSplashDot 1s ease-in-out infinite;
+}
+
+.wta-splash-dots span:nth-child(2) { animation-delay: .15s }
+.wta-splash-dots span:nth-child(3) { animation-delay: .3s }
+
+@media (prefers-reduced-motion: reduce) {
+  .wta-splash { display: none }
 }

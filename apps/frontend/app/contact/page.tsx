@@ -15,8 +15,8 @@ export default function ContactPage() {
         </header>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(320px, 100%), 1fr))", gap: "2.5rem" }}>
-          <div className="panel" style={{ padding: "3rem", border: "1px solid rgba(139, 92, 246, 0.2)", background: "rgba(139, 92, 246, 0.02)" }}>
-            <div style={{ background: "rgba(139, 92, 246, 0.1)", width: "60px", height: "60px", borderRadius: "16px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.5rem", marginBottom: "2rem" }}>✉️</div>
+          <div className="panel" style={{ padding: "3rem", border: "1px solid color-mix(in oklab, var(--accent) 20%, transparent)", background: "color-mix(in oklab, var(--accent) 2%, transparent)" }}>
+            <div style={{ background: "color-mix(in oklab, var(--accent) 10%, transparent)", width: "60px", height: "60px", borderRadius: "16px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.5rem", marginBottom: "2rem" }}>✉️</div>
             <h3 style={{ fontSize: "1.5rem", fontWeight: 800, marginBottom: "1rem" }}>Technical Support</h3>
             <p className="muted" style={{ marginBottom: "2rem", lineHeight: 1.6 }}>Our engineering team is available for technical queries and platform support.</p>
             <a href="mailto:support@wta-arena.com" style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--accent-light)", display: "flex", alignItems: "center", gap: "0.5rem" }}>
@@ -46,7 +46,7 @@ export default function ContactPage() {
         </div>
 
         <div className="panel" style={{ marginTop: "5rem", padding: "4rem", textAlign: "center", position: "relative", overflow: "hidden" }}>
-          <div style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "4px", background: "linear-gradient(90deg, #8b5cf6, #06b6d4, #f59e0b)" }}></div>
+          <div style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "4px", background: "linear-gradient(90deg, var(--accent), #06b6d4, #f59e0b)" }}></div>
           <h2 style={{ fontSize: "2rem", fontWeight: 900, marginBottom: "1rem" }}>Host Your Own Tournament?</h2>
           <p className="muted" style={{ maxWidth: "600px", margin: "0 auto 2.5rem", lineHeight: 1.6 }}>
             Our infrastructure is ready for your next big event. Join hundreds of organizers who trust Winner.Takes.All for their competitive operations.

@@ -7,7 +7,7 @@ export default function KycAmlPage() {
       <div className="shell" style={{ maxWidth: "900px", margin: "0 auto" }}>
         <header style={{ marginBottom: "5rem" }}>
           <h1 style={{ fontSize: "clamp(2.5rem, 5vw, 4rem)", fontWeight: 950, marginBottom: "1rem", letterSpacing: "-2px" }}>
-            KYC & <span className="text-gradient" style={{ background: "linear-gradient(135deg, #6366f1, #a855f7)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>AML POLICY.</span>
+            KYC & <span className="text-gradient" style={{ background: "linear-gradient(135deg, #6366f1, var(--accent))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>AML POLICY.</span>
           </h1>
           <p className="muted" style={{ fontSize: "1.1rem" }}>Ensuring platform integrity and regulatory compliance.</p>
         </header>

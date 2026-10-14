@@ -118,7 +118,7 @@ export default function GamesPage() {
         .tab-btn.active {
           background: var(--gradient-primary);
           color: white;
-          box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+          box-shadow: 0 4px 15px color-mix(in oklab, var(--accent) 30%, transparent);
         }
         .stadium-hub {
           background: var(--bg-card);

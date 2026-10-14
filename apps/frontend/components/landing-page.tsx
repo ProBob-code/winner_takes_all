@@ -164,9 +164,9 @@ export function LandingPage() {
       <style jsx global>{`
         :root {
           --bg-deep: #080512;
-          --accent-primary: #8b5cf6;
+          --accent-primary: var(--accent);
           --accent-secondary: #06b6d4;
-          --accent-glow: rgba(139, 92, 246, 0.4);
+          --accent-glow: color-mix(in oklab, var(--accent) 40%, transparent);
           --glass-bg: rgba(255, 255, 255, 0.03);
           --glass-border: rgba(255, 255, 255, 0.08);
           --text-main: #f8fafc;
@@ -176,7 +176,7 @@ export function LandingPage() {
         .landing-bg-glow {
           position: absolute;
           top: 0; left: 0; width: 100%; height: 100%;
-          background: radial-gradient(circle at 15% 50%, rgba(139, 92, 246, 0.15), transparent 40%),
+          background: radial-gradient(circle at 15% 50%, color-mix(in oklab, var(--accent) 15%, transparent), transparent 40%),
                       radial-gradient(circle at 85% 30%, rgba(6, 182, 212, 0.15), transparent 40%),
                       radial-gradient(circle at 50% 50%, rgba(8, 5, 25, 1), #030014);
           filter: blur(80px);
@@ -206,7 +206,7 @@ export function LandingPage() {
         .reveal.active { opacity: 1; transform: translateY(0); }
 
         .gradient-text {
-          background: linear-gradient(135deg, #8b5cf6, #06b6d4, #8b5cf6);
+          background: linear-gradient(135deg, var(--accent), #06b6d4, var(--accent));
           background-size: 200% auto;
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
@@ -238,18 +238,18 @@ export function LandingPage() {
       </div>
       <canvas ref={canvasRef} id="sprinkles" style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", zIndex: 1, pointerEvents: "none" }}></canvas>
       <div className="landing-bg-glow"></div>
-      <div ref={glowRef} className="mouse-glow" style={{ position: "fixed", width: "600px", height: "600px", background: "radial-gradient(circle, rgba(139, 92, 246, 0.08), transparent 70%)", borderRadius: "50%", pointerEvents: "none", zIndex: 999, transform: "translate(-50%, -50%)", opacity: 0 }}></div>
+      <div ref={glowRef} className="mouse-glow" style={{ position: "fixed", width: "600px", height: "600px", background: "radial-gradient(circle, color-mix(in oklab, var(--accent) 8%, transparent), transparent 70%)", borderRadius: "50%", pointerEvents: "none", zIndex: 999, transform: "translate(-50%, -50%)", opacity: 0 }}></div>
 
       <main className="landing-main" style={{ padding: "120px 6% 60px", textAlign: "center", position: "relative", zIndex: 2 }}>
         <section className="hero" style={{ minHeight: "80vh", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" }}>
-          <div className="hero-chip" style={{ background: "rgba(139, 92, 246, 0.1)", border: "1px solid rgba(139, 92, 246, 0.2)", padding: "8px 16px", borderRadius: "9999px", fontSize: "0.85rem", fontWeight: 700, color: "#8b5cf6", marginBottom: "2rem" }}>Professional Tournament Infrastructure</div>
+          <div className="hero-chip" style={{ background: "color-mix(in oklab, var(--accent) 10%, transparent)", border: "1px solid color-mix(in oklab, var(--accent) 20%, transparent)", padding: "8px 16px", borderRadius: "9999px", fontSize: "0.85rem", fontWeight: 700, color: "var(--accent)", marginBottom: "2rem" }}>Professional Tournament Infrastructure</div>
           <h1 className="hero-title" style={{ fontSize: "clamp(3rem, 8vw, 6rem)", fontWeight: 900, lineHeight: 0.9, letterSpacing: "-2px", marginBottom: "2.5rem" }}>
             POWERING GLOBAL.<br />
             <span className="gradient-text">ESPORTS EVENTS.</span>
           </h1>
           <p className="hero-desc" style={{ maxWidth: "700px", fontSize: "1.2rem", color: "#94a3b8", marginBottom: "3.5rem", lineHeight: 1.6 }}>The comprehensive SaaS platform for esports organizers, communities, and competitive events. Manage brackets, schedules, and tournament operations with professional-grade tools.</p>
           <div className="hero-buttons" style={{ display: "flex", gap: "1.5rem" }}>
-            <Link href="/tournaments" style={{ background: "linear-gradient(135deg, #8b5cf6, #06b6d4)", color: "white", padding: "1.25rem 2.5rem", borderRadius: "16px", textDecoration: "none", fontWeight: 800, fontSize: "1.1rem" }}>EXPLORE PLATFORM →</Link>
+            <Link href="/tournaments" style={{ background: "linear-gradient(135deg, var(--accent), #06b6d4)", color: "white", padding: "1.25rem 2.5rem", borderRadius: "16px", textDecoration: "none", fontWeight: 800, fontSize: "1.1rem" }}>EXPLORE PLATFORM →</Link>
             <Link href="#how-it-works" style={{ background: "rgba(255, 255, 255, 0.05)", border: "1px solid rgba(255, 255, 255, 0.1)", color: "white", padding: "1.25rem 2.5rem", borderRadius: "16px", textDecoration: "none", fontWeight: 800, fontSize: "1.1rem" }}>HOW IT WORKS</Link>
           </div>
         </section>
@@ -260,7 +260,7 @@ export function LandingPage() {
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(300px, 100%), 1fr))", gap: "2.5rem", position: "relative" }}>
                 <div className="card-3d" style={{ padding: "4rem 3rem", position: "relative", overflow: "hidden" }}>
                     <div style={{ position: "absolute", top: "-20px", right: "-10px", fontSize: "8rem", fontWeight: 900, opacity: 0.05, color: "white" }}>01</div>
-                    <div style={{ background: "linear-gradient(135deg, #8b5cf6, #06b6d4)", width: "60px", height: "60px", borderRadius: "16px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.5rem", marginBottom: "2rem", boxShadow: "0 0 20px rgba(139, 92, 246, 0.4)" }}>📊</div>
+                    <div style={{ background: "linear-gradient(135deg, var(--accent), #06b6d4)", width: "60px", height: "60px", borderRadius: "16px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.5rem", marginBottom: "2rem", boxShadow: "0 0 20px color-mix(in oklab, var(--accent) 40%, transparent)" }}>📊</div>
                     <h3 style={{ fontSize: "1.5rem", marginBottom: "1rem" }}>Configure Event</h3>
                     <p style={{ color: "#94a3b8", lineHeight: 1.6 }}>Organizers define rules, schedules, and participation parameters. Our infrastructure handles the complex backend orchestration.</p>
                 </div>

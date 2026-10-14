@@ -227,7 +227,7 @@ export function PaymentButton({ onSuccess }: PaymentButtonProps) {
           contact: ""
         },
         theme: {
-          color: "#bb86fc"
+          color: "var(--accent)"
         },
         modal: {
           ondismiss: () => setLoading(false),
@@ -277,7 +277,7 @@ export function PaymentButton({ onSuccess }: PaymentButtonProps) {
           padding: "1.25rem",
           fontSize: "1.1rem",
           background: "var(--gradient-primary)",
-          boxShadow: "0 10px 20px rgba(139, 92, 246, 0.3)"
+          boxShadow: "0 10px 20px color-mix(in oklab, var(--accent) 30%, transparent)"
         }}
       >
         <span style={{ fontSize: "1.2rem" }}>💳</span> Refill Credits
@@ -431,7 +431,7 @@ export function PaymentButton({ onSuccess }: PaymentButtonProps) {
                         padding: "1.25rem",
                         fontSize: "1.1rem",
                         background: "var(--gradient-primary)",
-                        boxShadow: "0 15px 30px rgba(187, 134, 252, 0.3)",
+                        boxShadow: "0 15px 30px color-mix(in oklab, var(--accent) 30%, transparent)",
                         opacity: gatewayBlocked ? 0.5 : 1,
                         cursor: gatewayBlocked ? "not-allowed" : undefined
                       }}

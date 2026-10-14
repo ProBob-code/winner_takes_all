@@ -2,78 +2,140 @@
 
 export const dynamic = "force-dynamic";
 
+/**
+ * The dashboard.
+ *
+ * WHAT CAME OUT, AND WHY
+ * It used to lead with "₹0.00 AVAILABLE CREDITS" and carry an Earnings panel
+ * listing rupee transactions — on a platform that stopped taking stakes in
+ * Phase 0 and whose policy page says there is no wallet. It also carried a
+ * radio player and a hard-coded "Strategy Hub" tip that said the same sentence
+ * about break speed to every player for ever. None of that told anyone
+ * anything about their own night.
+ *
+ * WHAT WENT IN
+ * The two things a player actually has here: their WTA Coins, and what they
+ * have played. Plus the one action a host opens this page to take, which is
+ * starting a night.
+ *
+ * The money view has not been deleted from the app — the wallet page still
+ * exists for the wind-down, so anyone with a legacy balance can still see and
+ * withdraw it. It is simply no longer the first thing the product says about
+ * itself.
+ */
+
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { formatMoney } from "@/lib/format";
-import { GamingRadio } from "@/components/gaming-radio";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getApiUrl } from "@/lib/api-config";
+import { backendFetch } from "@/lib/backend";
+import { CoinMark } from "@/components/coin-mark";
+import { formatCoins, formatCoinsExact } from "@/lib/format";
+
+interface Coins {
+  balance: number;
+  lifetime: number;
+  rank: number;
+  title: string;
+  next: { title: string; at: number; toGo: number } | null;
+  earnedToday: number;
+}
+
+interface LedgerEntry {
+  id: string;
+  amount: number;
+  description: string | null;
+  reason: string;
+  at: string;
+}
 
 export default function DashboardPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
-  const [wallet, setWallet] = useState<any>(null);
+  const [coins, setCoins] = useState<Coins | null>(null);
+  const [recent, setRecent] = useState<LedgerEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      if (typeof window === "undefined") return;
-      try {
-        setLoading(true);
-        const finalApiUrl = process.env.NEXT_PUBLIC_API_URL || getApiUrl();
-        const [profileRes, walletRes] = await Promise.all([
-          fetch(`${finalApiUrl}/api/user/profile`, { cache: "no-store", credentials: "include" }),
-          fetch(`${finalApiUrl}/api/wallet`, { cache: "no-store", credentials: "include" })
-        ]);
+  const load = useCallback(async () => {
+    if (typeof window === "undefined") return;
+    try {
+      setLoading(true);
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || getApiUrl();
+      const profileRes = await fetch(`${apiUrl}/api/user/profile`, {
+        cache: "no-store",
+        credentials: "include",
+      });
 
-        if (profileRes.status === 401 || walletRes.status === 401) {
-          router.push("/login");
-          return;
-        }
-
-        const profileData = await profileRes.json();
-        const walletData = await walletRes.json();
-
-        if (profileData.user) setUser(profileData.user);
-        if (walletData.wallet) setWallet(walletData.wallet);
-      } catch (err: any) {
-        console.error("Dashboard error:", err);
-        setError(err.message || "Failed to load dashboard");
-      } finally {
-        setLoading(false);
+      if (profileRes.status === 401) {
+        router.push("/login");
+        return;
       }
-    };
-    fetchData();
+
+      const profile = await profileRes.json();
+      if (profile.user) setUser(profile.user);
+
+      // Coins are the point of the page, but a failure to read them should
+      // leave the rest of it standing rather than blanking the dashboard.
+      try {
+        const [meRes, ledgerRes] = await Promise.all([
+          backendFetch("/coins/me"),
+          backendFetch("/coins/ledger?limit=6"),
+        ]);
+        const me = await meRes.json().catch(() => ({}));
+        if (me?.ok) setCoins(me);
+        const ledger = await ledgerRes.json().catch(() => ({}));
+        if (ledger?.ok) setRecent(ledger.entries ?? []);
+      } catch {
+        /* the welcome and the actions still render */
+      }
+    } catch (err: any) {
+      setError(err?.message || "Could not load your dashboard.");
+    } finally {
+      setLoading(false);
+    }
   }, [router]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
 
   if (loading) {
     return (
       <main className="page">
         <div className="shell">
-          <section className="panel page-card">
-            <h2>Entering the Arena...</h2>
-          </section>
+          <div className="panel shimmer subtle" style={{ padding: "var(--space-6)" }}>
+            <div className="skeleton text line-sm" style={{ height: "2rem" }} />
+            <div className="skeleton text line-md" />
+          </div>
+          <div className="auto-grid" style={{ marginTop: "var(--space-5)" }}>
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="panel shimmer subtle" style={{ padding: "var(--space-5)" }}>
+                <div className="skeleton text line-md" />
+                <div className="skeleton text line-sm" />
+              </div>
+            ))}
+          </div>
         </div>
       </main>
     );
   }
 
-  if (error || !user || !wallet) {
+  if (error || !user) {
     return (
       <main className="page">
         <div className="shell">
-          <section className="panel page-card text-center" style={{ padding: "4rem" }}>
-            <div className="glow-text" style={{ fontSize: "3rem", marginBottom: "1rem" }}>Enter the Arena</div>
-            <p className="muted" style={{ fontSize: "1.2rem", marginBottom: "2.5rem" }}>
-              Connect your account to access your personalized command center.
+          <section className="panel" style={{ padding: "var(--space-7)", textAlign: "center" }}>
+            <h1 style={{ fontSize: "var(--text-3xl)", fontWeight: 900 }}>Enter the arena</h1>
+            <p className="muted" style={{ margin: "var(--space-3) 0 var(--space-6)" }}>
+              {error ?? "Sign in to see your coins and your nights."}
             </p>
-            <div style={{ display: "flex", gap: "1.5rem", justifyContent: "center" }}>
-              <Link className="button" href="/login" style={{ padding: "1rem 2.5rem" }}>
-                Log In
+            <div className="h-stack" style={{ justifyContent: "center" }}>
+              <Link className="button" href="/login" style={{ textDecoration: "none" }}>
+                Log in
               </Link>
-              <Link className="button-secondary" href="/signup" style={{ padding: "1rem 2.5rem" }}>
-                Join Elite
+              <Link className="button-secondary" href="/signup" style={{ textDecoration: "none" }}>
+                Create an account
               </Link>
             </div>
           </section>
@@ -82,145 +144,258 @@ export default function DashboardPage() {
     );
   }
 
-  const balance = wallet.balance;
+  const firstName = String(user.name || "").split(" ")[0] || "player";
+  const wins = user?.stats?.tournamentWins ?? 0;
+  const joined: any[] = Array.isArray(user?.joinedTournaments) ? user.joinedTournaments : [];
+  const progress = coins?.next
+    ? Math.min(100, Math.round((coins.balance / coins.next.at) * 100))
+    : 100;
 
   return (
-    <main className="page dashboard-page">
+    <main className="page">
       <div className="shell">
-        {/* Welcome Interactive Banner */}
-        <div className="profile-banner slide-in">
-           <div className="banner-glow"></div>
-           <div className="profile-hero-info">
-             <h1 className="glow-text">Welcome, {user.name.split(' ')[0]}!</h1>
-             <p className="muted">The arena is active. You have {wallet.transactions.length} recent activities.</p>
-           </div>
-           <div className="profile-balance-highlight">
-              <Link href="/wallet" style={{ textDecoration: "none" }}>
-                <div className="balance-amount interactive-scale">
-                  {formatMoney(balance)}
-                </div>
-              </Link>
-              <span className="muted highlight-label">AVAILABLE CREDITS</span>
-           </div>
-        </div>
-
-        <div className="dashboard-grid">
-          
-          {/* Left Stack: Interactive Zone */}
-          <div className="stack" style={{ gap: "1.5rem" }}>
-            
-            {/* Chill Zone Card with Music */}
-            <div className="panel slide-in dashboard-card interactive-hover" style={{ animationDelay: "0.1s" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem", flexWrap: 'wrap', gap: '0.5rem' }}>
-                <h3 style={{ fontSize: "1.25rem", display: "flex", alignItems: "center", gap: "0.75rem" }}>
-                  <span style={{ animation: "pulse 2s infinite" }}>🎧</span> Lounge
-                </h3>
-                <div className="level-badge" style={{ fontSize: "0.7rem", background: "rgba(16, 185, 129, 0.1)", color: "var(--green)" }}>LVL {Math.floor((user?.stats?.points || 0) / 100) + 1}</div>
-              </div>
-
-              <GamingRadio />
-
-              <div style={{ marginTop: "1.5rem" }}>
-                <h4 style={{ marginBottom: "0.75rem", fontSize: "0.9rem", opacity: 0.8 }}>Strategy Hub</h4>
-                <div className="info-list" style={{ gap: "0.75rem" }}>
-                  <div className="info-row" style={{ background: "rgba(139, 92, 246, 0.05)", borderColor: "rgba(139, 92, 246, 0.1)" }}>
-                    <span className="info-label">Tip:</span>
-                    <span className="info-value" style={{ color: "var(--accent-light)" }}>"Observe break speed in 8-Ball; 85% is optimal."</span>
-                  </div>
-                </div>
-              </div>
+        {/* ── The welcome, with the balance that actually means something ── */}
+        <section
+          className="panel shimmer gold"
+          style={{
+            padding: "var(--space-6)",
+            background: "linear-gradient(135deg, var(--gold-subtle), transparent 62%)",
+            borderColor: "var(--gold-subtle)",
+          }}
+        >
+          <div className="h-stack between" style={{ alignItems: "flex-start" }}>
+            <div style={{ minWidth: 0 }}>
+              <h1
+                style={{
+                  fontSize: "var(--text-3xl)",
+                  fontWeight: 900,
+                  letterSpacing: "-0.02em",
+                  lineHeight: 1.1,
+                }}
+              >
+                Welcome, {firstName}.
+              </h1>
+              <p className="muted" style={{ marginTop: "var(--space-2)" }}>
+                {coins && coins.earnedToday > 0
+                  ? `You have earned ${formatCoins(coins.earnedToday)} coins today.`
+                  : "Nothing played yet today."}
+              </p>
             </div>
 
-            {/* Tournament Quick Action */}
-            <div className="panel slide-in dashboard-card" style={{ animationDelay: "0.2s" }}>
-               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem", flexWrap: 'wrap', gap: '0.5rem' }}>
-                 <h3>Next Up</h3>
-                 <Link href="/tournaments" className="text-accent no-underline hover:glow" style={{ fontSize: "0.85rem" }}>View All</Link>
-               </div>
-               <div className="tournament-action-row" style={{ display: "flex", gap: "1rem", flexWrap: 'wrap' }}>
-                  {user?.joinedTournaments && user.joinedTournaments.length > 0 ? (
-                  user.joinedTournaments.slice(0, 2).map((t: any) => (
-                    <div key={t.id} className="tournament-app-card" style={{ flex: "1 1 200px", padding: "1.25rem", background: "rgba(0,0,0,0.4)" }}>
-                      <div className="card-players">Tournament</div>
-                      <div className="card-title" style={{ fontSize: "1.1rem" }}>{t.name}</div>
-                      <div className="card-footer" style={{ marginTop: "1rem" }}>
-                        <span className="footer-item">₹{t.entryFee.amount}</span>
-                        <span className="footer-item" style={{ color: "var(--accent)" }}>{t.status}</span>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div style={{ 
-                    flex: 1, 
-                    padding: "1.5rem", 
-                    background: "rgba(0,0,0,0.2)", 
-                    borderRadius: "1rem", 
-                    textAlign: "center",
-                    border: "1px dashed rgba(255,255,255,0.1)"
-                  }}>
-                    <div style={{ fontSize: "1.5rem", marginBottom: "0.5rem" }}>🏆</div>
-                    <div style={{ fontWeight: 600 }}>No active tournaments</div>
-                    <Link href="/tournaments" className="button button-sm mt-4">BROWSE</Link>
-                  </div>
-                )}
-               </div>
-            </div>
+            <Link
+              href="/coins"
+              className="h-stack tight"
+              style={{ textDecoration: "none", color: "inherit", flexShrink: 0 }}
+            >
+              <CoinMark size={40} />
+              <div style={{ textAlign: "right" }}>
+                <div
+                  style={{
+                    fontSize: "var(--text-2xl)",
+                    fontWeight: 900,
+                    fontFamily: "var(--font-outfit), system-ui, sans-serif",
+                    lineHeight: 1,
+                  }}
+                >
+                  {coins ? formatCoins(coins.balance) : "—"}
+                </div>
+                <div
+                  className="muted"
+                  style={{
+                    fontSize: "var(--text-xs)",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.1em",
+                    marginTop: "var(--space-1)",
+                  }}
+                >
+                  WTA Coins
+                </div>
+              </div>
+            </Link>
           </div>
 
-          {/* Right Aside: Stats & Social */}
-          <div className="stack" style={{ gap: "1.5rem" }}>
-            <div className="panel slide-in dashboard-card" style={{ animationDelay: "0.3s" }}>
-              <h3 style={{ marginBottom: "1.25rem" }}>Elite Status</h3>
-              <div style={{ position: "relative", width: "100px", height: "100px", margin: "0 auto 1.5rem" }}>
-                <svg style={{ transform: "rotate(-90deg)", width: "100px", height: "100px" }}>
-                  <circle cx="50" cy="50" r="44" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="10" />
-                  <circle cx="50" cy="50" r="44" fill="none" stroke="var(--accent)" strokeWidth="10" strokeDasharray="276.46" strokeDashoffset="69.11" style={{ transition: "stroke-dashoffset 1s ease" }} />
-                </svg>
-                <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", textAlign: "center", width: '100%' }}>
-                  <div style={{ fontSize: "1.2rem", fontWeight: 800 }}>LVL {Math.floor((user?.stats?.points || 0) / 100) + 1}</div>
-                </div>
+          {coins?.next && (
+            <div style={{ marginTop: "var(--space-5)" }}>
+              <div
+                className="h-stack between"
+                style={{ fontSize: "var(--text-sm)", marginBottom: "var(--space-2)" }}
+              >
+                <span className="chip gold">{coins.title}</span>
+                <span className="muted">
+                  {formatCoins(coins.next.toGo)} to {coins.next.title}
+                </span>
               </div>
-              <div className="info-list" style={{ gap: "0.5rem" }}>
-                <div className="info-row" style={{ padding: "0.6rem 0.8rem", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
-                  <span className="info-label">Wins</span>
-                  <span className="info-value text-green">{user?.stats?.tournamentWins || 0}</span>
-                </div>
+              <div
+                style={{
+                  height: "8px",
+                  borderRadius: "999px",
+                  background: "var(--bg-inset)",
+                  overflow: "hidden",
+                }}
+              >
+                <div
+                  style={{
+                    width: `${progress}%`,
+                    height: "100%",
+                    background: "var(--gradient-primary)",
+                    transition: "width .6s ease",
+                  }}
+                />
               </div>
             </div>
+          )}
+        </section>
 
-            <div className="panel slide-in dashboard-card" style={{ animationDelay: "0.4s" }}>
-              <h3 style={{ marginBottom: "1rem" }}>Earnings</h3>
-              <div className="list">
-                {wallet.transactions.slice(0, 3).map((tx: any) => (
-                  <div key={tx.id} style={{ padding: "0.6rem 0", display: "flex", justifyContent: "space-between", borderBottom: "1px solid rgba(255,255,255,0.03)" }}>
-                    <div style={{ fontSize: "0.8rem" }}>{tx.type.replace('_', ' ')}</div>
-                    <div className={tx.type.includes('payout') ? 'text-green' : 'text-accent'} style={{ fontWeight: 600, fontSize: "0.85rem" }}>
-                       {tx.type.includes('debit') ? '-' : '+'}{formatMoney(tx.amount)}
-                    </div>
+        {/* ── The one action a host opens this page to take ── */}
+        <div className="auto-grid" style={{ marginTop: "var(--space-5)" }}>
+          <Link
+            href="/run"
+            className="panel shimmer"
+            style={{
+              textDecoration: "none",
+              color: "inherit",
+              padding: "var(--space-5)",
+              display: "flex",
+              flexDirection: "column",
+              gap: "var(--space-2)",
+            }}
+          >
+            <span className="chip" style={{ alignSelf: "flex-start" }}>
+              60 seconds
+            </span>
+            <strong style={{ fontSize: "var(--text-xl)", fontWeight: 800 }}>Run a night</strong>
+            <span className="muted" style={{ fontSize: "var(--text-sm)" }}>
+              Pick a game, pick how many are playing, go.
+            </span>
+          </Link>
+
+          <Link
+            href="/play/8ball"
+            className="panel"
+            style={{
+              textDecoration: "none",
+              color: "inherit",
+              padding: "var(--space-5)",
+              display: "flex",
+              flexDirection: "column",
+              gap: "var(--space-2)",
+            }}
+          >
+            <span className="chip gold" style={{ alignSelf: "flex-start" }}>
+              earns coins
+            </span>
+            <strong style={{ fontSize: "var(--text-xl)", fontWeight: 800 }}>Play 8-ball</strong>
+            <span className="muted" style={{ fontSize: "var(--text-sm)" }}>
+              Against the AI or a friend. Free, and it counts.
+            </span>
+          </Link>
+
+          <Link
+            href="/tournaments"
+            className="panel"
+            style={{
+              textDecoration: "none",
+              color: "inherit",
+              padding: "var(--space-5)",
+              display: "flex",
+              flexDirection: "column",
+              gap: "var(--space-2)",
+            }}
+          >
+            <span className="chip" style={{ alignSelf: "flex-start" }}>
+              {joined.length > 0 ? `${joined.length} entered` : "free to enter"}
+            </span>
+            <strong style={{ fontSize: "var(--text-xl)", fontWeight: 800 }}>Tournaments</strong>
+            <span className="muted" style={{ fontSize: "var(--text-sm)" }}>
+              {joined.length > 0 ? joined[0].name : "Find one to join."}
+            </span>
+          </Link>
+        </div>
+
+        {/* ── What you have actually done ── */}
+        <div className="page-grid" style={{ marginTop: "var(--space-5)" }}>
+          <section className="panel" style={{ padding: "var(--space-5)" }}>
+            <div className="h-stack between" style={{ marginBottom: "var(--space-4)" }}>
+              <h2 style={{ fontSize: "var(--text-lg)", fontWeight: 800 }}>Recent coins</h2>
+              <Link href="/coins" style={{ fontSize: "var(--text-sm)" }}>
+                All of them
+              </Link>
+            </div>
+
+            {recent.length === 0 ? (
+              <p className="muted" style={{ fontSize: "var(--text-sm)" }}>
+                Nothing yet. Play a frame and it appears here — win or lose, playing always
+                earns.
+              </p>
+            ) : (
+              <div className="v-stack" style={{ gap: "var(--space-2)" }}>
+                {recent.map((entry) => (
+                  <div
+                    key={entry.id}
+                    className="h-stack between"
+                    style={{
+                      padding: "var(--space-2) 0",
+                      borderBottom: "1px solid var(--glass-border-color)",
+                      gap: "var(--space-3)",
+                    }}
+                  >
+                    <span style={{ fontSize: "var(--text-sm)", minWidth: 0, overflowWrap: "anywhere" }}>
+                      {entry.description ?? entry.reason}
+                    </span>
+                    <strong
+                      style={{
+                        color: "var(--gold)",
+                        fontSize: "var(--text-sm)",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      +{formatCoinsExact(entry.amount)}
+                    </strong>
                   </div>
                 ))}
               </div>
-              <Link href="/wallet" className="button-secondary btn-block" style={{ marginTop: "1rem", fontSize: "0.8rem", textAlign: "center", display: 'block' }}>History</Link>
-            </div>
-          </div>
+            )}
+          </section>
 
+          <aside className="v-stack">
+            <section className="panel" style={{ padding: "var(--space-5)" }}>
+              <h2 style={{ fontSize: "var(--text-lg)", fontWeight: 800, marginBottom: "var(--space-4)" }}>
+                Your record
+              </h2>
+              <div className="auto-grid narrow">
+                <div className="stat">
+                  <div className="stat-value">{wins}</div>
+                  <div className="stat-label">nights won</div>
+                </div>
+                <div className="stat">
+                  <div className="stat-value">{coins ? formatCoins(coins.lifetime) : "—"}</div>
+                  <div className="stat-label">coins all time</div>
+                </div>
+                <div className="stat">
+                  <div className="stat-value">
+                    {coins && coins.rank > 0 ? `#${coins.rank}` : "—"}
+                  </div>
+                  <div className="stat-label">on the board</div>
+                </div>
+              </div>
+            </section>
+
+            <section className="panel" style={{ padding: "var(--space-5)" }}>
+              <h2 style={{ fontSize: "var(--text-lg)", fontWeight: 800 }}>No league night yet?</h2>
+              <p className="muted" style={{ fontSize: "var(--text-sm)", margin: "var(--space-2) 0 var(--space-4)" }}>
+                The guide to starting one from nothing. Free, and it works on paper.
+              </p>
+              <Link
+                className="button-secondary"
+                href="/playbook"
+                style={{ textDecoration: "none" }}
+              >
+                Read the playbook
+              </Link>
+            </section>
+          </aside>
         </div>
       </div>
-
-      <style dangerouslySetInnerHTML={{ __html: `
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
-        .interactive-hover { transition: all 0.3s ease; }
-        .interactive-hover:hover { transform: translateY(-5px); border-color: var(--accent); }
-        .interactive-scale { transition: transform 0.2s ease; cursor: pointer; }
-        .interactive-scale:hover { transform: scale(1.05); }
-        .no-underline { text-decoration: none; }
-        .hover\\:glow:hover { text-shadow: 0 0 10px var(--accent-light); }
-        
-        @media (max-width: 768px) {
-          .dashboard-page { padding: 0.5rem !important; }
-          .dashboard-card { padding: 1.5rem !important; }
-        }
-      `}} />
     </main>
   );
 }

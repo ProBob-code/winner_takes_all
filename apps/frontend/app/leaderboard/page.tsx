@@ -312,7 +312,7 @@ export default function LeaderboardPage() {
         .lb-row:not(.lb-head-row):hover { background: rgba(255, 255, 255, 0.035); }
         .lb-row.top { background: rgba(245, 158, 11, 0.04); }
         .lb-row.me {
-          background: rgba(139, 92, 246, 0.1);
+          background: color-mix(in oklab, var(--accent) 10%, transparent);
           box-shadow: inset 3px 0 0 var(--accent);
         }
 
@@ -323,8 +323,8 @@ export default function LeaderboardPage() {
           border-radius: 50%;
           display: flex; align-items: center; justify-content: center;
           font-size: 0.72rem; font-weight: 900; letter-spacing: 0.5px;
-          background: rgba(139, 92, 246, 0.16);
-          border: 1px solid rgba(139, 92, 246, 0.3);
+          background: color-mix(in oklab, var(--accent) 16%, transparent);
+          border: 1px solid color-mix(in oklab, var(--accent) 30%, transparent);
           color: var(--accent-light);
         }
         .lb-avatar.lg { width: 54px; height: 54px; font-size: 1rem; }
@@ -336,7 +336,7 @@ export default function LeaderboardPage() {
         .lb-you {
           margin-left: 8px; padding: 2px 6px; border-radius: 5px;
           font-size: 0.55rem; font-weight: 900; letter-spacing: 0.5px;
-          background: rgba(139, 92, 246, 0.2); color: var(--accent-light);
+          background: color-mix(in oklab, var(--accent) 20%, transparent); color: var(--accent-light);
         }
         .lb-inline-meta { display: none; font-size: 0.7rem; color: var(--text-muted); margin-top: 2px; }
 

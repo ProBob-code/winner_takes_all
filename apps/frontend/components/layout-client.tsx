@@ -6,6 +6,7 @@ import { Sidebar } from "@/components/sidebar";
 import { Topbar } from "@/components/topbar";
 import { MobileNav } from "@/components/mobile-nav";
 import { NetworkBadge } from "@/components/network-badge";
+import { SplashScreen } from "@/components/splash-screen";
 import Link from "next/link";
 import { getApiUrl } from "@/lib/api-config";
 
@@ -47,6 +48,7 @@ export function LayoutClient({ children }: { children: React.ReactNode }) {
       <>
         {children}
         <NetworkBadge />
+        <SplashScreen />
       </>
     );
   }
@@ -109,6 +111,8 @@ export function LayoutClient({ children }: { children: React.ReactNode }) {
       {/* Registers the offline helper and says, when it matters, that scores
           tapped on this device are safe. Silent when the network is fine. */}
       <NetworkBadge />
+      {/* Once a session, and never on the full-bleed routes. */}
+      <SplashScreen />
     </div>
   );
 }
