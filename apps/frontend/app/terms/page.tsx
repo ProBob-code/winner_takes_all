@@ -7,7 +7,7 @@ export default function TermsPage() {
       <div className="shell" style={{ maxWidth: "900px", margin: "0 auto" }}>
         <header style={{ marginBottom: "5rem" }}>
           <h1 style={{ fontSize: "clamp(2.5rem, 5vw, 4rem)", fontWeight: 950, marginBottom: "1rem", letterSpacing: "-2px" }}>
-            TERMS & <span className="text-gradient" style={{ background: "linear-gradient(135deg, var(--accent), #06b6d4)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>CONDITIONS.</span>
+            TERMS & <span className="text-gradient" style={{ background: "linear-gradient(135deg, var(--accent), var(--accent))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>CONDITIONS.</span>
           </h1>
           <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
             <span style={{ padding: "0.4rem 1rem", borderRadius: "8px", background: "color-mix(in oklab, var(--accent) 10%, transparent)", color: "var(--accent-light)", fontSize: "0.75rem", fontWeight: 700 }}>v2.4.0</span>

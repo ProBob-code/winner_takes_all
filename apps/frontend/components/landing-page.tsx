@@ -165,7 +165,7 @@ export function LandingPage() {
         :root {
           --bg-deep: #080512;
           --accent-primary: var(--accent);
-          --accent-secondary: #06b6d4;
+          --accent-secondary: var(--accent);
           --accent-glow: color-mix(in oklab, var(--accent) 40%, transparent);
           --glass-bg: rgba(255, 255, 255, 0.03);
           --glass-border: rgba(255, 255, 255, 0.08);
@@ -206,7 +206,7 @@ export function LandingPage() {
         .reveal.active { opacity: 1; transform: translateY(0); }
 
         .gradient-text {
-          background: linear-gradient(135deg, var(--accent), #06b6d4, var(--accent));
+          background: linear-gradient(135deg, var(--accent), var(--accent), var(--accent));
           background-size: 200% auto;
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
@@ -249,7 +249,7 @@ export function LandingPage() {
           </h1>
           <p className="hero-desc" style={{ maxWidth: "700px", fontSize: "1.2rem", color: "#94a3b8", marginBottom: "3.5rem", lineHeight: 1.6 }}>The comprehensive SaaS platform for esports organizers, communities, and competitive events. Manage brackets, schedules, and tournament operations with professional-grade tools.</p>
           <div className="hero-buttons" style={{ display: "flex", gap: "1.5rem" }}>
-            <Link href="/tournaments" style={{ background: "linear-gradient(135deg, var(--accent), #06b6d4)", color: "white", padding: "1.25rem 2.5rem", borderRadius: "16px", textDecoration: "none", fontWeight: 800, fontSize: "1.1rem" }}>EXPLORE PLATFORM →</Link>
+            <Link href="/tournaments" style={{ background: "linear-gradient(135deg, var(--accent), var(--accent))", color: "white", padding: "1.25rem 2.5rem", borderRadius: "16px", textDecoration: "none", fontWeight: 800, fontSize: "1.1rem" }}>EXPLORE PLATFORM →</Link>
             <Link href="#how-it-works" style={{ background: "var(--glass-bg)", border: "1px solid var(--glass-border-color)", color: "white", padding: "1.25rem 2.5rem", borderRadius: "16px", textDecoration: "none", fontWeight: 800, fontSize: "1.1rem" }}>HOW IT WORKS</Link>
           </div>
         </section>
@@ -260,7 +260,7 @@ export function LandingPage() {
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(300px, 100%), 1fr))", gap: "2.5rem", position: "relative" }}>
                 <div className="card-3d" style={{ padding: "4rem 3rem", position: "relative", overflow: "hidden" }}>
                     <div style={{ position: "absolute", top: "-20px", right: "-10px", fontSize: "8rem", fontWeight: 900, opacity: 0.05, color: "white" }}>01</div>
-                    <div style={{ background: "linear-gradient(135deg, var(--accent), #06b6d4)", width: "60px", height: "60px", borderRadius: "16px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.5rem", marginBottom: "2rem", boxShadow: "0 0 20px color-mix(in oklab, var(--accent) 40%, transparent)" }}>📊</div>
+                    <div style={{ background: "linear-gradient(135deg, var(--accent), var(--accent))", width: "60px", height: "60px", borderRadius: "16px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.5rem", marginBottom: "2rem", boxShadow: "0 0 20px color-mix(in oklab, var(--accent) 40%, transparent)" }}>📊</div>
                     <h3 style={{ fontSize: "1.5rem", marginBottom: "1rem" }}>Configure Event</h3>
                     <p style={{ color: "#94a3b8", lineHeight: 1.6 }}>Organizers define rules, schedules, and participation parameters. Our infrastructure handles the complex backend orchestration.</p>
                 </div>
@@ -272,7 +272,7 @@ export function LandingPage() {
                 </div>
                 <div className="card-3d" style={{ padding: "4rem 3rem", position: "relative", overflow: "hidden" }}>
                     <div style={{ position: "absolute", top: "-20px", right: "-10px", fontSize: "8rem", fontWeight: 900, opacity: 0.05, color: "white" }}>03</div>
-                    <div style={{ background: "linear-gradient(135deg, #10b981, #3b82f6)", width: "60px", height: "60px", borderRadius: "16px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.5rem", marginBottom: "2rem", boxShadow: "0 0 20px rgba(16, 185, 129, 0.4)" }}>🏆</div>
+                    <div style={{ background: "linear-gradient(135deg, var(--gold), var(--team-blue))", width: "60px", height: "60px", borderRadius: "16px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.5rem", marginBottom: "2rem", boxShadow: "0 0 20px rgba(16, 185, 129, 0.4)" }}>🏆</div>
                     <h3 style={{ fontSize: "1.5rem", marginBottom: "1rem" }}>Event Finalization</h3>
                     <p style={{ color: "#94a3b8", lineHeight: 1.6 }}>Validation of results and professional tournament operations management based on verified performance.</p>
                 </div>

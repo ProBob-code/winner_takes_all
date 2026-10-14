@@ -113,7 +113,7 @@ export default function SeriesListPage() {
                   </span>
                   <span
                     className="status-badge"
-                    style={{ background: "rgba(59,130,246,0.12)", color: "#60a5fa" }}
+                    style={{ background: "rgba(59,130,246,0.12)", color: "var(--team-blue)" }}
                   >
                     {s.sport === "FOOTBALL" ? "⚽ FOOTBALL" : "🎱 8-BALL"}
                   </span>
@@ -122,7 +122,7 @@ export default function SeriesListPage() {
                     style={
                       s.tournamentType === "offline"
                         ? { background: "rgba(245,158,11,0.12)", color: "var(--gold)" }
-                        : { background: "rgba(16,185,129,0.12)", color: "#10b981" }
+                        : { background: "rgba(16,185,129,0.12)", color: "var(--gold)" }
                     }
                   >
                     {s.tournamentType === "offline" ? "📍 OFFLINE" : "💻 ONLINE"}

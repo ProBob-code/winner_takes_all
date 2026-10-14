@@ -15,7 +15,7 @@ export default function AboutPage() {
           </div>
           <h1 style={{ fontSize: "clamp(3rem, 8vw, 5.5rem)", fontWeight: 950, lineHeight: 0.9, letterSpacing: "-3px", marginBottom: "2rem" }}>
             BORN FROM <br />
-            <span className="text-gradient" style={{ background: "linear-gradient(135deg, var(--accent), #06b6d4)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>PURE PRECISION.</span>
+            <span className="text-gradient" style={{ background: "linear-gradient(135deg, var(--accent), var(--accent))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>PURE PRECISION.</span>
           </h1>
           <p className="muted" style={{ maxWidth: "600px", margin: "0 auto", fontSize: "1.2rem", lineHeight: 1.6 }}>
             Winner.Takes.All (W.T.A) is the convergence of high-frequency engineering and competitive passion.

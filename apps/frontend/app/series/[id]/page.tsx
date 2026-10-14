@@ -190,7 +190,7 @@ export default function SeriesDetailPage() {
             <span className={`status-badge ${series.status === "active" ? "open" : ""}`}>
               {series.status === "active" ? "RUNNING" : "ENDED"}
             </span>
-            <span className="status-badge" style={{ background: "rgba(59,130,246,0.12)", color: "#60a5fa" }}>
+            <span className="status-badge" style={{ background: "rgba(59,130,246,0.12)", color: "var(--team-blue)" }}>
               {isFootball ? "⚽ FOOTBALL" : "🎱 8-BALL"}
             </span>
             <span
@@ -198,7 +198,7 @@ export default function SeriesDetailPage() {
               style={
                 series.tournamentType === "offline"
                   ? { background: "rgba(245,158,11,0.12)", color: "var(--gold)" }
-                  : { background: "rgba(16,185,129,0.12)", color: "#10b981" }
+                  : { background: "rgba(16,185,129,0.12)", color: "var(--gold)" }
               }
             >
               {series.tournamentType === "offline" ? "📍 PLAYED OFFLINE" : "💻 PLAYED ONLINE"}
@@ -325,7 +325,7 @@ export default function SeriesDetailPage() {
                           style={{
                             marginLeft: "6px", padding: "2px 8px", borderRadius: "5px",
                             fontSize: "0.6rem", fontWeight: 900,
-                            background: "rgba(59,130,246,0.15)", color: "#60a5fa",
+                            background: "rgba(59,130,246,0.15)", color: "var(--team-blue)",
                           }}
                         >
                           YOU

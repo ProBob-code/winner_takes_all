@@ -330,7 +330,7 @@ export default function WalletPage() {
                           className="status-badge"
                           style={
                             p.status === "paid"
-                              ? { background: "rgba(16,185,129,0.12)", color: "#10b981" }
+                              ? { background: "rgba(16,185,129,0.12)", color: "var(--gold)" }
                               : p.status === "rejected"
                                 ? { background: "rgba(239,68,68,0.12)", color: "#f87171" }
                                 : { background: "rgba(245,158,11,0.12)", color: "var(--gold)" }

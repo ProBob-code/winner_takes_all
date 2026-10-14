@@ -292,7 +292,7 @@ export function ArenaClient({ id }: { id: string }) {
                     <span className="live-pill" style={{ fontSize: '0.7rem', padding: '2px 8px' }}>
                       <span className="live-pulse"></span> LIVE
                     </span>
-                    <span className="sport-badge" style={{ background: isFootball ? 'rgba(16, 185, 129, 0.1)' : 'rgba(59, 130, 246, 0.1)', color: isFootball ? '#10b981' : '#3b82f6', fontSize: '0.75rem', padding: '2px 8px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.05)', fontWeight: 'bold' }}>
+                    <span className="sport-badge" style={{ background: isFootball ? 'rgba(16, 185, 129, 0.1)' : 'rgba(59, 130, 246, 0.1)', color: isFootball ? 'var(--gold)' : 'var(--team-blue)', fontSize: '0.75rem', padding: '2px 8px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.05)', fontWeight: 'bold' }}>
                       {isFootball ? '⚽ FOOTBALL' : '🎱 8-BALL'}
                     </span>
                   </div>
@@ -524,7 +524,7 @@ export function ArenaClient({ id }: { id: string }) {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '10px 15px', borderRadius: '4px' }}>
                       <div>
                         <span className="section-label-v2" style={{ fontSize: '0.65rem', display: 'block' }}>GOLDEN GLOVE (BEST GK)</span>
-                        <span style={{ fontWeight: 'bold', color: '#10b981', fontSize: '0.95rem' }}>{bestGkName}</span>
+                        <span style={{ fontWeight: 'bold', color: 'var(--gold)', fontSize: '0.95rem' }}>{bestGkName}</span>
                       </div>
                       <span style={{ fontSize: '0.85rem', color: '#888' }}>{bestGkSaves} saves</span>
                     </div>

@@ -19,7 +19,7 @@ const STATIONS = [
     name: "FLASH FM",
     description: "High-energy pop from the golden era of gaming.",
     url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
-    color: "#06b6d4"
+    color: "var(--accent)"
   }
 ];
 

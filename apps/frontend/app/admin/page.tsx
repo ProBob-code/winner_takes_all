@@ -174,7 +174,7 @@ export default function AdminPage() {
 
         {notice && (
           <div className="panel" style={{ padding: "0.9rem 1.15rem", marginBottom: "1rem", border: "1px solid rgba(16,185,129,0.3)" }}>
-            <span style={{ color: "#10b981", fontWeight: 700 }}>{notice}</span>
+            <span style={{ color: "var(--gold)", fontWeight: 700 }}>{notice}</span>
           </div>
         )}
         {error && (
@@ -545,7 +545,7 @@ function PayoutQueue({ payouts, onSettle }: { payouts: any[]; onSettle: (fn: () 
               {settled.map((p) => (
                 <tr key={p.id}>
                   <td>{p.user?.name || p.user?.email}</td>
-                  <td style={{ color: p.status === "paid" ? "#10b981" : "#f87171", fontWeight: 700 }}>{p.status}</td>
+                  <td style={{ color: p.status === "paid" ? "var(--gold)" : "#f87171", fontWeight: 700 }}>{p.status}</td>
                   <td style={{ textAlign: "right" }}>{formatMoney(p.net)}</td>
                   <td style={{ textAlign: "right" }}>{formatMoney(p.fee)}</td>
                   <td className="muted admin-sub">{p.processedAt ? new Date(p.processedAt).toLocaleString() : "—"}</td>

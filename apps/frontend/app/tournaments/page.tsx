@@ -195,7 +195,7 @@ export default function TournamentsPage() {
                             <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginTop: "10px" }}>
                               <span
                                 className="status-badge"
-                                style={{ background: "rgba(59,130,246,0.12)", color: "#60a5fa" }}
+                                style={{ background: "rgba(59,130,246,0.12)", color: "var(--team-blue)" }}
                               >
                                 {t.sport === "FOOTBALL" ? "⚽ FOOTBALL" : "🎱 8-BALL"}
                               </span>
@@ -204,7 +204,7 @@ export default function TournamentsPage() {
                                 style={
                                   t.tournamentType === "offline"
                                     ? { background: "rgba(245,158,11,0.12)", color: "var(--gold)" }
-                                    : { background: "rgba(16,185,129,0.12)", color: "#10b981" }
+                                    : { background: "rgba(16,185,129,0.12)", color: "var(--gold)" }
                                 }
                               >
                                 {t.tournamentType === "offline" ? "📍 OFFLINE" : "💻 ONLINE"}
@@ -386,7 +386,7 @@ export default function TournamentsPage() {
           border-radius: 20px;
           background: rgba(255,255,255,0.05);
         }
-        .status-badge.OPEN { background: rgba(16, 185, 129, 0.1); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.2); }
+        .status-badge.OPEN { background: rgba(16, 185, 129, 0.1); color: var(--gold); border: 1px solid rgba(16, 185, 129, 0.2); }
         .status-badge.IN_PROGRESS { background: rgba(245, 158, 11, 0.1); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.2); }
 
         .tournament-title { font-size: 1.25rem; font-weight: 800; margin-bottom: 0.5rem; background: linear-gradient(to right, #fff, #94a3b8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
@@ -395,7 +395,7 @@ export default function TournamentsPage() {
         .card-footer { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 2rem; }
         .entry-info .label { display: block; font-size: 0.6rem; font-weight: 900; color: var(--text-muted); margin-bottom: 2px; }
         .entry-info .value { font-size: 1.1rem; font-weight: 900; }
-        .entry-info .value.free { color: #10b981; }
+        .entry-info .value.free { color: var(--gold); }
         .entry-info .value.paid { color: var(--gold); }
 
         .action-circle {

@@ -7,7 +7,7 @@ export default function PrivacyPage() {
       <div className="shell" style={{ maxWidth: "900px", margin: "0 auto" }}>
         <header style={{ marginBottom: "5rem" }}>
           <h1 style={{ fontSize: "clamp(2.5rem, 5vw, 4rem)", fontWeight: 950, marginBottom: "1rem", letterSpacing: "-2px" }}>
-            PRIVACY <span className="text-gradient" style={{ background: "linear-gradient(135deg, #10b981, #3b82f6)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>POLICY.</span>
+            PRIVACY <span className="text-gradient" style={{ background: "linear-gradient(135deg, var(--gold), var(--team-blue))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>POLICY.</span>
           </h1>
           <p className="muted" style={{ fontSize: "1.1rem" }}>Your data security is our top technical priority.</p>
         </header>

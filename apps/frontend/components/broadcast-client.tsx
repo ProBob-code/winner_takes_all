@@ -402,7 +402,7 @@ export function BroadcastClient({ arenaId, matchId, token }: Props) {
 
           {phase === "live" && (
             <>
-              <p style={{ color: "#10b981", fontWeight: "bold", fontSize: "0.9rem" }}>
+              <p style={{ color: "var(--gold)", fontWeight: "bold", fontSize: "0.9rem" }}>
                 You are live as “{feed?.label}”.
               </p>
               {warning && (

@@ -181,7 +181,7 @@ export default function GamesPage() {
           color: var(--text-secondary);
           border: 1px solid var(--border-color);
         }
-        .status-badge.OPEN { background: rgba(16, 185, 129, 0.1); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.2); }
+        .status-badge.OPEN { background: rgba(16, 185, 129, 0.1); color: var(--gold); border: 1px solid rgba(16, 185, 129, 0.2); }
 
         .tournament-title { 
           font-size: 1.25rem; 
@@ -194,7 +194,7 @@ export default function GamesPage() {
         .card-footer { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 2rem; }
         .entry-info .label { display: block; font-size: 0.6rem; font-weight: 900; color: var(--text-muted); margin-bottom: 2px; }
         .entry-info .value { font-size: 1.1rem; font-weight: 900; color: var(--text-primary); }
-        .entry-info .value.free { color: #10b981; }
+        .entry-info .value.free { color: var(--gold); }
 
         .action-circle {
           width: 40px;

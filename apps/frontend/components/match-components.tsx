@@ -179,7 +179,7 @@ export const FootballPossessionPitch = ({
               borderRadius: '3px',
               outline: 'none',
               cursor: 'pointer',
-              background: `linear-gradient(to right, #ef4444 0%, #ef4444 ${posA}%, #3b82f6 ${posA}%, #3b82f6 100%)`,
+              background: `linear-gradient(to right, #ef4444 0%, #ef4444 ${posA}%, var(--team-blue) ${posA}%, var(--team-blue) 100%)`,
               WebkitAppearance: 'none'
             }}
           />
@@ -232,7 +232,7 @@ export const TeamPod = ({
   isLocked,
   onClick
 }: TeamPodProps) => {
-  const hexColor = color === "red" ? "#ef4444" : "#3b82f6";
+  const hexColor = color === "red" ? "#ef4444" : "var(--team-blue)";
   
   return (
     <div className={`team-pod ${color} ${isActive ? 'active' : ''}`} onClick={onClick}>
@@ -333,7 +333,7 @@ export const FootballTeamPod = ({
   isLocked,
   onClick
 }: FootballTeamPodProps) => {
-  const hexColor = color === "red" ? "#ef4444" : "#3b82f6";
+  const hexColor = color === "red" ? "#ef4444" : "var(--team-blue)";
   
   return (
     <div className={`football-team-card ${color} ${isActive ? 'active' : ''}`} onClick={onClick}>
@@ -434,7 +434,7 @@ export const FootballTeamPod = ({
                     {s.playerInName && (
                       <>
                         <span className="sub-arrow"> ➔ </span> 
-                        <span className="sub-in" style={{ color: '#10b981' }}>{s.playerInName}</span>
+                        <span className="sub-in" style={{ color: 'var(--gold)' }}>{s.playerInName}</span>
                       </>
                     )}
                   </>

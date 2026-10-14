@@ -213,7 +213,7 @@ export default function TournamentDetailPage() {
             <div style={{ minWidth: 0 }}>
               <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap", marginBottom: "0.6rem" }}>
                 <span className={`status-badge ${tournament.status}`}>{tournament.status.toUpperCase()}</span>
-                <span className="status-badge" style={{ background: "rgba(59,130,246,0.12)", color: "#60a5fa" }}>
+                <span className="status-badge" style={{ background: "rgba(59,130,246,0.12)", color: "var(--team-blue)" }}>
                   {isFootball ? "FOOTBALL" : "8-BALL"}
                 </span>
                 <span className="status-badge" style={{ background: "var(--glass-bg)", color: "var(--text-muted)" }}>
@@ -224,7 +224,7 @@ export default function TournamentDetailPage() {
                   style={
                     tournament.tournamentType === "offline"
                       ? { background: "rgba(245,158,11,0.12)", color: "var(--gold)" }
-                      : { background: "rgba(16,185,129,0.12)", color: "#10b981" }
+                      : { background: "rgba(16,185,129,0.12)", color: "var(--gold)" }
                   }
                 >
                   {tournament.tournamentType === "offline" ? "📍 PLAYED OFFLINE" : "💻 PLAYED ONLINE"}
@@ -498,7 +498,7 @@ export default function TournamentDetailPage() {
                           style={{
                             marginLeft: "6px", padding: "2px 8px", borderRadius: "5px",
                             fontSize: "0.6rem", fontWeight: 900, letterSpacing: "0.5px",
-                            background: "rgba(59,130,246,0.15)", color: "#60a5fa",
+                            background: "rgba(59,130,246,0.15)", color: "var(--team-blue)",
                           }}
                         >
                           YOU

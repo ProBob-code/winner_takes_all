@@ -29,45 +29,72 @@
    ══════════════════════════════════════════════════════════════════════════ */
 
 :root, [data-theme='light'], .light-mode {
-  /* 🎨 Premium Light Mode - "Liquid Silver" - High Contrast & Premium Clarity */
-  --bg-primary: #ffffff;
-  --bg-secondary: #f1f5f9;
+  /* ── Light: pearl white ──
+     A soft, faintly warm white rather than a clinical one — paper with a
+     little light in it. The accent is W.T.A's own gold, taken a long way down
+     in lightness so it can be read as text on that ground; the bright gold of
+     the wordmark survives as --gold-light and is used for fills, where
+     legibility is the fill's problem rather than the colour's.
+     One hue throughout. The purple that used to carry the accent is gone. */
+  --bg-primary: #faf8f3;
+  --bg-secondary: #f2efe7;
   --bg-card: #ffffff;
-  --bg-card-hover: #f8fafc;
-  --bg-surface: #f1f5f9;
-  --bg-topbar: rgba(255, 255, 255, 0.9);
+  --bg-card-hover: #fbfaf6;
+  --bg-surface: #f6f4ee;
+  --bg-topbar: rgba(250, 248, 243, 0.92);
   --bg-dropdown: #ffffff;
-  --bg-inset: #f1f5f9;
+  --bg-inset: #f0ede4;
 
-  --text-primary: #0f172a;
-  --text-secondary: #475569;
-  --text-muted: #64748b;
+  --text-primary: #16150f;
+  --text-secondary: #4d4a3f;
+  --text-muted: #77735f;
 
-  --border-color: #e2e8f0;
-  --border-glow: rgba(124, 58, 237, 0.1);
-  --glass-bg: rgba(255, 255, 255, 0.7);
-  --glass-bg-hover: rgba(124, 58, 237, 0.05);
-  --glass-border-color: rgba(0, 0, 0, 0.08);
-  --glass-border-color-hover: rgba(124, 58, 237, 0.3);
+  --border-color: #e6e1d2;
+  --border-glow: rgba(166, 124, 0, 0.18);
+  --glass-bg: rgba(255, 255, 255, 0.8);
+  --glass-bg-hover: rgba(166, 124, 0, 0.06);
+  --glass-border-color: rgba(22, 21, 15, 0.1);
+  --glass-border-color-hover: rgba(166, 124, 0, 0.4);
   --glass-blur: blur(20px);
 
-  --accent: #7c3aed;
-  --accent-light: #8b5cf6;
-  --accent-subtle: rgba(124, 58, 237, 0.08);
+  /* Deep gold: the brand colour at a lightness that holds on pearl. */
+  --accent: #a67c00;
+  --accent-light: #c9980c;
+  --accent-subtle: rgba(166, 124, 0, 0.09);
 
-  --gold: #b45309;
-  --gold-light: #d97706;
-  --gold-subtle: rgba(180, 83, 9, 0.08);
+  --gold: #a67c00;
+  --gold-light: #e8b923;
+  --gold-subtle: rgba(232, 185, 35, 0.22);
 
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 10px 25px rgba(0, 0, 0, 0.08);
-  --shadow-lg: 0 20px 50px rgba(0, 0, 0, 0.12);
-  --shadow-glow: 0 0 20px rgba(124, 58, 237, 0.1);
-  
-  --radius: 18px;
-  --radius-sm: 10px;
-  --radius-lg: 28px;
-  --radius-full: 9999px;
+  --shadow-sm: 0 2px 8px rgba(22, 21, 15, 0.06);
+  --shadow-md: 0 10px 25px rgba(22, 21, 15, 0.09);
+  --shadow-lg: 0 20px 50px rgba(22, 21, 15, 0.14);
+  --shadow-glow: 0 0 24px rgba(166, 124, 0, 0.16);
+
+  --gradient-primary: linear-gradient(135deg, #a67c00 0%, #e8b923 100%);
+  --gradient-gold: linear-gradient(135deg, #b8860b 0%, #f0c930 100%);
+
+  --team-red: #b4452f;
+  --team-red-glow: rgba(180, 69, 47, 0.16);
+  --team-red-bg: #f7e3dd;
+
+  --team-blue: #a67c00;
+  --team-blue-glow: rgba(166, 124, 0, 0.16);
+  --team-blue-bg: #f7eed2;
+
+  --vs-orb-bg: #ffffff;
+  --vs-orb-border: #e6e1d2;
+
+  /* One scheme throughout: nothing resolves to a third hue. */
+  --green: #8a7320;
+  --green-light: #a67c00;
+  --green-subtle: rgba(232, 185, 35, 0.2);
+  --cyan: #a67c00;
+  --cyan-subtle: rgba(166, 124, 0, 0.1);
+  --blue: #a67c00;
+  --red: #b4452f;
+  --red-light: #c85a42;
+  --red-subtle: rgba(180, 69, 47, 0.12);
 
   /* ── Phase 2.4: spacing and type scale ──
    *
@@ -111,73 +138,72 @@
   /* The smallest thing a thumb should have to hit. Below this, a member of
    * staff two drinks into a Friday night misses it. */
   --touch-min: 48px;
-
-  --gradient-primary: linear-gradient(135deg, #7c3aed 0%, #0ea5e9 100%);
-  --gradient-gold: linear-gradient(135deg, #b45309 0%, #f59e0b 100%);
-
-  /* Universal Red vs Blue Stadium Theme */
-  --team-red: #ef4444;
-  --team-red-glow: rgba(239, 68, 68, 0.15);
-  --team-red-bg: #fee2e2;
-  
-  --team-blue: #3b82f6;
-  --team-blue-glow: rgba(59, 130, 246, 0.15);
-  --team-blue-bg: #dbeafe;
-  
-  --vs-orb-bg: #ffffff;
-  --vs-orb-border: #e2e8f0;
 }
 
 [data-theme='dark'] {
-  /* 🌌 Premium Dark Mode - "Liquid Midnight" */
-  --bg-primary: #030014;
-  --bg-secondary: #05011a;
-  --bg-card: rgba(10, 6, 28, 0.4);
-  --bg-card-hover: rgba(20, 15, 60, 0.6);
-  --bg-surface: rgba(139, 92, 246, 0.03);
-  --bg-topbar: rgba(3, 0, 20, 0.85);
-  --bg-dropdown: rgba(5, 1, 26, 0.98);
-  --bg-inset: rgba(0, 0, 0, 0.5);
+  /* ── Dark: black ──
+     Actually black, not a deep blue. The old ground was #030014, which is a
+     navy at low light and quietly turned the gold green-ish; on true black the
+     gold reads as gold. Cards step up in flat greys so a panel is visible
+     without needing a border to prove it. */
+  --bg-primary: #000000;
+  --bg-secondary: #0a0a0a;
+  --bg-card: #121212;
+  --bg-card-hover: #1b1b1b;
+  --bg-surface: #0f0f0f;
+  --bg-topbar: rgba(0, 0, 0, 0.9);
+  --bg-dropdown: #111111;
+  --bg-inset: #050505;
 
   --text-primary: #ffffff;
-  --text-secondary: #b3b3b3;
-  --text-muted: #666666;
+  --text-secondary: #bdbdbd;
+  --text-muted: #7d7d7d;
 
-  --border-color: rgba(139, 92, 246, 0.15);
-  --border-glow: rgba(139, 92, 246, 0.4);
-  --glass-bg: rgba(255, 255, 255, 0.03);
-  --glass-bg-hover: rgba(139, 92, 246, 0.08);
-  --glass-border-color: rgba(255, 255, 255, 0.05);
-  --glass-border-color-hover: rgba(139, 92, 246, 0.4);
+  --border-color: #272727;
+  --border-glow: rgba(255, 215, 0, 0.35);
+  --glass-bg: rgba(255, 255, 255, 0.04);
+  --glass-bg-hover: rgba(255, 215, 0, 0.09);
+  --glass-border-color: #272727;
+  --glass-border-color-hover: rgba(255, 215, 0, 0.45);
   --glass-blur: blur(24px);
 
-  --accent: #bb86fc;
-  --accent-light: #d4b1ff;
-  --accent-subtle: rgba(187, 134, 252, 0.1);
+  /* The wordmark's gold, carrying the whole interface. */
+  --accent: #ffd700;
+  --accent-light: #ffe44d;
+  --accent-subtle: rgba(255, 215, 0, 0.12);
 
-  --gold: #ffb700;
-  --gold-light: #ffd700;
-  --gold-subtle: rgba(255, 183, 0, 0.1);
+  --gold: #ffd700;
+  --gold-light: #ffe44d;
+  --gold-subtle: rgba(255, 215, 0, 0.12);
 
   --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.8);
   --shadow-md: 0 12px 32px rgba(0, 0, 0, 0.9);
   --shadow-lg: 0 24px 64px rgba(0, 0, 0, 1);
-  --shadow-glow: 0 0 30px rgba(187, 134, 252, 0.2);
-  
-  --gradient-primary: linear-gradient(135deg, #bb86fc 0%, #03dac6 100%);
-  --gradient-gold: linear-gradient(135deg, #ffb700 0%, #ffd700 100%);
+  --shadow-glow: 0 0 30px rgba(255, 215, 0, 0.22);
 
-  /* Universal Red vs Blue Stadium Theme (Dark Mode Optimized) */
-  --team-red: #f87171;
-  --team-red-glow: rgba(248, 113, 113, 0.3);
-  --team-red-bg: rgba(248, 113, 113, 0.15);
-  
-  --team-blue: #60a5fa;
-  --team-blue-glow: rgba(96, 165, 250, 0.3);
-  --team-blue-bg: rgba(96, 165, 250, 0.15);
-  
+  --gradient-primary: linear-gradient(135deg, #ffd700 0%, #ffa726 100%);
+  --gradient-gold: linear-gradient(135deg, #ffb700 0%, #ffe44d 100%);
+
+  --team-red: #e5634a;
+  --team-red-glow: rgba(229, 99, 74, 0.3);
+  --team-red-bg: rgba(229, 99, 74, 0.15);
+
+  --team-blue: #ffd700;
+  --team-blue-glow: rgba(255, 215, 0, 0.3);
+  --team-blue-bg: rgba(255, 215, 0, 0.15);
+
   --vs-orb-bg: rgba(255, 255, 255, 0.08);
-  --vs-orb-border: rgba(255, 255, 255, 0.15);
+  --vs-orb-border: #272727;
+
+  --green: #ffd700;
+  --green-light: #ffe44d;
+  --green-subtle: rgba(255, 215, 0, 0.14);
+  --cyan: #ffb700;
+  --cyan-subtle: rgba(255, 183, 0, 0.14);
+  --blue: #ffd700;
+  --red: #e5634a;
+  --red-light: #f07e66;
+  --red-subtle: rgba(229, 99, 74, 0.14);
 }
 
 html {
@@ -2142,7 +2168,7 @@ label {
 }
 
 .red .team-initials { color: #ef4444; border-color: rgba(239, 68, 68, 0.3); }
-.blue .team-initials { color: #3b82f6; border-color: rgba(59, 130, 246, 0.3); }
+.blue .team-initials { color: var(--team-blue); border-color: rgba(59, 130, 246, 0.3); }
 
 .team-name {
   font-size: 1.5rem;
@@ -2165,7 +2191,7 @@ label {
 }
 
 .red .pod-score-large { color: #ef4444; text-shadow: 0 0 30px rgba(239, 68, 68, 0.3); }
-.blue .pod-score-large { color: #3b82f6; text-shadow: 0 0 30px rgba(59, 130, 246, 0.3); }
+.blue .pod-score-large { color: var(--team-blue); text-shadow: 0 0 30px rgba(59, 130, 246, 0.3); }
 
 .vs-core {
   position: relative;
@@ -2215,7 +2241,7 @@ label {
   justify-content: space-between;
   padding: 0 2rem;
   height: 72px;
-  background: rgba(10, 6, 28, 0.8);
+  background: var(--bg-topbar);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--glass-border-color);
@@ -2228,7 +2254,7 @@ label {
   .topbar {
     height: 60px !important;
     padding: 0 0.75rem !important;
-    background: rgba(8, 5, 18, 0.98) !important;
+    background: var(--bg-topbar) !important;
     backdrop-filter: blur(10px) !important;
     -webkit-backdrop-filter: blur(10px) !important;
     border-bottom: 1px solid var(--glass-border-color) !important;
@@ -3319,7 +3345,7 @@ select.form-control option {
 .status-badge.open {
   background: rgba(16, 185, 129, 0.12);
   border-color: rgba(16, 185, 129, 0.3);
-  color: #10b981;
+  color: var(--gold);
 }
 
 .status-badge.GROUP,
@@ -3491,7 +3517,7 @@ select.form-control option {
   white-space: nowrap;
 }
 
-.chip.good { color: #16a34a; border-color: rgba(22, 163, 74, 0.4); }
+.chip.good { color: var(--gold); border-color: rgba(22, 163, 74, 0.4); }
 .chip.warn { color: #d97706; border-color: rgba(217, 119, 6, 0.4); }
 .chip.bad  { color: #dc2626; border-color: rgba(220, 38, 38, 0.4); }
 .chip.gold { color: var(--gold); border-color: var(--gold-subtle); }
@@ -4633,4 +4659,34 @@ select.form-control option {
   .shimmer::after,
   .skeleton { animation: none }
   .shimmer::after { opacity: 0 }
+}
+
+/* ── Light-mode corrections ──
+   Two things the token swap alone could not reach: a later .topbar rule
+   hard-coded a dark violet, and the sidebar starfield — built for a night sky
+   — renders as coloured confetti on a pale rail. */
+
+:root:not([data-theme="dark"]) .sidebar-galaxy,
+:root:not([data-theme="dark"]) .sidebar-dust,
+:root:not([data-theme="dark"]) .sidebar-star-layer,
+[data-theme="light"] .sidebar-galaxy,
+[data-theme="light"] .sidebar-dust,
+[data-theme="light"] .sidebar-star-layer,
+.light-mode .sidebar-galaxy,
+.light-mode .sidebar-dust,
+.light-mode .sidebar-star-layer {
+  display: none;
+}
+
+/* The topbar's own links take the theme's ink rather than assuming a dark bar. */
+:root:not([data-theme="dark"]) .topbar-link,
+[data-theme="light"] .topbar-link,
+.light-mode .topbar-link {
+  color: var(--text-secondary);
+}
+
+:root:not([data-theme="dark"]) .topbar-link:hover,
+[data-theme="light"] .topbar-link:hover,
+.light-mode .topbar-link:hover {
+  color: var(--accent);
 }

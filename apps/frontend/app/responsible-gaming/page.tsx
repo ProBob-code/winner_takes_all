@@ -7,7 +7,7 @@ export default function ResponsibleGamingPage() {
       <div className="shell" style={{ maxWidth: "900px", margin: "0 auto" }}>
         <header style={{ marginBottom: "5rem" }}>
           <h1 style={{ fontSize: "clamp(2.5rem, 5vw, 4rem)", fontWeight: 950, marginBottom: "1rem", letterSpacing: "-2px" }}>
-            RESPONSIBLE <span className="text-gradient" style={{ background: "linear-gradient(135deg, #10b981, #059669)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>GAMING.</span>
+            RESPONSIBLE <span className="text-gradient" style={{ background: "linear-gradient(135deg, var(--gold), #059669)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>GAMING.</span>
           </h1>
           <p className="muted" style={{ fontSize: "1.1rem" }}>Promoting healthy competition and digital well-being.</p>
         </header>

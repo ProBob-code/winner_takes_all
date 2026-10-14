@@ -1795,7 +1795,7 @@ export function QuickTournament() {
                 </div>
 
                 <div className="player-cards-container" style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '220px', overflowY: 'auto', paddingRight: '10px' }}>
-                  <label className="section-label-v2" style={{ fontSize: '0.7rem', color: '#10b981' }}>SELECT STARTING XI</label>
+                  <label className="section-label-v2" style={{ fontSize: '0.7rem', color: 'var(--gold)' }}>SELECT STARTING XI</label>
                   {teams.find(t => t.id === lineupModalConfig.teamAId)?.players.map(p => {
                     const isSelected = lineupModalConfig.lineupA.includes(p.id);
                     return (
@@ -1841,14 +1841,14 @@ export function QuickTournament() {
               {/* Team B Lineup Selector */}
               <div className="lineup-column" style={{ position: 'relative', zIndex: 2 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-                  <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#3b82f6', boxShadow: '0 0 10px #3b82f6' }} />
+                  <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: 'var(--team-blue)', boxShadow: '0 0 10px var(--team-blue)' }} />
                   <h4 style={{ color: '#fff', fontWeight: '900', fontSize: '1.2rem', textTransform: 'uppercase', letterSpacing: '1px', margin: 0 }}>
                     {getTeamName(lineupModalConfig.teamBId)}
                   </h4>
                 </div>
 
                 <div className="player-cards-container" style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '220px', overflowY: 'auto', paddingRight: '10px' }}>
-                  <label className="section-label-v2" style={{ fontSize: '0.7rem', color: '#10b981' }}>SELECT STARTING XI</label>
+                  <label className="section-label-v2" style={{ fontSize: '0.7rem', color: 'var(--gold)' }}>SELECT STARTING XI</label>
                   {teams.find(t => t.id === lineupModalConfig.teamBId)?.players.map(p => {
                     const isSelected = lineupModalConfig.lineupB.includes(p.id);
                     return (
@@ -1860,8 +1860,8 @@ export function QuickTournament() {
                       }}>
                         <div style={{ 
                           width: '20px', height: '20px', borderRadius: '4px', 
-                          border: `2px solid ${isSelected ? '#3b82f6' : '#555'}`,
-                          background: isSelected ? '#3b82f6' : 'transparent',
+                          border: `2px solid ${isSelected ? 'var(--team-blue)' : '#555'}`,
+                          background: isSelected ? 'var(--team-blue)' : 'transparent',
                           display: 'flex', alignItems: 'center', justifyContent: 'center'
                         }}>
                           {isSelected && <span style={{ color: '#fff', fontSize: '12px', fontWeight: 'bold' }}>✓</span>}
@@ -2106,7 +2106,7 @@ export function QuickTournament() {
                 {arenaId && (
                   <button
                     className="extra-time-btn"
-                    style={{ background: 'color-mix(in oklab, var(--accent) 12%, transparent)', color: '#a78bfa', border: '1px solid color-mix(in oklab, var(--accent) 30%, transparent)' }}
+                    style={{ background: 'color-mix(in oklab, var(--accent) 12%, transparent)', color: 'var(--accent)', border: '1px solid color-mix(in oklab, var(--accent) 30%, transparent)' }}
                     onClick={() => setShowBroadcastCode(!showBroadcastCode)}
                     title={syncError ? "Share the arena first so it exists on the spectator network" : undefined}
                   >
@@ -2414,7 +2414,7 @@ export function QuickTournament() {
                       <span className="live-pill" style={{ fontSize: '0.7rem', padding: '2px 8px' }}>
                         <span className="live-pulse"></span> LIVE
                       </span>
-                      <span className="sport-badge" style={{ background: isFootball ? 'rgba(16, 185, 129, 0.1)' : 'rgba(59, 130, 246, 0.1)', color: isFootball ? '#10b981' : '#3b82f6', fontSize: '0.75rem', padding: '2px 8px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.05)', fontWeight: 'bold' }}>
+                      <span className="sport-badge" style={{ background: isFootball ? 'rgba(16, 185, 129, 0.1)' : 'rgba(59, 130, 246, 0.1)', color: isFootball ? 'var(--gold)' : 'var(--team-blue)', fontSize: '0.75rem', padding: '2px 8px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.05)', fontWeight: 'bold' }}>
                         {isFootball ? '⚽ FOOTBALL' : '🎱 8-BALL'}
                       </span>
                     </div>
@@ -2587,7 +2587,7 @@ export function QuickTournament() {
                     <div className="award-icon">🧤</div>
                     <div className="award-content">
                       <div className="award-label">GOLDEN GLOVE (BEST GK)</div>
-                      <div className="award-winner glow-text" style={{ color: '#10b981' }}>
+                      <div className="award-winner glow-text" style={{ color: 'var(--gold)' }}>
                         {bestGkName}
                       </div>
                       <div className="award-meta">
@@ -2675,7 +2675,7 @@ export function QuickTournament() {
                               <div className="stat"><div className="stat-label">GA</div><div className="stat-val">{ga}</div></div>
                               <div className="stat"><div className="stat-label">GD</div><div className="stat-val">{gf - ga >= 0 ? `+${gf - ga}` : gf - ga}</div></div>
                               <div className="stat"><div className="stat-label">ATT</div><div className="stat-val">{totalAttempts}</div></div>
-                              <div className="stat"><div className="stat-label">SV</div><div className="stat-val" style={{ color: '#10b981' }}>{totalSaves}</div></div>
+                              <div className="stat"><div className="stat-label">SV</div><div className="stat-val" style={{ color: 'var(--gold)' }}>{totalSaves}</div></div>
                               <div className="stat" style={{ borderLeft: '1px solid rgba(255,255,255,0.08)', paddingLeft: '8px' }}>
                                 <div className="stat-label" style={{ color: 'var(--gold)' }}>RATING</div>
                                 <div className="stat-val" style={{ color: 'var(--gold)', fontWeight: 900 }}>{teamRating}</div>

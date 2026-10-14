@@ -283,7 +283,7 @@ export default function ScreeningPage() {
                     <span className={isLive ? "live-pill" : ""} style={{ fontSize: '0.75rem', padding: '3px 10px', background: isLive ? 'rgba(239, 68, 68, 0.1)' : 'rgba(245, 158, 11, 0.1)', color: isLive ? '#ef4444' : '#f59e0b', border: `1px solid ${isLive ? 'rgba(239,68,68,0.2)' : 'rgba(245,158,11,0.2)'}`, borderRadius: '6px', fontWeight: 'bold' }}>
                       {isLive && <span className="live-pulse"></span>} {isLive ? 'LIVE' : 'UPCOMING'}
                     </span>
-                    <span className="sport-badge" style={{ background: isFootball ? 'rgba(16, 185, 129, 0.1)' : 'rgba(59, 130, 246, 0.1)', color: isFootball ? '#10b981' : '#3b82f6', fontSize: '0.75rem', padding: '3px 10px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.05)', fontWeight: 'bold' }}>
+                    <span className="sport-badge" style={{ background: isFootball ? 'rgba(16, 185, 129, 0.1)' : 'rgba(59, 130, 246, 0.1)', color: isFootball ? 'var(--gold)' : 'var(--team-blue)', fontSize: '0.75rem', padding: '3px 10px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.05)', fontWeight: 'bold' }}>
                       {isFootball ? '⚽ FOOTBALL' : '🎱 8-BALL'}
                     </span>
                   </div>

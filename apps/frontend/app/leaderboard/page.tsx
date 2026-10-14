@@ -345,7 +345,7 @@ export default function LeaderboardPage() {
         .num { text-align: right; font-variant-numeric: tabular-nums; font-size: 0.88rem; }
         .points { font-weight: 900; }
         .earnings { font-weight: 900; color: var(--gold); }
-        .win { color: #10b981; font-weight: 800; }
+        .win { color: var(--gold); font-weight: 800; }
         .loss { color: #ef4444; font-weight: 800; }
         .dim { color: var(--text-muted); }
         .lb-titles { color: var(--gold); font-weight: 800; }

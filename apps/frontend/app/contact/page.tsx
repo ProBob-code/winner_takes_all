@@ -46,7 +46,7 @@ export default function ContactPage() {
         </div>
 
         <div className="panel" style={{ marginTop: "5rem", padding: "4rem", textAlign: "center", position: "relative", overflow: "hidden" }}>
-          <div style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "4px", background: "linear-gradient(90deg, var(--accent), #06b6d4, #f59e0b)" }}></div>
+          <div style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "4px", background: "linear-gradient(90deg, var(--accent), var(--accent), #f59e0b)" }}></div>
           <h2 style={{ fontSize: "2rem", fontWeight: 900, marginBottom: "1rem" }}>Host Your Own Tournament?</h2>
           <p className="muted" style={{ maxWidth: "600px", margin: "0 auto 2.5rem", lineHeight: 1.6 }}>
             Our infrastructure is ready for your next big event. Join hundreds of organizers who trust Winner.Takes.All for their competitive operations.

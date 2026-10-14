@@ -117,7 +117,7 @@
 .player-pod.focused::after { opacity: 0.2; }
 
 .player-pod.p1 { --accent-color: #ef4444; --glow-color: rgba(239, 68, 68, 0.2); }
-.player-pod.p2 { --accent-color: #3b82f6; --glow-color: rgba(59, 130, 246, 0.2); }
+.player-pod.p2 { --accent-color: var(--team-blue); --glow-color: rgba(59, 130, 246, 0.2); }
 
 .pod-header {
   text-align: center;
