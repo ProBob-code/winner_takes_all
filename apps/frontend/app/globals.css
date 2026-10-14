@@ -29,44 +29,52 @@
    ══════════════════════════════════════════════════════════════════════════ */
 
 :root, [data-theme='light'], .light-mode {
-  /* Peppy, not paper. The ground is a warm butter yellow rather than white,
-     which is what makes light mode feel like the same product as the dark one
-     instead of a bleached version of it. Cards sit a shade lighter so they
-     still lift off it. No black anywhere in this theme — the darkest value is
-     a warm near-brown, because true black on yellow reads as a printing error
-     rather than as a design. */
-  --bg-primary: oklch(95% 0.055 95);
-  --bg-secondary: oklch(92% 0.07 93);
-  --bg-card: oklch(98.5% 0.025 95);
-  --bg-card-hover: oklch(97% 0.04 95);
-  --bg-surface: oklch(96% 0.045 95);
-  --bg-topbar: oklch(95% 0.055 95 / 0.92);
-  --bg-dropdown: oklch(98.5% 0.025 95);
-  --bg-inset: oklch(92% 0.07 93);
+  /* ── Light ──
+     A warm cream ground, not a yellow one. The first attempt flooded the page
+     with butter yellow, which flattened everything: when the ground and the
+     accent share a hue, the accent stops reading as an accent and the whole
+     screen goes sepia. Energy comes from contrast and from where the red
+     lands, not from how much yellow there is.
+     So: cream ground, near-white cards that visibly lift off it, a deeper
+     tone for the rails, and a vivid red doing the work. Five distinct steps
+     from ground to card, which is what gives the page depth.
+     No black in this theme — the darkest value is a warm near-brown, because
+     true black against warm cream reads as a printing error. */
+  --bg-primary: oklch(97.5% 0.018 85);
+  --bg-secondary: oklch(94.5% 0.032 85);
+  --bg-card: oklch(99.6% 0.006 85);
+  --bg-card-hover: oklch(98.4% 0.016 85);
+  --bg-surface: oklch(96.4% 0.024 85);
+  --bg-topbar: oklch(97.5% 0.018 85 / 0.92);
+  --bg-dropdown: oklch(99.6% 0.006 85);
+  --bg-inset: oklch(94% 0.03 85);
 
-  --text-primary: oklch(24% 0.05 55);
-  --text-secondary: oklch(43% 0.06 50);
-  --text-muted: oklch(55% 0.06 55);
+  --text-primary: oklch(22% 0.035 50);
+  --text-secondary: oklch(42% 0.045 48);
+  --text-muted: oklch(56% 0.04 52);
 
-  --border-color: oklch(84% 0.09 90);
-  --border-glow: oklch(55% 0.22 27 / 0.18);
-  --glass-bg: oklch(98.5% 0.025 95 / 0.8);
-  --glass-bg-hover: oklch(55% 0.22 27 / 0.07);
-  --glass-border-color: oklch(24% 0.05 55 / 0.14);
-  --glass-border-color-hover: oklch(55% 0.22 27 / 0.42);
+  /* Borders carry real weight here. A hairline at 8% opacity disappears on
+     cream and every card ran into the next one. */
+  --border-color: oklch(88% 0.035 85);
+  --border-glow: oklch(52% 0.23 28 / 0.2);
+  --glass-bg: oklch(99.6% 0.006 85 / 0.86);
+  --glass-bg-hover: oklch(52% 0.23 28 / 0.06);
+  --glass-border-color: oklch(22% 0.035 50 / 0.13);
+  --glass-border-color-hover: oklch(52% 0.23 28 / 0.45);
   --glass-blur: blur(20px);
 
-  /* A strong red, because on a yellow ground a timid one turns orange. */
-  --accent: oklch(53% 0.22 27);
-  --accent-light: oklch(61% 0.21 27);
-  --accent-subtle: oklch(53% 0.22 27 / 0.1);
+  /* The red does the work. Vivid, not brick: this is the colour the eye is
+     meant to land on, and everything else gets out of its way. */
+  --accent: oklch(52% 0.23 28);
+  --accent-light: oklch(60% 0.22 28);
+  --accent-subtle: oklch(52% 0.23 28 / 0.09);
 
-  /* Amber goes well down in light mode: the ground is already amber, so the
-     accent version has to be darker than it to read as a mark rather than as
-     a slightly different patch of background. */
-  --gold: oklch(52% 0.13 70);
-  --gold-light: oklch(64% 0.15 80);
-  --gold-subtle: oklch(72% 0.15 88 / 0.3);
+  /* Two ambers, for two jobs. --gold is dark enough to be read as text on
+     cream; --gold-light is the saturated one used for fills and marks, where
+     legibility is the fill's problem rather than the colour's. */
+  --gold: oklch(55% 0.135 72);
+  --gold-light: oklch(76% 0.16 85);
+  --gold-subtle: oklch(80% 0.15 88 / 0.26);
 
   /* Shadows carry the ground's warmth. A neutral grey shadow on yellow looks
      like dirt. */
@@ -160,27 +168,33 @@
 }
 
 [data-theme='dark'] {
-  /* The reference design's own grounds, verbatim. Near-neutral with a trace
-     of blue, which is what lets amber and red sit on it without going muddy. */
-  --bg-primary: oklch(14% 0.012 260);
-  --bg-secondary: oklch(18% 0.012 260);
-  --bg-card: oklch(20% 0.01 260 / 0.72);
-  --bg-card-hover: oklch(24% 0.012 260 / 0.85);
-  --bg-surface: oklch(20% 0.01 260);
-  --bg-topbar: oklch(14% 0.012 260 / 0.88);
-  --bg-dropdown: oklch(18% 0.012 260);
-  --bg-inset: oklch(14% 0 0 / 0.5);
+  /* ── Dark ──
+     Near-black, leaning very slightly warm rather than blue: a cool ground
+     fought the amber. The steps matter more than the hue — cards used to sit
+     at 20% against a 14% ground with a translucent fill, so they barely
+     existed. They are opaque now and a clear step above it, which is what
+     makes a panel look like a panel. */
+  --bg-primary: oklch(13.5% 0.008 70);
+  --bg-secondary: oklch(16.5% 0.01 70);
+  --bg-card: oklch(19.5% 0.012 70);
+  --bg-card-hover: oklch(23% 0.016 70);
+  --bg-surface: oklch(17.5% 0.011 70);
+  --bg-topbar: oklch(13.5% 0.008 70 / 0.9);
+  --bg-dropdown: oklch(18.5% 0.012 70);
+  --bg-inset: oklch(10.5% 0.006 70);
 
-  --text-primary: oklch(96% 0.005 260);
-  --text-secondary: oklch(70% 0.01 260);
-  --text-muted: oklch(60% 0.01 260);
+  --text-primary: oklch(97% 0.006 85);
+  --text-secondary: oklch(74% 0.012 80);
+  --text-muted: oklch(60% 0.014 80);
 
-  --border-color: oklch(30% 0.014 260 / 0.5);
+  /* Visible edges. The old borders sat at 50% of a 30% grey, which against a
+     14% ground is almost nothing. */
+  --border-color: oklch(30% 0.018 75);
   --border-glow: oklch(80% 0.16 92 / 0.35);
-  --glass-bg: oklch(100% 0 0 / 0.03);
-  --glass-bg-hover: oklch(80% 0.16 92 / 0.08);
-  --glass-border-color: oklch(30% 0.014 260 / 0.5);
-  --glass-border-color-hover: oklch(80% 0.16 92 / 0.4);
+  --glass-bg: oklch(100% 0 0 / 0.045);
+  --glass-bg-hover: oklch(80% 0.16 92 / 0.1);
+  --glass-border-color: oklch(31% 0.018 75);
+  --glass-border-color-hover: oklch(80% 0.16 92 / 0.45);
   --glass-blur: blur(24px);
 
   --accent: oklch(62% 0.2 25);
@@ -4637,4 +4651,204 @@ select.form-control option {
   font-weight: var(--weight-bold);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Character
+   ══════════════════════════════════════════════════════════════════════════
+
+   The palette was correct and the result was still bland: clean, evenly
+   weighted, nothing for the eye to catch on. A competitive brand in red and
+   amber should feel like one. This layer gives the app its voice — bold
+   headings in the two colours, panels with a real edge, a racing stripe where
+   something matters — and does it on the shared classes so every page gets it
+   without being touched individually.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Headings carry the brand ── */
+
+.page h1,
+.shell > h1 {
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+
+/* A section heading earns a short amber rule under it. Cheap, and it gives a
+   long page the rhythm it was missing. */
+.shell section > h2,
+.shell > section h2,
+.page-card h2 {
+  position: relative;
+  padding-bottom: var(--space-3);
+}
+
+.shell section > h2::after,
+.shell > section h2::after,
+.page-card h2::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 2.5rem;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--gradient-primary);
+}
+
+/* ── Panels get an edge rather than floating ── */
+
+.panel {
+  position: relative;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+}
+
+.panel:hover {
+  border-color: var(--glass-border-color-hover);
+}
+
+/* ── The racing stripe ──
+   A diagonal red-and-amber hatch, for the one surface on a screen that is the
+   point of it. Used sparingly: on everything it would be noise. */
+.striped {
+  position: relative;
+  overflow: hidden;
+}
+
+.striped::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 5px;
+  background: repeating-linear-gradient(
+    135deg,
+    var(--accent) 0 8px,
+    var(--gold-light) 8px 16px
+  );
+}
+
+/* ── Buttons with some punch ── */
+
+.button {
+  background: var(--gradient-primary);
+  color: oklch(99% 0.01 85);
+  border: 0;
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.01em;
+  box-shadow: 0 4px 14px color-mix(in oklab, var(--accent) 28%, transparent);
+  transition: transform 0.15s ease, box-shadow 0.18s ease, filter 0.18s ease;
+}
+
+.button:hover {
+  transform: translateY(-2px);
+  filter: saturate(1.1);
+  box-shadow: 0 8px 22px color-mix(in oklab, var(--accent) 36%, transparent);
+}
+
+.button:active { transform: translateY(0) }
+
+.button-secondary {
+  background: var(--bg-card);
+  border: 1.5px solid var(--border-color);
+  color: var(--text-primary);
+  font-weight: var(--weight-semibold);
+  transition: border-color 0.18s ease, transform 0.15s ease, background 0.18s ease;
+}
+
+.button-secondary:hover {
+  border-color: var(--accent);
+  background: var(--bg-card-hover);
+  transform: translateY(-2px);
+}
+
+/* ── Chips read as badges, not as grey text ── */
+
+.chip {
+  border-width: 1.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 0.68rem;
+}
+
+.chip.gold {
+  background: var(--gold-subtle);
+  border-color: color-mix(in oklab, var(--gold-light) 55%, transparent);
+  color: var(--gold);
+}
+
+.chip.good {
+  background: var(--gold-subtle);
+  border-color: color-mix(in oklab, var(--gold-light) 50%, transparent);
+  color: var(--gold);
+}
+
+.chip.bad,
+.chip.warn {
+  background: var(--accent-subtle);
+  border-color: color-mix(in oklab, var(--accent) 45%, transparent);
+  color: var(--accent);
+}
+
+/* ── Figures look like figures ── */
+
+.stat {
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  position: relative;
+  overflow: hidden;
+}
+
+.stat::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 2px;
+  background: var(--gradient-gold);
+  opacity: 0.8;
+}
+
+.stat .stat-value {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+/* ── Tables ── */
+
+.data-table th {
+  color: var(--text-muted);
+  border-bottom: 2px solid var(--border-color);
+}
+
+.data-table tbody tr {
+  transition: background 0.15s ease;
+}
+
+.data-table tbody tr:hover {
+  background: var(--bg-card-hover);
+}
+
+/* ── The sidebar separates from the page ── */
+
+.light-mode .sidebar,
+:root:not([data-theme="dark"]) .sidebar {
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border-color);
+}
+
+/* The active rail, in the brand's own colours. */
+.sidebar-link.active {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-left: 3px solid var(--accent);
+  color: var(--text-primary);
+  font-weight: var(--weight-bold);
+}
+
+/* ── The starfield was built for a purple night sky ── */
+
+.sidebar-star-layer,
+.sidebar-galaxy::before {
+  filter: hue-rotate(185deg) saturate(1.4);
 }
