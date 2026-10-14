@@ -34,3 +34,27 @@ export function allowedEntryFeeCents(
   if (!Number.isFinite(requestedRupees) || requestedRupees <= 0) return 0;
   return Math.round(requestedRupees * 100);
 }
+
+/**
+ * What a new account is credited with on signup, in cents.
+ *
+ * Zero while stakes are off, which is the whole point. Phase 0 shut off money
+ * coming in and money going out, but every signup went on minting ₹1,000 into
+ * a fresh wallet — money that was never deposited, cannot be withdrawn, and
+ * sat on the books as a liability the platform had invented for itself. It was
+ * also being advertised on the signup page, which for a service that runs
+ * games is the kind of inducement the Online Gaming Act 2025 penalises
+ * separately from the games themselves.
+ *
+ * Gated here rather than deleted outright, so a deployment that lawfully takes
+ * stakes somewhere else can still offer one, and so this reads beside
+ * `allowedEntryFeeCents` as the same decision applied to the other direction.
+ */
+export function allowedSignupBonusCents(
+  env: { STAKES_ENABLED?: string },
+  offeredRupees = 0,
+): number {
+  if (!stakesEnabled(env)) return 0;
+  if (!Number.isFinite(offeredRupees) || offeredRupees <= 0) return 0;
+  return Math.round(offeredRupees * 100);
+}

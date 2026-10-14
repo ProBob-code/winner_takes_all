@@ -1,10 +1,15 @@
 import { AuthForm } from "@/components/auth-form";
 import Link from "next/link";
 
+// What signing up actually gets you. The first line used to promise "₹1,000
+// welcome credit", which stopped being true when Phase 0 withdrew stakes and
+// should never have been said at all: advertising a money credit for a service
+// that runs games is the inducement the Online Gaming Act 2025 penalises
+// separately from the games themselves.
 const highlights = [
-  { icon: "🎁", label: "₹1,000 welcome credit", detail: "Added to your wallet immediately" },
+  { icon: "🪙", label: "Earn WTA Coins", detail: "For every frame you play — no cash value" },
   { icon: "🏆", label: "Host or join instantly", detail: "8-ball and football tournaments" },
-  { icon: "📷", label: "Live match streaming", detail: "Multiple camera angles, no recording" },
+  { icon: "🎱", label: "Free to enter, always", detail: "No entry fees, no wallet, no top-ups" },
 ];
 
 export default function SignupPage() {

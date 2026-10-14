@@ -46,7 +46,11 @@ import {
 } from "./lib/realtime";
 import { authMiddleware, requireUser, requireAdmin, serializeUser, extractAccessToken } from "./middleware/auth";
 import { centsToMoney, payoutFeeCents, PAYOUT_FEE_PERCENT } from "./lib/money";
-import { stakesEnabled, allowedEntryFeeCents } from "./lib/stakes";
+import {
+  stakesEnabled,
+  allowedEntryFeeCents,
+  allowedSignupBonusCents,
+} from "./lib/stakes";
 import {
   PLANS,
   TRIAL_DAYS,
@@ -362,7 +366,18 @@ app.post("/api/auth/signup", async (c) => {
   }
 
   const hashed = await hashPassword(body.password);
-  const user = await store.createUserWithBonus(body.name, body.email, hashed, 100000); // ₹1000 signup bonus
+
+  // Zero while stakes are off. The old ₹1,000 grant minted money nobody had
+  // deposited and nobody could withdraw, and advertised it on the way in.
+  // New players are welcomed with WTA Coins instead, which they earn by
+  // playing — see lib/coins.ts.
+  const SIGNUP_BONUS_RUPEES = 1000;
+  const user = await store.createUserWithBonus(
+    body.name,
+    body.email,
+    hashed,
+    allowedSignupBonusCents(c.env, SIGNUP_BONUS_RUPEES)
+  );
 
   const tokens = await createSessionTokens(c.env.SESSIONS, user.id);
   const [access, refresh] = buildSessionCookies(tokens);

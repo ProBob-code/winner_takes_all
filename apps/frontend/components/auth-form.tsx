@@ -136,7 +136,10 @@ export function AuthForm({ mode }: AuthFormProps) {
             color: "var(--gold)",
           }}
         >
-          🎁 ₹1,000 credited to your wallet on signup
+          {/* Was "₹1,000 credited to your wallet on signup" — untrue since
+              Phase 0, and an inducement we should not have been advertising
+              for a service that runs games. */}
+          🪙 Earn WTA Coins every time you play
         </div>
       )}
 

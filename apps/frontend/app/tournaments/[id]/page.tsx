@@ -296,12 +296,24 @@ export default function TournamentDetailPage() {
             }}
           >
             {[
-              { label: "ENTRY FEE", value: "₹" + Number(tournament.entryFee?.amount ?? 0).toLocaleString("en-IN") },
-              { label: "PRIZE POOL", value: "₹" + pool.toLocaleString("en-IN"), gold: true },
+              // Entry is free and no pot is pooled, so these two read as "₹0"
+              // on every tournament. A row of zero-rupee figures invites the
+              // question of when they might not be zero, which is exactly the
+              // impression a no-stakes platform should not give. Shown only on
+              // the historical tournaments that actually carried a fee.
+              ...(Number(tournament.entryFee?.amount ?? 0) > 0
+                ? [{
+                    label: "ENTRY FEE",
+                    value: "₹" + Number(tournament.entryFee?.amount ?? 0).toLocaleString("en-IN"),
+                  }]
+                : [{ label: "ENTRY", value: "Free" }]),
+              ...(pool > 0
+                ? [{ label: "PRIZE POOL", value: "₹" + pool.toLocaleString("en-IN"), gold: true }]
+                : []),
               { label: "PLAYERS", value: `${tournament.joinedPlayers}/${tournament.maxPlayers}` },
               { label: "TEAM SIZE", value: tournament.teamSize > 1 ? `${tournament.teamSize} a side` : "Solo" },
               { label: "PLAYED", value: tournament.tournamentType === "offline" ? "Offline" : "Online" },
-            ].map((f) => (
+            ].map((f: { label: string; value: string; gold?: boolean }) => (
               <div key={f.label} style={{ padding: "0.9rem 1rem", background: "rgba(9,9,22,0.6)" }}>
                 <div style={{ fontSize: "0.6rem", letterSpacing: "1px", opacity: 0.5, fontWeight: 800 }}>{f.label}</div>
                 <div style={{ fontWeight: 900, marginTop: "3px", color: f.gold ? "var(--gold)" : undefined }}>{f.value}</div>

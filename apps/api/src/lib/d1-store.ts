@@ -302,7 +302,7 @@ export class D1Store {
     const txnId = createId("wallettxn");
     const now = new Date().toISOString();
 
-    await this.db.batch([
+    const statements = [
       this.db.prepare(
         `INSERT INTO users (id, name, email, password_hash, role, created_at, updated_at)
          VALUES (?, ?, ?, ?, 'player', ?, ?)`
@@ -311,11 +311,22 @@ export class D1Store {
         `INSERT INTO wallets (id, user_id, balance_cents, created_at, updated_at)
          VALUES (?, ?, ?, ?, ?)`
       ).bind(walletId, userId, bonusCents, now, now),
-      this.db.prepare(
-        `INSERT INTO wallet_transactions (id, wallet_id, user_id, type, amount_cents, balance_after_cents, reference_type, reference_id, created_at)
-         VALUES (?, ?, ?, 'manual_adjustment', ?, ?, 'signup_bonus', ?, ?)`
-      ).bind(txnId, walletId, userId, bonusCents, bonusCents, userId, now),
-    ]);
+    ];
+
+    // A ledger row for a grant of nothing is noise: it would put a ₹0
+    // "signup bonus" on every member's statement for ever. The wallet row
+    // itself is still created, at zero, because the rest of the app expects
+    // every account to have one.
+    if (bonusCents > 0) {
+      statements.push(
+        this.db.prepare(
+          `INSERT INTO wallet_transactions (id, wallet_id, user_id, type, amount_cents, balance_after_cents, reference_type, reference_id, created_at)
+           VALUES (?, ?, ?, 'manual_adjustment', ?, ?, 'signup_bonus', ?, ?)`
+        ).bind(txnId, walletId, userId, bonusCents, bonusCents, userId, now)
+      );
+    }
+
+    await this.db.batch(statements);
 
     return {
       id: userId, name, email, password_hash: passwordHash,
