@@ -4300,3 +4300,287 @@ select.form-control option {
 @media (prefers-reduced-motion: reduce) {
   .wta-splash { display: none }
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   The "More" sheet
+   ══════════════════════════════════════════════════════════════════════════
+
+   The bottom bar holds five things; the app has eleven destinations. The rest
+   live here rather than being dropped, which is what used to happen.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.mobile-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 4998;
+  background: oklch(0% 0 0 / 0.5);
+  backdrop-filter: blur(2px);
+  display: none;
+}
+
+.mobile-sheet {
+  position: fixed;
+  left: 50%;
+  transform: translate(-50%, 120%);
+  bottom: calc(6.5rem + env(safe-area-inset-bottom, 0px));
+  width: calc(100% - 2.5rem);
+  max-width: 460px;
+  z-index: 4999;
+  display: none;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: 26px;
+  background: var(--bg-dropdown);
+  border: 1px solid var(--glass-border-color);
+  box-shadow: var(--shadow-lg);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  transition: transform 0.28s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.2s ease;
+  opacity: 0;
+  /* Not reachable by a stray tap or the keyboard while it is down. */
+  visibility: hidden;
+}
+
+.mobile-sheet.open {
+  transform: translate(-50%, 0);
+  opacity: 1;
+  visibility: visible;
+}
+
+.mobile-sheet-grip {
+  width: 36px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--glass-border-color-hover);
+  margin: 0 auto;
+  flex-shrink: 0;
+}
+
+.mobile-sheet-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(130px, 100%), 1fr));
+  gap: var(--space-2);
+}
+
+.mobile-sheet-link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  color: var(--text-secondary);
+  font-weight: var(--weight-semibold);
+  font-size: var(--text-sm);
+  background: var(--glass-bg);
+  border: 1px solid transparent;
+  min-height: var(--touch-min);
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.mobile-sheet-link:hover,
+.mobile-sheet-link.active {
+  color: var(--text-primary);
+  border-color: var(--accent);
+}
+
+.mobile-sheet-icon { font-size: 1.1rem; flex-shrink: 0 }
+
+/* The bottom bar's "More" is a button, not a link, so it needs the reset the
+   anchors get for free. */
+.mobile-nav button.mobile-nav-link {
+  background: none;
+  border: 0;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+@media (max-width: 1024px) {
+  .mobile-sheet { display: flex }
+  .mobile-sheet-backdrop { display: block }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Theme corrections
+   ══════════════════════════════════════════════════════════════════════════
+
+   The chrome carried hard-coded near-black and near-white from before the
+   palette existed, so in light mode the sidebar and bottom bar stayed dark
+   against a warm page. These pull them back onto the tokens, which is what
+   makes light mode actually look light.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.sidebar {
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border-color);
+}
+
+.mobile-nav {
+  background: var(--bg-dropdown);
+  border: 1px solid var(--glass-border-color);
+}
+
+.topbar {
+  background: var(--bg-topbar);
+  border-bottom: 1px solid var(--border-color);
+}
+
+/* The sidebar's starfield is a dark-mode conceit; on paper it is grit. */
+:root:not([data-theme="dark"]) .sidebar-galaxy,
+:root:not([data-theme="dark"]) .sidebar-dust,
+:root:not([data-theme="dark"]) .sidebar-star-layer,
+[data-theme="light"] .sidebar-galaxy,
+[data-theme="light"] .sidebar-dust,
+[data-theme="light"] .sidebar-star-layer {
+  display: none;
+}
+
+/* Panels in light mode need a real edge: a glass border over white is
+   invisible, and every card ran together. */
+[data-theme="light"] .panel,
+:root:not([data-theme="dark"]) .panel {
+  border-color: var(--border-color);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Gold on white is unreadable at small sizes, so anything using it for text
+   drops to the darker amber the light palette defines. */
+[data-theme="light"] .text-gradient,
+:root:not([data-theme="dark"]) .text-gradient {
+  background: var(--gradient-gold);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Dashboard
+   ══════════════════════════════════════════════════════════════════════════
+
+   The complaint was that it was dull, and the cause was that every card had
+   the same weight: a wall of identical rounded rectangles gives the eye no
+   order to read them in. These give the page a hierarchy — one hero, three
+   actions that respond to the cursor, and figures that look like figures.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.hero-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--gold-subtle);
+  padding: clamp(var(--space-5), 4vw, var(--space-7));
+  background:
+    radial-gradient(120% 140% at 0% 0%, var(--gold-subtle) 0%, transparent 55%),
+    radial-gradient(100% 120% at 100% 0%, var(--accent-subtle) 0%, transparent 50%),
+    var(--bg-card);
+}
+
+/* A hairline of the two brand colours along the top edge. */
+.hero-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 2px;
+  background: var(--gradient-primary);
+}
+
+.hero-figure {
+  font-family: var(--font-outfit), system-ui, sans-serif;
+  font-weight: var(--weight-black);
+  font-size: clamp(2.25rem, 7vw, 3.25rem);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+/* The three quick actions. Lifting on hover is what makes them read as
+   buttons rather than as panels that happen to contain a link. */
+.action-card {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-5);
+  border-radius: var(--radius);
+  border: 1px solid var(--glass-border-color);
+  background: var(--bg-card);
+  text-decoration: none;
+  color: inherit;
+  min-height: 9.5rem;
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.action-card:hover,
+.action-card:focus-visible {
+  transform: translateY(-3px);
+  border-color: var(--accent);
+  box-shadow: var(--shadow-md);
+}
+
+/* A big ghosted glyph in the corner, so the three cards are told apart at a
+   glance rather than by reading them. */
+.action-card .glyph {
+  position: absolute;
+  right: -0.35rem;
+  bottom: -1.25rem;
+  font-size: 5.5rem;
+  line-height: 1;
+  opacity: 0.07;
+  pointer-events: none;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.action-card:hover .glyph {
+  opacity: 0.14;
+  transform: translateY(-4px) rotate(-6deg);
+}
+
+.action-card .title {
+  font-size: var(--text-xl);
+  font-weight: var(--weight-bold);
+}
+
+.action-card.is-primary {
+  border-color: var(--gold-subtle);
+  background:
+    linear-gradient(140deg, var(--gold-subtle) 0%, transparent 60%),
+    var(--bg-card);
+}
+
+/* The progress rail to the next title. */
+.rail {
+  height: 10px;
+  border-radius: 999px;
+  background: var(--bg-inset);
+  overflow: hidden;
+  border: 1px solid var(--glass-border-color);
+}
+
+.rail > span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--gradient-primary);
+  transition: width 0.7s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/* A ledger line that reads as a row rather than as a paragraph. */
+.ledger-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--glass-border-color);
+}
+
+.ledger-row:last-child { border-bottom: 0 }
+
+.ledger-row .amount {
+  color: var(--gold);
+  font-weight: var(--weight-bold);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}

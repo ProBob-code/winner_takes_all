@@ -5,7 +5,7 @@ import {
   COIN_RULES,
   COIN_TITLES,
   DAILY_COIN_CAP,
-  MIN_REAL_PLAYERS_FOR_COINS,
+  MIN_PLAYERS_FOR_COINS,
   applyDailyCap,
   awardsForFrame,
   awardsForNight,
@@ -166,7 +166,7 @@ describe("applyDailyCap", () => {
 describe("anti-farming", () => {
   it("needs more than one real account before anything pays", () => {
     // A bracket of one real person and seven typed-in names is practice.
-    expect(MIN_REAL_PLAYERS_FOR_COINS).toBeGreaterThanOrEqual(2);
+    expect(MIN_PLAYERS_FOR_COINS).toBeGreaterThanOrEqual(2);
   });
 });
 

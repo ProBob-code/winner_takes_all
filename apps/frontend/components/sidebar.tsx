@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { navFor } from "@/lib/nav";
 import { SidebarEffects } from "./sidebar-effects";
 import { getApiUrl } from "@/lib/api-config";
 import { ConfirmModal } from "./confirm-modal";
@@ -56,29 +57,9 @@ export function Sidebar({ user: initialUser }: { user: any }) {
     setIsCollapsed(!isCollapsed);
   };
 
-  const navItems = user ? [
-    { label: "Dashboard", href: "/dashboard", icon: "📊" },
-    // The fastest route to a running night, and the two Phase 2 screens a
-    // venue owner actually lives in.
-    { label: "Run a Night", href: "/run", icon: "⚡" },
-    { label: "Venues", href: "/venues", icon: "🏠" },
-    { label: "Live Screening", href: "/screening", icon: "📺" },
-    { label: "Games", href: "/games", icon: "🕹️" },
-    { label: "Tournaments", href: "/tournaments", icon: "🎮" },
-    { label: "Rankings", href: "/leaderboard", icon: "🏆" },
-    { label: "WTA Coins", href: "/coins", icon: "🪙" },
-    { label: "Profile", href: "/profile", icon: "👤" },
-    { label: "Organizer Account", href: "/wallet", icon: "💳" }
-  ] : [
-    { label: "Live Screening", href: "/screening", icon: "📺" },
-    { label: "Games", href: "/games", icon: "🕹️" },
-    { label: "Tournaments", href: "/tournaments", icon: "🎮" },
-    { label: "Rankings", href: "/leaderboard", icon: "🏆" },
-    // Both are useful before signing up, and the playbook is the thing that
-    // converts a venue with no league night at all.
-    { label: "Playbook", href: "/playbook", icon: "📖" },
-    { label: "WTA Coins", href: "/coins", icon: "🪙" }
-  ];
+  // One list for the sidebar and the bottom bar, so a destination added in
+  // one cannot go missing from the other. See lib/nav.ts.
+  const navItems = navFor(!!user);
 
   const [isOpen, setIsOpen] = useState(false);
 

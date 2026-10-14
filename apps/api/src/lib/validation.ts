@@ -276,6 +276,11 @@ export const quickSetupSchema = z.object({
   /** Names, if the host has them. Blanks are filled with Player 1..n. */
   players: z.array(z.string().trim().max(50)).max(64).optional(),
   venueId: z.string().trim().max(64).nullish(),
+  /**
+   * Whether the host is playing as well as running it. Takes the first seat
+   * under their account, so the coins their own frames earn reach them.
+   */
+  hostPlaying: z.boolean().default(true),
   /** Hold each frame until both players agree it. */
   requireFrameConfirmation: z.boolean().default(false),
   bracketType: z

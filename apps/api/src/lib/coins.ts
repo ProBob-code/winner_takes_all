@@ -214,13 +214,19 @@ export const COIN_RULES = {
 export const DAILY_COIN_CAP = 1_000 * COIN_UNIT;
 
 /**
- * The fewest distinct signed-in accounts a tournament needs before it pays
- * coins at all.
+ * The fewest competitors a tournament needs before it pays coins at all.
  *
- * The other half of the anti-farming guard. A "tournament" of one real person
- * and seven typed-in names is a practice session, and practice does not pay.
+ * Two, which is simply "a game happened". This deliberately counts players
+ * rather than accounts: a real league night is one host with an account and
+ * seven walk-ins who scanned a QR, and an accounts-based rule paid that night
+ * nothing at all.
+ *
+ * The farming it still allows — a host playing frames against a name they
+ * typed in — is bounded by DAILY_COIN_CAP and, more to the point, is not
+ * worth doing: a coin cannot be bought, sold, transferred or cashed out, so
+ * there is nothing at the end of it.
  */
-export const MIN_REAL_PLAYERS_FOR_COINS = 2;
+export const MIN_PLAYERS_FOR_COINS = 2;
 
 export interface CoinAward {
   reason: CoinReason;

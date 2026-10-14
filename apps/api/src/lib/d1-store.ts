@@ -2082,15 +2082,24 @@ export class D1Store {
   }
 
   /**
-   * How many distinct signed-in accounts are competing in a tournament.
+   * How many competitors are in a tournament at all.
    *
-   * The anti-farming guard: a bracket of one real person and seven typed-in
-   * names is a practice session, and practice does not pay.
+   * This used to count distinct signed-in accounts, which broke the product
+   * it was meant to protect. A real league night is one host with an account
+   * and seven walk-ins who scanned a QR and typed a name — one account, eight
+   * players — and under the old rule it paid nobody anything. Neither did a
+   * night set up through "Run a night", which seats everyone by name only.
+   * The result was that coins were never awarded to anyone, anywhere.
+   *
+   * Counting competitors instead means a genuine game pays, and the abuse it
+   * still guards against — a bracket of one — remains blocked. What stops the
+   * remaining case, a host running frames against a name they typed in
+   * themselves, is the daily cap and the fact that a coin cannot be bought,
+   * sold or cashed out, so there is nothing at the end of the farming.
    */
-  async countRealCompetitors(tournamentId: string): Promise<number> {
+  async countCompetitors(tournamentId: string): Promise<number> {
     const r = await this.db.prepare(
-      `SELECT COUNT(DISTINCT user_id) AS n FROM engine_teams
-       WHERE tournament_id = ? AND user_id IS NOT NULL`
+      `SELECT COUNT(*) AS n FROM engine_teams WHERE tournament_id = ?`
     ).bind(tournamentId).first<any>();
     return r?.n ?? 0;
   }

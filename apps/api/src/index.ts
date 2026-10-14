@@ -69,7 +69,7 @@ import {
   COIN_RULES,
   COIN_TITLES,
   DAILY_COIN_CAP,
-  MIN_REAL_PLAYERS_FOR_COINS,
+  MIN_PLAYERS_FOR_COINS,
   applyDailyCap,
   awardsForFrame,
   awardsForNight,
@@ -1989,10 +1989,9 @@ async function awardFrameCoins(
   try {
     const store = c.get("store");
 
-    // A bracket of one real person and seven typed-in names is a practice
-    // session, and practice does not pay.
-    const realPlayers = await store.countRealCompetitors(tournament.id);
-    if (realPlayers < MIN_REAL_PLAYERS_FOR_COINS) return;
+    // A bracket of one is not a game. Anything larger is.
+    const competitors = await store.countCompetitors(tournament.id);
+    if (competitors < MIN_PLAYERS_FOR_COINS) return;
 
     const teams = await store.getEngineTeams(tournament.id);
     const sides = [match.team_a_id, match.team_b_id];
@@ -2118,8 +2117,8 @@ async function awardNightCoins(
 ): Promise<void> {
   try {
     const store = c.get("store");
-    const realPlayers = await store.countRealCompetitors(tournament.id);
-    if (realPlayers < MIN_REAL_PLAYERS_FOR_COINS) return;
+    const competitors = await store.countCompetitors(tournament.id);
+    if (competitors < MIN_PLAYERS_FOR_COINS) return;
 
     for (const userId of winnerUserIds) {
       if (!userId) continue;
@@ -3590,8 +3589,17 @@ app.post("/api/engine/quick-setup", async (c) => {
     requireFrameConfirmation: body.requireFrameConfirmation,
   });
 
-  for (const name of names) {
-    await store.createEngineTeam(tournament.id, name);
+  // The host takes the first seat under their own account unless they say
+  // they are only running the night. Without this, "Run a night" seated
+  // everybody by name alone, no team carried an account, and the person who
+  // set the whole thing up earned nothing from it.
+  for (let i = 0; i < names.length; i++) {
+    const seatIsHost = body.hostPlaying && i === 0;
+    await store.createEngineTeam(
+      tournament.id,
+      seatIsHost && !supplied[0] ? user.name : names[i],
+      seatIsHost ? user.id : null
+    );
   }
 
   const teams = await store.getEngineTeams(tournament.id);
@@ -4490,7 +4498,7 @@ app.get("/api/coins/rules", (c) => {
     awards: COIN_AWARDS,
     dailyCap: DAILY_COIN_CAP,
     onlineDailyCap: ONLINE_DAILY_CAP,
-    minPlayers: MIN_REAL_PLAYERS_FOR_COINS,
+    minPlayers: MIN_PLAYERS_FOR_COINS,
     titles: COIN_TITLES,
     // Said plainly, in the API as well as on the page, because this is the
     // sentence that keeps the whole thing lawful.

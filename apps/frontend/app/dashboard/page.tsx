@@ -155,14 +155,7 @@ export default function DashboardPage() {
     <main className="page">
       <div className="shell">
         {/* ── The welcome, with the balance that actually means something ── */}
-        <section
-          className="panel shimmer gold"
-          style={{
-            padding: "var(--space-6)",
-            background: "linear-gradient(135deg, var(--gold-subtle), transparent 62%)",
-            borderColor: "var(--gold-subtle)",
-          }}
-        >
+        <section className="hero-card shimmer gold">
           <div className="h-stack between" style={{ alignItems: "flex-start" }}>
             <div style={{ minWidth: 0 }}>
               <h1
@@ -187,18 +180,9 @@ export default function DashboardPage() {
               className="h-stack tight"
               style={{ textDecoration: "none", color: "inherit", flexShrink: 0 }}
             >
-              <CoinMark size={40} />
+              <CoinMark size={44} />
               <div style={{ textAlign: "right" }}>
-                <div
-                  style={{
-                    fontSize: "var(--text-2xl)",
-                    fontWeight: 900,
-                    fontFamily: "var(--font-outfit), system-ui, sans-serif",
-                    lineHeight: 1,
-                  }}
-                >
-                  {coins ? formatCoins(coins.balance) : "—"}
-                </div>
+                <div className="hero-figure">{coins ? formatCoins(coins.balance) : "—"}</div>
                 <div
                   className="muted"
                   style={{
@@ -225,22 +209,8 @@ export default function DashboardPage() {
                   {formatCoins(coins.next.toGo)} to {coins.next.title}
                 </span>
               </div>
-              <div
-                style={{
-                  height: "8px",
-                  borderRadius: "999px",
-                  background: "var(--bg-inset)",
-                  overflow: "hidden",
-                }}
-              >
-                <div
-                  style={{
-                    width: `${progress}%`,
-                    height: "100%",
-                    background: "var(--gradient-primary)",
-                    transition: "width .6s ease",
-                  }}
-                />
+              <div className="rail">
+                <span style={{ width: `${progress}%` }} />
               </div>
             </div>
           )}
@@ -248,64 +218,34 @@ export default function DashboardPage() {
 
         {/* ── The one action a host opens this page to take ── */}
         <div className="auto-grid" style={{ marginTop: "var(--space-5)" }}>
-          <Link
-            href="/run"
-            className="panel shimmer"
-            style={{
-              textDecoration: "none",
-              color: "inherit",
-              padding: "var(--space-5)",
-              display: "flex",
-              flexDirection: "column",
-              gap: "var(--space-2)",
-            }}
-          >
-            <span className="chip" style={{ alignSelf: "flex-start" }}>
+          <Link href="/run" className="action-card is-primary shimmer">
+            <span className="glyph" aria-hidden="true">⚡</span>
+            <span className="chip gold" style={{ alignSelf: "flex-start" }}>
               60 seconds
             </span>
-            <strong style={{ fontSize: "var(--text-xl)", fontWeight: 800 }}>Run a night</strong>
+            <span className="title">Run a night</span>
             <span className="muted" style={{ fontSize: "var(--text-sm)" }}>
               Pick a game, pick how many are playing, go.
             </span>
           </Link>
 
-          <Link
-            href="/play/8ball"
-            className="panel"
-            style={{
-              textDecoration: "none",
-              color: "inherit",
-              padding: "var(--space-5)",
-              display: "flex",
-              flexDirection: "column",
-              gap: "var(--space-2)",
-            }}
-          >
-            <span className="chip gold" style={{ alignSelf: "flex-start" }}>
-              earns coins
+          <Link href="/play/8ball" className="action-card">
+            <span className="glyph" aria-hidden="true">🎱</span>
+            <span className="chip" style={{ alignSelf: "flex-start" }}>
+              +{formatCoins(3000)} a win
             </span>
-            <strong style={{ fontSize: "var(--text-xl)", fontWeight: 800 }}>Play 8-ball</strong>
+            <span className="title">Play 8-ball</span>
             <span className="muted" style={{ fontSize: "var(--text-sm)" }}>
               Against the AI or a friend. Free, and it counts.
             </span>
           </Link>
 
-          <Link
-            href="/tournaments"
-            className="panel"
-            style={{
-              textDecoration: "none",
-              color: "inherit",
-              padding: "var(--space-5)",
-              display: "flex",
-              flexDirection: "column",
-              gap: "var(--space-2)",
-            }}
-          >
+          <Link href="/tournaments" className="action-card">
+            <span className="glyph" aria-hidden="true">🏆</span>
             <span className="chip" style={{ alignSelf: "flex-start" }}>
               {joined.length > 0 ? `${joined.length} entered` : "free to enter"}
             </span>
-            <strong style={{ fontSize: "var(--text-xl)", fontWeight: 800 }}>Tournaments</strong>
+            <span className="title">Tournaments</span>
             <span className="muted" style={{ fontSize: "var(--text-sm)" }}>
               {joined.length > 0 ? joined[0].name : "Find one to join."}
             </span>
@@ -330,27 +270,13 @@ export default function DashboardPage() {
             ) : (
               <div className="v-stack" style={{ gap: "var(--space-2)" }}>
                 {recent.map((entry) => (
-                  <div
-                    key={entry.id}
-                    className="h-stack between"
-                    style={{
-                      padding: "var(--space-2) 0",
-                      borderBottom: "1px solid var(--glass-border-color)",
-                      gap: "var(--space-3)",
-                    }}
-                  >
+                  <div key={entry.id} className="ledger-row">
                     <span style={{ fontSize: "var(--text-sm)", minWidth: 0, overflowWrap: "anywhere" }}>
                       {entry.description ?? entry.reason}
                     </span>
-                    <strong
-                      style={{
-                        color: "var(--gold)",
-                        fontSize: "var(--text-sm)",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
+                    <span className="amount" style={{ fontSize: "var(--text-sm)" }}>
                       +{formatCoinsExact(entry.amount)}
-                    </strong>
+                    </span>
                   </div>
                 ))}
               </div>
