@@ -30,58 +30,74 @@
 
 :root, [data-theme='light'], .light-mode {
   /* ── Light ──
-     A warm cream ground, not a yellow one. The first attempt flooded the page
-     with butter yellow, which flattened everything: when the ground and the
-     accent share a hue, the accent stops reading as an accent and the whole
-     screen goes sepia. Energy comes from contrast and from where the red
-     lands, not from how much yellow there is.
-     So: cream ground, near-white cards that visibly lift off it, a deeper
-     tone for the rails, and a vivid red doing the work. Five distinct steps
-     from ground to card, which is what gives the page depth.
-     No black in this theme — the darkest value is a warm near-brown, because
-     true black against warm cream reads as a printing error. */
-  --bg-primary: oklch(97.5% 0.018 85);
-  --bg-secondary: oklch(94.5% 0.032 85);
-  --bg-card: oklch(99.6% 0.006 85);
-  --bg-card-hover: oklch(98.4% 0.016 85);
-  --bg-surface: oklch(96.4% 0.024 85);
-  --bg-topbar: oklch(97.5% 0.018 85 / 0.92);
-  --bg-dropdown: oklch(99.6% 0.006 85);
-  --bg-inset: oklch(94% 0.03 85);
+     Flat, loud and high contrast. The cream version was washed out and read
+     as shabby; beige is gone entirely. The ground is a clean near-white with
+     the faintest cool cast so the yellow stays acid rather than turning to
+     butter, and the colour arrives in blocks — a hot red and an electric
+     yellow — against heavy near-black outlines.
+     This is sticker art, not a gradient: edges are drawn, shadows are hard
+     offsets with no blur, and nothing is translucent. */
+  --bg-primary: oklch(97.5% 0.004 250);
+  --bg-secondary: oklch(94% 0.006 250);
+  --bg-card: oklch(100% 0 0);
+  --bg-card-hover: oklch(97% 0.02 100);
+  --bg-surface: oklch(96% 0.005 250);
+  --bg-topbar: oklch(100% 0 0 / 0.94);
+  --bg-dropdown: oklch(100% 0 0);
+  --bg-inset: oklch(93% 0.006 250);
 
-  --text-primary: oklch(22% 0.035 50);
-  --text-secondary: oklch(42% 0.045 48);
-  --text-muted: oklch(56% 0.04 52);
+  --text-primary: oklch(16% 0.012 260);
+  --text-secondary: oklch(38% 0.012 260);
+  --text-muted: oklch(52% 0.012 260);
 
-  /* Borders carry real weight here. A hairline at 8% opacity disappears on
-     cream and every card ran into the next one. */
-  --border-color: oklch(88% 0.035 85);
-  --border-glow: oklch(52% 0.23 28 / 0.2);
-  --glass-bg: oklch(99.6% 0.006 85 / 0.86);
-  --glass-bg-hover: oklch(52% 0.23 28 / 0.06);
-  --glass-border-color: oklch(22% 0.035 50 / 0.13);
-  --glass-border-color-hover: oklch(52% 0.23 28 / 0.45);
-  --glass-blur: blur(20px);
+  /* The outline is the design. 2px of near-black around everything is what
+     makes a flat colour read as a sticker rather than as a flat colour. */
+  --ink: oklch(16% 0.012 260);
+  --border-color: oklch(16% 0.012 260);
+  --border-glow: oklch(58% 0.25 28 / 0.35);
+  --glass-bg: oklch(100% 0 0);
+  --glass-bg-hover: oklch(92% 0.17 100);
+  --glass-border-color: oklch(16% 0.012 260 / 0.16);
+  --glass-border-color-hover: oklch(58% 0.25 28);
 
-  /* The red does the work. Vivid, not brick: this is the colour the eye is
-     meant to land on, and everything else gets out of its way. */
-  --accent: oklch(52% 0.23 28);
-  --accent-light: oklch(60% 0.22 28);
-  --accent-subtle: oklch(52% 0.23 28 / 0.09);
+  --accent: oklch(58% 0.25 28);
+  --accent-light: oklch(66% 0.23 30);
+  --accent-subtle: oklch(58% 0.25 28 / 0.12);
 
-  /* Two ambers, for two jobs. --gold is dark enough to be read as text on
-     cream; --gold-light is the saturated one used for fills and marks, where
-     legibility is the fill's problem rather than the colour's. */
-  --gold: oklch(55% 0.135 72);
-  --gold-light: oklch(76% 0.16 85);
-  --gold-subtle: oklch(80% 0.15 88 / 0.26);
+  --gold: oklch(84% 0.19 100);
+  --gold-light: oklch(90% 0.18 102);
+  --gold-subtle: oklch(88% 0.19 100 / 0.35);
 
-  /* Shadows carry the ground's warmth. A neutral grey shadow on yellow looks
-     like dirt. */
-  --shadow-sm: 0 2px 8px oklch(40% 0.1 60 / 0.12);
-  --shadow-md: 0 10px 25px oklch(40% 0.1 60 / 0.16);
-  --shadow-lg: 0 20px 50px oklch(35% 0.12 55 / 0.22);
-  --shadow-glow: 0 0 24px oklch(53% 0.22 27 / 0.18);
+  /* Hard offsets, no blur. A soft shadow would undo the whole look. */
+  --shadow-sm: 2px 2px 0 var(--ink);
+  --shadow-md: 4px 4px 0 var(--ink);
+  --shadow-lg: 7px 7px 0 var(--ink);
+  --shadow-glow: 4px 4px 0 var(--accent);
+
+  --gradient-primary: linear-gradient(135deg, oklch(58% 0.25 28) 0%, oklch(84% 0.19 100) 100%);
+  --gradient-gold: linear-gradient(135deg, oklch(84% 0.19 100) 0%, oklch(92% 0.17 103) 100%);
+
+  --team-red: oklch(58% 0.25 28);
+  --team-red-glow: oklch(58% 0.25 28 / 0.25);
+  --team-red-bg: oklch(88% 0.11 30);
+
+  --team-blue: oklch(84% 0.19 100);
+  --team-blue-glow: oklch(84% 0.19 100 / 0.3);
+  --team-blue-bg: oklch(93% 0.15 101);
+
+  --vs-orb-bg: oklch(100% 0 0);
+  --vs-orb-border: oklch(16% 0.012 260);
+
+  /* No third or fourth hue: everything folds onto the two. */
+  --green: oklch(62% 0.16 95);
+  --green-light: oklch(84% 0.19 100);
+  --green-subtle: oklch(88% 0.19 100 / 0.3);
+  --cyan: oklch(58% 0.25 28);
+  --cyan-subtle: oklch(58% 0.25 28 / 0.12);
+  --blue: oklch(58% 0.25 28);
+  --red: oklch(58% 0.25 28);
+  --red-light: oklch(66% 0.23 30);
+  --red-subtle: oklch(58% 0.25 28 / 0.12);
 
   --radius: 18px;
   --radius-sm: 10px;
@@ -130,110 +146,71 @@
   /* The smallest thing a thumb should have to hit. Below this, a member of
    * staff two drinks into a Friday night misses it. */
   --touch-min: 48px;
-
-  /* The two accents together, which is the brand mark in gradient form. */
-  --gradient-primary: linear-gradient(135deg, oklch(53% 0.22 27) 0%, oklch(72% 0.16 85) 100%);
-  --gradient-gold: linear-gradient(135deg, oklch(60% 0.16 70) 0%, oklch(78% 0.16 92) 100%);
-
-  /* The two sides of a table. Red stays red; the opposing side moves off blue
-     to amber, so a match reads in the product's own two colours. */
-  --team-red: oklch(53% 0.22 27);
-  --team-red-glow: oklch(53% 0.22 27 / 0.18);
-  --team-red-bg: oklch(90% 0.08 30);
-
-  --team-blue: oklch(58% 0.14 80);
-  --team-blue-glow: oklch(58% 0.14 80 / 0.18);
-  --team-blue-bg: oklch(90% 0.1 90);
-
-  --vs-orb-bg: oklch(98.5% 0.025 95);
-  --vs-orb-border: oklch(84% 0.09 90);
-
-  /* ── Everything else folded onto the two hues ──
-     The UI still referenced green, cyan and blue in about forty places —
-     status pills, positive figures, stream badges. On a yellow-and-red product
-     each of those was a third and fourth colour arriving unannounced, so they
-     all resolve to amber or red now. Kept as names rather than find-and-
-     replaced, because "green" at a call site still means "this is the good
-     outcome", and that intent is worth preserving even when the colour is
-     amber. */
-  --green: oklch(52% 0.13 70);
-  --green-light: oklch(60% 0.15 75);
-  --green-subtle: oklch(72% 0.15 88 / 0.25);
-  --cyan: oklch(53% 0.22 27);
-  --cyan-subtle: oklch(53% 0.22 27 / 0.1);
-  --blue: oklch(53% 0.22 27);
-  --red: oklch(53% 0.22 27);
-  --red-light: oklch(61% 0.21 27);
-  --red-subtle: oklch(53% 0.22 27 / 0.1);
 }
 
 [data-theme='dark'] {
   /* ── Dark ──
-     Near-black, leaning very slightly warm rather than blue: a cool ground
-     fought the amber. The steps matter more than the hue — cards used to sit
-     at 20% against a 14% ground with a translucent fill, so they barely
-     existed. They are opaque now and a clear step above it, which is what
-     makes a panel look like a panel. */
-  --bg-primary: oklch(13.5% 0.008 70);
-  --bg-secondary: oklch(16.5% 0.01 70);
-  --bg-card: oklch(19.5% 0.012 70);
-  --bg-card-hover: oklch(23% 0.016 70);
-  --bg-surface: oklch(17.5% 0.011 70);
-  --bg-topbar: oklch(13.5% 0.008 70 / 0.9);
-  --bg-dropdown: oklch(18.5% 0.012 70);
-  --bg-inset: oklch(10.5% 0.006 70);
+     Night wall. A properly black ground so the yellow reads as spray under a
+     streetlight rather than as a muted ochre, cards a clear step above it, and
+     the same heavy outlines — in bone rather than ink — holding everything
+     together. */
+  --bg-primary: oklch(12% 0.012 70);
+  --bg-secondary: oklch(15.5% 0.014 70);
+  --bg-card: oklch(18.5% 0.016 70);
+  --bg-card-hover: oklch(22% 0.02 70);
+  --bg-surface: oklch(16.5% 0.015 70);
+  --bg-topbar: oklch(12% 0.012 70 / 0.92);
+  --bg-dropdown: oklch(17.5% 0.016 70);
+  --bg-inset: oklch(9% 0.008 70);
 
-  --text-primary: oklch(97% 0.006 85);
-  --text-secondary: oklch(74% 0.012 80);
-  --text-muted: oklch(60% 0.014 80);
+  --text-primary: oklch(97% 0.01 95);
+  --text-secondary: oklch(76% 0.015 90);
+  --text-muted: oklch(62% 0.018 90);
 
-  /* Visible edges. The old borders sat at 50% of a 30% grey, which against a
-     14% ground is almost nothing. */
-  --border-color: oklch(30% 0.018 75);
-  --border-glow: oklch(80% 0.16 92 / 0.35);
-  --glass-bg: oklch(100% 0 0 / 0.045);
-  --glass-bg-hover: oklch(80% 0.16 92 / 0.1);
-  --glass-border-color: oklch(31% 0.018 75);
-  --glass-border-color-hover: oklch(80% 0.16 92 / 0.45);
-  --glass-blur: blur(24px);
+  --ink: oklch(6% 0.004 70);
+  --border-color: oklch(36% 0.03 85);
+  --border-glow: oklch(88% 0.19 100 / 0.5);
+  --glass-bg: oklch(100% 0 0 / 0.05);
+  --glass-bg-hover: oklch(88% 0.19 100 / 0.14);
+  --glass-border-color: oklch(36% 0.03 85);
+  --glass-border-color-hover: oklch(88% 0.19 100);
 
-  --accent: oklch(62% 0.2 25);
-  --accent-light: oklch(70% 0.15 25);
-  --accent-subtle: oklch(62% 0.2 25 / 0.12);
+  --accent: oklch(64% 0.26 28);
+  --accent-light: oklch(72% 0.22 30);
+  --accent-subtle: oklch(64% 0.26 28 / 0.18);
 
-  --gold: oklch(80% 0.16 92);
-  --gold-light: oklch(85% 0.17 92);
-  --gold-subtle: oklch(80% 0.16 92 / 0.12);
+  --gold: oklch(88% 0.19 100);
+  --gold-light: oklch(93% 0.18 103);
+  --gold-subtle: oklch(88% 0.19 100 / 0.18);
 
-  --shadow-sm: 0 4px 12px oklch(0% 0 0 / 0.6);
-  --shadow-md: 0 12px 32px oklch(0% 0 0 / 0.7);
-  --shadow-lg: 0 24px 64px oklch(0% 0 0 / 0.8);
-  --shadow-glow: 0 0 30px oklch(80% 0.16 92 / 0.18);
+  --shadow-sm: 2px 2px 0 var(--ink);
+  --shadow-md: 4px 4px 0 var(--ink);
+  --shadow-lg: 7px 7px 0 var(--ink);
+  --shadow-glow: 0 0 28px oklch(88% 0.19 100 / 0.35);
 
-  --gradient-primary: linear-gradient(135deg, oklch(62% 0.2 25) 0%, oklch(80% 0.16 92) 100%);
-  --gradient-gold: linear-gradient(135deg, oklch(70% 0.15 92) 0%, oklch(85% 0.17 92) 100%);
+  --gradient-primary: linear-gradient(135deg, oklch(64% 0.26 28) 0%, oklch(88% 0.19 100) 100%);
+  --gradient-gold: linear-gradient(135deg, oklch(82% 0.18 96) 0%, oklch(93% 0.18 103) 100%);
 
-  --team-red: oklch(65% 0.2 25);
-  --team-red-glow: oklch(65% 0.2 25 / 0.3);
-  --team-red-bg: oklch(65% 0.2 25 / 0.15);
+  --team-red: oklch(64% 0.26 28);
+  --team-red-glow: oklch(64% 0.26 28 / 0.35);
+  --team-red-bg: oklch(64% 0.26 28 / 0.18);
 
-  --team-blue: oklch(80% 0.16 92);
-  --team-blue-glow: oklch(80% 0.16 92 / 0.3);
-  --team-blue-bg: oklch(80% 0.16 92 / 0.15);
+  --team-blue: oklch(88% 0.19 100);
+  --team-blue-glow: oklch(88% 0.19 100 / 0.35);
+  --team-blue-bg: oklch(88% 0.19 100 / 0.18);
 
   --vs-orb-bg: oklch(100% 0 0 / 0.08);
-  --vs-orb-border: oklch(30% 0.014 260 / 0.6);
+  --vs-orb-border: oklch(36% 0.03 85);
 
-  /* The same folding as the light theme: no third or fourth hue. */
-  --green: oklch(80% 0.16 92);
-  --green-light: oklch(85% 0.17 92);
-  --green-subtle: oklch(80% 0.16 92 / 0.14);
-  --cyan: oklch(70% 0.15 25);
-  --cyan-subtle: oklch(70% 0.15 25 / 0.14);
-  --blue: oklch(80% 0.16 92);
-  --red: oklch(65% 0.2 25);
-  --red-light: oklch(72% 0.18 25);
-  --red-subtle: oklch(65% 0.2 25 / 0.14);
+  --green: oklch(88% 0.19 100);
+  --green-light: oklch(93% 0.18 103);
+  --green-subtle: oklch(88% 0.19 100 / 0.18);
+  --cyan: oklch(72% 0.22 30);
+  --cyan-subtle: oklch(72% 0.22 30 / 0.18);
+  --blue: oklch(88% 0.19 100);
+  --red: oklch(64% 0.26 28);
+  --red-light: oklch(72% 0.22 30);
+  --red-subtle: oklch(64% 0.26 28 / 0.18);
 }
 
 html {
@@ -4851,4 +4828,284 @@ select.form-control option {
 .sidebar-star-layer,
 .sidebar-galaxy::before {
   filter: hue-rotate(185deg) saturate(1.4);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Street
+   ══════════════════════════════════════════════════════════════════════════
+
+   Sticker art, not a dashboard. Flat colour, drawn edges, hard offset shadows
+   with no blur, and type that only knows how to shout. The previous pass was
+   tasteful and that was the problem — it read as shabby rather than as
+   anything. This layer is deliberately loud.
+
+   Everything hangs off the shared classes, so a page picks it up without being
+   edited.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* The old variable names still exist all over the codebase, so they are
+   aliased to the new faces rather than chased through every file. */
+:root {
+  --font-outfit: var(--font-display);
+  --font-inter: var(--font-body);
+}
+
+body {
+  font-family: var(--font-body), system-ui, sans-serif;
+}
+
+/* ── Type that shouts ── */
+
+h1, h2, h3,
+.hero-figure,
+.stat .stat-value,
+.display-title,
+.staff-clock {
+  font-family: var(--font-display), Impact, system-ui, sans-serif;
+  font-weight: 400;        /* Anton has one weight, and it is heavy */
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  line-height: 1.02;
+}
+
+h1 {
+  /* Anton is condensed, so it carries a larger size without crowding. */
+  font-size: clamp(2.4rem, 7vw, 4rem);
+}
+
+h2 { font-size: clamp(1.5rem, 4vw, 2.25rem) }
+h3 { font-size: clamp(1.15rem, 2.6vw, 1.5rem) }
+
+/* The section rule becomes a thick painted bar. */
+.shell section > h2::after,
+.shell > section h2::after,
+.page-card h2::after {
+  width: 3.5rem;
+  height: 6px;
+  border-radius: 0;
+  background: var(--accent);
+}
+
+/* ── Drawn edges and hard shadows ── */
+
+.panel,
+.action-card,
+.hero-card,
+.stat,
+.join-card,
+.plan,
+.confirm-panel,
+.playbook-week {
+  border: 2px solid var(--border-color);
+  border-radius: 14px;
+  box-shadow: var(--shadow-md);
+  background: var(--bg-card);
+}
+
+.panel:hover,
+.action-card:hover {
+  box-shadow: var(--shadow-lg);
+  transform: translate(-2px, -2px);
+  border-color: var(--accent);
+}
+
+/* The hero keeps its blocks of colour but loses the soft wash. */
+.hero-card {
+  background: var(--bg-card);
+}
+
+.hero-card::before {
+  height: 8px;
+  background: repeating-linear-gradient(
+    135deg,
+    var(--accent) 0 14px,
+    var(--gold) 14px 28px
+  );
+}
+
+.stat::before { height: 6px }
+
+/* ── Buttons as stickers ── */
+
+.button,
+.button-secondary,
+.button-gold,
+.button-danger,
+.button-success {
+  border: 2px solid var(--border-color);
+  border-radius: 999px;
+  box-shadow: var(--shadow-sm);
+  font-family: var(--font-display), Impact, system-ui, sans-serif;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.button {
+  background: var(--accent);
+  color: oklch(99% 0.01 95);
+}
+
+.button-secondary {
+  background: var(--gold);
+  color: oklch(16% 0.012 260);
+}
+
+.button:hover,
+.button-secondary:hover,
+.button-gold:hover,
+.button-danger:hover,
+.button-success:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: var(--shadow-md);
+  filter: none;
+}
+
+.button:active,
+.button-secondary:active {
+  transform: translate(1px, 1px);
+  box-shadow: none;
+}
+
+/* ── Chips as stuck-on labels ── */
+
+.chip {
+  border: 2px solid var(--border-color);
+  border-radius: 6px;
+  font-family: var(--font-display), Impact, system-ui, sans-serif;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  padding: 0.25rem 0.55rem;
+  box-shadow: 1px 1px 0 var(--ink);
+}
+
+/* A slight tilt, alternating, so a row of them looks stuck on rather than
+   laid out. Only in a row — a lone chip sitting crooked just looks broken. */
+.h-stack > .chip:nth-child(odd) { transform: rotate(-1.5deg) }
+.h-stack > .chip:nth-child(even) { transform: rotate(1deg) }
+
+.chip.gold { background: var(--gold); color: oklch(16% 0.012 260) }
+.chip.good { background: var(--gold); color: oklch(16% 0.012 260) }
+.chip.bad,
+.chip.warn { background: var(--accent); color: oklch(99% 0.01 95) }
+
+/* ── The spray grain ──
+   A fine noise over the whole page, which is what stops flat colour looking
+   like a wireframe. Cheap: one inline SVG, no request. */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+[data-theme='dark'] body::after { opacity: 0.05 }
+
+/* ── Chrome ── */
+
+.sidebar,
+.light-mode .sidebar,
+:root:not([data-theme="dark"]) .sidebar {
+  background: var(--bg-secondary);
+  border-right: 2px solid var(--border-color);
+}
+
+.topbar {
+  border-bottom: 2px solid var(--border-color);
+}
+
+.sidebar-link.active {
+  background: var(--gold);
+  color: oklch(16% 0.012 260);
+  border: 2px solid var(--border-color);
+  border-radius: 10px;
+  box-shadow: 2px 2px 0 var(--ink);
+  font-weight: 700;
+}
+
+.mobile-nav {
+  border: 2px solid var(--border-color);
+  box-shadow: var(--shadow-md);
+}
+
+.mobile-nav-link.active {
+  color: var(--accent);
+}
+
+/* The data table gets a painted header rule. */
+.data-table th {
+  border-bottom: 3px solid var(--border-color);
+  font-family: var(--font-display), Impact, system-ui, sans-serif;
+  letter-spacing: 0.08em;
+}
+
+/* The starfield belongs to the old space theme and fights a painted wall. */
+.sidebar-galaxy,
+.sidebar-dust,
+.sidebar-star-layer {
+  display: none;
+}
+
+/* The splash wordmark takes the display face. */
+.wta-wordmark-full,
+.wta-wordmark-short {
+  font-family: var(--font-display), Impact, system-ui, sans-serif;
+  font-weight: 400;
+}
+
+/* ── Legibility corrections for the flat palette ── */
+
+/* The wordmark was a gold gradient clipped to the text, which is bright and
+   unreadable on a white ground. In light mode it takes ink with a red stop
+   instead; in dark it keeps the gold, where gold is exactly right. */
+:root:not([data-theme="dark"]) .topbar-brand,
+[data-theme="light"] .topbar-brand,
+.light-mode .topbar-brand {
+  background: linear-gradient(135deg, var(--ink) 0%, var(--accent) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Sidebar labels were a muted secondary, which against the lighter rail read
+   as washed out. They take the primary ink and only drop back on the inactive
+   state's hover. */
+.sidebar-link {
+  color: var(--text-secondary);
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-weight: 600;
+}
+
+:root:not([data-theme="dark"]) .sidebar-link,
+[data-theme="light"] .sidebar-link,
+.light-mode .sidebar-link {
+  color: var(--text-primary);
+}
+
+.sidebar-link:hover {
+  color: var(--accent);
+}
+
+.sidebar-link.active,
+.sidebar-link.active:hover {
+  color: oklch(16% 0.012 260);
+}
+
+/* Table headers were set in the display face at a muted colour, which at that
+   size is close to unreadable. Darker, and a size up. */
+.data-table th,
+.display-table th {
+  color: var(--text-primary);
+  font-size: var(--text-xs);
+  opacity: 0.75;
+}
+
+/* The brand crown keeps its gold in both themes — it is a mark, not text. */
+.topbar-brand .logo-icon,
+.sidebar-brand .logo-icon {
+  -webkit-text-fill-color: initial;
 }
