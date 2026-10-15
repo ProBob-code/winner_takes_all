@@ -394,13 +394,13 @@ select.premium-input-v2 option {
 }
 
 .segment-btn.active {
-  background: var(--gradient-primary);
-  color: white !important;
+  background: var(--gradient-fill);
+  color: var(--on-gold) !important;
   box-shadow: var(--shadow-md);
 }
 
 [data-theme='light'] .segment-btn.active {
-  color: white !important;
+  color: var(--on-gold) !important;
 }
 
 .quota-stepper {
@@ -458,8 +458,8 @@ select.premium-input-v2 option {
 }
 
 .add-roster-btn {
-  background: var(--gold);
-  color: black;
+  background: var(--gold-fill);
+  color: var(--on-gold);
   font-weight: 900;
   padding: 0 1.5rem;
   border-radius: 16px;
@@ -537,8 +537,8 @@ select.premium-input-v2 option {
 }
 
 .launch-btn.ready {
-  background: var(--gold);
-  color: black;
+  background: var(--gold-fill);
+  color: var(--on-gold);
   box-shadow: 0 20px 40px rgba(245, 158, 11, 0.2);
 }
 
@@ -637,7 +637,7 @@ select.premium-input-v2 option {
 }
 
 .share-btn:hover { background: var(--accent); color: white; }
-.share-btn.shared { background: var(--gold); color: black; border-color: transparent; }
+.share-btn.shared { background: var(--gold-fill); color: var(--on-gold); border-color: transparent; }
 
 /* Ends the tournament rather than erasing it; sits beside the reset control. */
 .close-tournament-trigger {
@@ -1034,7 +1034,7 @@ select.premium-input-v2 option {
   transition: 0.3s;
 }
 
-.extra-time-btn:hover { background: #f59e0b; color: black; }
+.extra-time-btn:hover { background: var(--gold-fill); color: var(--on-gold); }
 
 .arena-setup-mid-tournament {
   margin-top: 2rem;
@@ -1057,8 +1057,8 @@ select.premium-input-v2 option {
 .matches-dot {
   width: 18px;
   height: 18px;
-  background: var(--gold);
-  color: black;
+  background: var(--gold-fill);
+  color: var(--on-gold);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -1151,7 +1151,7 @@ select.premium-input-v2 option {
   border: 1px solid var(--border-color);
 }
 
-.add-team-trigger:hover { background: var(--gold); color: black; border-color: transparent; }
+.add-team-trigger:hover { background: var(--gold-fill); color: var(--on-gold); border-color: transparent; }
 
 .add-team-popover {
   background: var(--bg-card);
@@ -1238,7 +1238,7 @@ select.premium-input-v2 option {
   transition: 0.3s;
 }
 
-.extra-time-btn:hover { background: #f59e0b; color: black; }
+.extra-time-btn:hover { background: var(--gold-fill); color: var(--on-gold); }
 
 .arena-setup-mid-tournament {
   margin-top: 2rem;
@@ -1261,8 +1261,8 @@ select.premium-input-v2 option {
 .matches-dot {
   width: 18px;
   height: 18px;
-  background: var(--gold);
-  color: black;
+  background: var(--gold-fill);
+  color: var(--on-gold);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -1308,7 +1308,7 @@ select.premium-input-v2 option {
   transition: 0.3s;
 }
 
-.shuffle-btn:hover { background: var(--gold); color: black; transform: translateY(-2px); }
+.shuffle-btn:hover { background: var(--gold-fill); color: var(--on-gold); transform: translateY(-2px); }
 
 .queue-track {
   display: flex;
@@ -1452,8 +1452,8 @@ select.premium-input-v2 option {
 }
 
 .copy-action-btn {
-  background: var(--gold);
-  color: black;
+  background: var(--gold-fill);
+  color: var(--on-gold);
   border: none;
   padding: 1rem;
   border-radius: 12px;
@@ -1551,8 +1551,8 @@ select.premium-input-v2 option {
 }
 
 .house-opt.active {
-  background: var(--gold);
-  color: black;
+  background: var(--gold-fill);
+  color: var(--on-gold);
   box-shadow: 0 0 20px rgba(245, 158, 11, 0.4);
 }
 
@@ -1604,7 +1604,7 @@ select.premium-input-v2 option {
   transition: 0.3s;
 }
 
-.timer-scroller-v2 .s-btn:hover { background: var(--gold); color: black; }
+.timer-scroller-v2 .s-btn:hover { background: var(--gold-fill); color: var(--on-gold); }
 
 .t-adj {
   background: var(--glass-bg);
@@ -1830,8 +1830,8 @@ select.premium-input-v2 option {
 }
 
 .v-mvp-badge {
-  background: var(--gold);
-  color: black;
+  background: var(--gold-fill);
+  color: var(--on-gold);
   font-size: 0.6rem;
   font-weight: 950;
   padding: 4px 8px;
@@ -1839,8 +1839,8 @@ select.premium-input-v2 option {
 }
 
 .v-action-btn {
-  background: var(--gold);
-  color: black;
+  background: var(--gold-fill);
+  color: var(--on-gold);
   border: none;
   padding: 1.2rem 3rem;
   border-radius: 12px;
@@ -2221,7 +2221,7 @@ select.premium-input-v2 option {
   justify-content: center;
 }
 
-.s-btn:hover { background: var(--gold); color: black; border-color: transparent; }
+.s-btn:hover { background: var(--gold-fill); color: var(--on-gold); border-color: transparent; }
 
 .team-status-grid {
   display: grid;
@@ -2667,8 +2667,8 @@ select.premium-input-v2 option {
 }
 
 .player-chip.active {
-  background: var(--gold);
-  color: black;
+  background: var(--gold-fill);
+  color: var(--on-gold);
   border-color: transparent;
   box-shadow: 0 0 10px rgba(245, 158, 11, 0.3);
 }
@@ -3155,8 +3155,8 @@ select.premium-input-v2 option {
 
 .card-actions { display: grid; grid-template-columns: 1fr; gap: 1rem; }
 .goal-trigger {
-  background: linear-gradient(135deg, #f59e0b, #d97706);
-  color: black;
+  background: var(--gradient-fill);
+  color: var(--on-gold);
   border: none;
   padding: 1.25rem;
   border-radius: 16px;

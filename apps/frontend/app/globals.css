@@ -66,6 +66,16 @@
   --gold-light: #e8b923;
   --gold-subtle: rgba(232, 185, 35, 0.22);
 
+  /* ── W.T.A red ──
+     The second brand colour: the T of the wordmark, the band of the crown, and
+     the ink on anything filled with gold. --gold above is too dark to fill a
+     box that red text has to be read on, so a yellow box uses --gold-fill,
+     which is the bright wordmark gold in both themes. */
+  --wta-red: #c8102e;
+  --on-gold: #a50016;
+  --gold-fill: #f5c518;
+  --gradient-fill: linear-gradient(135deg, #f5c518 0%, #ffd700 100%);
+
   --shadow-sm: 0 2px 8px rgba(22, 21, 15, 0.06);
   --shadow-md: 0 10px 25px rgba(22, 21, 15, 0.09);
   --shadow-lg: 0 20px 50px rgba(22, 21, 15, 0.14);
@@ -175,6 +185,13 @@
   --gold: #ffd700;
   --gold-light: #ffe44d;
   --gold-subtle: rgba(255, 215, 0, 0.12);
+
+  /* Brighter on black so the T holds its own beside the gold; the ink on a
+     gold fill stays deep, because the fill is just as bright here. */
+  --wta-red: #ff2e3b;
+  --on-gold: #a50016;
+  --gold-fill: #ffd700;
+  --gradient-fill: linear-gradient(135deg, #ffc400 0%, #ffd700 100%);
 
   --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.8);
   --shadow-md: 0 12px 32px rgba(0, 0, 0, 0.9);
@@ -880,15 +897,15 @@ a:hover {
 }
 
 .button {
-  background: var(--gradient-primary);
-  color: var(--text-primary);
+  background: var(--gradient-fill);
+  color: var(--on-gold);
   box-shadow: 0 4px 14px color-mix(in oklab, var(--accent) 40%, transparent);
 }
 
 .button:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 20px color-mix(in oklab, var(--accent) 60%, transparent);
-  color: var(--text-primary);
+  color: var(--on-gold);
 }
 
 .button-secondary {
@@ -907,8 +924,8 @@ a:hover {
 }
 
 .button-success {
-  background: linear-gradient(135deg, var(--green-light), var(--green));
-  color: oklch(24% 0.05 55);
+  background: var(--gradient-fill);
+  color: var(--on-gold);
   box-shadow: 0 4px 14px color-mix(in oklab, var(--gold) 35%, transparent);
 }
 
@@ -929,8 +946,8 @@ a:hover {
 }
 
 .button-gold {
-  background: var(--gradient-gold);
-  color: oklch(24% 0.05 55);
+  background: var(--gradient-fill);
+  color: var(--on-gold);
   box-shadow: 0 4px 14px color-mix(in oklab, var(--gold) 35%, transparent);
 }
 
@@ -2077,8 +2094,8 @@ label {
 }
 
 .badge-winner {
-  background: var(--gradient-gold);
-  color: #000;
+  background: var(--gradient-fill);
+  color: var(--on-gold);
 }
 
 .badge-active {
@@ -2452,8 +2469,8 @@ label {
   border-color: var(--glass-border-color-hover);
 }
 .amount-option.selected {
-  background: var(--accent);
-  color: white;
+  background: var(--gold-fill);
+  color: var(--on-gold);
   border-color: var(--accent-light);
   box-shadow: var(--shadow-glow);
 }
@@ -2486,8 +2503,8 @@ label {
   width: 80px;
   height: 80px;
   border-radius: 50%;
-  background: var(--gradient-gold);
-  color: #000;
+  background: var(--gradient-fill);
+  color: var(--on-gold);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -2760,8 +2777,8 @@ select.form-control option {
   position: absolute;
   top: -10px;
   right: -10px;
-  background: var(--gold);
-  color: #000;
+  background: var(--gold-fill);
+  color: var(--on-gold);
   font-size: 0.65rem;
   font-weight: 800;
   padding: 2px 8px;
@@ -3726,8 +3743,8 @@ select.form-control option {
   font-weight: var(--weight-black);
   letter-spacing: 0.02em;
   cursor: pointer;
-  background: var(--accent);
-  color: #fff;
+  background: var(--gold-fill);
+  color: var(--on-gold);
   /* A double-tap that zooms instead of scoring is maddening at the table. */
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
@@ -3738,7 +3755,7 @@ select.form-control option {
 .staff-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
 .staff-btn.big { min-height: 96px; font-size: var(--text-xl); }
-.staff-btn.gold { background: var(--gradient-gold); color: #000; }
+.staff-btn.gold { background: var(--gradient-fill); color: var(--on-gold); }
 .staff-btn.ghost {
   background: transparent;
   border: 1px solid var(--glass-border-color);
@@ -4302,7 +4319,7 @@ select.form-control option {
 .wta-wordmark-full i,
 .wta-wordmark-short i { font-style: normal; color: var(--accent); }
 .wta-wordmark-full u,
-.wta-wordmark-short u { text-decoration: none; color: var(--gold); }
+.wta-wordmark-short u { text-decoration: none; color: var(--wta-red); }
 .wta-wordmark-full b,
 .wta-wordmark-short b { font-weight: 700; color: oklch(96% 0.005 260); }
 
@@ -4715,8 +4732,8 @@ select.form-control option {
 /* The avatar initial sits on the accent, so it needs a colour that works on
    gold in both themes rather than plain white. */
 .user-initial {
-  background: var(--gradient-gold);
-  color: #16150f;
+  background: var(--gradient-fill);
+  color: var(--on-gold);
   font-weight: 800;
 }
 
@@ -4747,4 +4764,13 @@ select.form-control option {
 
 .topbar-search::placeholder {
   color: var(--text-muted);
+}
+
+/* The red T of W.T.A. The wordmark around it is gold text clipped from a
+   gradient, so the T has to set its own fill colour or it inherits the
+   transparent one and shows gold. */
+.wta-t {
+  color: var(--wta-red);
+  -webkit-text-fill-color: var(--wta-red);
+  background: none;
 }

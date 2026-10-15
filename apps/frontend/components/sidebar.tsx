@@ -8,6 +8,7 @@ import { navFor } from "@/lib/nav";
 import { SidebarEffects } from "./sidebar-effects";
 import { getApiUrl } from "@/lib/api-config";
 import { ConfirmModal } from "./confirm-modal";
+import { CrownLogo, WordmarkShort } from "./brand-mark";
 
 export function Sidebar({ user: initialUser }: { user: any }) {
   const pathname = usePathname();
@@ -94,11 +95,9 @@ export function Sidebar({ user: initialUser }: { user: any }) {
             {(!isCollapsed || isOpen) && (
               <>
                 <span className="logo-icon">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M5 16L3 5L8.5 10L12 4L15.5 10L21 5L19 16H5ZM19 19C19 19.5523 18.5523 20 18 20H6C5.44772 20 5 19.5523 5 19V18H19V19Z" fill="#FFD700"/>
-                  </svg>
+                  <CrownLogo size={24} />
                 </span>
-                <span className="brand-text" style={{ letterSpacing: "2px", fontWeight: 900 }}>W.T.A</span>
+                <span className="brand-text" style={{ letterSpacing: "2px", fontWeight: 900 }}><WordmarkShort /></span>
               </>
             )}
           </Link>

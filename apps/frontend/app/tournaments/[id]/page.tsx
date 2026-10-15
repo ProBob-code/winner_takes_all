@@ -270,17 +270,17 @@ export default function TournamentDetailPage() {
                     {result.winners.map((w: any) => w.name).join(" & ")}
                   </div>
                   <div className="muted" style={{ fontSize: "0.72rem", marginTop: "4px" }}>
-                    ₹{Number(result.prize.amount).toLocaleString("en-IN")}
+                    Rs {Number(result.prize.amount).toLocaleString("en-IN")}
                     {result.splitWays > 1 ? ` split ${result.splitWays} ways` : ""} · paid to wallet
                   </div>
                 </>
               ) : (
                 <>
                   <div style={{ fontSize: "2.2rem", fontWeight: 900, color: "var(--gold)", lineHeight: 1.1 }}>
-                    ₹{winnerTakes.toLocaleString("en-IN")}
+                    Rs {winnerTakes.toLocaleString("en-IN")}
                   </div>
                   <div className="muted" style={{ fontSize: "0.72rem", marginTop: "2px" }}>
-                    from a ₹{pool.toLocaleString("en-IN")} pool
+                    from a Rs {pool.toLocaleString("en-IN")} pool
                   </div>
                 </>
               )}
@@ -296,7 +296,7 @@ export default function TournamentDetailPage() {
             }}
           >
             {[
-              // Entry is free and no pot is pooled, so these two read as "₹0"
+              // Entry is free and no pot is pooled, so these two read as "Rs 0"
               // on every tournament. A row of zero-rupee figures invites the
               // question of when they might not be zero, which is exactly the
               // impression a no-stakes platform should not give. Shown only on
@@ -304,11 +304,11 @@ export default function TournamentDetailPage() {
               ...(Number(tournament.entryFee?.amount ?? 0) > 0
                 ? [{
                     label: "ENTRY FEE",
-                    value: "₹" + Number(tournament.entryFee?.amount ?? 0).toLocaleString("en-IN"),
+                    value: "Rs " + Number(tournament.entryFee?.amount ?? 0).toLocaleString("en-IN"),
                   }]
                 : [{ label: "ENTRY", value: "Free" }]),
               ...(pool > 0
-                ? [{ label: "PRIZE POOL", value: "₹" + pool.toLocaleString("en-IN"), gold: true }]
+                ? [{ label: "PRIZE POOL", value: "Rs " + pool.toLocaleString("en-IN"), gold: true }]
                 : []),
               { label: "PLAYERS", value: `${tournament.joinedPlayers}/${tournament.maxPlayers}` },
               { label: "TEAM SIZE", value: tournament.teamSize > 1 ? `${tournament.teamSize} a side` : "Solo" },
@@ -411,9 +411,9 @@ export default function TournamentDetailPage() {
             <h2 className="section-heading">Where the money goes</h2>
 
             {[
-              { label: `Entry fee, per player`, value: "₹" + Number(tournament.entryFee?.amount ?? 0).toLocaleString("en-IN") },
-              { label: `${tournament.joinedPlayers} joined so far`, value: "₹" + pool.toLocaleString("en-IN"), muted: true },
-              { label: `Platform fee (${feePercent}%)`, value: "-₹" + (pool - winnerTakes).toLocaleString("en-IN"), muted: true },
+              { label: `Entry fee, per player`, value: "Rs " + Number(tournament.entryFee?.amount ?? 0).toLocaleString("en-IN") },
+              { label: `${tournament.joinedPlayers} joined so far`, value: "Rs " + pool.toLocaleString("en-IN"), muted: true },
+              { label: `Platform fee (${feePercent}%)`, value: "-Rs " + (pool - winnerTakes).toLocaleString("en-IN"), muted: true },
             ].map((row) => (
               <div
                 key={row.label}
@@ -437,7 +437,7 @@ export default function TournamentDetailPage() {
             >
               <span style={{ fontWeight: 900 }}>Winner takes</span>
               <span style={{ fontWeight: 900, color: "var(--gold)", fontVariantNumeric: "tabular-nums" }}>
-                ₹{winnerTakes.toLocaleString("en-IN")}
+                Rs {winnerTakes.toLocaleString("en-IN")}
               </span>
             </div>
 

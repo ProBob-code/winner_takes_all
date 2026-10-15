@@ -367,7 +367,7 @@ app.post("/api/auth/signup", async (c) => {
 
   const hashed = await hashPassword(body.password);
 
-  // Zero while stakes are off. The old ₹1,000 grant minted money nobody had
+  // Zero while stakes are off. The old Rs 1,000 grant minted money nobody had
   // deposited and nobody could withdraw, and advertised it on the way in.
   // New players are welcomed with WTA Coins instead, which they earn by
   // playing — see lib/coins.ts.
@@ -1844,7 +1844,7 @@ async function payTournamentPrizes(
         userId: winner.userId,
         type: "tournament_prize",
         title: result.splitWays > 1 ? "You shared the prize pot" : "You won the prize pot",
-        message: `₹${(winner.amountCents / 100).toFixed(2)} from "${tournament.name}" has been credited to your wallet${
+        message: `Rs ${(winner.amountCents / 100).toFixed(2)} from "${tournament.name}" has been credited to your wallet${
           result.splitWays > 1 ? `, split equally ${result.splitWays} ways` : ""
         }.`,
         tournamentId: tournament.id,

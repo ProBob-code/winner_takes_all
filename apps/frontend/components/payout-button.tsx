@@ -72,7 +72,7 @@ export function PayoutButton({ withdrawable, bonus, feePercent, onRequested }: P
         onClick={() => setOpen(true)}
         disabled={disabled}
         className="button-secondary"
-        title={disabled ? "You need at least ₹100 of withdrawable balance." : "Withdraw to UPI or bank"}
+        title={disabled ? "You need at least Rs 100 of withdrawable balance." : "Withdraw to UPI or bank"}
         style={{ width: "100%", opacity: disabled ? 0.5 : 1, cursor: disabled ? "not-allowed" : "pointer" }}
       >
         Request Payout
@@ -142,7 +142,7 @@ export function PayoutButton({ withdrawable, bonus, feePercent, onRequested }: P
                   </div>
 
                   <label style={{ display: "block", marginBottom: "1rem" }}>
-                    <span className="muted" style={{ fontSize: "0.75rem", fontWeight: 700, letterSpacing: "1px" }}>AMOUNT (₹)</span>
+                    <span className="muted" style={{ fontSize: "0.75rem", fontWeight: 700, letterSpacing: "1px" }}>AMOUNT (Rs)</span>
                     <input
                       type="number"
                       inputMode="decimal"
@@ -150,7 +150,7 @@ export function PayoutButton({ withdrawable, bonus, feePercent, onRequested }: P
                       max={available}
                       value={amount}
                       onChange={(e) => setAmount(e.target.value)}
-                      placeholder="Minimum ₹100"
+                      placeholder="Minimum Rs 100"
                       className="premium-input-v2"
                       style={{ width: "100%", marginTop: "0.35rem" }}
                     />
@@ -171,16 +171,16 @@ export function PayoutButton({ withdrawable, bonus, feePercent, onRequested }: P
                   {/* Shown before they commit: a deduction nobody explained is
                       how disputes start. */}
                   <div style={{ background: "var(--glass-bg)", borderRadius: "14px", padding: "1rem", marginBottom: "1.25rem", fontSize: "0.88rem" }}>
-                    <Row label="You withdraw" value={`₹${(valid ? entered : 0).toFixed(2)}`} />
-                    <Row label={`Handling charge (${feePercent}%)`} value={`− ₹${feeRupees.toFixed(2)}`} muted />
+                    <Row label="You withdraw" value={`Rs ${(valid ? entered : 0).toFixed(2)}`} />
+                    <Row label={`Handling charge (${feePercent}%)`} value={`− Rs ${feeRupees.toFixed(2)}`} muted />
                     <div style={{ height: 1, background: "var(--glass-bg-hover)", margin: "0.65rem 0" }} />
-                    <Row label="You receive" value={`₹${netRupees.toFixed(2)}`} strong />
+                    <Row label="You receive" value={`Rs ${netRupees.toFixed(2)}`} strong />
                   </div>
 
                   {amount !== "" && !valid && (
                     <p style={{ color: "#ff8080", fontSize: "0.82rem", marginTop: 0 }}>
                       {entered < 100
-                        ? "The minimum withdrawal is ₹100."
+                        ? "The minimum withdrawal is Rs 100."
                         : `That is more than the ${formatMoney(withdrawable)} available to withdraw.`}
                     </p>
                   )}
@@ -202,7 +202,7 @@ export function PayoutButton({ withdrawable, bonus, feePercent, onRequested }: P
                       opacity: busy || !valid || destination.trim().length < 3 ? 0.5 : 1,
                     }}
                   >
-                    {busy ? "Requesting…" : `Withdraw ₹${netRupees.toFixed(2)}`}
+                    {busy ? "Requesting…" : `Withdraw Rs ${netRupees.toFixed(2)}`}
                   </button>
                 </>
               )}

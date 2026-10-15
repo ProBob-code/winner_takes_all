@@ -345,7 +345,7 @@ export function PaymentButton({ onSuccess }: PaymentButtonProps) {
                           background: selectedAmount === amt ? "var(--accent)" : "rgba(255,255,255,0.03)"
                         }}
                       >
-                        <span style={{ fontWeight: 700 }}>₹{amt}</span>
+                        <span style={{ fontWeight: 700 }}>Rs {amt}</span>
                         {selectedAmount === amt && <span>✓</span>}
                       </div>
                     ))}
@@ -358,7 +358,7 @@ export function PaymentButton({ onSuccess }: PaymentButtonProps) {
 
                   <div style={{ padding: "1.25rem", background: "var(--bg-inset)", borderRadius: "16px", border: "1px solid var(--glass-border-color)" }}>
                     <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginBottom: "0.25rem" }}>ORDER TOTAL</div>
-                    <div style={{ fontSize: "1.5rem", fontWeight: 800 }}>₹{selectedAmount.toFixed(2)}</div>
+                    <div style={{ fontSize: "1.5rem", fontWeight: 800 }}>Rs {selectedAmount.toFixed(2)}</div>
                   </div>
 
                   <div style={{ padding: "1.25rem", background: "rgba(0,242,173,0.05)", borderRadius: "16px", border: "1px solid rgba(0,242,173,0.1)" }}>
@@ -374,7 +374,7 @@ export function PaymentButton({ onSuccess }: PaymentButtonProps) {
                     <div style={{ padding: "1.5rem", background: "var(--bg-inset)", borderRadius: "16px", border: "1px solid var(--glass-border-color)" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.75rem", fontSize: "0.9rem" }}>
                         <span style={{ color: "var(--text-secondary)" }}>Base Amount</span>
-                        <span>₹{selectedAmount}</span>
+                        <span>Rs {selectedAmount}</span>
                       </div>
                       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "1rem", fontSize: "0.9rem" }}>
                         <span style={{ color: "var(--text-secondary)" }}>Platform Fee</span>
@@ -383,7 +383,7 @@ export function PaymentButton({ onSuccess }: PaymentButtonProps) {
                       <div style={{ height: "1px", background: "var(--glass-bg-hover)", margin: "0.5rem 0 1rem" }}></div>
                       <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 800 }}>
                         <span>Final Total</span>
-                        <span style={{ color: "var(--accent-light)" }}>₹{selectedAmount}</span>
+                        <span style={{ color: "var(--accent-light)" }}>Rs {selectedAmount}</span>
                       </div>
                     </div>
                   </div>
@@ -436,7 +436,7 @@ export function PaymentButton({ onSuccess }: PaymentButtonProps) {
                         cursor: gatewayBlocked ? "not-allowed" : undefined
                       }}
                     >
-                      {loading ? "Processing..." : `Pay ₹${selectedAmount}`}
+                      {loading ? "Processing..." : `Pay Rs ${selectedAmount}`}
                     </button>
 
                     <div style={{ textAlign: "center", marginTop: "1rem", display: "flex", alignItems: "center", justifyContent: "center", gap: "1rem", opacity: 0.5 }}>

@@ -56,7 +56,7 @@ export default function WalletPage() {
    *
    * The API sends money as { amount, currency }, not as a bare string. Reading
    * it as a string produced NaN for every row, which is why each of these
-   * totalled ₹0.00 however much had moved through the account.
+   * totalled Rs 0.00 however much had moved through the account.
    */
   const stats = useMemo(() => {
     const empty = { deposits: 0, winnings: 0, entries: 0, refunds: 0, withdrawn: 0, count: 0 };

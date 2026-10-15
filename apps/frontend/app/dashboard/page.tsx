@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
  * The dashboard.
  *
  * WHAT CAME OUT, AND WHY
- * It used to lead with "₹0.00 AVAILABLE CREDITS" and carry an Earnings panel
+ * It used to lead with "Rs 0.00 AVAILABLE CREDITS" and carry an Earnings panel
  * listing rupee transactions — on a platform that stopped taking stakes in
  * Phase 0 and whose policy page says there is no wallet. It also carried a
  * radio player and a hard-coded "Strategy Hub" tip that said the same sentence

@@ -38,7 +38,7 @@ const WEEKS = [
     no: "1",
     title: "Eight people. That is the whole job.",
     points: [
-      "Walk up to someone already playing pool in your venue and ask them. “We’re starting a knockout on Thursday at eight, free to enter, winner gets a ₹500 tab — are you in?” Do that twenty times and you have your eight.",
+      "Walk up to someone already playing pool in your venue and ask them. “We’re starting a knockout on Thursday at eight, free to enter, winner gets a Rs 500 tab — are you in?” Do that twenty times and you have your eight.",
       "Posters tell people something is happening; they do not make anyone commit. Use them to support the asking, not to replace it.",
       "Six will turn up instead of eight. Run a six-player bracket. The night happening beats the night being tidy.",
     ],
@@ -199,15 +199,15 @@ export default function PlaybookPage() {
         <section className="panel" style={{ marginTop: "var(--space-5)" }}>
           <h2 style={{ fontSize: "var(--text-xl)", fontWeight: 800 }}>About the prize</h2>
           <p style={{ marginTop: "var(--space-3)", lineHeight: 1.9 }}>
-            Make entry free and make the prize something you already sell: a ₹500 bar tab,
+            Make entry free and make the prize something you already sell: a Rs 500 bar tab,
             a free round for the winner&apos;s table, a month of free table hire, or a
             trophy that lives on your shelf with the winner&apos;s name on it.
           </p>
           <p className="muted" style={{ marginTop: "var(--space-3)", lineHeight: 1.8 }}>
             Do not pool entry fees. India&apos;s Promotion and Regulation of Online Gaming
             Act 2025, in force since 1 May 2026, prohibits games played for a stake whether
-            they turn on skill or on chance — collecting ₹100 a head and paying the winner
-            ₹700 is that structure, however it is described. A bar tab comes back to your
+            they turn on skill or on chance — collecting Rs 100 a head and paying the winner
+            Rs 700 is that structure, however it is described. A bar tab comes back to your
             till anyway, which makes it better business as well as simpler.
           </p>
           <p className="muted" style={{ marginTop: "var(--space-3)", fontSize: "var(--text-sm)" }}>

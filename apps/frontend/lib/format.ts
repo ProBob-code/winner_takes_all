@@ -5,11 +5,11 @@ type MoneyLike = {
 
 const currencyMap: Record<string, string> = {
   USD: "$",
-  INR: "₹"
+  INR: "Rs "
 };
 
 export function formatMoney(money: MoneyLike) {
-  if (typeof money === "undefined" || money === null) return "₹0.00";
+  if (typeof money === "undefined" || money === null) return "Rs 0.00";
   
   if (typeof money === "object" && "amount" in money) {
     const symbol = currencyMap[money.currency] ?? `${money.currency} `;
@@ -18,7 +18,7 @@ export function formatMoney(money: MoneyLike) {
   
   // Default to INR for raw numbers/strings
   const value = typeof money === "number" ? money.toFixed(2) : parseFloat(money as string).toFixed(2);
-  return `₹${isNaN(parseFloat(value)) ? "0.00" : value}`;
+  return `Rs ${isNaN(parseFloat(value)) ? "0.00" : value}`;
 }
 
 /**

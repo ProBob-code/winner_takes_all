@@ -249,7 +249,7 @@ export function LandingPage() {
           </h1>
           <p className="hero-desc" style={{ maxWidth: "700px", fontSize: "1.2rem", color: "#94a3b8", marginBottom: "3.5rem", lineHeight: 1.6 }}>The comprehensive SaaS platform for esports organizers, communities, and competitive events. Manage brackets, schedules, and tournament operations with professional-grade tools.</p>
           <div className="hero-buttons" style={{ display: "flex", gap: "1.5rem" }}>
-            <Link href="/tournaments" style={{ background: "linear-gradient(135deg, var(--accent), var(--accent))", color: "white", padding: "1.25rem 2.5rem", borderRadius: "16px", textDecoration: "none", fontWeight: 800, fontSize: "1.1rem" }}>EXPLORE PLATFORM →</Link>
+            <Link href="/tournaments" style={{ background: "var(--gradient-fill)", color: "var(--on-gold)", padding: "1.25rem 2.5rem", borderRadius: "16px", textDecoration: "none", fontWeight: 800, fontSize: "1.1rem" }}>EXPLORE PLATFORM →</Link>
             <Link href="#how-it-works" style={{ background: "var(--glass-bg)", border: "1px solid var(--glass-border-color)", color: "white", padding: "1.25rem 2.5rem", borderRadius: "16px", textDecoration: "none", fontWeight: 800, fontSize: "1.1rem" }}>HOW IT WORKS</Link>
           </div>
         </section>

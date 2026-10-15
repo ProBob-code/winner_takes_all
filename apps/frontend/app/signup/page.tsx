@@ -1,7 +1,7 @@
 import { AuthForm } from "@/components/auth-form";
 import Link from "next/link";
 
-// What signing up actually gets you. The first line used to promise "₹1,000
+// What signing up actually gets you. The first line used to promise "Rs 1,000
 // welcome credit", which stopped being true when Phase 0 withdrew stakes and
 // should never have been said at all: advertising a money credit for a service
 // that runs games is the inducement the Online Gaming Act 2025 penalises

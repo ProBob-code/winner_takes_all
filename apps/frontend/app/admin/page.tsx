@@ -312,7 +312,7 @@ export default function AdminPage() {
                   </div>
                   <div className="stat">
                     <div className="stat-value">
-                      {billing.recurringMonthly ? formatMoney(billing.recurringMonthly) : "₹0"}
+                      {billing.recurringMonthly ? formatMoney(billing.recurringMonthly) : "Rs 0"}
                     </div>
                     <div className="stat-label">per month</div>
                   </div>
@@ -623,7 +623,7 @@ function Members({ users, onAct }: { users: any[]; onAct: (fn: () => Promise<unk
 
           <div className="admin-stat-grid" style={{ gap: "0.75rem" }}>
             <div>
-              <label className="muted" style={{ fontSize: "0.7rem", fontWeight: 800 }}>GRANT GAME BONUS (₹)</label>
+              <label className="muted" style={{ fontSize: "0.7rem", fontWeight: 800 }}>GRANT GAME BONUS (Rs)</label>
               <input className="premium-input-v2" value={bonus} onChange={(e) => setBonus(e.target.value)} placeholder="500" style={{ width: "100%", marginTop: "0.3rem" }} />
               <button
                 className="button button-sm"
