@@ -148,6 +148,20 @@
   /* The smallest thing a thumb should have to hit. Below this, a member of
    * staff two drinks into a Friday night misses it. */
   --touch-min: 48px;
+
+  /* Shape. These were referenced by .panel, .button, .chip and dozens more
+   * but never defined, so every card rendered square, borderless and flat. */
+  --radius: 20px;
+  --radius-sm: 12px;
+  --radius-full: 999px;
+  --glass-border: 1px solid var(--glass-border-color);
+  --inner-glow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+
+  /* Cards. A hard offset shadow, like a sticker lifted off the page, and a
+   * deep red that white type can sit on (the bright --wta-red cannot). */
+  --card-offset: #e2d8bd;
+  --card-offset-hot: #16150f;
+  --wta-red-deep: #a8101a;
 }
 
 [data-theme='dark'] {
@@ -192,6 +206,9 @@
   --on-gold: #a50016;
   --gold-fill: #ffd700;
   --gradient-fill: linear-gradient(135deg, #ffc400 0%, #ffd700 100%);
+
+  --card-offset: #2a2208;
+  --card-offset-hot: #ffd700;
 
   --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.8);
   --shadow-md: 0 12px 32px rgba(0, 0, 0, 0.9);
@@ -4773,4 +4790,402 @@ select.form-control option {
   color: var(--wta-red);
   -webkit-text-fill-color: var(--wta-red);
   background: none;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   CARDS WITH CHARACTER
+   ══════════════════════════════════════════════════════════════════════════
+
+   Every panel in the app gets the same three marks: a gold-to-red stripe
+   along the top (the two brand colours, in the order of the wordmark), a
+   hard offset shadow so it sits on the page like a sticker rather than
+   dissolving into it, and a hover that lifts it toward the pointer.
+
+   The louder .wta-card family below is for pages that want to perform,
+   such as the guide, and is opt-in. */
+
+.panel,
+.glass-morphism,
+.playbook-week {
+  border: 1.5px solid var(--glass-border-color);
+  box-shadow: 6px 6px 0 var(--card-offset);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.panel::before,
+.playbook-week::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--gold-fill) 0 62%, var(--wta-red) 62% 100%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.panel:hover,
+.playbook-week:hover {
+  transform: translate(-3px, -3px);
+  border-color: color-mix(in oklab, var(--gold) 55%, transparent);
+  box-shadow: 9px 9px 0 var(--card-offset-hot);
+}
+
+/* A panel with no padding of its own put its text against the border; the
+   mobile breakpoint already gave one, the desktop never did. Inline padding
+   still wins. */
+@media (min-width: 769px) {
+  .panel { padding: var(--space-5); }
+}
+
+/* Loading skeletons are panels too, and should not jump about. */
+.panel.shimmer:hover { transform: none; box-shadow: 6px 6px 0 var(--card-offset); }
+
+/* Grids of cards arrive one after another rather than all at once. */
+@media (prefers-reduced-motion: no-preference) {
+  .auto-grid > *,
+  .wta-deal > * {
+    animation: wta-deal-in 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+  }
+  .auto-grid > :nth-child(2), .wta-deal > :nth-child(2) { animation-delay: 0.06s; }
+  .auto-grid > :nth-child(3), .wta-deal > :nth-child(3) { animation-delay: 0.12s; }
+  .auto-grid > :nth-child(4), .wta-deal > :nth-child(4) { animation-delay: 0.18s; }
+  .auto-grid > :nth-child(5), .wta-deal > :nth-child(5) { animation-delay: 0.24s; }
+  .auto-grid > :nth-child(n+6), .wta-deal > :nth-child(n+6) { animation-delay: 0.3s; }
+}
+
+@keyframes wta-deal-in {
+  from { opacity: 0; transform: translateY(18px) rotate(-1.5deg); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ── The loud cards ── */
+
+.wta-card {
+  position: relative;
+  border-radius: 24px;
+  padding: clamp(1.25rem, 4vw, 2.25rem);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border: 2px solid var(--card-offset-hot);
+  box-shadow: 8px 8px 0 var(--card-offset-hot);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.wta-card.gold {
+  background: var(--gradient-fill);
+  color: var(--on-gold);
+  border-color: var(--on-gold);
+  box-shadow: 8px 8px 0 var(--on-gold);
+}
+
+.wta-card.red {
+  background: var(--wta-red-deep);
+  color: #fff8e1;
+  border-color: var(--gold-fill);
+  box-shadow: 8px 8px 0 var(--gold-fill);
+}
+
+.wta-card.tilt-l { transform: rotate(-1.2deg); }
+.wta-card.tilt-r { transform: rotate(1.2deg); }
+
+@media (hover: hover) {
+  .wta-card:hover { transform: translate(-3px, -4px); box-shadow: 12px 12px 0 var(--card-offset-hot); }
+  .wta-card.gold:hover { box-shadow: 12px 12px 0 var(--on-gold); }
+  .wta-card.red:hover { box-shadow: 12px 12px 0 var(--gold-fill); }
+}
+
+/* A label slapped on a card's corner. */
+.sticker {
+  display: inline-block;
+  padding: 0.35rem 0.85rem;
+  border-radius: 8px;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  background: var(--wta-red-deep);
+  color: #fff;
+  transform: rotate(-3deg);
+  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.35);
+}
+
+.sticker.gold { background: var(--gold-fill); color: var(--on-gold); }
+.sticker.ink  { background: #16150f; color: var(--gold-fill); }
+.sticker.corner { position: absolute; top: -14px; right: 18px; }
+
+.big-num {
+  font-family: var(--font-outfit), system-ui, sans-serif;
+  font-weight: 900;
+  line-height: 0.85;
+  letter-spacing: -0.04em;
+}
+
+/* ── The guide ── */
+
+.guide {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(2.5rem, 7vw, 4.5rem);
+  padding-bottom: 6rem;
+}
+
+.guide-hero { overflow: hidden; }
+
+.guide-hero h1 {
+  font-size: clamp(2.2rem, 8vw, 4.2rem);
+  font-weight: 900;
+  line-height: 0.95;
+  letter-spacing: -0.03em;
+  margin: 1.1rem 0 1rem;
+  text-transform: uppercase;
+  max-width: 14ch;
+}
+
+.guide-hero p { font-size: var(--text-lg); line-height: 1.6; max-width: 32rem; font-weight: 600; }
+
+.guide-hero .guide-hero-art {
+  position: absolute;
+  right: clamp(0.75rem, 3vw, 2rem);
+  bottom: clamp(0.5rem, 2vw, 1.5rem);
+  font-size: clamp(3.5rem, 12vw, 7rem);
+  transform: rotate(12deg);
+  pointer-events: none;
+  opacity: 0.9;
+}
+
+.guide-quote blockquote {
+  font-size: clamp(1.3rem, 4vw, 2rem);
+  font-weight: 800;
+  line-height: 1.25;
+  margin: 0.75rem 0 1rem;
+}
+
+.guide-quote .quote-mark {
+  font-size: 5rem;
+  line-height: 0.6;
+  color: var(--gold-fill);
+  font-weight: 900;
+  display: block;
+  height: 2rem;
+}
+
+.guide-split {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+  gap: 1.75rem;
+  align-items: stretch;
+}
+
+.guide-versus {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  text-align: center;
+}
+
+.guide-versus .big-num { font-size: clamp(4rem, 14vw, 6.5rem); }
+.guide-versus .vs { font-weight: 900; font-size: 1.4rem; color: var(--wta-red); }
+.guide-versus small { display: block; margin-top: 0.4rem; font-size: 0.75rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.8; }
+
+.section-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 2rem;
+}
+
+.section-head h2 {
+  font-size: var(--text-2xl);
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: -0.01em;
+}
+
+.section-head h2 em { font-style: normal; color: var(--wta-red); }
+.section-head p { flex-basis: 100%; }
+
+/* The weeks, as levels of a game. */
+.level-track {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 19rem), 1fr));
+  gap: 2.5rem 1.75rem;
+}
+
+.level-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding-top: 2.5rem;
+}
+
+.level-card .level-no {
+  position: absolute;
+  top: -1.4rem;
+  left: 1.25rem;
+  min-width: 3.4rem;
+  height: 3.4rem;
+  padding: 0 0.7rem;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  font-weight: 900;
+  font-size: 1.15rem;
+  background: var(--gold-fill);
+  color: var(--on-gold);
+  border: 2px solid var(--on-gold);
+  box-shadow: 3px 3px 0 var(--on-gold);
+  transform: rotate(-4deg);
+}
+
+.level-card:nth-child(even) .level-no {
+  transform: rotate(4deg);
+  background: var(--wta-red-deep);
+  color: #fff;
+  border-color: var(--gold-fill);
+  box-shadow: 3px 3px 0 var(--gold-fill);
+}
+
+.level-card .level-kicker {
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--wta-red);
+}
+
+.level-card h3 { font-size: var(--text-xl); font-weight: 900; line-height: 1.2; margin-top: -0.5rem; }
+
+.level-card ul { list-style: none; display: flex; flex-direction: column; gap: 0.75rem; }
+
+.level-card li {
+  display: grid;
+  grid-template-columns: 1.2rem 1fr;
+  gap: 0.6rem;
+  font-size: var(--text-sm);
+  line-height: 1.65;
+  color: var(--text-secondary);
+}
+
+.level-card li::before {
+  content: "★";
+  color: var(--gold);
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+/* Diagnosis: tap a card to turn it over. */
+.flip-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+  gap: 1.75rem;
+}
+
+.flip-card {
+  display: block;
+  width: 100%;
+  perspective: 1000px;
+  min-height: 15rem;
+  border: 0;
+  padding: 0;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+}
+
+.flip-card:focus-visible { outline: 3px solid var(--wta-red); outline-offset: 6px; border-radius: 24px; }
+
+.flip-inner {
+  display: block;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 15rem;
+  transform-style: preserve-3d;
+  transition: transform 0.55s cubic-bezier(0.3, 1.3, 0.5, 1);
+}
+
+.flip-card[aria-pressed="true"] .flip-inner { transform: rotateY(180deg); }
+
+.flip-face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+/* The faces sit inside a 3D context; a hover lift would fight the flip. */
+.flip-face.wta-card:hover { transform: none; }
+.flip-face.back { transform: rotateY(180deg); }
+.flip-face.back.wta-card:hover { transform: rotateY(180deg); }
+
+.flip-face .flip-title { display: block; font-size: var(--text-xl); font-weight: 900; line-height: 1.2; }
+.flip-face .hint { font-size: 0.72rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.75; }
+.flip-face .label { font-size: 0.68rem; font-weight: 900; letter-spacing: 0.14em; text-transform: uppercase; opacity: 0.8; }
+.flip-face .flip-text { display: block; margin-top: 0.35rem; font-weight: 700; line-height: 1.45; }
+.flip-face .label { display: block; color: inherit; }
+
+@media (prefers-reduced-motion: reduce) {
+  .flip-inner { transition: none; }
+}
+
+/* Do and don't. */
+.rule-card h3 { font-size: var(--text-xl); font-weight: 900; margin: 0.9rem 0 0.75rem; }
+.rule-card ul { list-style: none; display: flex; flex-direction: column; gap: 0.55rem; font-weight: 700; }
+.rule-card li { display: flex; gap: 0.6rem; }
+.rule-card.gold li::before { content: "✔"; }
+.rule-card.red li::before { content: "✘"; color: var(--gold-fill); }
+.rule-card p { margin-top: 1rem; font-size: var(--text-sm); line-height: 1.7; opacity: 0.92; }
+
+/* A card cut like a ticket: notches on both sides and a perforation. */
+.ticket {
+  --notch: 18px;
+  -webkit-mask:
+    radial-gradient(circle var(--notch) at 0 58%, #0000 98%, #000) left / 51% 100% no-repeat,
+    radial-gradient(circle var(--notch) at 100% 58%, #0000 98%, #000) right / 51% 100% no-repeat;
+          mask:
+    radial-gradient(circle var(--notch) at 0 58%, #0000 98%, #000) left / 51% 100% no-repeat,
+    radial-gradient(circle var(--notch) at 100% 58%, #0000 98%, #000) right / 51% 100% no-repeat;
+}
+
+.ticket .perforation {
+  border-top: 3px dashed color-mix(in oklab, var(--on-gold) 45%, transparent);
+  margin: 1.5rem -0.5rem;
+}
+
+.ticket h2 { font-size: clamp(1.6rem, 5vw, 2.4rem); font-weight: 900; text-transform: uppercase; line-height: 1; }
+
+.ticket .ticket-actions { display: flex; flex-wrap: wrap; gap: 0.85rem; margin-top: 1.25rem; }
+
+.ink-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.9rem 1.5rem;
+  border-radius: 14px;
+  background: #16150f;
+  color: var(--gold-fill);
+  font-weight: 900;
+  text-decoration: none;
+  letter-spacing: 0.02em;
+  border: 2px solid #16150f;
+  transition: transform 0.15s ease;
+}
+
+.ink-button.ghost { background: transparent; color: var(--on-gold); border-color: var(--on-gold); }
+.ink-button:hover { transform: translateY(-2px); }
+
+/* Phones: the ball moves up beside the sticker instead of over the copy, and
+   the guide leaves room on the right for the cards' offset shadows. */
+@media (max-width: 640px) {
+  .guide { padding-right: 10px; }
+  .guide-hero .guide-hero-art { top: 0.9rem; bottom: auto; font-size: 2.6rem; }
 }

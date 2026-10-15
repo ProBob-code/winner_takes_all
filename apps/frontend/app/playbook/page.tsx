@@ -22,10 +22,12 @@ export const dynamic = "force-dynamic";
  */
 
 import Link from "next/link";
+import { useState } from "react";
 
 const WEEKS = [
   {
-    no: "Before",
+    no: "0",
+    kicker: "Before you start",
     title: "Four decisions, made once",
     points: [
       "Pick your second-quietest night — not the deadest one, and never move it afterwards. “League night is Thursday” is a sentence your regulars can repeat to someone else.",
@@ -36,6 +38,7 @@ const WEEKS = [
   },
   {
     no: "1",
+    kicker: "Week one",
     title: "Eight people. That is the whole job.",
     points: [
       "Walk up to someone already playing pool in your venue and ask them. “We’re starting a knockout on Thursday at eight, free to enter, winner gets a Rs 500 tab — are you in?” Do that twenty times and you have your eight.",
@@ -45,6 +48,7 @@ const WEEKS = [
   },
   {
     no: "2",
+    kicker: "Week two",
     title: "Prove it is real",
     points: [
       "Message last week’s eight individually — not a group blast. Ten minutes of work, and the highest-return ten minutes in the whole plan.",
@@ -55,6 +59,7 @@ const WEEKS = [
   },
   {
     no: "3–4",
+    kicker: "Weeks three and four",
     title: "Give people a reason to come back after losing",
     points: [
       "Start a running league table across weeks. 3 points for entering, 1 per frame won, 5 for winning the night. Do not over-engineer it — it exists to give someone knocked out in round one a reason to return.",
@@ -64,6 +69,7 @@ const WEEKS = [
   },
   {
     no: "5–8",
+    kicker: "Weeks five to eight",
     title: "Make it worth money",
     points: [
       "Count three things weekly: players in the bracket, heads in the room at 9pm, and till take against the same weekday a month earlier. Only the third answers whether this was worth doing.",
@@ -80,79 +86,114 @@ const DIAGNOSIS = [
   ["Nobody at all", "Wrong night", "Move it once — and only once — then commit again."],
 ];
 
+/**
+ * One row of the diagnosis, as a card that turns over: the symptom on the
+ * front, what it usually means and what to do on the back. A button, so it
+ * works from the keyboard and a screen reader hears whether it is turned.
+ */
+function FlipCard({ symptom, cause, fix, index }: { symptom: string; cause: string; fix: string; index: number }) {
+  const [turned, setTurned] = useState(false);
+  const front = index % 2 === 0 ? "wta-card" : "wta-card gold";
+
+  return (
+    <button
+      type="button"
+      className="flip-card"
+      aria-pressed={turned}
+      aria-label={turned ? `${symptom}. Usually means: ${cause}. Do this: ${fix}` : `${symptom}. Tap to see the fix.`}
+      onClick={() => setTurned((t) => !t)}
+    >
+      <span className="flip-inner">
+        <span className={`flip-face front ${front}`}>
+          <span className="label">Symptom {index + 1}</span>
+          <span className="flip-title">{symptom}</span>
+          <span className="hint">Tap to turn over ↻</span>
+        </span>
+        <span className="flip-face back wta-card red">
+          <span>
+            <span className="label">Usually means</span>
+            <span className="flip-text">{cause}</span>
+          </span>
+          <span>
+            <span className="label">Do this</span>
+            <span className="flip-text" style={{ color: "var(--gold-fill)", fontSize: "1.1rem" }}>{fix}</span>
+          </span>
+        </span>
+      </span>
+    </button>
+  );
+}
+
 export default function PlaybookPage() {
   return (
     <main className="page">
-      <div className="shell" style={{ maxWidth: "52rem" }}>
-        <header>
-          <span className="chip gold">free · no account needed</span>
-          <h1
-            style={{
-              fontSize: "var(--text-3xl)",
-              fontWeight: 900,
-              margin: "var(--space-4) 0 var(--space-3)",
-              letterSpacing: "-0.02em",
-            }}
-          >
-            The league-night playbook
-          </h1>
-          <p className="muted" style={{ fontSize: "var(--text-lg)", lineHeight: 1.8 }}>
+      <div className="shell guide" style={{ maxWidth: "64rem" }}>
+        {/* The cover. */}
+        <header className="wta-card gold guide-hero tilt-l" style={{ marginTop: "var(--space-4)" }}>
+          <span className="sticker">Free · no account needed</span>
+          <h1>The league-night playbook</h1>
+          <p>
             How to start a weekly competition in a room that has never had one. Nothing
             here needs Winner Takes All — we would rather you ran a league on paper than
             not at all.
           </p>
+          <span className="guide-hero-art" aria-hidden="true">🎱</span>
         </header>
 
-        <div
-          className="panel"
-          style={{ marginTop: "var(--space-6)", borderColor: "var(--gold-subtle)" }}
-        >
-          <p style={{ lineHeight: 1.9 }}>
-            We asked twenty venue owners about this product. Ten would buy it. Of the ten
-            who would not, three said the same thing, and one put it best:
-          </p>
-          <blockquote
-            style={{
-              margin: "var(--space-4) 0 0",
-              paddingLeft: "var(--space-4)",
-              borderLeft: "3px solid var(--gold)",
-              fontStyle: "italic",
-              fontSize: "var(--text-lg)",
-            }}
-          >
-            “I would be buying a scoreboard for an event that does not exist yet.”
-          </blockquote>
-          <p className="muted" style={{ marginTop: "var(--space-4)", fontSize: "var(--text-sm)" }}>
-            No feature answers that. So this was written before the offline scoring, the
-            big screen and the QR entry — all of which are useless to a room with nothing
-            on the calendar.
-          </p>
+        {/* Why this exists, and the habit it builds. */}
+        <div className="guide-split">
+          <section className="wta-card red guide-quote tilt-r">
+            <p style={{ fontSize: "var(--text-sm)", lineHeight: 1.7, opacity: 0.9 }}>
+              We asked twenty venue owners about this product. Ten would buy it. Of the ten
+              who would not, three said the same thing, and one put it best:
+            </p>
+            <span className="quote-mark" aria-hidden="true">“</span>
+            <blockquote>I would be buying a scoreboard for an event that does not exist yet.</blockquote>
+            <p style={{ fontSize: "var(--text-sm)", lineHeight: 1.7, opacity: 0.85 }}>
+              No feature answers that. So this was written before the offline scoring, the
+              big screen and the QR entry — all of which are useless to a room with nothing
+              on the calendar.
+            </p>
+          </section>
+
+          <section className="wta-card" style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+            <span className="sticker gold" style={{ alignSelf: "flex-start" }}>The whole idea</span>
+            <h2 style={{ fontSize: "var(--text-xl)", fontWeight: 900, lineHeight: 1.2 }}>
+              You are not building a tournament. You are building a habit.
+            </h2>
+            <div className="guide-versus" aria-label="Eight regulars beats forty people once">
+              <div>
+                <span className="big-num" style={{ color: "var(--gold)" }}>8</span>
+                <small>regulars, most weeks</small>
+              </div>
+              <span className="vs">BEATS</span>
+              <div>
+                <span className="big-num" style={{ color: "var(--text-muted)", textDecoration: "line-through", textDecorationColor: "var(--wta-red)", textDecorationThickness: "6px" }}>40</span>
+                <small>people, once</small>
+              </div>
+            </div>
+            <p className="muted" style={{ lineHeight: 1.8, fontSize: "var(--text-sm)" }}>
+              A one-off brings people in once and tells you nothing. A weekly night, same
+              day, same time, for six weeks, does something different: by week four people
+              arrange their Thursday around it. That is the asset — it survives a bad week,
+              a broken table and a staff change. Eight is enough for a bracket, enough for
+              atmosphere, and small enough that they all know each other by week three —
+              which is what makes them come back.
+            </p>
+          </section>
         </div>
 
-        <section style={{ marginTop: "var(--space-7)" }}>
-          <h2 style={{ fontSize: "var(--text-2xl)", fontWeight: 800 }}>
-            You are not building a tournament. You are building a habit.
-          </h2>
-          <p className="muted" style={{ marginTop: "var(--space-3)", lineHeight: 1.9 }}>
-            A one-off brings people in once and tells you nothing. A weekly night, same
-            day, same time, for six weeks, does something different: by week four people
-            arrange their Thursday around it. That is the asset — it survives a bad week,
-            a broken table and a staff change.
-          </p>
-          <p style={{ marginTop: "var(--space-4)", fontWeight: 700, fontSize: "var(--text-lg)" }}>
-            Eight regulars who come most weeks beats forty people once.
-          </p>
-          <p className="muted" style={{ marginTop: "var(--space-2)", lineHeight: 1.8 }}>
-            Eight is enough for a bracket, enough for atmosphere, and small enough that
-            they all know each other by week three — which is what makes them come back.
-          </p>
-        </section>
-
-        <div className="playbook" style={{ marginTop: "var(--space-7)" }}>
-          {WEEKS.map((week) => (
-            <article key={week.no} className="playbook-week">
-              <div className="no">{week.no}</div>
-              <div className="body">
+        {/* The weeks, as levels. */}
+        <section>
+          <div className="section-head">
+            <span className="sticker ink">5 levels</span>
+            <h2>Eight weeks, <em>level by level</em></h2>
+          </div>
+          <div className="level-track wta-deal">
+            {WEEKS.map((week) => (
+              <article key={week.no} className="wta-card level-card">
+                <span className="level-no" aria-hidden="true">{week.no}</span>
+                <span className="level-kicker">{week.kicker}</span>
                 <h3>{week.title}</h3>
                 <ul>
                   {week.points.map((point) => (
@@ -161,79 +202,80 @@ export default function PlaybookPage() {
                     </li>
                   ))}
                 </ul>
-              </div>
-            </article>
-          ))}
-        </div>
-
-        <section className="panel" style={{ marginTop: "var(--space-7)" }}>
-          <h2 style={{ fontSize: "var(--text-xl)", fontWeight: 800 }}>
-            If it has not caught by week six
-          </h2>
-          <p className="muted" style={{ fontSize: "var(--text-sm)", margin: "var(--space-2) 0 var(--space-4)" }}>
-            Be honest about which of these it is. It costs six evenings to find out, which
-            is cheap.
-          </p>
-          <div className="table-scroll">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>What you see</th>
-                  <th>Usually means</th>
-                  <th>Do this</th>
-                </tr>
-              </thead>
-              <tbody>
-                {DIAGNOSIS.map(([symptom, cause, fix]) => (
-                  <tr key={symptom}>
-                    <td>{symptom}</td>
-                    <td className="muted">{cause}</td>
-                    <td>{fix}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+              </article>
+            ))}
           </div>
         </section>
 
-        <section className="panel" style={{ marginTop: "var(--space-5)" }}>
-          <h2 style={{ fontSize: "var(--text-xl)", fontWeight: 800 }}>About the prize</h2>
-          <p style={{ marginTop: "var(--space-3)", lineHeight: 1.9 }}>
-            Make entry free and make the prize something you already sell: a Rs 500 bar tab,
-            a free round for the winner&apos;s table, a month of free table hire, or a
-            trophy that lives on your shelf with the winner&apos;s name on it.
-          </p>
-          <p className="muted" style={{ marginTop: "var(--space-3)", lineHeight: 1.8 }}>
-            Do not pool entry fees. India&apos;s Promotion and Regulation of Online Gaming
-            Act 2025, in force since 1 May 2026, prohibits games played for a stake whether
-            they turn on skill or on chance — collecting Rs 100 a head and paying the winner
-            Rs 700 is that structure, however it is described. A bar tab comes back to your
-            till anyway, which makes it better business as well as simpler.
-          </p>
-          <p className="muted" style={{ marginTop: "var(--space-3)", fontSize: "var(--text-sm)" }}>
-            What a venue does at its own counter is its own affair, and nothing here is
-            legal advice. If you are unsure how the law applies to you, ask someone who can
-            advise you properly.
-          </p>
+        {/* What to do if it has not caught. */}
+        <section>
+          <div className="section-head">
+            <span className="sticker">Week six check</span>
+            <h2>If it has not caught, <em>flip a card</em></h2>
+            <p className="muted" style={{ fontSize: "var(--text-sm)" }}>
+              Be honest about which of these it is. It costs six evenings to find out, which
+              is cheap.
+            </p>
+          </div>
+          <div className="flip-grid wta-deal">
+            {DIAGNOSIS.map(([symptom, cause, fix], i) => (
+              <FlipCard key={symptom} symptom={symptom} cause={cause} fix={fix} index={i} />
+            ))}
+          </div>
         </section>
 
-        <section style={{ marginTop: "var(--space-7)" }}>
-          <h2 style={{ fontSize: "var(--text-2xl)", fontWeight: 800 }}>
-            When the whiteboard starts to hurt
-          </h2>
-          <p className="muted" style={{ marginTop: "var(--space-3)", lineHeight: 1.9 }}>
+        {/* The prize. */}
+        <section>
+          <div className="section-head">
+            <span className="sticker gold">The prize</span>
+            <h2>What the winner <em>takes</em></h2>
+          </div>
+          <div className="guide-split">
+            <div className="wta-card gold rule-card tilt-l">
+              <span className="sticker">Do</span>
+              <h3>Free entry. A prize you already sell.</h3>
+              <ul>
+                <li>A Rs 500 bar tab</li>
+                <li>A free round for the winner&apos;s table</li>
+                <li>A month of free table hire</li>
+                <li>A trophy on your shelf with their name on it</li>
+              </ul>
+              <p>A bar tab comes back to your till anyway, which makes it better business as well as simpler.</p>
+            </div>
+            <div className="wta-card red rule-card tilt-r">
+              <span className="sticker gold">Don&apos;t</span>
+              <h3>Never pool entry fees.</h3>
+              <ul>
+                <li>Collecting Rs 100 a head and paying the winner Rs 700 is a stake, however it is described.</li>
+              </ul>
+              <p>
+                India&apos;s Promotion and Regulation of Online Gaming Act 2025, in force since
+                1 May 2026, prohibits games played for a stake whether they turn on skill or on
+                chance.
+              </p>
+              <p style={{ opacity: 0.75 }}>
+                What a venue does at its own counter is its own affair, and nothing here is
+                legal advice. If you are unsure how the law applies to you, ask someone who can
+                advise you properly.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* The way in. */}
+        <section className="wta-card gold ticket">
+          <span className="sticker ink">Admit one · week six</span>
+          <h2 style={{ marginTop: "1rem" }}>When the whiteboard starts to hurt</h2>
+          <p style={{ marginTop: "0.75rem", fontWeight: 600, lineHeight: 1.7, maxWidth: "38rem" }}>
             Around week six, with sixteen players and forty people watching, three jobs get
             annoying. That is what the software is for — and not before.
           </p>
-          <div className="h-stack" style={{ marginTop: "var(--space-5)" }}>
-            <Link className="button" href="/run" style={{ textDecoration: "none" }}>
-              Run a night now
-            </Link>
-            <Link className="button-secondary" href="/coins" style={{ textDecoration: "none" }}>
-              What players earn
-            </Link>
+          <div className="ticket-actions">
+            <Link className="ink-button" href="/run">Run a night now →</Link>
+            <Link className="ink-button ghost" href="/coins">What players earn</Link>
           </div>
-          <p className="muted" style={{ marginTop: "var(--space-4)", fontSize: "var(--text-sm)" }}>
+          <div className="perforation" aria-hidden="true" />
+          <p style={{ fontSize: "var(--text-sm)", lineHeight: 1.7, fontWeight: 600 }}>
             Entry is free on Winner Takes All and always will be — no entry fees, no
             wallet, no pooled prize money. Players earn WTA Coins for turning up and
             playing, which have no cash value and cannot be bought or withdrawn.
