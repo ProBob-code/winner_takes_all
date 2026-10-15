@@ -23,7 +23,7 @@ export const dynamic = "force-dynamic";
  * anyone who walks in later.
  */
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { backendFetch } from "@/lib/backend";
@@ -32,11 +32,34 @@ const SIZES = [4, 8, 16, 32];
 
 interface Ready {
   tournamentId: string;
-  teams: number;
-  joinCode: string;
-  joinUrl: string;
-  staffUrl: string;
-  displayUrl: string;
+  /** Unknown when the night is restored rather than just created. */
+  teams?: number;
+  /** Null if the code could not be fetched; the big screen still shows it. */
+  joinCode: string | null;
+  name?: string;
+  finished?: boolean;
+}
+
+/** A night this host started and has not finished, for picking back up. */
+interface OpenNight {
+  id: string;
+  name: string;
+  sport: string;
+}
+
+/**
+ * The night being shown lives in the address bar, not only in memory.
+ *
+ * It used to be React state alone, so a refresh — or a phone that dropped the
+ * tab while it sat in a pocket — lost the night: it was still running on the
+ * server, but the host had no way back to its links. With the id in the URL a
+ * refresh lands on the same night, and the list on the form finds any other.
+ */
+const NIGHT_PARAM = "night";
+
+function nightInUrl(): string | null {
+  if (typeof window === "undefined") return null;
+  return new URLSearchParams(window.location.search).get(NIGHT_PARAM);
 }
 
 export default function RunNightPage() {
@@ -52,6 +75,101 @@ export default function RunNightPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState<Ready | null>(null);
+  // False on the first render on both server and client, so they agree; the
+  // effect below turns it on when there is a night in the URL to restore.
+  const [restoring, setRestoring] = useState(false);
+  const [openNights, setOpenNights] = useState<OpenNight[]>([]);
+
+  /** Bring a night back from the server by id: the tournament, then its code. */
+  const restore = useCallback(
+    async (id: string) => {
+      setRestoring(true);
+      setError(null);
+      try {
+        const res = await backendFetch(`/tournaments/${encodeURIComponent(id)}`);
+        const payload: any = await res.json().catch(() => ({}));
+        if (!res.ok || !payload?.tournament) {
+          setError("That night could not be found. It may have been deleted.");
+          router.replace("/run");
+          return;
+        }
+        const t = payload.tournament;
+
+        // Reissuing hands back the code already on the screen rather than a new
+        // one, so anyone who scanned it earlier is not locked out.
+        let joinCode: string | null = null;
+        const codeRes = await backendFetch(`/tournaments/${encodeURIComponent(id)}/join-code`, {
+          method: "POST",
+        });
+        if (codeRes.status === 401) {
+          router.push("/login");
+          return;
+        }
+        if (codeRes.ok) {
+          const codePayload: any = await codeRes.json().catch(() => ({}));
+          joinCode = codePayload?.code ?? null;
+        }
+
+        setReady({
+          tournamentId: t.id,
+          teams: t.joinedPlayers > 0 ? t.joinedPlayers : undefined,
+          joinCode,
+          name: t.name,
+          finished: t.status === "COMPLETED" || !!t.completedAt,
+        });
+      } catch {
+        setError("Could not reach the server to load that night. Refresh to try again.");
+      } finally {
+        setRestoring(false);
+      }
+    },
+    [router]
+  );
+
+  // A refresh, or a link someone kept: open the night named in the URL.
+  useEffect(() => {
+    const id = nightInUrl();
+    if (id) void restore(id);
+  }, [restore]);
+
+  // Nights this host started and has not finished, so one is never lost.
+  useEffect(() => {
+    if (ready) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const [meRes, listRes] = await Promise.all([
+          backendFetch("/user/profile"),
+          backendFetch("/tournaments"),
+        ]);
+        if (!meRes.ok || !listRes.ok) return;
+        const me: any = await meRes.json().catch(() => ({}));
+        const list: any = await listRes.json().catch(() => ({}));
+        const myId = me?.user?.id;
+        if (!myId || !Array.isArray(list?.tournaments)) return;
+        const mine = list.tournaments
+          .filter((t: any) => t.hostId === myId && t.status !== "COMPLETED" && !t.completedAt)
+          .slice(0, 6)
+          .map((t: any) => ({ id: t.id, name: t.name, sport: t.sport }));
+        if (!cancelled) setOpenNights(mine);
+      } catch {
+        /* the list is a convenience; the form works without it */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [ready]);
+
+  const openNight = (id: string) => {
+    router.replace(`/run?${NIGHT_PARAM}=${encodeURIComponent(id)}`);
+    void restore(id);
+  };
+
+  const runAnother = () => {
+    setReady(null);
+    router.replace("/run");
+  };
 
   const go = async () => {
     setBusy(true);
@@ -86,7 +204,14 @@ export default function RunNightPage() {
         setError(payload?.message || "That did not go through.");
         return;
       }
-      setReady(payload);
+      setReady({
+        tournamentId: payload.tournamentId,
+        teams: payload.teams,
+        joinCode: payload.joinCode ?? null,
+        name: name.trim() || undefined,
+      });
+      // Written to the address bar so a refresh comes back to this night.
+      router.replace(`/run?${NIGHT_PARAM}=${encodeURIComponent(payload.tournamentId)}`);
     } catch {
       setError("Could not reach the server. Check your connection and try again.");
     } finally {
@@ -98,7 +223,9 @@ export default function RunNightPage() {
     return (
       <main className="page">
         <div className="shell" style={{ maxWidth: "46rem" }}>
-          <span className="chip good">live now</span>
+          <span className={ready.finished ? "chip" : "chip good"}>
+            {ready.finished ? "finished" : "live now"}
+          </span>
           <h1
             style={{
               fontSize: "var(--text-3xl)",
@@ -106,10 +233,15 @@ export default function RunNightPage() {
               margin: "var(--space-3) 0 var(--space-2)",
             }}
           >
-            The night is running.
+            {ready.finished ? "This night has finished." : "The night is running."}
           </h1>
           <p className="muted">
-            {ready.teams} playing, first frames drawn. Open these on the right screens.
+            {ready.name ? <strong style={{ color: "var(--text-primary)" }}>{ready.name}. </strong> : null}
+            {ready.finished
+              ? "The results are on the full controls page."
+              : ready.teams
+                ? `${ready.teams} playing, first frames drawn. Open these on the right screens.`
+                : "Open these on the right screens."}
           </p>
 
           <div className="auto-grid" style={{ marginTop: "var(--space-6)" }}>
@@ -157,7 +289,7 @@ export default function RunNightPage() {
                   letterSpacing: "0.12em",
                 }}
               >
-                {ready.joinCode}
+                {ready.joinCode ?? "On the big screen"}
               </div>
             </div>
           </div>
@@ -170,10 +302,20 @@ export default function RunNightPage() {
             >
               Full controls
             </Link>
-            <button type="button" className="button-secondary" onClick={() => setReady(null)}>
+            <button type="button" className="button-secondary" onClick={runAnother}>
               Run another
             </button>
           </div>
+        </div>
+      </main>
+    );
+  }
+
+  if (restoring) {
+    return (
+      <main className="page">
+        <div className="shell" style={{ maxWidth: "40rem" }}>
+          <p className="muted">Bringing your night back…</p>
         </div>
       </main>
     );
@@ -186,6 +328,31 @@ export default function RunNightPage() {
         <p className="muted" style={{ marginTop: "var(--space-2)" }}>
           Three questions, then it is live. Free to enter, as every tournament here is.
         </p>
+
+        {openNights.length > 0 && (
+          <section className="panel" style={{ marginTop: "var(--space-5)" }}>
+            <h2 style={{ fontSize: "var(--text-lg)", fontWeight: 800 }}>Your nights in progress</h2>
+            <p className="muted" style={{ fontSize: "var(--text-sm)", margin: "var(--space-1) 0 var(--space-3)" }}>
+              Pick one up where you left it.
+            </p>
+            <div className="v-stack" style={{ gap: "var(--space-2)" }}>
+              {openNights.map((night) => (
+                <button
+                  key={night.id}
+                  type="button"
+                  className="button-secondary"
+                  onClick={() => openNight(night.id)}
+                  style={{ justifyContent: "space-between", width: "100%" }}
+                >
+                  <span>{night.name}</span>
+                  <span className="muted" style={{ fontSize: "var(--text-xs)" }}>
+                    {night.sport === "FOOTBALL" ? "Football" : "8-ball"} · reopen →
+                  </span>
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
 
         <div className="v-stack" style={{ marginTop: "var(--space-6)", gap: "var(--space-5)" }}>
           <div className="field">
