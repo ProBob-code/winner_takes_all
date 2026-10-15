@@ -3,7 +3,6 @@
 export const dynamic = "force-dynamic";
 
 import { useEffect, useState } from "react";
-import { formatCoins } from "@/lib/format";
 import { getApiUrl } from "@/lib/api-config";
 
 type LeaderboardEntry = {
@@ -29,8 +28,6 @@ const initials = (name: string) =>
     .join("")
     .toUpperCase() || "?";
 
-/* Coins, not rupees — nothing on this board is money. */
-const inr = (amount: string | number) => formatCoins(Number(amount || 0));
 
 export default function LeaderboardPage() {
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
@@ -101,9 +98,9 @@ export default function LeaderboardPage() {
     (acc, e) => ({
       players: acc.players + 1,
       matches: acc.matches + (e.played || 0),
-      paid: acc.paid + Number(e.earnings?.amount || 0),
+      titles: acc.titles + (e.tournamentWins || 0),
     }),
-    { players: 0, matches: 0, paid: 0 }
+    { players: 0, matches: 0, titles: 0 }
   );
 
   return (
@@ -128,8 +125,8 @@ export default function LeaderboardPage() {
               <span className="lb-total-label">MATCHES</span>
             </div>
             <div className="lb-total">
-              <span className="lb-total-value gold">{inr(totals.paid)}</span>
-              <span className="lb-total-label">PAID OUT</span>
+              <span className="lb-total-value gold">{totals.titles}</span>
+              <span className="lb-total-label">TITLES WON</span>
             </div>
           </div>
         </div>
@@ -152,7 +149,6 @@ export default function LeaderboardPage() {
                     {entry.played} played · {entry.wins}W
                     {entry.tournamentWins > 0 ? ` · 🏆 ${entry.tournamentWins}` : ""}
                   </div>
-                  <div className="lb-pod-earnings">{inr(entry.earnings.amount)}</div>
                   <div className="lb-pillar" />
                 </div>
               );
@@ -170,7 +166,6 @@ export default function LeaderboardPage() {
             <span className="num">W/L</span>
             <span className="num">SCORE</span>
             <span className="num">POINTS</span>
-            <span className="num">EARNINGS</span>
           </div>
 
           {entries.length === 0 ? (
@@ -219,7 +214,6 @@ export default function LeaderboardPage() {
                 </span>
                 <span className="num" data-label="Score">{entry.totalScore}</span>
                 <span className="num points" data-label="Points">{entry.points}</span>
-                <span className="num earnings" data-label="Earnings">{inr(entry.earnings.amount)}</span>
               </div>
             ))
           )}
@@ -262,6 +256,8 @@ export default function LeaderboardPage() {
           gap: 1rem;
           margin-bottom: 2rem;
         }
+        /* The podium as three cards: gold for the champion, the other two
+           leaning in on either side. */
         .lb-pod {
           position: relative;
           display: flex;
@@ -269,23 +265,29 @@ export default function LeaderboardPage() {
           align-items: center;
           text-align: center;
           padding: 1.5rem 1rem 1.25rem;
-          border-radius: 20px 20px 12px 12px;
-          background: rgba(255, 255, 255, 0.025);
-          border: 1px solid rgba(255, 255, 255, 0.06);
-          transition: transform 0.3s ease, border-color 0.3s ease;
+          border-radius: 22px;
+          background: var(--bg-card);
+          border: 2px solid var(--card-offset-hot);
+          box-shadow: 7px 7px 0 var(--card-offset-hot);
+          transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
-        .lb-pod:hover { transform: translateY(-6px); }
+        .lb-pod.place-2 { transform: rotate(-2deg); }
+        .lb-pod.place-3 { transform: rotate(2deg); }
+        .lb-pod:hover { transform: translate(-3px, -5px) rotate(0deg); box-shadow: 11px 11px 0 var(--card-offset-hot); }
         .lb-pod.place-1 {
           padding-top: 2.25rem;
-          border-color: rgba(245, 158, 11, 0.45);
-          background: linear-gradient(180deg, rgba(245, 158, 11, 0.12), rgba(255, 255, 255, 0.02));
-          box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+          background: var(--gradient-fill);
+          color: var(--on-gold);
+          border-color: var(--on-gold);
+          box-shadow: 8px 8px 0 var(--on-gold);
         }
+        .lb-pod.place-1 .lb-pod-points,
+        .lb-pod.place-1 .lb-pod-meta,
+        .lb-pod.place-1 .lb-pod-name { color: var(--on-gold); }
         .lb-pod-medal { font-size: 2rem; line-height: 1; margin-bottom: 0.5rem; }
         .lb-pod-name { font-weight: 800; font-size: 1rem; margin-top: 0.6rem; }
         .lb-pod-points { font-size: 0.8rem; font-weight: 800; color: var(--accent-light); margin-top: 2px; }
         .lb-pod-meta { font-size: 0.68rem; color: var(--text-muted); margin-top: 6px; }
-        .lb-pod-earnings { font-size: 1rem; font-weight: 900; color: var(--gold); margin-top: 0.75rem; }
         .lb-pillar { display: none; }
 
         /* Board */
@@ -297,7 +299,7 @@ export default function LeaderboardPage() {
         }
         .lb-row {
           display: grid;
-          grid-template-columns: 52px minmax(150px, 2fr) 80px 80px 96px 88px 88px 110px;
+          grid-template-columns: 52px minmax(150px, 2fr) 80px 80px 96px 88px 88px;
           align-items: center;
           gap: 0.5rem;
           padding: 0.9rem 1.25rem;
@@ -344,7 +346,6 @@ export default function LeaderboardPage() {
 
         .num { text-align: right; font-variant-numeric: tabular-nums; font-size: 0.88rem; }
         .points { font-weight: 900; }
-        .earnings { font-weight: 900; color: var(--gold); }
         .win { color: var(--gold); font-weight: 800; }
         .loss { color: #ef4444; font-weight: 800; }
         .dim { color: var(--text-muted); }
@@ -353,15 +354,15 @@ export default function LeaderboardPage() {
         .lb-empty { padding: 4rem 2rem; text-align: center; }
         .lb-empty-icon { font-size: 3rem; opacity: 0.35; margin-bottom: 1rem; }
 
-        /* Narrow screens: keep the name and the money, fold the rest into the
-           line under the name. */
+        /* Narrow screens: keep the name and the points, fold the rest into
+           the line under the name. */
         @media (max-width: 860px) {
           .lb-podium { grid-template-columns: 1fr; }
           .lb-pod { border-radius: 16px; padding: 1.25rem; }
           .lb-row { grid-template-columns: 44px 1fr auto; padding: 0.85rem 1rem; }
           .lb-head-row { display: none; }
           .lb-inline-meta { display: block; }
-          .num:not(.earnings) { display: none; }
+          .num:not(.points) { display: none; }
         }
       `}</style>
     </main>

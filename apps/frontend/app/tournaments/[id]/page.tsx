@@ -8,6 +8,8 @@ import { ShareTournament } from "@/components/share-tournament";
 import { DeleteTournamentDialog } from "@/components/delete-tournament-dialog";
 import { HostedArena, type ArenaMatch, type ArenaTeam } from "@/components/hosted-arena";
 import "@/components/tournament-engine.css";
+import { formatCoins } from "@/lib/format";
+import { useCoinSchedule, championCoins } from "@/lib/coin-schedule";
 
 // --- Types ---
 
@@ -49,6 +51,7 @@ export default function TournamentDetailPage() {
   const [startError, setStartError] = useState<string | null>(null);
 
   const routeParams = useParams<{ id: string }>();
+  const coinSchedule = useCoinSchedule();
   const routeId = routeParams?.id;
 
   // The match clock counts down against start_time, which is the server's
@@ -154,6 +157,13 @@ export default function TournamentDetailPage() {
   // Tournaments finished before prizes were paid out carry an upper-case
   // status, so this is matched either way.
   const isClosed = String(tournament.status || "").toLowerCase() === "completed";
+
+  // What the night pays in WTA Coins. The field is the drawn bracket once it
+  // has started, and the full bracket before, so the figure shown is the one
+  // a full night pays.
+  const field = engineState?.teams?.length || tournament.maxPlayers || 2;
+  const championPrize = coinSchedule ? championCoins(coinSchedule, field) : null;
+  const matchWinCoins = coinSchedule ? coinSchedule.framePlayed + coinSchedule.frameWon : null;
 
   const formatLabel =
     ({
@@ -262,25 +272,27 @@ export default function TournamentDetailPage() {
               }}
             >
               <div style={{ fontSize: "0.62rem", letterSpacing: "1.5px", opacity: 0.7, fontWeight: 800 }}>
-                {result ? (result.splitWays > 1 ? "POT SHARED BY" : "WON BY") : "WINNER TAKES"}
+                {result ? (result.splitWays > 1 ? "SHARED BY" : "WON BY") : "WINNER TAKES"}
               </div>
               {result ? (
                 <>
                   <div style={{ fontSize: "1.5rem", fontWeight: 900, color: "var(--gold)", lineHeight: 1.2 }}>
                     {result.winners.map((w: any) => w.name).join(" & ")}
                   </div>
-                  <div className="muted" style={{ fontSize: "0.72rem", marginTop: "4px" }}>
-                    Rs {Number(result.prize.amount).toLocaleString("en-IN")}
-                    {result.splitWays > 1 ? ` split ${result.splitWays} ways` : ""} · paid to wallet
-                  </div>
+                  {championPrize !== null && (
+                    <div className="muted" style={{ fontSize: "0.72rem", marginTop: "4px" }}>
+                      {formatCoins(championPrize)} WTA Coins for the night
+                    </div>
+                  )}
                 </>
               ) : (
                 <>
                   <div style={{ fontSize: "2.2rem", fontWeight: 900, color: "var(--gold)", lineHeight: 1.1 }}>
-                    Rs {winnerTakes.toLocaleString("en-IN")}
+                    {championPrize !== null ? formatCoins(championPrize) : "—"}
+                    <span style={{ fontSize: "0.9rem", marginLeft: "0.35rem" }}>coins</span>
                   </div>
                   <div className="muted" style={{ fontSize: "0.72rem", marginTop: "2px" }}>
-                    from a Rs {pool.toLocaleString("en-IN")} pool
+                    {matchWinCoins !== null ? `+${formatCoins(matchWinCoins)} for every match won` : "WTA Coins"}
                   </div>
                 </>
               )}
@@ -296,19 +308,12 @@ export default function TournamentDetailPage() {
             }}
           >
             {[
-              // Entry is free and no pot is pooled, so these two read as "Rs 0"
-              // on every tournament. A row of zero-rupee figures invites the
-              // question of when they might not be zero, which is exactly the
-              // impression a no-stakes platform should not give. Shown only on
-              // the historical tournaments that actually carried a fee.
-              ...(Number(tournament.entryFee?.amount ?? 0) > 0
-                ? [{
-                    label: "ENTRY FEE",
-                    value: "Rs " + Number(tournament.entryFee?.amount ?? 0).toLocaleString("en-IN"),
-                  }]
-                : [{ label: "ENTRY", value: "Free" }]),
-              ...(pool > 0
-                ? [{ label: "PRIZE POOL", value: "Rs " + pool.toLocaleString("en-IN"), gold: true }]
+              // No money figure appears here at all, not even an old fee on a
+              // historical tournament: the prize is WTA Coins, which is what the
+              // champion's figure shows.
+              { label: "ENTRY", value: "Free" },
+              ...(championPrize !== null
+                ? [{ label: "CHAMPION", value: `${formatCoins(championPrize)} coins`, gold: true }]
                 : []),
               { label: "PLAYERS", value: `${tournament.joinedPlayers}/${tournament.maxPlayers}` },
               { label: "TEAM SIZE", value: tournament.teamSize > 1 ? `${tournament.teamSize} a side` : "Solo" },
@@ -408,42 +413,55 @@ export default function TournamentDetailPage() {
           </div>
 
           <div className="glass-morphism" style={{ padding: "1.75rem" }}>
-            <h2 className="section-heading">Where the money goes</h2>
+            <h2 className="section-heading">What the coins pay</h2>
 
-            {[
-              { label: `Entry fee, per player`, value: "Rs " + Number(tournament.entryFee?.amount ?? 0).toLocaleString("en-IN") },
-              { label: `${tournament.joinedPlayers} joined so far`, value: "Rs " + pool.toLocaleString("en-IN"), muted: true },
-              { label: `Platform fee (${feePercent}%)`, value: "-Rs " + (pool - winnerTakes).toLocaleString("en-IN"), muted: true },
-            ].map((row) => (
-              <div
-                key={row.label}
-                style={{
-                  display: "flex", justifyContent: "space-between", gap: "1rem",
-                  padding: "0.6rem 0", fontSize: "0.86rem",
-                  color: row.muted ? "var(--text-muted)" : undefined,
-                }}
-              >
-                <span>{row.label}</span>
-                <span style={{ fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>{row.value}</span>
-              </div>
-            ))}
+            {coinSchedule ? (
+              <>
+                {[
+                  { label: "Turn up", value: `+${formatCoins(coinSchedule.nightPlayed)}`, muted: true },
+                  { label: "Play a match, win or lose", value: `+${formatCoins(coinSchedule.framePlayed)}`, muted: true },
+                  { label: "Win a match", value: `+${formatCoins(coinSchedule.frameWon)}` },
+                ].map((row) => (
+                  <div
+                    key={row.label}
+                    style={{
+                      display: "flex", justifyContent: "space-between", gap: "1rem",
+                      padding: "0.6rem 0", fontSize: "0.86rem",
+                      color: row.muted ? "var(--text-muted)" : undefined,
+                    }}
+                  >
+                    <span>{row.label}</span>
+                    <span style={{ fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>{row.value}</span>
+                  </div>
+                ))}
 
-            <div
-              style={{
-                display: "flex", justifyContent: "space-between", gap: "1rem",
-                marginTop: "0.6rem", paddingTop: "0.9rem",
-                borderTop: "1px solid var(--glass-border-color)",
-              }}
-            >
-              <span style={{ fontWeight: 900 }}>Winner takes</span>
-              <span style={{ fontWeight: 900, color: "var(--gold)", fontVariantNumeric: "tabular-nums" }}>
-                Rs {winnerTakes.toLocaleString("en-IN")}
-              </span>
-            </div>
+                <div
+                  style={{
+                    display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: "1rem",
+                    marginTop: "0.6rem", paddingTop: "0.9rem",
+                    borderTop: "1px solid var(--glass-border-color)",
+                  }}
+                >
+                  <span style={{ fontWeight: 900 }}>Win the night</span>
+                  <span style={{ fontWeight: 900, color: "var(--gold)", fontVariantNumeric: "tabular-nums", fontSize: "1.2rem" }}>
+                    +{formatCoins(championPrize ?? 0)}
+                  </span>
+                </div>
 
-            <p className="muted" style={{ fontSize: "0.74rem", marginTop: "0.9rem", lineHeight: 1.5 }}>
-              The pool grows as more players join, so this figure rises until entries close.
-            </p>
+                <p className="muted" style={{ fontSize: "0.74rem", marginTop: "0.9rem", lineHeight: 1.5 }}>
+                  {coinSchedule.perPlayer
+                    ? `${formatCoins(coinSchedule.nightWon)} for every player in the night, so the champion takes more than everyone else combined. `
+                    : ""}
+                  Coins are free to earn and have no cash value: they cannot be bought,
+                  withdrawn or staked, and losing never costs any.
+                </p>
+              </>
+            ) : (
+              <p className="muted" style={{ fontSize: "0.86rem", lineHeight: 1.6 }}>
+                Small coins for every match won; the champion takes the majority. Coins have no
+                cash value.
+              </p>
+            )}
           </div>
         </div>
 

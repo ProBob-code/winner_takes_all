@@ -2122,7 +2122,7 @@ async function awardNightCoins(
 
     for (const userId of winnerUserIds) {
       if (!userId) continue;
-      for (const award of awardsForNight(tournament.name)) {
+      for (const award of awardsForNight(tournament.name, competitors)) {
         await store.awardCoins({
           userId,
           reason: award.reason,
@@ -4496,6 +4496,8 @@ app.get("/api/coins/rules", (c) => {
     symbol: "WTA",
     rules: COIN_RULES,
     awards: COIN_AWARDS,
+    // NIGHT_WON above is per player; the champion is paid it times the field.
+    nightWonPerPlayer: true,
     dailyCap: DAILY_COIN_CAP,
     onlineDailyCap: ONLINE_DAILY_CAP,
     minPlayers: MIN_PLAYERS_FOR_COINS,

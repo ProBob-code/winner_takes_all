@@ -61,12 +61,16 @@
  * WHAT THE ECONOMY IS FOR
  * ════════════════════════════════════════════════════════════════════════════
  *
- * Not to identify the best player — the league table already does that, better.
- * The business problem is a venue's Thursday habit, so the award schedule pays
- * far more for *turning up repeatedly* than for *winning*. A regular who loses
- * every week still accumulates steadily; a visiting shark who wins once and
- * never returns does not out-earn them. That is deliberate, and it is the whole
- * reason the schedule looks "unfair" as a measure of skill.
+ * Two things, in this order. The night's winner should feel it: they take the
+ * majority of the coins a night pays, as the name of the platform promises.
+ * And everyone else should still leave with something — turning up and every
+ * frame pay, win or lose — because the business problem is a venue's Thursday
+ * habit, and a night that pays a loser nothing is a night they skip.
+ *
+ * Coins are never deducted on a loss and never staked; the champion's larger
+ * share comes from an award, not from anyone else's balance. (The schedule
+ * used to weight attendance over winning, with a flat 100k for the night; it
+ * was rebalanced in October 2026 so the champion takes the majority.)
  */
 
 /** One reason a coin was awarded. The ledger stores these verbatim. */
@@ -107,22 +111,29 @@ export const COIN_UNIT = 1_000;
 /**
  * The award schedule.
  *
- * Weighted towards attendance over victory, for the reason above. The ratio
- * that matters: a player who turns up and loses all four of their frames takes
- * 10k + 4×5k = 30k coins, while a player who turns up and wins all four takes
- * 10k + 4×(5k+15k) = 90k. Three times as much for winning everything, not
- * thirty — enough to be worth chasing, not enough to make a losing night
- * pointless.
+ * Small coins for every match, the majority for the champion. Everyone who
+ * plays still earns — turning up and every frame pay, win or lose, so a losing
+ * night is never worth nothing — but a match win is a small top-up, and the
+ * night's winner takes more than everyone else in the room put together.
+ *
+ * The champion's award scales with the field (see `nightWinAmount`), because a
+ * flat figure cannot hold a majority: at 50k per player it does at every size.
+ * With eight players the champion takes about 73% of the night's coins, with
+ * sixteen about 69%, with thirty-two about 66%.
  */
 export const COIN_AWARDS: Record<CoinReason, number> = {
   /** Playing a frame at all, win or lose. Never negative. */
   FRAME_PLAYED: 5 * COIN_UNIT,
-  /** On top of FRAME_PLAYED, so a win is worth 20k in total. */
-  FRAME_WON: 15 * COIN_UNIT,
+  /** On top of FRAME_PLAYED, so a match win is worth 15k in total. Small. */
+  FRAME_WON: 10 * COIN_UNIT,
   /** Turning up: paid once per night, on a player's first frame. */
   NIGHT_PLAYED: 10 * COIN_UNIT,
-  /** Taking the night. */
-  NIGHT_WON: 100 * COIN_UNIT,
+  /**
+   * Taking the night, PER PLAYER in it. The award is this times the field —
+   * see `nightWinAmount` — so the champion's share stays a majority however
+   * many play.
+   */
+  NIGHT_WON: 50 * COIN_UNIT,
   /** Clearing all seven and the black in one frame, 8-ball only. */
   CLEARANCE: 50 * COIN_UNIT,
   /** Three league nights in a row at the same venue. */
@@ -305,13 +316,30 @@ export function awardsForFrame(args: {
   return awards;
 }
 
+/**
+ * What the champion of a night of `competitors` players is paid.
+ *
+ * Everyone else in a night earns at most 10k for turning up plus 15k a match,
+ * and a knockout of n players has n − 1 matches, so the rest of the room takes
+ * under 30k per player between them. 50k per player is therefore always more
+ * than everyone else combined: the majority, at any size.
+ *
+ * Never less than a two-player night, so a short-handed bracket still pays.
+ */
+export function nightWinAmount(competitors: number): number {
+  const field = Math.max(MIN_PLAYERS_FOR_COINS, Math.floor(competitors) || 0);
+  return COIN_AWARDS.NIGHT_WON * field;
+}
+
 /** What taking the night earns. */
-export function awardsForNight(tournamentName?: string): CoinAward[] {
+export function awardsForNight(tournamentName?: string, competitors = MIN_PLAYERS_FOR_COINS): CoinAward[] {
   return [
     {
       reason: "NIGHT_WON",
-      amount: COIN_AWARDS.NIGHT_WON,
-      description: tournamentName ? `Won ${tournamentName}` : "Won the night",
+      amount: nightWinAmount(competitors),
+      description: tournamentName
+        ? `Won ${tournamentName} (${Math.max(MIN_PLAYERS_FOR_COINS, competitors)} players)`
+        : "Won the night",
     },
   ];
 }

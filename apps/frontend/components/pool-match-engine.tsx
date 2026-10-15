@@ -41,7 +41,10 @@ export function PoolMatchEngine({
 
   return (
     <div className="pool-match-panel" style={{ width: '100%' }}>
-      <div className="battle-view" style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: '24px', alignItems: 'center' }}>
+      {/* Laid out by .battle-view in tournament-engine.css: side by side on a
+          wide screen, stacked on a phone. An inline grid here used to pin it
+          to three columns at every width, which pushed both pods off a phone. */}
+      <div className="battle-view">
         <div className="pod-wrapper red">
           <TeamPod
             teamName={getTeamName(match.team_a_id)}

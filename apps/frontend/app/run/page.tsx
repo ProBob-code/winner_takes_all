@@ -244,9 +244,11 @@ export default function RunNightPage() {
                 : "Open these on the right screens."}
           </p>
 
-          <div className="auto-grid" style={{ marginTop: "var(--space-6)" }}>
-            <div className="panel v-stack">
-              <h2 style={{ fontSize: "var(--text-lg)", fontWeight: 700 }}>On the wall</h2>
+          {/* Dealt as three cards: the wall, the scorer, the door. */}
+          <div className="auto-grid" style={{ marginTop: "var(--space-6)", gap: "1.75rem" }}>
+            <div className="wta-card tilt-l v-stack">
+              <span className="sticker ink" style={{ alignSelf: "flex-start" }}>1 · The wall</span>
+              <h2 style={{ fontSize: "var(--text-lg)", fontWeight: 900 }}>On the wall</h2>
               <p className="muted" style={{ fontSize: "var(--text-sm)", flex: 1 }}>
                 The live score, the clock, the table and the join code. Nothing to tap, so
                 it is safe to leave unattended.
@@ -260,9 +262,10 @@ export default function RunNightPage() {
               </Link>
             </div>
 
-            <div className="panel v-stack">
-              <h2 style={{ fontSize: "var(--text-lg)", fontWeight: 700 }}>Whoever is scoring</h2>
-              <p className="muted" style={{ fontSize: "var(--text-sm)", flex: 1 }}>
+            <div className="wta-card red tilt-r v-stack">
+              <span className="sticker gold" style={{ alignSelf: "flex-start" }}>2 · The table</span>
+              <h2 style={{ fontSize: "var(--text-lg)", fontWeight: 900 }}>Whoever is scoring</h2>
+              <p style={{ fontSize: "var(--text-sm)", flex: 1, opacity: 0.9 }}>
                 Big buttons, scoring only, and it keeps working if the wifi drops. Send
                 this link to the member of staff on the table.
               </p>
@@ -275,9 +278,10 @@ export default function RunNightPage() {
               </Link>
             </div>
 
-            <div className="panel v-stack">
-              <h2 style={{ fontSize: "var(--text-lg)", fontWeight: 700 }}>Anyone walking in</h2>
-              <p className="muted" style={{ fontSize: "var(--text-sm)", flex: 1 }}>
+            <div className="wta-card gold tilt-l v-stack">
+              <span className="sticker" style={{ alignSelf: "flex-start" }}>3 · The door</span>
+              <h2 style={{ fontSize: "var(--text-lg)", fontWeight: 900 }}>Anyone walking in</h2>
+              <p style={{ fontSize: "var(--text-sm)", flex: 1, fontWeight: 600 }}>
                 The code is already on the big screen. They scan it, type a name and they
                 are in — no account, free to enter.
               </p>

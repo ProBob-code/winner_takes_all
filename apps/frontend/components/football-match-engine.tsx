@@ -515,7 +515,8 @@ export function FootballMatchEngine({
       )}
 
       {/* 📊 Teams Pods (Rosters, Cards, & Controls) */}
-      <div className="battle-view mt-8" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+      {/* Laid out by .battle-view in tournament-engine.css, so it stacks on a phone. */}
+      <div className="battle-view mt-8">
         <div className="pod-wrapper red">
           <FootballTeamPod 
             teamName={getTeamName(match.team_a_id)}

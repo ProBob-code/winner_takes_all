@@ -80,7 +80,7 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        <div className="dashboard-grid" style={{ gridTemplateColumns: "1fr 1fr", gap: "2rem" }}>
+        <div className="dashboard-grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 20rem), 1fr))", gap: "2rem" }}>
           {/* Transfer Card */}
           <div className="panel slide-in dashboard-card p-6" style={{ animationDelay: "0.1s", background: "var(--bg-surface)", border: "1px solid var(--glass-border-color)", padding: "2.5rem" }}>
             <div className="card-header" style={{ marginBottom: "2rem" }}>

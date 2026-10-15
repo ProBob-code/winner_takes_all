@@ -22,6 +22,13 @@ import { getApiUrl } from "@/lib/api-config";
  */
 const BARE_ROUTES = ["/display/", "/staff/", "/join/", "/play/"];
 
+/**
+ * The only pages that carry the footer: the landing page and, once signed in,
+ * the dashboard, which is what the nav calls Home. Everywhere else the policy
+ * links and the platform statement were a wall of text under every screen.
+ */
+const FOOTER_ROUTES = ["/", "/dashboard"];
+
 function isBare(pathname: string | null): boolean {
   if (!pathname) return false;
   return BARE_ROUTES.some((prefix) => pathname.startsWith(prefix));
@@ -64,6 +71,7 @@ export function LayoutClient({ children }: { children: React.ReactNode }) {
           {children}
         </div>
 
+        {FOOTER_ROUTES.includes(pathname || "") ? (
         <footer style={{
           padding: "4rem 2rem",
           textAlign: "center",
@@ -105,6 +113,13 @@ export function LayoutClient({ children }: { children: React.ReactNode }) {
             </span>
           </div>
         </footer>
+        ) : (
+          // The build stamp, kept off-screen on every other page so a deploy
+          // can still be checked from any URL.
+          <span hidden data-build={process.env.NEXT_PUBLIC_BUILD_SHA || "dev"}>
+            build {process.env.NEXT_PUBLIC_BUILD_SHA || "dev"}
+          </span>
+        )}
       </div>
 
       <MobileNav user={user} />

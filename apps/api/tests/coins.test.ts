@@ -9,6 +9,7 @@ import {
   applyDailyCap,
   awardsForFrame,
   awardsForNight,
+  nightWinAmount,
   awardsForOnlineGame,
   ONLINE_DAILY_CAP,
   ONLINE_REASONS,
@@ -148,12 +149,12 @@ describe("applyDailyCap", () => {
   });
 
   it("leaves a real league night well inside the cap", () => {
-    // Sixteen frames, all won, plus the night: a heavy evening must not be
-    // throttled by an anti-farming guard aimed at empty brackets.
+    // Sixteen frames, all won: a heavy evening must not be throttled by an
+    // anti-farming guard aimed at empty brackets. The champion's award is
+    // paid outside the cap, so it is not counted here.
     const night =
       COIN_AWARDS.NIGHT_PLAYED +
-      16 * (COIN_AWARDS.FRAME_PLAYED + COIN_AWARDS.FRAME_WON) +
-      COIN_AWARDS.NIGHT_WON;
+      16 * (COIN_AWARDS.FRAME_PLAYED + COIN_AWARDS.FRAME_WON);
     expect(night).toBeLessThan(DAILY_COIN_CAP);
   });
 
@@ -181,9 +182,10 @@ describe("the denomination", () => {
 
   it("pays the figures the schedule promises", () => {
     expect(COIN_AWARDS.FRAME_PLAYED).toBe(5_000);
-    expect(COIN_AWARDS.FRAME_WON).toBe(15_000);
+    expect(COIN_AWARDS.FRAME_WON).toBe(10_000);
     expect(COIN_AWARDS.NIGHT_PLAYED).toBe(10_000);
-    expect(COIN_AWARDS.NIGHT_WON).toBe(100_000);
+    // Per player in the night; see nightWinAmount.
+    expect(COIN_AWARDS.NIGHT_WON).toBe(50_000);
     expect(COIN_AWARDS.CLEARANCE).toBe(50_000);
     expect(COIN_AWARDS.STREAK).toBe(75_000);
     expect(COIN_AWARDS.SEASON_WON).toBe(500_000);
@@ -197,22 +199,19 @@ describe("the denomination", () => {
     }
   });
 
-  it("leaves every ratio exactly as it was before the rescale", () => {
+  it("pins the ratios of the schedule", () => {
     // A redenomination that changed a ratio would be a balance change wearing
-    // a redenomination's clothes. These are the ratios from the original
-    // schedule, and they must survive any future change to COIN_UNIT.
-    expect(COIN_AWARDS.FRAME_WON / COIN_AWARDS.FRAME_PLAYED).toBe(3);
-    expect(COIN_AWARDS.NIGHT_WON / COIN_AWARDS.FRAME_PLAYED).toBe(20);
-    expect(COIN_AWARDS.SEASON_WON / COIN_AWARDS.NIGHT_WON).toBe(5);
-    expect(DAILY_COIN_CAP / COIN_AWARDS.NIGHT_WON).toBe(10);
+    // a redenomination's clothes. These must survive any change to COIN_UNIT.
+    expect(COIN_AWARDS.FRAME_WON / COIN_AWARDS.FRAME_PLAYED).toBe(2);
+    expect(COIN_AWARDS.NIGHT_WON / COIN_AWARDS.FRAME_PLAYED).toBe(10);
+    expect(DAILY_COIN_CAP / COIN_AWARDS.NIGHT_WON).toBe(20);
   });
 
-  it("keeps a whole night comfortably inside the cap at the new scale", () => {
+  it("keeps a whole night of frames comfortably inside the cap", () => {
     const heavyNight =
       COIN_AWARDS.NIGHT_PLAYED +
-      16 * (COIN_AWARDS.FRAME_PLAYED + COIN_AWARDS.FRAME_WON) +
-      COIN_AWARDS.NIGHT_WON;
-    expect(heavyNight).toBe(430_000);
+      16 * (COIN_AWARDS.FRAME_PLAYED + COIN_AWARDS.FRAME_WON);
+    expect(heavyNight).toBe(250_000);
     expect(heavyNight).toBeLessThan(DAILY_COIN_CAP);
   });
 });
@@ -253,8 +252,7 @@ describe("online play earns, but offline is clearly worth more", () => {
     // cannot beat turning up once.
     const oneNight =
       COIN_AWARDS.NIGHT_PLAYED +
-      8 * (COIN_AWARDS.FRAME_PLAYED + COIN_AWARDS.FRAME_WON) +
-      COIN_AWARDS.NIGHT_WON;
+      8 * (COIN_AWARDS.FRAME_PLAYED + COIN_AWARDS.FRAME_WON);
     expect(ONLINE_DAILY_CAP).toBeLessThan(oneNight);
   });
 
@@ -363,7 +361,8 @@ describe("the streak bonus", () => {
     // Turning up repeatedly should beat a single good result, without
     // outranking actually taking a tournament.
     expect(COIN_AWARDS.STREAK).toBeGreaterThan(COIN_AWARDS.FRAME_WON);
-    expect(COIN_AWARDS.STREAK).toBeLessThan(COIN_AWARDS.NIGHT_WON);
+    // The smallest night there is: two players.
+    expect(COIN_AWARDS.STREAK).toBeLessThan(nightWinAmount(2));
   });
 });
 
@@ -406,5 +405,53 @@ describe("titles", () => {
     const later = nextTitle(COIN_TITLES[1].at - 1)!;
     expect(later.toGo).toBeLessThan(early.toGo);
     expect(later.toGo).toBe(1);
+  });
+});
+
+describe("the champion takes the majority", () => {
+  /** Every coin a single-elimination night of n players pays, and the champion's. */
+  function night(n: number) {
+    const rounds = Math.log2(n);
+    const matches = n - 1;
+    const everyone =
+      n * COIN_AWARDS.NIGHT_PLAYED +
+      matches * (2 * COIN_AWARDS.FRAME_PLAYED + COIN_AWARDS.FRAME_WON) +
+      nightWinAmount(n);
+    const champion =
+      COIN_AWARDS.NIGHT_PLAYED +
+      rounds * (COIN_AWARDS.FRAME_PLAYED + COIN_AWARDS.FRAME_WON) +
+      nightWinAmount(n);
+    return { everyone, champion };
+  }
+
+  for (const n of [2, 4, 8, 16, 32, 64]) {
+    it(`gives the champion of a ${n}-player night more than everyone else combined`, () => {
+      const { everyone, champion } = night(n);
+      expect(champion / everyone).toBeGreaterThan(0.5);
+    });
+  }
+
+  it("scales the champion's award with the field", () => {
+    expect(nightWinAmount(8)).toBe(400_000);
+    expect(nightWinAmount(16)).toBe(800_000);
+    expect(nightWinAmount(16)).toBe(2 * nightWinAmount(8));
+  });
+
+  it("never pays less than a two-player night", () => {
+    expect(nightWinAmount(0)).toBe(nightWinAmount(2));
+    expect(nightWinAmount(1)).toBe(nightWinAmount(2));
+    expect(nightWinAmount(Number.NaN)).toBe(nightWinAmount(2));
+  });
+
+  it("keeps a match win small next to the night", () => {
+    const matchWin = COIN_AWARDS.FRAME_PLAYED + COIN_AWARDS.FRAME_WON;
+    expect(matchWin).toBe(15_000);
+    expect(nightWinAmount(4) / matchWin).toBeGreaterThan(10);
+  });
+
+  it("names the field in the ledger line", () => {
+    const [award] = awardsForNight("Friday league", 8);
+    expect(award.amount).toBe(400_000);
+    expect(award.description).toContain("8 players");
   });
 });

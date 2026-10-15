@@ -22,7 +22,7 @@ export const dynamic = "force-dynamic";
  */
 
 import Link from "next/link";
-import { useState } from "react";
+import { FlipCard } from "@/components/flip-card";
 
 const WEEKS = [
   {
@@ -41,7 +41,7 @@ const WEEKS = [
     kicker: "Week one",
     title: "Eight people. That is the whole job.",
     points: [
-      "Walk up to someone already playing pool in your venue and ask them. “We’re starting a knockout on Thursday at eight, free to enter, winner gets a Rs 500 tab — are you in?” Do that twenty times and you have your eight.",
+      "Walk up to someone already playing pool in your venue and ask them. “We’re starting a knockout on Thursday at eight, free to enter, winner gets a free bar tab — are you in?” Do that twenty times and you have your eight.",
       "Posters tell people something is happening; they do not make anyone commit. Use them to support the asking, not to replace it.",
       "Six will turn up instead of eight. Run a six-player bracket. The night happening beats the night being tidy.",
     ],
@@ -85,44 +85,6 @@ const DIAGNOSIS = [
   ["Same four every week", "Too closed", "Ask each of the four to bring one person."],
   ["Nobody at all", "Wrong night", "Move it once — and only once — then commit again."],
 ];
-
-/**
- * One row of the diagnosis, as a card that turns over: the symptom on the
- * front, what it usually means and what to do on the back. A button, so it
- * works from the keyboard and a screen reader hears whether it is turned.
- */
-function FlipCard({ symptom, cause, fix, index }: { symptom: string; cause: string; fix: string; index: number }) {
-  const [turned, setTurned] = useState(false);
-  const front = index % 2 === 0 ? "wta-card" : "wta-card gold";
-
-  return (
-    <button
-      type="button"
-      className="flip-card"
-      aria-pressed={turned}
-      aria-label={turned ? `${symptom}. Usually means: ${cause}. Do this: ${fix}` : `${symptom}. Tap to see the fix.`}
-      onClick={() => setTurned((t) => !t)}
-    >
-      <span className="flip-inner">
-        <span className={`flip-face front ${front}`}>
-          <span className="label">Symptom {index + 1}</span>
-          <span className="flip-title">{symptom}</span>
-          <span className="hint">Tap to turn over ↻</span>
-        </span>
-        <span className="flip-face back wta-card red">
-          <span>
-            <span className="label">Usually means</span>
-            <span className="flip-text">{cause}</span>
-          </span>
-          <span>
-            <span className="label">Do this</span>
-            <span className="flip-text" style={{ color: "var(--gold-fill)", fontSize: "1.1rem" }}>{fix}</span>
-          </span>
-        </span>
-      </span>
-    </button>
-  );
-}
 
 export default function PlaybookPage() {
   return (
@@ -219,7 +181,29 @@ export default function PlaybookPage() {
           </div>
           <div className="flip-grid wta-deal">
             {DIAGNOSIS.map(([symptom, cause, fix], i) => (
-              <FlipCard key={symptom} symptom={symptom} cause={cause} fix={fix} index={i} />
+              <FlipCard
+                key={symptom}
+                frontTone={i % 2 === 0 ? "ink" : "gold"}
+                label={`${symptom}. Usually means: ${cause}. Do this: ${fix}`}
+                front={
+                  <>
+                    <span className="label">Symptom {i + 1}</span>
+                    <span className="flip-title">{symptom}</span>
+                  </>
+                }
+                back={
+                  <>
+                    <span>
+                      <span className="label">Usually means</span>
+                      <span className="flip-text">{cause}</span>
+                    </span>
+                    <span>
+                      <span className="label">Do this</span>
+                      <span className="flip-text" style={{ color: "var(--gold-fill)", fontSize: "1.1rem" }}>{fix}</span>
+                    </span>
+                  </>
+                }
+              />
             ))}
           </div>
         </section>
@@ -235,7 +219,7 @@ export default function PlaybookPage() {
               <span className="sticker">Do</span>
               <h3>Free entry. A prize you already sell.</h3>
               <ul>
-                <li>A Rs 500 bar tab</li>
+                <li>A bar tab for the winner</li>
                 <li>A free round for the winner&apos;s table</li>
                 <li>A month of free table hire</li>
                 <li>A trophy on your shelf with their name on it</li>
@@ -246,7 +230,7 @@ export default function PlaybookPage() {
               <span className="sticker gold">Don&apos;t</span>
               <h3>Never pool entry fees.</h3>
               <ul>
-                <li>Collecting Rs 100 a head and paying the winner Rs 700 is a stake, however it is described.</li>
+                <li>Collecting money from each player and paying it to the winner is a stake, however it is described.</li>
               </ul>
               <p>
                 India&apos;s Promotion and Regulation of Online Gaming Act 2025, in force since

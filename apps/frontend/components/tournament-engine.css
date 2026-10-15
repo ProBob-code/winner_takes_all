@@ -3399,3 +3399,42 @@ select.premium-input-v2 option {
     padding: 8px 10px !important;
   }
 }
+
+/* ── The scoring arena on a phone ──
+   Written last so it wins. The pods sit in .pod-wrapper, which the flex
+   layout above never sized, so a long name could stretch one past the
+   screen. The timer's 768px rule also lifted it 3rem, over the card above
+   it, once the 900px rule had made it relative. */
+.battle-view > .pod-wrapper {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  justify-content: center;
+}
+
+.battle-view > .pod-wrapper > .team-pod { width: 100%; }
+
+@media (max-width: 900px) {
+  .battle-view { align-items: stretch; }
+  .battle-view > .pod-wrapper { width: 100%; flex: 0 0 auto; }
+  .battle-view .vs-core { align-self: center; }
+
+  .match-timer-v3 {
+    top: 0 !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 0 1rem !important;
+  }
+
+  .sport-theme-8ball .battle-view {
+    padding: 1rem 0.6rem;
+    border-width: 6px;
+    border-radius: 24px;
+  }
+
+  .team-name { overflow-wrap: anywhere; }
+  .pod-header { flex-wrap: wrap; }
+  .ticker-row { flex-wrap: wrap; justify-content: center; }
+  .pod-actions { flex-wrap: wrap; }
+  .pod-actions .pod-btn { flex: 1 1 8rem; }
+}

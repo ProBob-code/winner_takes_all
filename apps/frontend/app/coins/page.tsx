@@ -24,6 +24,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { backendFetch } from "@/lib/backend";
 import { CoinMark } from "@/components/coin-mark";
+import { FlipCard } from "@/components/flip-card";
 import { formatCoins, formatCoinsExact } from "@/lib/format";
 
 interface Me {
@@ -55,16 +56,18 @@ interface Leader {
 
 interface Rules {
   awards: Record<string, number>;
+  /** NIGHT_WON is per player in the night when true; absent on an older API. */
+  nightWonPerPlayer?: boolean;
   dailyCap: number;
   notice: string;
 }
 
 const EARN_LABELS: Array<{ key: string; label: string; note: string }> = [
   { key: "NIGHT_PLAYED", label: "Turn up", note: "Once a night, on your first frame" },
-  { key: "FRAME_PLAYED", label: "Play a frame", note: "Win or lose — losing never costs you" },
-  { key: "FRAME_WON", label: "Win a frame", note: "On top of playing it" },
+  { key: "FRAME_PLAYED", label: "Play a match", note: "Win or lose — losing never costs you" },
+  { key: "FRAME_WON", label: "Win a match", note: "A small top-up on top of playing it. The big coins are for winning the night." },
   { key: "CLEARANCE", label: "Clear the table", note: "All seven and the black, one frame" },
-  { key: "NIGHT_WON", label: "Win the night", note: "Take the whole tournament" },
+  { key: "NIGHT_WON", label: "Win the night", note: "For every player in the night, so the champion takes more than everyone else combined." },
   // Counted over the nights the venue actually ran, not calendar weeks — a
   // venue skipping a week does not break anyone's run.
   { key: "STREAK", label: "Three nights running", note: "Three of a venue's nights in a row" },
@@ -278,27 +281,48 @@ export default function CoinsPage() {
         )}
 
         <section style={{ marginTop: "var(--space-7)" }}>
-          <h2 style={{ fontSize: "var(--text-2xl)", fontWeight: 800 }}>How you earn</h2>
+          <div className="section-head" style={{ marginBottom: 0 }}>
+            <span className="sticker gold">Tap a card</span>
+            <h2>How you <em>earn</em></h2>
+          </div>
           <p className="muted" style={{ marginTop: "var(--space-2)", maxWidth: "40rem" }}>
-            Weighted towards turning up rather than winning. A regular who loses every week
-            still climbs; someone who wins once and never comes back does not.
+            Small coins for every match you play and win. The champion of the night takes
+            the majority — and losing never costs you a coin.
           </p>
 
-          <div className="auto-grid" style={{ marginTop: "var(--space-5)" }}>
-            {EARN_LABELS.filter((e) => rules?.awards?.[e.key]).map((e) => (
-              <div key={e.key} className="panel" style={{ padding: "var(--space-4)" }}>
-                <div className="h-stack between">
-                  <strong>{e.label}</strong>
-                  <span className="chip gold">+{coins(rules!.awards[e.key])}</span>
-                </div>
-                <p
-                  className="muted"
-                  style={{ fontSize: "var(--text-xs)", marginTop: "var(--space-2)" }}
-                >
-                  {e.note}
-                </p>
-              </div>
-            ))}
+          <div className="flip-grid wta-deal" style={{ marginTop: "var(--space-5)" }}>
+            {EARN_LABELS.filter((e) => rules?.awards?.[e.key]).map((e, i) => {
+              const perPlayer = e.key === "NIGHT_WON" && rules?.nightWonPerPlayer === true;
+              const amount = `+${coins(rules!.awards[e.key])}`;
+              const champion = e.key === "NIGHT_WON";
+              return (
+                <FlipCard
+                  key={e.key}
+                  minHeight="12rem"
+                  frontTone={champion ? "gold" : i % 2 === 0 ? "ink" : "gold"}
+                  label={`${e.label}: ${amount}${perPlayer ? " per player" : ""}. ${e.note}`}
+                  front={
+                    <>
+                      <span className="label">{champion ? "The big one" : `Award ${i + 1}`}</span>
+                      <span className="flip-title">{e.label}</span>
+                      <span className="big-num" style={{ fontSize: "2.4rem" }}>
+                        {amount}
+                        {perPlayer && (
+                          <span style={{ fontSize: "0.85rem", marginLeft: "0.35rem", letterSpacing: 0 }}>per player</span>
+                        )}
+                      </span>
+                    </>
+                  }
+                  back={
+                    <>
+                      <span className="label">{e.label}</span>
+                      <span className="flip-text" style={{ fontSize: "1.05rem" }}>{e.note}</span>
+                      <span className="flip-text" style={{ color: "var(--gold-fill)" }}>{amount}{perPlayer ? " × players" : ""}</span>
+                    </>
+                  }
+                />
+              );
+            })}
           </div>
         </section>
 

@@ -5189,3 +5189,132 @@ select.form-control option {
   .guide { padding-right: 10px; }
   .guide-hero .guide-hero-art { top: 0.9rem; bottom: auto; font-size: 2.6rem; }
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   CARDS IN EVERY TAB
+   ══════════════════════════════════════════════════════════════════════════
+
+   The playbook's cards, carried to the tabs. The tournament and game lists,
+   past nights, the dashboard's actions and the leaderboard all get the same
+   sticker look: a hard offset shadow, the gold-to-red stripe, and a deal of
+   slight alternating tilts that straighten as you reach for one.
+
+   Several of these classes are styled inside their page with <style jsx>,
+   whose selectors carry an extra generated class. The selectors here are one
+   step more specific (an element plus two classes) so they win without
+   resorting to !important. */
+
+main .tournament-grid > .premium-card,
+main .past-list > .past-card,
+main .action-card {
+  position: relative;
+  border: 2px solid var(--glass-border-color);
+  border-radius: 22px;
+  background: var(--bg-card);
+  box-shadow: 7px 7px 0 var(--card-offset);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  overflow: hidden;
+}
+
+main .tournament-grid > .premium-card::before,
+main .past-list > .past-card::before,
+main .action-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 5px;
+  background: linear-gradient(90deg, var(--gold-fill) 0 62%, var(--wta-red) 62% 100%);
+  z-index: 3;
+  pointer-events: none;
+}
+
+/* The deal: every other card leans the other way. */
+main .tournament-grid > .premium-card:nth-child(odd) { transform: rotate(-0.8deg); }
+main .tournament-grid > .premium-card:nth-child(even) { transform: rotate(0.8deg); }
+
+@media (hover: hover) {
+  main .tournament-grid > .premium-card:not(.locked):hover,
+  main .past-list > .past-card:hover,
+  main .action-card:hover {
+    transform: translate(-3px, -4px) rotate(0deg);
+    border-color: var(--gold);
+    box-shadow: 11px 11px 0 var(--card-offset-hot);
+  }
+}
+
+main .tournament-grid > .premium-card:active,
+main .action-card:active {
+  transform: translate(2px, 2px) rotate(0deg);
+  box-shadow: 3px 3px 0 var(--card-offset-hot);
+}
+
+main .tournament-grid > .premium-card .card-content { padding: 1.6rem 1.4rem 1.4rem; }
+
+main .tournament-grid > .premium-card .tournament-title {
+  font-size: 1.35rem;
+  font-weight: 900;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+/* The round button in the corner, as a gold token with a red arrow. */
+main .tournament-grid > .premium-card .action-circle {
+  background: var(--gold-fill);
+  color: var(--on-gold);
+  border: 2px solid var(--on-gold);
+  font-weight: 900;
+  box-shadow: 2px 2px 0 var(--on-gold);
+}
+
+main .tournament-grid > .premium-card .status-badge {
+  border-radius: 7px;
+  transform: rotate(-2deg);
+  font-weight: 900;
+}
+
+/* A locked card reads as face-down rather than greyed out. */
+main .tournament-grid > .premium-card.locked {
+  opacity: 1;
+  background:
+    repeating-linear-gradient(45deg, transparent 0 12px, color-mix(in oklab, var(--gold) 7%, transparent) 12px 24px),
+    var(--bg-card);
+  filter: saturate(0.6);
+}
+
+main .tournament-grid {
+  gap: 1.75rem;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 17rem), 1fr));
+}
+
+/* Past nights: a winner's line in gold on the card. */
+main .past-list > .past-card { padding-top: 1.1rem; }
+
+/* The dashboard's action tiles: the primary one is the gold card. */
+main .action-card.is-primary {
+  background: var(--gradient-fill);
+  color: var(--on-gold);
+  border-color: var(--on-gold);
+  box-shadow: 7px 7px 0 var(--on-gold);
+}
+main .action-card.is-primary .title,
+main .action-card.is-primary p,
+main .action-card.is-primary span { color: var(--on-gold); }
+main .action-card.is-primary::before { display: none; }
+
+@media (prefers-reduced-motion: no-preference) {
+  main .tournament-grid > .premium-card,
+  main .past-list > .past-card {
+    animation: wta-deal-in 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+  }
+  main .tournament-grid > .premium-card:nth-child(2) { animation-delay: 0.06s; }
+  main .tournament-grid > .premium-card:nth-child(3) { animation-delay: 0.12s; }
+  main .tournament-grid > .premium-card:nth-child(n+4) { animation-delay: 0.18s; }
+}
+
+/* The leaning cards and their shadows need a little room at the edges. */
+@media (max-width: 640px) {
+  main .tournament-grid,
+  main .past-list { padding-right: 8px; }
+  main .tournament-grid > .premium-card:nth-child(odd),
+  main .tournament-grid > .premium-card:nth-child(even) { transform: none; }
+}

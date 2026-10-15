@@ -242,7 +242,7 @@ export default function TournamentsPage() {
               </div>
             )}
 
-            {/* PAST MATCHES — finished tournaments, with who took the pot. */}
+            {/* PAST MATCHES — finished tournaments, with who took the night. */}
             {past.length > 0 && (
               <section className="arena-section slide-in" style={{ marginTop: "3rem" }}>
                 <div className="section-header">
@@ -272,7 +272,7 @@ export default function TournamentsPage() {
                             {winners.length > 0 ? (
                               <>
                                 🏆 <strong>{winners.map((w) => w.name).join(" & ")}</strong>
-                                {shared ? ` shared the pot ${t.result.splitWays} ways` : " took the pot"}
+                                {shared ? ` shared the title ${t.result.splitWays} ways` : " took the night"}
                               </>
                             ) : (
                               <span className="muted">Finished — prize not settled yet</span>

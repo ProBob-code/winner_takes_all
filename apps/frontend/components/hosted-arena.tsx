@@ -584,8 +584,11 @@ export function HostedArena({
               }}
             >
               <div className="section-label-v2" style={{ marginBottom: "0.75rem" }}>
-                PRIZE POT • {money(result.prize.amount)}
-                {result.splitWays > 1 ? ` SPLIT EQUALLY ${result.splitWays} WAYS` : ""}
+                {/* The night's coins are paid as awards, not from this figure,
+                    which is zero on every free night; so it is only shown on
+                    an old tournament that actually carried one. */}
+                {result.splitWays > 1 ? `CHAMPIONS • TITLE SHARED ${result.splitWays} WAYS` : "CHAMPION"}
+                {Number(result.prize.amount) > 0 ? ` • ${money(result.prize.amount)}` : ""}
               </div>
               {winners.map((w) => (
                 <div
@@ -598,9 +601,11 @@ export function HostedArena({
                       <span className="muted" style={{ fontWeight: 600 }}> — no linked account</span>
                     )}
                   </span>
-                  <span style={{ fontWeight: 900, color: "var(--gold)", fontVariantNumeric: "tabular-nums" }}>
-                    {money(w.amount.amount)}
-                  </span>
+                  {Number(w.amount.amount) > 0 && (
+                    <span style={{ fontWeight: 900, color: "var(--gold)", fontVariantNumeric: "tabular-nums" }}>
+                      {money(w.amount.amount)}
+                    </span>
+                  )}
                 </div>
               ))}
               <p className="muted" style={{ fontSize: "0.75rem", marginTop: "0.75rem", lineHeight: 1.5 }}>
@@ -1197,7 +1202,7 @@ export function HostedArena({
               <p className="muted" style={{ fontSize: "0.72rem", marginTop: "0.75rem", lineHeight: 1.5 }}>
                 {finalMatch?.status === "COMPLETED"
                   ? "Decided by the grand final."
-                  : "Decided on the table: most wins, then highest score. Teams exactly level share the pot."}
+                  : "Decided on the table: most wins, then highest score. Teams exactly level share the title."}
               </p>
             </div>
 
