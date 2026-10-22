@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic';
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
   const name = "Stadium Arena";
-  const ogImageUrl = "https://winner-takes-all.pages.dev/og-image.jpg";
+  const ogImageUrl = "https://winnertakesall.live/og-image.jpg";
 
   return {
     title: `🏆 LIVE: ${name} | Stadium Arena`,
@@ -18,11 +18,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     openGraph: {
       title: `🏟️ ${name} is LIVE on Stadium Arena!`,
       description: `⚔️ WITNESS THE LEGEND! Don't miss a second of the elite action. Click to join the professional spectator stream!`,
-      url: `https://winner-takes-all.pages.dev/arena/${id}`,
+      url: `https://winnertakesall.live/arena/${id}`,
       siteName: "Stadium Arena",
       images: [
         {
-          url: "https://winner-takes-all.pages.dev/stadium-og-elite.png?v=6",
+          url: "https://winnertakesall.live/stadium-og-elite.png?v=6",
           width: 1200,
           height: 630,
           alt: "Stadium Arena Live Preview",
@@ -35,7 +35,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       card: "summary_large_image",
       title: `🏆 ARENA LIVE: ${name}`,
       description: `🔥 Watch the skill-based showdown now! Elite gaming live from the Stadium Arena.`,
-      images: ["https://winner-takes-all.pages.dev/stadium-og-elite.png?v=6"],
+      images: ["https://winnertakesall.live/stadium-og-elite.png?v=6"],
     },
   };
 }

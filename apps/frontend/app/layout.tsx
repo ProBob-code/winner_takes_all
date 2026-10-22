@@ -21,11 +21,11 @@ export const metadata: Metadata = {
   openGraph: {
     title: "W.T.A | Tournament Infrastructure",
     description: "🔥 Powering the next generation of competitive events. Professional infrastructure for tournament organizers.",
-    url: "https://stadium-arena.pages.dev",
+    url: "https://winnertakesall.live",
     siteName: "W.T.A",
     images: [
       {
-        url: "https://stadium-arena.pages.dev/og-image.jpg",
+        url: "https://winnertakesall.live/og-image.jpg",
         width: 1200,
         height: 630,
         alt: "WTA Arena Platform",
@@ -39,9 +39,9 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "W.T.A | Platform",
     description: "⚔️ Professional tournament infrastructure for communities and esports organizers.",
-    images: ["https://stadium-arena.pages.dev/og-image.jpg"],
+    images: ["https://winnertakesall.live/og-image.jpg"],
   },
-  metadataBase: new URL("https://stadium-arena.pages.dev"),
+  metadataBase: new URL("https://winnertakesall.live"),
 };
 
 export default function RootLayout({

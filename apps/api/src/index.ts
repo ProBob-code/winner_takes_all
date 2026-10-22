@@ -133,7 +133,12 @@ import {
 
 const app = new Hono<AppContext>();
 
-const DEFAULT_ORIGINS = ["https://winner-takes-all.pages.dev", "http://localhost:3000"];
+const DEFAULT_ORIGINS = [
+  "https://winnertakesall.live",
+  "https://www.winnertakesall.live",
+  "https://winner-takes-all.pages.dev",
+  "http://localhost:3000",
+];
 
 function allowedOrigins(env: Env): string[] {
   return env.ALLOWED_ORIGINS
