@@ -13,6 +13,11 @@ export function LandingPage() {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
+    // The canvas cannot read a CSS custom property, so the theme is read off
+    // the root the same way the stylesheet reads it. Light is the default: the
+    // stylesheet puts its light palette on bare :root.
+    const isLight = document.documentElement.getAttribute("data-theme") !== "dark";
+
     let particles: any[] = [];
 
     function resize() {
@@ -59,7 +64,12 @@ export function LandingPage() {
       }
       draw() {
         if (!ctx) return;
-        ctx.fillStyle = `rgba(255, 255, 255, ${this.opacity * 0.5})`;
+        // Warm specks on a pale page, white on the night sky. Hard-coded
+        // white was invisible in light mode and the canvas just burned
+        // frames drawing nothing.
+        ctx.fillStyle = isLight
+          ? `rgba(166, 124, 0, ${this.opacity * 0.35})`
+          : `rgba(255, 255, 255, ${this.opacity * 0.5})`;
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
         ctx.fill();
@@ -125,11 +135,11 @@ export function LandingPage() {
         card.style.transform = `translateY(-15px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
         const moveX = (x / rect.width) * 100;
         const moveY = (y / rect.height) * 100;
-        card.style.backgroundImage = `radial-gradient(circle at ${moveX}% ${moveY}%, rgba(255,255,255,0.08), transparent 50%), linear-gradient(145deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02))`;
+        card.style.backgroundImage = `radial-gradient(circle at ${moveX}% ${moveY}%, var(--landing-sheen), transparent 50%)`;
       };
       const handleCardLeave = () => {
         card.style.transform = "translateY(0) rotateX(0) rotateY(0)";
-        card.style.backgroundImage = "linear-gradient(145deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02))";
+        card.style.backgroundImage = "none";
       };
       card.addEventListener("mousemove", handleCardMove);
       card.addEventListener("mouseleave", handleCardLeave);
@@ -160,35 +170,69 @@ export function LandingPage() {
   }, []);
 
   return (
-    <div className="landing-wrapper" style={{ color: "var(--text-primary)", minHeight: "100vh", position: "relative", overflowX: "hidden", background: "#030014" }}>
+    <div className="landing-wrapper" style={{ minHeight: "100vh", position: "relative", overflowX: "hidden" }}>
       <style jsx global>{`
-        :root {
-          --bg-deep: #080512;
+        /* These used to be written onto :root, from inside this component, for
+           the whole application. --text-muted became a slate meant for a dark
+           page and stayed that way on every other screen the user then opened,
+           in both themes. They are scoped to the landing page now, and the two
+           palettes are declared rather than assumed. */
+        .landing-wrapper {
+          --landing-bg: #faf8f3;
+          --landing-ink: #1a1710;
+          --landing-dim: #6b6354;
+          --landing-card: rgba(255, 255, 255, 0.72);
+          --landing-card-line: rgba(26, 23, 16, 0.1);
+          --landing-sheen: rgba(166, 124, 0, 0.06);
           --accent-primary: var(--accent);
           --accent-secondary: var(--accent);
           --accent-glow: color-mix(in oklab, var(--accent) 40%, transparent);
-          --glass-bg: rgba(255, 255, 255, 0.03);
-          --glass-border: rgba(255, 255, 255, 0.08);
-          --text-main: #f8fafc;
-          --text-muted: #94a3b8;
         }
+
+        [data-theme="dark"] .landing-wrapper {
+          --landing-bg: #030014;
+          --landing-ink: #f8fafc;
+          --landing-dim: #94a3b8;
+          --landing-card: rgba(255, 255, 255, 0.05);
+          --landing-card-line: rgba(255, 255, 255, 0.08);
+          --landing-sheen: rgba(255, 255, 255, 0.08);
+        }
+
+        .landing-wrapper { background: var(--landing-bg); color: var(--landing-ink); }
+        .landing-wrapper .muted,
+        .landing-wrapper .hero-desc,
+        .landing-wrapper .landing-dim { color: var(--landing-dim); }
 
         .landing-bg-glow {
           position: absolute;
           top: 0; left: 0; width: 100%; height: 100%;
-          background: radial-gradient(circle at 15% 50%, color-mix(in oklab, var(--accent) 15%, transparent), transparent 40%),
-                      radial-gradient(circle at 85% 30%, rgba(6, 182, 212, 0.15), transparent 40%),
-                      radial-gradient(circle at 50% 50%, rgba(8, 5, 25, 1), #030014);
+          background: radial-gradient(circle at 15% 45%, color-mix(in oklab, var(--accent) 18%, transparent), transparent 45%),
+                      radial-gradient(circle at 85% 25%, rgba(220, 38, 38, 0.1), transparent 45%);
           filter: blur(80px);
-          opacity: 0.6;
+          opacity: 0.75;
           z-index: 0;
           pointer-events: none;
         }
 
-        .landing-stars-container {
+        [data-theme="dark"] .landing-bg-glow {
+          background: radial-gradient(circle at 15% 50%, color-mix(in oklab, var(--accent) 15%, transparent), transparent 40%),
+                      radial-gradient(circle at 85% 30%, rgba(220, 38, 38, 0.14), transparent 40%),
+                      radial-gradient(circle at 50% 50%, rgba(8, 5, 25, 1), #030014);
+          opacity: 0.6;
+        }
+
+        /* A field of white stars on a pearl-white page is a field of nothing.
+           The night sky belongs to the night. */
+        .landing-stars-container,
+        .landing-wrapper #sprinkles { display: none; }
+
+        [data-theme="dark"] .landing-stars-container {
+          display: block;
           position: absolute; top: 0; left: 0; width: 100%; height: 100%;
           z-index: 1; overflow: hidden;
         }
+
+        [data-theme="dark"] .landing-wrapper #sprinkles { display: block; }
 
         .star-layer { position: absolute; top: 0; left: 0; width: 200%; height: 200%; }
         .stars-1 {
@@ -215,11 +259,29 @@ export function LandingPage() {
         @keyframes gradientFlow { to { background-position: 200% center; } }
 
         .card-3d {
-          background: linear-gradient(145deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
-          border: 1px solid var(--glass-border);
+          background: var(--landing-card);
+          border: 1px solid var(--landing-card-line);
           border-radius: 32px;
           backdrop-filter: blur(20px);
           transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        /* On a pale page the card needs a shadow to lift off it; on the dark
+           one it needs a hairline to separate from it. */
+        .landing-wrapper .card-3d { box-shadow: 0 18px 50px rgba(26, 23, 16, 0.08); }
+        [data-theme="dark"] .landing-wrapper .card-3d { box-shadow: none; }
+
+        /* The big ghosted 01 / 02 / 03 behind each step. White at 5% is
+           invisible on white. */
+        .landing-step-number {
+          position: absolute;
+          top: -20px;
+          right: -10px;
+          font-size: 8rem;
+          font-weight: 900;
+          color: var(--landing-ink);
+          opacity: 0.06;
+          pointer-events: none;
         }
 
         @media (max-width: 768px) {
@@ -242,60 +304,60 @@ export function LandingPage() {
 
       <main className="landing-main" style={{ padding: "120px 6% 60px", textAlign: "center", position: "relative", zIndex: 2 }}>
         <section className="hero" style={{ minHeight: "80vh", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" }}>
-          <div className="hero-chip" style={{ background: "color-mix(in oklab, var(--accent) 10%, transparent)", border: "1px solid color-mix(in oklab, var(--accent) 20%, transparent)", padding: "8px 16px", borderRadius: "9999px", fontSize: "0.85rem", fontWeight: 700, color: "var(--accent)", marginBottom: "2rem" }}>Professional Tournament Infrastructure</div>
+          <div className="hero-chip" style={{ background: "color-mix(in oklab, var(--accent) 10%, transparent)", border: "1px solid color-mix(in oklab, var(--accent) 20%, transparent)", padding: "8px 16px", borderRadius: "9999px", fontSize: "0.85rem", fontWeight: 700, color: "var(--accent)", marginBottom: "2rem" }}>For pool rooms, clubs and bars</div>
           <h1 className="hero-title" style={{ fontSize: "clamp(3rem, 8vw, 6rem)", fontWeight: 900, lineHeight: 0.9, letterSpacing: "-2px", marginBottom: "2.5rem" }}>
-            POWERING GLOBAL.<br />
-            <span className="gradient-text">ESPORTS EVENTS.</span>
+            RUN THE NIGHT.<br />
+            <span className="gradient-text">CROWN THE WINNER.</span>
           </h1>
-          <p className="hero-desc" style={{ maxWidth: "700px", fontSize: "1.2rem", color: "var(--text-muted)", marginBottom: "3.5rem", lineHeight: 1.6 }}>The comprehensive SaaS platform for esports organizers, communities, and competitive events. Manage brackets, schedules, and tournament operations with professional-grade tools.</p>
+          <p className="hero-desc" style={{ maxWidth: "700px", fontSize: "1.2rem", marginBottom: "3.5rem", lineHeight: 1.6 }}>Brackets, scoring and a live table for 8-ball and football nights. Set up in a minute, scored from the phone in your hand, on the wall for the room to see — and in the group chat before the next frame is racked. Free to enter, always.</p>
           <div className="hero-buttons" style={{ display: "flex", gap: "1.5rem" }}>
-            <Link href="/tournaments" style={{ background: "var(--gradient-fill)", color: "var(--on-gold)", padding: "1.25rem 2.5rem", borderRadius: "16px", textDecoration: "none", fontWeight: 800, fontSize: "1.1rem" }}>EXPLORE PLATFORM →</Link>
-            <Link href="#how-it-works" style={{ background: "var(--glass-bg)", border: "1px solid var(--glass-border-color)", color: "white", padding: "1.25rem 2.5rem", borderRadius: "16px", textDecoration: "none", fontWeight: 800, fontSize: "1.1rem" }}>HOW IT WORKS</Link>
+            <Link href="/run" style={{ background: "var(--gradient-fill)", color: "var(--on-gold)", padding: "1.25rem 2.5rem", borderRadius: "16px", textDecoration: "none", fontWeight: 800, fontSize: "1.1rem" }}>START A NIGHT →</Link>
+            <Link href="#how-it-works" style={{ background: "var(--landing-card)", border: "1px solid var(--landing-card-line)", color: "var(--landing-ink)", padding: "1.25rem 2.5rem", borderRadius: "16px", textDecoration: "none", fontWeight: 800, fontSize: "1.1rem" }}>SEE HOW IT RUNS</Link>
           </div>
         </section>
 
         <section id="how-it-works" className="section reveal" style={{ marginTop: "120px" }}>
-            <h2 style={{ fontSize: "3rem", fontWeight: 800, marginBottom: "1rem" }}>EVENT LIFECYCLE</h2>
-            <p className="muted" style={{ marginBottom: "4rem" }}>Three steps to professional event management.</p>
+            <h2 style={{ fontSize: "3rem", fontWeight: 800, marginBottom: "1rem" }}>HOW A NIGHT RUNS</h2>
+            <p className="muted" style={{ marginBottom: "4rem" }}>Three steps, about a minute.</p>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(300px, 100%), 1fr))", gap: "2.5rem", position: "relative" }}>
                 <div className="card-3d" style={{ padding: "4rem 3rem", position: "relative", overflow: "hidden" }}>
-                    <div style={{ position: "absolute", top: "-20px", right: "-10px", fontSize: "8rem", fontWeight: 900, opacity: 0.05, color: "white" }}>01</div>
+                    <div className="landing-step-number">01</div>
                     <div style={{ background: "linear-gradient(135deg, var(--accent), var(--accent))", width: "60px", height: "60px", borderRadius: "16px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.5rem", marginBottom: "2rem", boxShadow: "0 0 20px color-mix(in oklab, var(--accent) 40%, transparent)" }}>📊</div>
-                    <h3 style={{ fontSize: "1.5rem", marginBottom: "1rem" }}>Configure Event</h3>
-                    <p style={{ color: "var(--text-muted)", lineHeight: 1.6 }}>Organizers define rules, schedules, and participation parameters. Our infrastructure handles the complex backend orchestration.</p>
+                    <h3 style={{ fontSize: "1.5rem", marginBottom: "1rem" }}>Set it up</h3>
+                    <p className="landing-dim" style={{ lineHeight: 1.6 }}>Pick the game, say how many are playing and how many frames each. Names are optional — anyone who turns up later scans the code on the screen.</p>
                 </div>
                 <div className="card-3d" style={{ padding: "4rem 3rem", position: "relative", overflow: "hidden" }}>
-                    <div style={{ position: "absolute", top: "-20px", right: "-10px", fontSize: "8rem", fontWeight: 900, opacity: 0.05, color: "white" }}>02</div>
+                    <div className="landing-step-number">02</div>
                     <div style={{ background: "linear-gradient(135deg, #f59e0b, #ef4444)", width: "60px", height: "60px", borderRadius: "16px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.5rem", marginBottom: "2rem", boxShadow: "0 0 20px rgba(245, 158, 11, 0.4)" }}>🛡️</div>
-                    <h3 style={{ fontSize: "1.5rem", marginBottom: "1rem" }}>Registration & Play</h3>
-                    <p style={{ color: "var(--text-muted)", lineHeight: 1.6 }}>Participants register via secure participation fees. Real-time bracket management and automated score tracking begin.</p>
+                    <h3 style={{ fontSize: "1.5rem", marginBottom: "1rem" }}>Score it</h3>
+                    <p className="landing-dim" style={{ lineHeight: 1.6 }}>Two big buttons on the phone in your hand. It keeps working with no signal and catches up when the wifi does, so the board never waits.</p>
                 </div>
                 <div className="card-3d" style={{ padding: "4rem 3rem", position: "relative", overflow: "hidden" }}>
-                    <div style={{ position: "absolute", top: "-20px", right: "-10px", fontSize: "8rem", fontWeight: 900, opacity: 0.05, color: "white" }}>03</div>
+                    <div className="landing-step-number">03</div>
                     <div style={{ background: "linear-gradient(135deg, var(--gold), var(--team-blue))", width: "60px", height: "60px", borderRadius: "16px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.5rem", marginBottom: "2rem", boxShadow: "0 0 20px rgba(16, 185, 129, 0.4)" }}>🏆</div>
-                    <h3 style={{ fontSize: "1.5rem", marginBottom: "1rem" }}>Event Finalization</h3>
-                    <p style={{ color: "var(--text-muted)", lineHeight: 1.6 }}>Validation of results and professional tournament operations management based on verified performance.</p>
+                    <h3 style={{ fontSize: "1.5rem", marginBottom: "1rem" }}>Show the room</h3>
+                    <p className="landing-dim" style={{ lineHeight: 1.6 }}>The table updates on any spare screen as frames finish, and the whole night goes to the group chat in one tap.</p>
                 </div>
             </div>
         </section>
 
         <section className="section reveal" style={{ marginTop: "120px" }}>
-            <h2 style={{ fontSize: "3rem", fontWeight: 800, marginBottom: "4rem" }}>THE INFRASTRUCTURE EDGE</h2>
+            <h2 style={{ fontSize: "3rem", fontWeight: 800, marginBottom: "4rem" }}>WHY IT HOLDS UP ON A FRIDAY</h2>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(300px, 100%), 1fr))", gap: "2rem" }}>
                 <div className="card-3d" style={{ padding: "3rem" }}>
                     <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>⚡</div>
-                    <h3>Automated Orchestration</h3>
-                    <p style={{ color: "var(--text-muted)" }}>Self-generating brackets and automated score validation.</p>
+                    <h3>Works with no signal</h3>
+                    <p className="landing-dim">Every tap is saved on the phone first and sent when it can. The board never waits for the bar&apos;s wifi.</p>
                 </div>
                 <div className="card-3d" style={{ padding: "3rem" }}>
                     <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>💎</div>
-                    <h3>Organizer Dashboard</h3>
-                    <p style={{ color: "var(--text-muted)" }}>Comprehensive tools for community and event management.</p>
+                    <h3>One screen for the room</h3>
+                    <p className="landing-dim">Scores, the clock and the table on any spare screen, with a code a walk-in can scan to enter.</p>
                 </div>
                 <div className="card-3d" style={{ padding: "3rem" }}>
                     <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>🛡️</div>
-                    <h3>Secure Settlement</h3>
-                    <p style={{ color: "var(--text-muted)" }}>Tournament operations management and participation verification.</p>
+                    <h3>Nothing to settle</h3>
+                    <p className="landing-dim">Players earn WTA coins for frames played and won. No entry fee, no pot, nothing to cash out.</p>
                 </div>
             </div>
         </section>

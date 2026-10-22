@@ -96,7 +96,7 @@ export function LayoutClient({ children }: { children: React.ReactNode }) {
           </div>
           <div style={{ maxWidth: "800px", margin: "0 auto 2rem", lineHeight: "1.7" }}>
             <p style={{ marginBottom: "1.5rem" }}>
-              W.T.A is a professional tournament infrastructure platform designed for organizers, esports communities, gaming cafés, and competitive events. 
+              W.T.A runs pool and football nights for the places that host them — pool rooms, clubs, bars and gaming cafés. 
               The platform provides tools for tournament hosting, bracket management, scheduling, rankings, and event operations.
             </p>
             <p style={{ fontWeight: 600, color: "var(--text-primary)" }}>

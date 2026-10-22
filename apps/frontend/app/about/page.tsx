@@ -28,7 +28,7 @@ export default function AboutPage() {
             <h2 style={{ fontSize: "1.8rem", fontWeight: 800 }}>Founder Story</h2>
             <p className="muted" style={{ lineHeight: 1.8 }}>
               W.T.A was engineered by <strong>ProBob</strong>, a developer with deep expertise in AI and high-frequency trading systems. 
-              By applying the same sub-millisecond precision to tournament orchestration, we solved the operational bottleneck of esports.
+              By applying the same precision to running a tournament, we took the admin out of a league night: the draw, the scoring and the table all keep themselves.
             </p>
           </div>
 

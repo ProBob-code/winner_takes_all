@@ -36,10 +36,14 @@ export default function ContactPage() {
           <div className="panel" style={{ padding: "3rem", border: "1px solid rgba(255, 183, 0, 0.2)", background: "rgba(255, 183, 0, 0.02)" }}>
             <div style={{ background: "rgba(255, 183, 0, 0.1)", width: "60px", height: "60px", borderRadius: "16px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.5rem", marginBottom: "2rem" }}>🏢</div>
             <h3 style={{ fontSize: "1.5rem", fontWeight: 800, marginBottom: "1rem" }}>Headquarters</h3>
-            <p className="muted" style={{ marginBottom: "2rem", lineHeight: 1.6 }}>WTA Platform Operations. Located in the heart of India's tech hub.</p>
+            <p className="muted" style={{ marginBottom: "2rem", lineHeight: 1.6 }}>WTA Platform Operations. Email reaches us fastest.</p>
+            {/* The street line here was "123 Esports Avenue, Tech Hub" — a
+                placeholder that went live as if it were a real registered
+                address. A made-up address on a contact page is worse than no
+                address, so it says only what is true until the real one is
+                filled in. */}
             <address style={{ fontStyle: "normal", color: "var(--text-secondary)", lineHeight: 1.8 }}>
-              123 Esports Avenue, Tech Hub<br />
-              Bangalore, Karnataka 560001<br />
+              Bangalore, Karnataka<br />
               India
             </address>
           </div>

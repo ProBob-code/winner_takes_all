@@ -16,7 +16,7 @@ export default function KycAmlPage() {
           {[
             {
               title: "Know Your Customer (KYC)",
-              content: "To ensure a safe esports community platform, we verify the identity of our users. You may be asked to provide government-issued identification before withdrawing reward credits to prevent fraud and ensure compliance with age restrictions."
+              content: "To keep the platform safe for everyone playing, we verify the identity of our users. You may be asked to provide government-issued identification before withdrawing reward credits to prevent fraud and ensure compliance with age restrictions."
             },
             {
               title: "Anti-Money Laundering (AML)",

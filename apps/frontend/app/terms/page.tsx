@@ -19,7 +19,7 @@ export default function TermsPage() {
           {[
             {
               title: "Agreement to Terms",
-              content: "By accessing or using the Winner.Takes.All platform (\"the Platform\"), you agree to be bound by these Terms & Conditions. The Platform is operated as a Tournament Infrastructure SaaS, providing tools for organizers to manage competitive esports events."
+              content: "By accessing or using the Winner.Takes.All platform (\"the Platform\"), you agree to be bound by these Terms & Conditions. The Platform is operated as a Tournament Infrastructure SaaS, providing tools for organizers to run competitive games of pool and football."
             },
             {
               title: "Nature of the Platform",

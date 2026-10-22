@@ -16,7 +16,7 @@ export default function ResponsibleGamingPage() {
           {[
             {
               title: "Healthy Competition",
-              content: "W.T.A is a platform for skill-based esports. We encourage all participants to maintain a healthy balance between competitive gaming and their personal lives. Success should be pursued with passion but also with moderation."
+              content: "W.T.A is a platform for skill-based games of pool and football, played in person. We encourage all participants to keep a healthy balance between playing competitively and the rest of their lives. Success should be pursued with passion but also with moderation."
             },
             {
               title: "Limits & Self-Exclusion",

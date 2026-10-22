@@ -17,7 +17,7 @@ export const viewport = {
 
 export const metadata: Metadata = {
   title: "W.T.A | Professional Tournament Infrastructure",
-  description: "🏆 The premier SaaS platform for esports organizers and community tournaments. Powering events with W.T.A Infrastructure.",
+  description: "🏆 Run 8-ball and football nights at your pool room, club or bar. Brackets, scoring and a live table on the wall — free to enter.",
   openGraph: {
     title: "W.T.A | Tournament Infrastructure",
     description: "🔥 Powering the next generation of competitive events. Professional infrastructure for tournament organizers.",
@@ -38,7 +38,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "W.T.A | Platform",
-    description: "⚔️ Professional tournament infrastructure for communities and esports organizers.",
+    description: "⚔️ Brackets, scoring and a live table for pool and football nights. Free to enter.",
     images: ["https://winnertakesall.live/og-image.jpg"],
   },
   metadataBase: new URL("https://winnertakesall.live"),
