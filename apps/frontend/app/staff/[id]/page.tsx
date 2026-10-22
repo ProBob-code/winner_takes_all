@@ -27,6 +27,21 @@ export const dynamic = "force-dynamic";
  *
  * The one thing this page will not do offline is end a round or draw the next
  * one: those need the engine. It says so rather than appearing to work.
+ *
+ * WHAT A NIGHT ON IT CHANGED
+ * The buttons sat in a block at the top with half the screen black below
+ * them, because the grid holding the two sides stretched and its contents did
+ * not. On the phone it is actually used on, that is a thumb reaching up for a
+ * target that could have been twice the size. Everything now fills the screen
+ * it is given, and BALL is the biggest thing on it.
+ *
+ * Three more things came off the same night. BLACK looked like BALL — same
+ * yellow, same shape, one of them ends the frame, and in a dark room that is
+ * a mis-tap waiting to happen; it is now unmistakably the black. The balls
+ * potted were a "1/7" chip nobody could read at a glance, and are now seven
+ * pips you can count without reading. And fouls were recorded but never shown,
+ * so the one number a player would actually argue about was invisible to the
+ * person holding the phone.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -87,11 +102,15 @@ const clock = (seconds: number) => {
   return `${Math.floor(safe / 60)}:${String(safe % 60).padStart(2, "0")}`;
 };
 
+/** Balls on a side at 8-ball, before the black. */
+const BALLS_PER_SIDE = 7;
+
 export default function StaffModePage() {
   const params = useParams<{ id: string }>();
   const tournamentId = params?.id;
 
   const [state, setState] = useState<State | null>(null);
+  const [name, setName] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
   const [queued, setQueued] = useState<PendingTap[]>([]);
   const [tick, setTick] = useState(nowSeconds());
@@ -117,6 +136,29 @@ export default function StaffModePage() {
       // top of it, so the board stays usable with no network at all.
       setError(null);
     }
+  }, [tournamentId]);
+
+  /**
+   * The night's name, once.
+   *
+   * A venue running two tables has two of these phones open, and "Staff mode"
+   * on both of them is how a frame gets scored onto the wrong night.
+   */
+  useEffect(() => {
+    if (!tournamentId) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await backendFetch(`/tournaments/${tournamentId}`);
+        const payload: any = await res.json().catch(() => null);
+        if (!cancelled && payload?.tournament?.name) setName(payload.tournament.name);
+      } catch {
+        // The name is a convenience. Scoring does not wait on it.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [tournamentId]);
 
   /** What is still on this device, so the board can project it. */
@@ -168,13 +210,24 @@ export default function StaffModePage() {
   const liveMatch = (projection?.match as Match | undefined) ?? serverMatch;
   const pendingHere = projection?.applied ?? 0;
 
-  const nextMatch = useMemo(
-    () =>
-      state?.matches
-        .filter((m) => m.status === "CREATED")
-        .sort((a, b) => a.match_order - b.match_order)[0] ?? null,
+  const ordered = useMemo(
+    () => [...(state?.matches ?? [])].sort((a, b) => a.match_order - b.match_order),
     [state]
   );
+
+  const queue = useMemo(() => ordered.filter((m) => m.status === "CREATED"), [ordered]);
+  const nextMatch = queue[0] ?? null;
+
+  /**
+   * Which frame of how many.
+   *
+   * "On the table" said nothing about whether the night was starting or
+   * nearly over, which is the first thing anyone asks the person scoring.
+   */
+  const frameNumber = useMemo(() => {
+    const done = ordered.filter((m) => m.status === "COMPLETED").length;
+    return liveMatch ? done + 1 : done;
+  }, [ordered, liveMatch]);
 
   /** A frame that is decided but still waiting on both players to agree. */
   const awaiting = useMemo(
@@ -253,23 +306,56 @@ export default function StaffModePage() {
     if (!liveMatch) return null;
     const teamId = which === "a" ? liveMatch.team_a_id : liveMatch.team_b_id;
     const scoreValue = which === "a" ? liveMatch.score_team_a : liveMatch.score_team_b;
+    const otherValue = which === "a" ? liveMatch.score_team_b : liveMatch.score_team_a;
     const balls = which === "a" ? liveMatch.balls_potted_a : liveMatch.balls_potted_b;
     const blackGone = which === "a" ? liveMatch.black_potted_a : liveMatch.black_potted_b;
+    const fouls = (which === "a" ? liveMatch.fouls_a : liveMatch.fouls_b) ?? 0;
+    const ahead = scoreValue > otherValue;
 
     return (
-      <div className={`staff-side ${which}`}>
-        <div className="h-stack between">
+      <div className={`staff-side ${which}${ahead ? " ahead" : ""}`}>
+        <div className="staff-side-head">
           <span className="name">{teamName(teamId)}</span>
-          {!isFootball && <span className="chip">{balls}/7</span>}
+          {ahead && <span className="staff-ahead">ahead</span>}
         </div>
 
-        <div className="score">
-          {scoreValue}
-          {pendingHere > 0 && (
-            <span className="pending-mark" title="Saved on this device, not sent yet">
-              ●
-            </span>
-          )}
+        {/* Score and state on one line. Stacked, the two sides together were
+            taller than a phone, so the scorer had to scroll to reach the
+            second player — at the table, mid-frame. */}
+        <div className="staff-readout">
+          <div className="score">
+            {scoreValue}
+            {pendingHere > 0 && (
+              <span className="pending-mark" title="Saved on this device, not sent yet">
+                ●
+              </span>
+            )}
+          </div>
+
+          <div className="staff-meta">
+            {/* Counted, not read. Seven pips fill as the balls go down, so the
+                state of the frame is legible from across a dark room. */}
+            {!isFootball && (
+              <div
+                className="staff-pips"
+                aria-label={`${balls} of ${BALLS_PER_SIDE} balls potted`}
+              >
+                {Array.from({ length: BALLS_PER_SIDE }, (_, i) => (
+                  <span key={i} className={`staff-pip${i < balls ? " on" : ""}`} />
+                ))}
+                <span className={`staff-pip black${blackGone ? " on" : ""}`} />
+              </div>
+            )}
+
+            {/* Recorded all along and shown nowhere, which made it the one
+                number a player could argue about and the scorer could not
+                check. */}
+            {fouls > 0 && (
+              <span className="staff-fouls">
+                {fouls} {fouls === 1 ? "foul" : "fouls"}
+              </span>
+            )}
+          </div>
         </div>
 
         {isFootball ? (
@@ -295,17 +381,21 @@ export default function StaffModePage() {
               type="button"
               className="staff-btn big"
               onClick={() => void score(teamId, "BALL")}
-              disabled={balls >= 7}
+              disabled={balls >= BALLS_PER_SIDE}
             >
               BALL
+              <span className="staff-btn-note">
+                {balls >= BALLS_PER_SIDE ? "all seven down" : `${BALLS_PER_SIDE - balls} left`}
+              </span>
             </button>
             <button
               type="button"
-              className="staff-btn gold"
+              className="staff-btn black"
               onClick={() => void score(teamId, "BLACK")}
               disabled={blackGone}
             >
               BLACK
+              <span className="staff-btn-note">ends the frame</span>
             </button>
             <div className="staff-row">
               <button
@@ -334,46 +424,29 @@ export default function StaffModePage() {
     <main className="staff">
       <header className="staff-head">
         <div style={{ minWidth: 0 }}>
-          <div
-            className="muted"
-            style={{
-              fontSize: "var(--text-xs)",
-              textTransform: "uppercase",
-              letterSpacing: "0.14em",
-            }}
-          >
-            Staff mode
+          <div className="staff-kicker">
+            {name || "Staff mode"}
+            {liveMatch?.sudden_death && <span className="staff-sudden"> · sudden death</span>}
           </div>
-          <div style={{ fontWeight: 700 }}>
+          <div className="staff-where">
             {liveMatch
-              ? liveMatch.sudden_death
-                ? "Sudden death"
-                : "On the table"
+              ? `Frame ${frameNumber}${queue.length > 0 ? ` · ${queue.length} to come` : " · last one drawn"}`
               : state.phase === "COMPLETED"
-                ? "Finished"
-                : "Nothing live"}
+                ? "The night is finished"
+                : nextMatch
+                  ? "Nothing on the table yet"
+                  : "Nothing drawn"}
           </div>
         </div>
         {remaining !== null && (
-          <div className="staff-clock" style={remaining <= 30 ? { color: "#f87171" } : undefined}>
+          <div className={`staff-clock${remaining <= 30 ? " low" : ""}`}>
             {clock(remaining)}
+            <span className="staff-clock-note">left</span>
           </div>
         )}
       </header>
 
-      {error && (
-        <div
-          style={{
-            padding: "var(--space-3) var(--space-4)",
-            borderRadius: "var(--radius-sm)",
-            background: "rgba(220, 38, 38, 0.12)",
-            border: "1px solid rgba(220, 38, 38, 0.4)",
-            fontSize: "var(--text-sm)",
-          }}
-        >
-          {error}
-        </div>
-      )}
+      {error && <div className="staff-error">{error}</div>}
 
       {awaiting && state.requireFrameConfirmation && (
         <FrameConfirm
@@ -398,26 +471,40 @@ export default function StaffModePage() {
           {side("b")}
         </section>
       ) : (
-        <section className="staff-sides" style={{ gridTemplateColumns: "1fr" }}>
+        <section className="staff-sides one">
           <div className="staff-side">
-            <div className="name">
-              {nextMatch
-                ? `${teamName(nextMatch.team_a_id)} v ${teamName(nextMatch.team_b_id)}`
-                : "No frame waiting"}
+            <div className="staff-side-head">
+              <span className="name">
+                {nextMatch
+                  ? `${teamName(nextMatch.team_a_id)} v ${teamName(nextMatch.team_b_id)}`
+                  : "No frame waiting"}
+              </span>
             </div>
             {nextMatch ? (
-              <button
-                type="button"
-                className="staff-btn big"
-                onClick={() => void command(`/engine/matches/${nextMatch.id}/start`)}
-                disabled={working}
-              >
-                {working ? "Starting…" : "START THIS FRAME"}
-              </button>
+              <>
+                <p className="staff-hint">
+                  Call them to the table, then start the clock.
+                </p>
+                <button
+                  type="button"
+                  className="staff-btn big"
+                  onClick={() => void command(`/engine/matches/${nextMatch.id}/start`)}
+                  disabled={working}
+                >
+                  {working ? "Starting…" : "START THIS FRAME"}
+                </button>
+                {queue.length > 1 && (
+                  <p className="staff-hint">
+                    Then {teamName(queue[1].team_a_id)} v {teamName(queue[1].team_b_id)}
+                    {queue.length > 2 ? `, and ${queue.length - 2} more` : ""}.
+                  </p>
+                )}
+              </>
             ) : (
               <>
-                <p className="muted" style={{ fontSize: "var(--text-sm)" }}>
-                  Draw the next round, or finish the night.
+                <p className="staff-hint">
+                  Everyone drawn has played. Draw another round, or move the night into the
+                  knockout.
                 </p>
                 <button
                   type="button"
@@ -441,40 +528,29 @@ export default function StaffModePage() {
         </section>
       )}
 
-      <footer className="h-stack tight" style={{ justifyContent: "center" }}>
+      {/* Who is up after this one, so the scorer can call them over without
+          going to another screen to find out. */}
+      {liveMatch && nextMatch && (
+        <p className="staff-next">
+          Next: {teamName(nextMatch.team_a_id)} v {teamName(nextMatch.team_b_id)}
+        </p>
+      )}
+
+      <footer className="staff-foot">
         {liveMatch && (
           <button
             type="button"
             className="staff-btn ghost"
             onClick={() => void command(`/engine/matches/${liveMatch.id}/extra-time`, { seconds: 60 })}
             disabled={working}
-            style={{ flex: "1 1 8rem" }}
           >
             +1 min
           </button>
         )}
-        <Link
-          className="staff-btn ghost"
-          href={`/display/${tournamentId}`}
-          style={{
-            flex: "1 1 8rem",
-            textDecoration: "none",
-            display: "grid",
-            placeItems: "center",
-          }}
-        >
+        <Link className="staff-btn ghost" href={`/display/${tournamentId}`}>
           Big screen
         </Link>
-        <Link
-          className="staff-btn ghost"
-          href={`/tournaments/${tournamentId}`}
-          style={{
-            flex: "1 1 8rem",
-            textDecoration: "none",
-            display: "grid",
-            placeItems: "center",
-          }}
-        >
+        <Link className="staff-btn ghost" href={`/tournaments/${tournamentId}`}>
           Full controls
         </Link>
       </footer>

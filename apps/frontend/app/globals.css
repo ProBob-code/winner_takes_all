@@ -3771,7 +3771,12 @@ select.form-control option {
 
 /* ── 1.5 Staff mode ──
    One screen, big buttons, scoring only. Built for someone trained for ninety
-   seconds, holding a phone, in a dark room. */
+   seconds, holding a phone, in a dark room.
+
+   The rule here is that the screen gets used. Everything stretches to fill it,
+   because a thumb reaching for a bigger target misses less — and the
+   alternative, which is what this was, is a block of controls at the top with
+   half a phone of black underneath. */
 
 .staff {
   min-height: 100vh;
@@ -3779,7 +3784,7 @@ select.form-control option {
   display: flex;
   flex-direction: column;
   background: var(--bg-primary);
-  padding: env(safe-area-inset-top, 0px) var(--space-3)
+  padding: calc(var(--space-2) + env(safe-area-inset-top, 0px)) var(--space-3)
            calc(var(--space-3) + env(safe-area-inset-bottom, 0px));
   gap: var(--space-3);
 }
@@ -3789,58 +3794,201 @@ select.form-control option {
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
-  padding: var(--space-3) var(--space-1);
+  padding: var(--space-2) var(--space-1);
   flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+/* The name of the night. A venue running two tables has two of these phones
+   open, and "Staff mode" on both is how a frame lands on the wrong night. */
+.staff-kicker {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.staff-sudden { color: var(--team-red); font-weight: var(--weight-black); }
+
+.staff-where {
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-muted);
+  font-weight: var(--weight-semibold);
+  margin-top: 0.15rem;
 }
 
 .staff-clock {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35em;
   font-family: var(--font-outfit), system-ui, sans-serif;
-  font-size: var(--text-2xl);
+  font-size: var(--text-3xl);
   font-weight: var(--weight-black);
   font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.staff-clock.low { color: var(--team-red); }
+
+.staff-clock-note {
+  font-family: inherit;
+  font-size: 0.32em;
+  font-weight: var(--weight-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--text-muted);
+}
+
+.staff-error {
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-sm);
+  background: rgba(220, 38, 38, 0.12);
+  border: 1px solid rgba(220, 38, 38, 0.4);
+  font-size: var(--text-sm);
+  flex-shrink: 0;
 }
 
 /* The two sides of the table, side by side on anything wide enough and
-   stacked on a phone held in one hand. */
+   stacked on a phone held in one hand. `align-content: start` here was the
+   half-screen of black: the grid took the space and then refused to use it. */
 .staff-sides {
   display: grid;
   gap: var(--space-3);
   grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
   flex: 1;
-  align-content: start;
+  align-content: stretch;
+  min-height: 0;
 }
+
+.staff-sides.one { grid-template-columns: 1fr; }
 
 .staff-side {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  /* Centred, so whatever the capped buttons do not use is split above and
+     below rather than left as a pool of empty card under the controls. On a
+     phone there is no slack to split and this does nothing. */
+  justify-content: center;
+  gap: var(--space-2);
   padding: var(--space-4);
   border-radius: var(--radius);
   border: 2px solid var(--glass-border-color);
   background: var(--bg-card);
   min-width: 0;
+  min-height: 0;
 }
 
 .staff-side.a { border-color: var(--team-red); }
 .staff-side.b { border-color: var(--team-blue); }
 
+/* Who is in front, said rather than left to be worked out from two numbers. */
+.staff-side.ahead {
+  box-shadow: 0 0 0 1px var(--gold-subtle), 0 12px 40px rgba(0, 0, 0, 0.45);
+}
+
+.staff-side-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+.staff-ahead {
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-weight: var(--weight-black);
+  color: var(--gold);
+  white-space: nowrap;
+}
+
 .staff-side .name {
   font-size: var(--text-lg);
   font-weight: var(--weight-bold);
   overflow-wrap: anywhere;
+  min-width: 0;
+}
+
+/* Score on the left, state of the frame on the right, one line.
+
+   Stacked, two sides together were taller than a phone and the scorer had to
+   scroll to reach the second player, at the table, mid-frame. */
+.staff-readout {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+.staff-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.35rem;
+  min-width: 0;
 }
 
 .staff-side .score {
   font-family: var(--font-outfit), system-ui, sans-serif;
-  font-size: clamp(3rem, 14vw, 5rem);
+  font-size: clamp(3rem, 13vw, 5rem);
   font-weight: var(--weight-black);
   line-height: 1;
   font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+/* Seven balls and the black, as pips. Counted at a glance in a dark room,
+   which a "1/7" chip in six-point type was not. */
+.staff-pips {
+  display: flex;
+  gap: 0.4em;
+  align-items: center;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+.staff-pip {
+  width: 0.85rem;
+  height: 0.85rem;
+  border-radius: 999px;
+  border: 1.5px solid var(--glass-border-color);
+  background: transparent;
+}
+
+.staff-pip.on { background: var(--gold); border-color: var(--gold); }
+.staff-pip.black { margin-left: 0.35em; border-color: var(--text-muted); }
+.staff-pip.black.on { background: var(--text-primary); border-color: var(--text-primary); }
+
+.staff-fouls {
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: var(--weight-bold);
+  color: var(--team-red);
+  flex-shrink: 0;
+}
+
+.staff-hint {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  flex-shrink: 0;
 }
 
 /* The only controls staff get. Nothing here is smaller than a thumb. */
 .staff-btn {
+  display: grid;
+  place-content: center;
+  gap: 0.15em;
+  text-align: center;
   min-height: 72px;
+  padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-sm);
   border: 0;
   font-size: var(--text-lg);
@@ -3849,6 +3997,7 @@ select.form-control option {
   cursor: pointer;
   background: var(--gold-fill);
   color: var(--on-gold);
+  text-decoration: none;
   /* A double-tap that zooms instead of scoring is maddening at the table. */
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
@@ -3858,8 +4007,45 @@ select.form-control option {
 .staff-btn:active { transform: scale(0.97); }
 .staff-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
-.staff-btn.big { min-height: 96px; font-size: var(--text-xl); }
-.staff-btn.gold { background: var(--gradient-fill); color: var(--on-gold); }
+/* The scoring button takes whatever is left of the screen, up to a point.
+
+   Uncapped it was a 470px wall of yellow on a laptop, which is past the size
+   where a bigger target helps anyone and well into looking broken. On the
+   phone this is actually used on there is less than the cap to give, so it
+   still fills the screen there, which is where filling it mattered. */
+.staff-btn.big {
+  flex: 1;
+  min-height: 96px;
+  max-height: 16rem;
+  font-size: clamp(var(--text-xl), 6vw, 2.75rem);
+}
+
+.staff-btn-note {
+  font-size: 0.4em;
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+
+/* The black is not another yellow button. It ends the frame, and two
+   near-identical yellow rectangles in a dark room is a mis-tap waiting to
+   happen. */
+.staff-btn.black {
+  min-height: 72px;
+  background: #0b0b0d;
+  /* Pinned, not the theme token: the button is always near-black, and light
+     mode's deeper gold on it is not a contrast anyone should squint at. */
+  color: #ffd700;
+  border: 2px solid #ffd700;
+  font-size: var(--text-lg);
+}
+
+.staff-btn.black:disabled {
+  border-color: var(--glass-border-color);
+  color: var(--text-muted);
+}
+
 .staff-btn.ghost {
   background: transparent;
   border: 1px solid var(--glass-border-color);
@@ -3867,12 +4053,60 @@ select.form-control option {
   min-height: var(--touch-min);
   font-size: var(--text-sm);
   font-weight: var(--weight-semibold);
+  flex: none;
 }
 
 .staff-row {
   display: grid;
   gap: var(--space-2);
   grid-template-columns: 1fr 1fr;
+  flex-shrink: 0;
+}
+
+/* Who is up next, so the scorer can call them over without leaving the page. */
+.staff-next {
+  margin: 0;
+  text-align: center;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  font-weight: var(--weight-semibold);
+  flex-shrink: 0;
+  overflow-wrap: anywhere;
+}
+
+.staff-foot {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+/* Only the narrowest phones stack the exits; at 390 they fit in a row, and a
+   row keeps the whole screen — both players and the way out — above the
+   fold. */
+@media (max-width: 340px) {
+  .staff-foot { grid-auto-flow: row; grid-auto-columns: auto; }
+}
+
+/* Both players, on one phone screen, without scrolling.
+
+   The two sides share the height equally and everything inside comes in to
+   fit. A scorer reaching for the other player's BALL button should not have
+   to find it first. */
+@media (max-width: 760px) {
+  .staff-sides { grid-auto-rows: 1fr; }
+
+  .staff-side {
+    padding: var(--space-3);
+    gap: var(--space-2);
+  }
+
+  .staff-side .score { font-size: clamp(2.5rem, 11vw, 3.5rem); }
+
+  .staff-btn.big { min-height: 64px; font-size: var(--text-xl); }
+  .staff-btn.black { min-height: 56px; }
+  .staff-btn.ghost { min-height: 44px; }
 }
 
 /* ── 1.6 Big-screen display ──
