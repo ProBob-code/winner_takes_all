@@ -7,6 +7,7 @@ import { Topbar } from "@/components/topbar";
 import { MobileNav } from "@/components/mobile-nav";
 import { NetworkBadge } from "@/components/network-badge";
 import { SplashScreen } from "@/components/splash-screen";
+import { CoinToast } from "@/components/coin-toast";
 import Link from "next/link";
 import { getApiUrl } from "@/lib/api-config";
 
@@ -56,6 +57,7 @@ export function LayoutClient({ children }: { children: React.ReactNode }) {
         {children}
         <NetworkBadge />
         <SplashScreen />
+        <CoinToast />
       </>
     );
   }
@@ -128,6 +130,8 @@ export function LayoutClient({ children }: { children: React.ReactNode }) {
       <NetworkBadge />
       {/* Once a session, and never on the full-bleed routes. */}
       <SplashScreen />
+      {/* Claims the day's visit coins and announces them. Silent otherwise. */}
+      <CoinToast />
     </div>
   );
 }

@@ -90,7 +90,16 @@ export type CoinReason =
    * participation award there is just free currency for leaving a game
    * running. Browser play pays the winner and nobody else.
    */
-  | "ONLINE_WON";
+  | "ONLINE_WON"
+  /**
+   * Signing in on a day you had not yet.
+   *
+   * The one award that is not for playing. It exists so somebody who creates
+   * an account has a balance to look at before their first frame, and so that
+   * coming back is worth something on a week nobody ran a night. Paid once a
+   * day, whatever else happens that day.
+   */
+  | "DAILY_VISIT";
 
 /**
  * The unit the schedule is denominated in.
@@ -140,6 +149,11 @@ export const COIN_AWARDS: Record<CoinReason, number> = {
   STREAK: 75 * COIN_UNIT,
   /** Topping a season's table. */
   SEASON_WON: 500 * COIN_UNIT,
+
+  // Small on purpose. It should feel like a greeting rather than a reason to
+  // open the app and close it again: one visit is worth a fifth of playing a
+  // single frame, so the schedule still says that playing is the point.
+  DAILY_VISIT: 1 * COIN_UNIT,
 
   // ── Online play ──
   //
@@ -381,6 +395,23 @@ export function awardsForOnlineGame(args: {
         args.mode === 1
           ? `Beat the AI${difficulty > 1 ? ` (level ${difficulty})` : ""}`
           : "Won a game",
+    },
+  ];
+}
+
+/**
+ * What signing in on a new day earns.
+ *
+ * The caller decides whether today has already been paid; this only says what
+ * the day is worth. Keyed by date at the call site so the same day cannot pay
+ * twice however many times the app is opened.
+ */
+export function awardsForDailyVisit(firstEver: boolean): CoinAward[] {
+  return [
+    {
+      reason: "DAILY_VISIT",
+      amount: COIN_AWARDS.DAILY_VISIT,
+      description: firstEver ? "Welcome to Winner Takes All" : "Signed in today",
     },
   ];
 }

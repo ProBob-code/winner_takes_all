@@ -63,6 +63,9 @@ interface Rules {
 }
 
 const EARN_LABELS: Array<{ key: string; label: string; note: string }> = [
+  // The one award that is not for playing, so it leads: a new account has a
+  // balance to look at before its first frame.
+  { key: "DAILY_VISIT", label: "Sign in today", note: "A small amount once a day, just for coming back" },
   { key: "NIGHT_PLAYED", label: "Turn up", note: "Once a night, on your first frame" },
   { key: "FRAME_PLAYED", label: "Play a match", note: "Win or lose — losing never costs you" },
   { key: "FRAME_WON", label: "Win a match", note: "A small top-up on top of playing it. The big coins are for winning the night." },

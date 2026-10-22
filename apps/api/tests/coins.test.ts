@@ -11,6 +11,7 @@ import {
   awardsForNight,
   nightWinAmount,
   awardsForOnlineGame,
+  awardsForDailyVisit,
   ONLINE_DAILY_CAP,
   ONLINE_REASONS,
   MIN_ONLINE_SECONDS,
@@ -363,6 +364,45 @@ describe("the streak bonus", () => {
     expect(COIN_AWARDS.STREAK).toBeGreaterThan(COIN_AWARDS.FRAME_WON);
     // The smallest night there is: two players.
     expect(COIN_AWARDS.STREAK).toBeLessThan(nightWinAmount(2));
+  });
+});
+
+describe("the daily visit award", () => {
+  it("pays something for signing in", () => {
+    expect(totalOf(awardsForDailyVisit(false))).toBe(COIN_AWARDS.DAILY_VISIT);
+    expect(totalOf(awardsForDailyVisit(false))).toBeGreaterThan(0);
+  });
+
+  it("welcomes a brand new account differently", () => {
+    const [first] = awardsForDailyVisit(true);
+    const [returning] = awardsForDailyVisit(false);
+    expect(first.description).not.toBe(returning.description);
+    // Same coins either way: the wording changes, the award does not.
+    expect(first.amount).toBe(returning.amount);
+  });
+
+  it("is worth less than playing a single frame", () => {
+    // It is a greeting, not a reason to open the app and close it again. The
+    // schedule has to keep saying that playing is the point.
+    expect(COIN_AWARDS.DAILY_VISIT).toBeLessThan(COIN_AWARDS.FRAME_PLAYED);
+  });
+
+  it("is a whole unit like every other figure", () => {
+    expect(COIN_AWARDS.DAILY_VISIT % COIN_UNIT).toBe(0);
+  });
+
+  it("could not reach the daily cap on its own in a lifetime", () => {
+    // A sanity check on the ratio: if signing in ever approached the cap, the
+    // award would have stopped being a greeting.
+    expect(DAILY_COIN_CAP / COIN_AWARDS.DAILY_VISIT).toBeGreaterThan(100);
+  });
+
+  it("never pays a negative amount", () => {
+    for (const first of [true, false]) {
+      for (const award of awardsForDailyVisit(first)) {
+        expect(award.amount).toBeGreaterThan(0);
+      }
+    }
   });
 });
 

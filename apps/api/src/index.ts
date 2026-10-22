@@ -76,6 +76,7 @@ import {
   titleFor,
   nextTitle,
   awardsForOnlineGame,
+  awardsForDailyVisit,
   awardsForStreak,
   awardsForSeason,
   STREAK_NIGHTS,
@@ -4505,7 +4506,56 @@ app.get("/api/coins/rules", (c) => {
     // Said plainly, in the API as well as on the page, because this is the
     // sentence that keeps the whole thing lawful.
     notice:
-      "WTA Coins have no cash value. They cannot be bought, sold, transferred, withdrawn or staked. They are a record of what you have played, like a league table.",
+      "WTA Coins have no cash value. They cannot be bought, sold, transferred, withdrawn or staked. They are a score you build by playing, with a small amount for signing in each day.",
+  });
+});
+
+/**
+ * Claim today's visit coins.
+ *
+ * Called by the app on load for anyone signed in. Idempotent on the UTC date,
+ * so opening the app ten times in a day pays once and the tenth call is as
+ * cheap as the second — the ledger's unique index does the work rather than a
+ * read-then-write that could race with itself.
+ *
+ * Always 200. A day already claimed is not an error, and the page uses
+ * `awarded` to decide whether to say anything at all.
+ */
+app.post("/api/coins/daily", async (c) => {
+  const user = requireUser(c);
+  if (!user) return c.json({ ok: false, message: "Authentication required" }, 401);
+
+  const store = c.get("store");
+  const today = new Date().toISOString().slice(0, 10);
+
+  // Whether this is their very first coin, which only changes the wording.
+  const before = await store.getCoinBalance(user.id).catch(() => null);
+  const firstEver = !before || before.lifetime === 0;
+
+  const paid: Array<{ reason: string; amount: number; description: string }> = [];
+  for (const award of awardsForDailyVisit(firstEver)) {
+    const applied = await store.awardCoins({
+      userId: user.id,
+      reason: award.reason,
+      amount: award.amount,
+      description: award.description,
+      referenceType: "daily",
+      referenceId: today,
+    });
+    if (applied !== null) paid.push(award);
+  }
+
+  const balance = await store.getCoinBalance(user.id);
+  const awarded = paid.reduce((sum, a) => sum + a.amount, 0);
+
+  return c.json({
+    ok: true,
+    awarded,
+    // Null when today was already claimed, so the client shows nothing.
+    award: paid[0] ?? null,
+    firstEver: firstEver && awarded > 0,
+    balance: balance.balance,
+    title: titleFor(balance.balance),
   });
 });
 
