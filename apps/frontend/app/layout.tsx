@@ -16,11 +16,11 @@ export const viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "W.T.A | Professional Tournament Infrastructure",
+  title: "W.T.A | Run a pool night, crown a winner",
   description: "🏆 Run 8-ball and football nights at your pool room, club or bar. Brackets, scoring and a live table on the wall — free to enter.",
   openGraph: {
-    title: "W.T.A | Tournament Infrastructure",
-    description: "🔥 Powering the next generation of competitive events. Professional infrastructure for tournament organizers.",
+    title: "W.T.A — Run the night, crown the winner",
+    description: "🎱 Brackets, scoring and a live table for 8-ball and football nights. Set up in a minute, free to enter.",
     url: "https://winnertakesall.live",
     siteName: "W.T.A",
     images: [
@@ -28,7 +28,7 @@ export const metadata: Metadata = {
         url: "https://winnertakesall.live/og-image.jpg",
         width: 1200,
         height: 630,
-        alt: "WTA Arena Platform",
+        alt: "Winner Takes All — league nights for pool rooms, clubs and bars",
         type: "image/jpeg",
       },
     ],
@@ -37,7 +37,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "W.T.A | Platform",
+    title: "W.T.A — Pool and football league nights",
     description: "⚔️ Brackets, scoring and a live table for pool and football nights. Free to enter.",
     images: ["https://winnertakesall.live/og-image.jpg"],
   },
