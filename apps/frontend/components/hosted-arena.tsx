@@ -24,6 +24,7 @@ import { BroadcastCode } from "./broadcast-code";
 import { LiveFeedViewer } from "./live-feed-viewer";
 import { WhatsappPush } from "./whatsapp-push";
 import { FrameConfirm, type FrameConfirmation } from "./frame-confirm";
+import { rankStandings, placeStandings, anythingCounted } from "@/lib/standings";
 import { NightLinks } from "./night-links";
 import { enqueueWrite, startOutbox, subscribeToOutbox, pendingWrites } from "@/lib/outbox";
 import { projectPending, type LocalScoreEvent, type PendingTap } from "@/lib/local-score";
@@ -386,18 +387,24 @@ export function HostedArena({
   const getTeamName = (teamId: string | null) =>
     teams.find((t) => t.id === teamId)?.name || (teamId === "BYE" ? "BYE" : "TBD");
 
-  const standings = [...teams].sort(
-    (a, b) => b.group_points - a.group_points || b.total_score - a.total_score
-  );
+  const standings = rankStandings(teams);
+  /**
+   * Shared places. Three players level on wins and points used to be handed
+   * gold, silver and bronze by row order alone. See lib/standings.ts.
+   */
+  const places = placeStandings(standings);
   /**
    * Whether anything has reached the table.
    *
    * Until it has, the order is arbitrary and showing a leader and a top three
    * crowns whoever happens to sort first. The table says so instead.
    */
-  const tableHasCounted = teams.some((t) => t.matches_played > 0 || t.group_points > 0);
-  /** total_score is balls potted at pool and goals at football. */
-  const scoreHeading = isFootball ? "Goals" : "Balls";
+  const tableHasCounted = anythingCounted(teams);
+  /**
+   * total_score is points at pool — ten a ball, thirty the black, a hundred if
+   * the black goes down early — and goals at football.
+   */
+  const scoreHeading = isFootball ? "Goals" : "Points";
   const championId = concluded ? finalMatch?.winner_id ?? null : null;
   const champion = championId ? getTeamName(championId) : null;
 
@@ -1143,19 +1150,29 @@ export function HostedArena({
               </thead>
               <tbody>
                 {standings.map((t, i) => (
-                  <tr key={t.id} className={tableHasCounted && i === 0 ? "leader" : undefined}>
+                  <tr
+                    key={t.id}
+                    className={
+                      tableHasCounted && places[i].position === 1 ? "leader" : undefined
+                    }
+                  >
                     <td style={{ padding: "1rem" }}>
                       <span
                         className={
-                          tableHasCounted && i < 3 ? `standings-place p${i + 1}` : "standings-place"
+                          places[i].medal
+                            ? `standings-place p${places[i].medal}`
+                            : "standings-place"
                         }
+                        title={places[i].shared ? "Level — nothing between them yet" : undefined}
                       >
-                        {i + 1}
+                        {places[i].shared ? `=${places[i].position}` : places[i].position}
                       </span>
                     </td>
                     <td style={{ fontWeight: 900 }}>
                       {t.name}
-                      {(championId ? championId === t.id : i === 0 && played.length > 0) && (
+                      {(championId
+                        ? championId === t.id
+                        : places[i].position === 1 && !places[i].shared && played.length > 0) && (
                         <span style={{ marginLeft: "8px" }} title="Top of the table">
                           👑
                         </span>
@@ -1208,8 +1225,10 @@ export function HostedArena({
             <strong>Played</strong> frames started.{" "}
             <strong>Won</strong> frames taken — this is what ranks the table.{" "}
             <strong>{scoreHeading}</strong>{" "}
-            {isFootball ? "goals scored" : "balls potted"}, used only to split players level on
-            wins.
+            {isFootball
+              ? "goals scored"
+              : "ten a ball, thirty for the black, a hundred if the black goes down early"}
+            , used only to split players level on wins. A place marked = is shared.
           </p>
         </div>
       )}

@@ -715,6 +715,7 @@ export class D1Store {
     teamSize?: number; tournamentType?: string; bracketType?: string; password?: string | null;
     sport?: string; seriesId?: string; seriesWeek?: number;
     venueId?: string | null; requireFrameConfirmation?: boolean;
+    maxMatchesPerTeam?: number;
   }): Promise<TournamentRecord> {
     const id = createId("tournament");
     const now = new Date().toISOString();
@@ -761,6 +762,20 @@ export class D1Store {
         `INSERT INTO tournaments (id, name, entry_fee_cents, max_players, host_id, team_size, tournament_type, bracket_type, password, status, created_at, updated_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'open', ?, ?)`
       ).bind(...common, data.password ?? null, now, now).run();
+    }
+
+    // Stamped separately, for the same reason the series week is: the three
+    // insert shapes above each exist to survive a database missing a column,
+    // and adding a fourth column to all of them would mean a fourth shape. A
+    // database too old to have it keeps the default of two.
+    if (data.maxMatchesPerTeam && data.maxMatchesPerTeam !== 2) {
+      try {
+        await this.db.prepare(
+          `UPDATE tournaments SET max_matches_per_team = ? WHERE id = ?`
+        ).bind(data.maxMatchesPerTeam, id).run();
+      } catch (err) {
+        if (!isMissingColumnError(err)) throw err;
+      }
     }
 
     // Stamped separately so the two insert shapes above stay as they were. A

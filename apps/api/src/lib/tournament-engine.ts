@@ -369,6 +369,20 @@ export function resultDeltas(match: EngineMatch, sport: Sport): ResultDelta[] {
 }
 
 /**
+ * How many frames each player actually gets.
+ *
+ * The host asks for a number; the field decides what is possible. Nobody can
+ * be drawn against more opponents than have turned up, so four players is
+ * three frames each at most, however many the host typed. Clamping here rather
+ * than at the draw means the number the host is shown is the number they get,
+ * instead of a round that silently comes up short.
+ */
+export function framesEachFor(requested: number, fieldSize: number): number {
+  const asked = Number.isFinite(requested) ? Math.floor(requested) : 2;
+  return Math.max(1, Math.min(asked, Math.max(1, fieldSize - 1)));
+}
+
+/**
  * PHASE 7 — Ranking
  */
 export function rankTeams(teams: EngineTeam[]): EngineTeam[] {

@@ -4111,11 +4111,54 @@ select.form-control option {
   min-width: 0;
 }
 
+/* The table takes the room; the QR takes what it needs.
+
+   An auto-fit grid gave them a column each, so on a wide screen the join card
+   sat in half the screen with nothing in it while eight rows of table were
+   squeezed into the other half. */
 .display-foot {
   display: grid;
   gap: clamp(var(--space-3), 2vw, var(--space-5));
-  grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr));
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: start;
+}
+
+@media (max-width: 900px) {
+  .display-foot { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* What is on after this one. Fills the half-screen of nothing an idle table
+   used to show, and answers "when am I up" without asking the host. */
+.display-queue {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2) var(--space-4);
+  margin-top: clamp(var(--space-4), 3vw, var(--space-6));
+}
+
+.display-queue-tag {
+  font-size: clamp(0.65rem, 1vw, 0.85rem);
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--display-dim);
+  font-weight: var(--weight-bold);
+}
+
+.display-queue-item {
+  padding: 0.45em 1em;
+  border-radius: 999px;
+  border: 1px solid var(--display-line);
+  background: var(--display-panel);
+  font-size: clamp(0.85rem, 1.4vw, 1.15rem);
+  font-weight: var(--weight-semibold);
+  overflow-wrap: anywhere;
+}
+
+.display-queue-more {
+  color: var(--display-dim);
+  font-size: clamp(0.75rem, 1.1vw, 0.95rem);
 }
 
 /* ── The table ──
@@ -4186,6 +4229,13 @@ select.form-control option {
 }
 
 .display-table .pos { width: 1%; padding-right: 0; }
+
+/* The quota beside the count, so "1 played" says 1 of how many. */
+.display-table .of {
+  color: var(--display-dim);
+  font-size: 0.78em;
+  font-weight: var(--weight-semibold);
+}
 .display-table .num { text-align: right; font-variant-numeric: tabular-nums; }
 .display-table .won { font-weight: var(--weight-black); color: var(--gold-light, #ffd700); }
 
@@ -4208,6 +4258,7 @@ select.form-control option {
 .display-place {
   display: inline-grid;
   place-items: center;
+  padding: 0 0.4em;
   min-width: 1.9em;
   min-height: 1.9em;
   border-radius: 999px;
@@ -4232,6 +4283,9 @@ select.form-control option {
   display: flex;
   align-items: center;
   gap: var(--space-4);
+  /* Wide enough for the QR beside the code, and no wider: it is a sign, not a
+     panel, and it was taking half the screen. */
+  max-width: 26rem;
   padding: var(--space-4);
   border-radius: var(--radius);
   background: var(--display-panel);

@@ -30,6 +30,25 @@ import { backendFetch } from "@/lib/backend";
 
 const SIZES = [4, 8, 16, 32];
 
+/**
+ * How many frames each player gets in the group stage.
+ *
+ * This was never a question the host was asked, and the column behind it was
+ * read in six places as "or 2" and written in none — so every night ever run
+ * was two frames each, whatever the night was for. A quick knockout and a
+ * proper league were the same evening.
+ */
+const FRAMES_EACH = [1, 2, 3, 4];
+
+/**
+ * Roughly how many frames the group stage comes to.
+ *
+ * Each frame uses up one of two players' allowances, so it is half the total,
+ * rounded down — an odd field leaves one player short and takes a bye.
+ */
+const groupFrames = (players: number, each: number) =>
+  Math.floor((players * each) / 2);
+
 interface Ready {
   tournamentId: string;
   /** Unknown when the night is restored rather than just created. */
@@ -67,6 +86,7 @@ export default function RunNightPage() {
 
   const [sport, setSport] = useState<"8BALL" | "FOOTBALL">("8BALL");
   const [size, setSize] = useState(8);
+  const [framesEach, setFramesEach] = useState(2);
   const [name, setName] = useState("");
   const [requireConfirm, setRequireConfirm] = useState(false);
   const [namesText, setNamesText] = useState("");
@@ -191,6 +211,7 @@ export default function RunNightPage() {
           sport,
           size,
           players: players.length > 0 ? players : undefined,
+          matchesPerTeam: framesEach,
           requireFrameConfirmation: requireConfirm,
         }),
       });
@@ -387,7 +408,12 @@ export default function RunNightPage() {
                   key={option}
                   type="button"
                   className={size === option ? "button" : "button-secondary"}
-                  onClick={() => setSize(option)}
+                  onClick={() => {
+                    setSize(option);
+                    // Shrinking the field can leave a frame count that cannot
+                    // be drawn selected. Bring it down with the field.
+                    setFramesEach((f) => Math.max(1, Math.min(f, option - 1)));
+                  }}
                 >
                   {option}
                 </button>
@@ -395,6 +421,37 @@ export default function RunNightPage() {
             </div>
             <span className="hint">
               Anyone who turns up later can scan the code on the screen and join.
+            </span>
+          </div>
+
+          {/* The question that decides whether this is a quick knockout or a
+              league. It was never asked, and the answer was always two. */}
+          <div className="field">
+            <label>How many frames each</label>
+            <div className="h-stack tight">
+              {FRAMES_EACH.map((option) => {
+                // You cannot be drawn against more opponents than turned up,
+                // so four players is three frames each at most. Shown as
+                // unavailable rather than silently clamped after the fact.
+                const tooMany = option > size - 1;
+                return (
+                  <button
+                    key={option}
+                    type="button"
+                    className={framesEach === option ? "button" : "button-secondary"}
+                    onClick={() => setFramesEach(option)}
+                    disabled={tooMany}
+                    title={tooMany ? `Only ${size} playing, so ${size - 1} frames each at most` : undefined}
+                  >
+                    {option}
+                  </button>
+                );
+              })}
+            </div>
+            <span className="hint">
+              {framesEach === 1
+                ? `One frame each — ${groupFrames(size, 1)} frames, then straight into the knockout.`
+                : `${groupFrames(size, Math.min(framesEach, size - 1))} frames in the group stage, then the knockout. Everyone plays ${Math.min(framesEach, size - 1)}.`}
             </span>
           </div>
 

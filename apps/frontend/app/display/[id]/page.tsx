@@ -41,6 +41,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { backendFetch } from "@/lib/backend";
 import { qrToSvg } from "@/lib/qr";
+import { rankStandings, placeStandings, anythingCounted } from "@/lib/standings";
 
 interface Team {
   id: string;
@@ -70,6 +71,7 @@ interface State {
   ok: boolean;
   phase: string;
   sport?: string;
+  matchesPerTeam?: number;
   teams: Team[];
   matches: Match[];
   joinCode: string | null;
@@ -156,13 +158,16 @@ export default function DisplayPage() {
     [state]
   );
 
-  const nextMatch = useMemo(
+  /** The fixtures still to be played, in the order they will be. */
+  const queue = useMemo(
     () =>
-      state?.matches
+      (state?.matches ?? [])
         .filter((m) => m.status === "CREATED")
-        .sort((a, b) => a.match_order - b.match_order)[0] ?? null,
+        .sort((a, b) => a.match_order - b.match_order),
     [state]
   );
+
+  const nextMatch = queue[0] ?? null;
 
   /**
    * Frames that are over but not yet on the table.
@@ -178,16 +183,16 @@ export default function DisplayPage() {
     [state]
   );
 
-  const ranked = useMemo(
-    () =>
-      [...(state?.teams ?? [])].sort(
-        (a, b) =>
-          b.group_points - a.group_points ||
-          b.total_score - a.total_score ||
-          a.matches_played - b.matches_played
-      ),
-    [state]
-  );
+  const ranked = useMemo(() => rankStandings(state?.teams ?? []), [state]);
+
+  /**
+   * Position per row, with players who are exactly level sharing a place.
+   *
+   * Three players on one win and 100 points each used to come out as gold,
+   * silver and bronze, decided by nothing but the order the database returned
+   * them. See lib/standings.ts.
+   */
+  const places = useMemo(() => placeStandings(ranked), [ranked]);
 
   /**
    * Has anything reached the table yet?
@@ -196,10 +201,7 @@ export default function DisplayPage() {
    * screen stops dressing it up as a ranking: no leader, no top three, and a
    * line saying why.
    */
-  const counted = useMemo(
-    () => ranked.some((t) => t.matches_played > 0 || t.group_points > 0),
-    [ranked]
-  );
+  const counted = useMemo(() => anythingCounted(ranked), [ranked]);
 
   const teamName = useCallback(
     (id: string | null) => state?.teams.find((t) => t.id === id)?.name ?? "TBC",
@@ -252,9 +254,15 @@ export default function DisplayPage() {
         ? `${phaseLabel(nextMatch.phase)} · next on the table`
         : "Waiting for the host to draw the next round";
 
-  // total_score is balls potted at pool and goals at football. Heading it
-  // "Score" left both groups guessing.
-  const scoreHeading = state.sport === "FOOTBALL" ? "Goals" : "Balls";
+  // total_score is points at pool — ten a ball, thirty the black, a hundred
+  // if the black goes down early — and goals at football. It was headed
+  // "Balls", which is the count beside it on the scorer's phone, not this.
+  const scoreHeading = state.sport === "FOOTBALL" ? "Goals" : "Points";
+
+  // "1 played" means nothing without the number it is counting towards. Only
+  // shown in the group stage: the knockout has no quota.
+  const framesEach =
+    state.phase === "GROUP" && state.matchesPerTeam ? state.matchesPerTeam : null;
 
   return (
     <main className="display">
@@ -322,6 +330,23 @@ export default function DisplayPage() {
                   ? "Next up — the host starts the clock"
                   : "The host draws the next round from their phone"}
             </div>
+
+            {/* What is coming, rather than half a screen of nothing. The room
+                wants to know when it is their turn, and asking the host is the
+                thing the big screen exists to stop. */}
+            {queue.length > 1 && (
+              <div className="display-queue">
+                <span className="display-queue-tag">Then</span>
+                {queue.slice(1, 4).map((m) => (
+                  <span key={m.id} className="display-queue-item">
+                    {teamName(m.team_a_id)} v {teamName(m.team_b_id)}
+                  </span>
+                ))}
+                {queue.length > 4 && (
+                  <span className="display-queue-more">+{queue.length - 4} more</span>
+                )}
+              </div>
+            )}
           </div>
         </section>
       )}
@@ -372,19 +397,35 @@ export default function DisplayPage() {
               </tr>
             </thead>
             <tbody>
-              {ranked.slice(0, ROWS_ON_SCREEN).map((team, i) => (
-                <tr key={team.id} className={counted && i === 0 ? "leader" : undefined}>
-                  <td className="pos">
-                    <span className={counted && i < 3 ? `display-place p${i + 1}` : "display-place"}>
-                      {i + 1}
-                    </span>
-                  </td>
-                  <td className="who">{team.name}</td>
-                  <td className="num">{team.matches_played}</td>
-                  <td className="num won">{team.group_points}</td>
-                  <td className="num">{team.total_score}</td>
-                </tr>
-              ))}
+              {ranked.slice(0, ROWS_ON_SCREEN).map((team, i) => {
+                const place = places[i];
+                return (
+                  <tr
+                    key={team.id}
+                    className={counted && place.position === 1 ? "leader" : undefined}
+                  >
+                    <td className="pos">
+                      <span
+                        className={
+                          place.medal ? `display-place p${place.medal}` : "display-place"
+                        }
+                        title={place.shared ? "Level — nothing between them yet" : undefined}
+                      >
+                        {place.shared ? `=${place.position}` : place.position}
+                      </span>
+                    </td>
+                    <td className="who">{team.name}</td>
+                    <td className="num">
+                      {team.matches_played}
+                      {framesEach ? (
+                        <span className="of">/{framesEach}</span>
+                      ) : null}
+                    </td>
+                    <td className="num won">{team.group_points}</td>
+                    <td className="num">{team.total_score}</td>
+                  </tr>
+                );
+              })}
               {ranked.length === 0 && (
                 <tr>
                   <td colSpan={5} className="display-empty">
@@ -399,6 +440,12 @@ export default function DisplayPage() {
             <p className="display-standings-note">
               Everyone is on zero because no frame has counted yet. A frame counts once it is
               finished and agreed.
+            </p>
+          )}
+          {places.some((p) => p.shared) && (
+            <p className="display-standings-note">
+              A place marked = is shared. Nothing separates those players yet, so no medal has
+              been won there.
             </p>
           )}
           {ranked.length > ROWS_ON_SCREEN && (

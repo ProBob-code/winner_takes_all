@@ -3681,6 +3681,11 @@ app.post("/api/engine/quick-setup", async (c) => {
     names.push(given || `Player ${i + 1}`);
   }
 
+  // You cannot be drawn against more opponents than have turned up, so what
+  // the host asked for is clamped to the field rather than quietly producing a
+  // round that cannot be drawn. Four players is three frames each at most.
+  const matchesPerTeam = Engine.framesEachFor(body.matchesPerTeam, body.size);
+
   const tournament = await store.createTournament({
     name: body.name || `${venue ? venue.name : "League"} night`,
     entryFeeCents: 0,
@@ -3691,6 +3696,7 @@ app.post("/api/engine/quick-setup", async (c) => {
     sport: body.sport,
     venueId: venue?.id ?? null,
     requireFrameConfirmation: body.requireFrameConfirmation,
+    maxMatchesPerTeam: matchesPerTeam,
   });
 
   // The host takes the first seat under their own account unless they say
@@ -3711,7 +3717,7 @@ app.post("/api/engine/quick-setup", async (c) => {
 
   // Draw the opening fixtures, exactly as the start route does, so the
   // schedule exists the moment the page opens.
-  const limit = tournament.max_matches_per_team || 2;
+  const limit = tournament.max_matches_per_team || matchesPerTeam;
   const { matches: nextMatches, byeTeamId } = Engine.generateNextMatches(teams, [], "GROUP", limit);
   for (const mData of nextMatches) {
     const match = await store.createEngineMatch(tournament.id, mData);
@@ -3737,6 +3743,7 @@ app.post("/api/engine/quick-setup", async (c) => {
     tournamentId: tournament.id,
     teams: teams.length,
     matches: nextMatches.length,
+    matchesPerTeam,
     joinCode: code,
     joinUrl: `${publicOrigin(c.env)}/join/${code}`,
     staffUrl: `${publicOrigin(c.env)}/staff/${tournament.id}`,

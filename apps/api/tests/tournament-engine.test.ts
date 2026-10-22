@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  framesEachFor,
   generateNextMatches,
   processScoreUpdate,
   checkTimer,
@@ -486,5 +487,31 @@ describe("planAdvance", () => {
   it("refuses once the final has been played", () => {
     const result = planAdvance(four, [played({ id: "f", phase: "FINAL", winner_id: "1" })]);
     expect(result).toHaveProperty("error");
+  });
+});
+
+describe("framesEachFor", () => {
+  it("gives the host the number they asked for when the field allows it", () => {
+    expect(framesEachFor(3, 8)).toBe(3);
+  });
+
+  it("will not promise more opponents than have turned up", () => {
+    // Four players is three frames each at most. Asking for five would draw a
+    // round that silently came up short.
+    expect(framesEachFor(5, 4)).toBe(3);
+  });
+
+  it("never drops below one frame", () => {
+    expect(framesEachFor(0, 8)).toBe(1);
+    expect(framesEachFor(-4, 8)).toBe(1);
+    expect(framesEachFor(2, 1)).toBe(1);
+  });
+
+  it("falls back to two when handed nonsense", () => {
+    expect(framesEachFor(Number.NaN, 8)).toBe(2);
+  });
+
+  it("rounds a fractional request down rather than drawing half a frame", () => {
+    expect(framesEachFor(2.9, 8)).toBe(2);
   });
 });

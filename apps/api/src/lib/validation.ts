@@ -273,6 +273,19 @@ export const quickSetupSchema = z.object({
   sport: z.enum(["8BALL", "FOOTBALL"]).default("8BALL"),
   /** How many competitors to seat. The only number the host has to choose. */
   size: z.coerce.number().int().min(2).max(64).default(8),
+  /**
+   * How many frames each player gets in the group stage.
+   *
+   * Never settable before this, and read in six places as
+   * `max_matches_per_team || 2` — so every night ever run was two frames each
+   * whatever the host wanted. A knockout of eight that is really a one-frame
+   * shootout, and a four-player league that wants a full round robin, were the
+   * same night.
+   *
+   * Capped at 10 here and clamped against the field size at the call site: you
+   * cannot play more opponents than have turned up.
+   */
+  matchesPerTeam: z.coerce.number().int().min(1).max(10).default(2),
   /** Names, if the host has them. Blanks are filled with Player 1..n. */
   players: z.array(z.string().trim().max(50)).max(64).optional(),
   venueId: z.string().trim().max(64).nullish(),

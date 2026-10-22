@@ -191,11 +191,34 @@ export function tableText(tournamentName: string, teams: ShareTeam[]): string {
     return lines.join("\n");
   }
 
+  // Players who are exactly level share a place, and a shared place takes no
+  // medal. Three players on one win and a hundred points each were being sent
+  // to the group chat as gold, silver and bronze, separated by nothing but the
+  // order the rows came back in. This mirrors apps/frontend/lib/standings.ts,
+  // which does the same job for the screens; tests/standings-mirror.test.ts
+  // holds the two together.
+  const level = (a: ShareTeam, b: ShareTeam) =>
+    a.group_points === b.group_points &&
+    a.total_score === b.total_score &&
+    a.matches_played === b.matches_played;
+
   const medal = ["🥇", "🥈", "🥉"];
+  let position = 0;
   ranked.forEach((t, i) => {
-    // A medal is for a score, not for a position in a list of zeroes.
+    if (i === 0 || !level(t, ranked[i - 1])) position = i + 1;
+    const shared =
+      (i > 0 && level(t, ranked[i - 1])) ||
+      (i + 1 < ranked.length && level(t, ranked[i + 1]));
+
+    // A medal is for a score, not for a position in a list of zeroes, and not
+    // for a place two people are standing on.
     const earned = t.group_points > 0 || t.matches_played > 0;
-    const place = earned ? medal[i] ?? `${i + 1}.` : `${i + 1}.`;
+    const place =
+      earned && !shared
+        ? medal[position - 1] ?? `${position}.`
+        : shared
+          ? `=${position}.`
+          : `${position}.`;
     // "pts" was wrong twice over: group_points is frames won, and nobody
     // reading a bar's group chat knows what a point is here. Say "won".
     lines.push(
@@ -205,6 +228,9 @@ export function tableText(tournamentName: string, teams: ShareTeam[]): string {
 
   lines.push("");
   lines.push("Most frames won takes it.");
+  if (ranked.some((t, i) => (i > 0 && level(t, ranked[i - 1])) || (i + 1 < ranked.length && level(t, ranked[i + 1])))) {
+    lines.push("A place marked = is shared — nothing separates them yet.");
+  }
 
   return lines.join("\n");
 }
