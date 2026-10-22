@@ -2151,7 +2151,14 @@ async function recordEngineResult(
   // The frame is over — the clock has stopped and the bracket has moved on —
   // but nothing is added to either team's totals and a final does not pay out
   // until both sides have confirmed. See the confirm route below.
-  if (tournament.require_frame_confirmation && !match.awaiting_confirmation) {
+  //
+  // The `awaiting_confirmation` flag is deliberately NOT part of this
+  // condition any more. It used to be, and that is how a frame both players
+  // agreed still failed to count: the confirm route clears the flag and then
+  // records the result, which came straight back in here with the flag down
+  // and re-applied the hold. What has actually been agreed is the thing worth
+  // asking about, so the rule is given the confirmations instead.
+  if (tournament.require_frame_confirmation) {
     // A side with no account has nobody to ask.
     //
     // This was a deadlock. Walk-ins seated by name — which is most of a real
@@ -2160,12 +2167,21 @@ async function recordEngineResult(
     // a person who did not exist, nothing reached the table, and the standings
     // stayed on zero all evening with no indication why.
     //
-    // So a side that cannot be asked is confirmed on its behalf, recorded as
-    // such rather than silently. What remains is the case the feature is for:
-    // two signed-in players who both have to agree. One account against a
-    // walk-in needs only that one tap, and two walk-ins settle at once.
-    const sides = await store.getEngineTeams(tournament.id).catch(() => []);
-    const plan = planFrameConfirmation(sides, match.team_a_id, match.team_b_id);
+    // So a side that cannot be asked is confirmed on its behalf. What remains
+    // is the case the feature is for: two signed-in players who both have to
+    // agree. One account against a walk-in needs only that one tap, and a
+    // frame between two walk-ins counts straight away, because there is
+    // nobody whose agreement the hold would be collecting.
+    const [sides, agreed] = await Promise.all([
+      store.getEngineTeams(tournament.id).catch(() => []),
+      store.getFrameConfirmations(match.id).catch(() => []),
+    ]);
+    const plan = planFrameConfirmation(
+      sides,
+      match.team_a_id,
+      match.team_b_id,
+      agreed.map((fc) => fc.team_id)
+    );
 
     if (plan.hold) {
       await store.updateEngineMatch(match.id, { awaiting_confirmation: true });
@@ -2195,6 +2211,67 @@ async function recordEngineResult(
     const settled = await settleTournament(c, tournament);
     if (!settled.ok) console.error("Could not settle the tournament:", settled.message);
   }
+}
+
+/**
+ * Release frames that are held for a confirmation that can never arrive.
+ *
+ * The two deadlocks above were fixed at the point a frame finishes, which
+ * mends every night from here on and does nothing for the ones already stuck.
+ * A league that played all Friday against a frozen table would have had to be
+ * unstuck by hand, frame by frame, from the host's phone.
+ *
+ * So every read of the tournament state re-applies the rule to what is still
+ * being held: a side with no account is agreed on its behalf, and a frame
+ * nobody is left to ask goes on the table. A frame that is genuinely waiting
+ * on a signed-in player is untouched, which is the whole point of the feature.
+ *
+ * Costs nothing on a tournament with nothing held, and nothing at all on one
+ * that never asked for confirmation. The matches passed in are updated in
+ * place. Returns whether anything changed.
+ */
+async function releaseHeldFrames(
+  c: Context<AppContext>,
+  tournament: TournamentRecord,
+  matches: EngineMatchRow[]
+): Promise<boolean> {
+  if (!tournament.require_frame_confirmation) return false;
+  if (!matches.some((m) => m.status === "COMPLETED" && m.awaiting_confirmation)) return false;
+
+  const store = c.get("store");
+  const [sides, allConfirmations] = await Promise.all([
+    store.getEngineTeams(tournament.id).catch(() => []),
+    store.getTournamentFrameConfirmations(tournament.id).catch(() => []),
+  ]);
+
+  let changed = false;
+  for (let i = 0; i < matches.length; i++) {
+    const match = matches[i];
+    if (match.status !== "COMPLETED" || !match.awaiting_confirmation) continue;
+
+    const agreed = allConfirmations
+      .filter((fc) => fc.match_id === match.id)
+      .map((fc) => fc.team_id);
+
+    const plan = planFrameConfirmation(sides, match.team_a_id, match.team_b_id, agreed);
+    for (const teamId of plan.autoConfirm) {
+      await store.confirmFrame(match.id, teamId, null, match.winner_id).catch(() => undefined);
+      agreed.push(teamId);
+    }
+
+    // Ask again with those taps in. Still held means held on a real person.
+    if (planFrameConfirmation(sides, match.team_a_id, match.team_b_id, agreed).hold) continue;
+
+    // The same guard the confirm route uses, so a frame counts once even if
+    // two devices read the state at the same instant.
+    if (!(await store.settleAwaitingConfirmation(match.id))) continue;
+
+    matches[i] = { ...match, awaiting_confirmation: false };
+    await recordEngineResult(c, tournament, matches[i]);
+    changed = true;
+  }
+
+  return changed;
 }
 
 /**
@@ -2257,7 +2334,8 @@ app.get("/api/engine/tournaments/:id/state", async (c) => {
   if (!tournament) return c.json({ ok: false, message: "Tournament not found" }, 404);
 
   const settled = await settleExpiredMatches(c, tournament, matches);
-  if (settled) teams = await store.getEngineTeams(tournamentId);
+  const released = await releaseHeldFrames(c, tournament, matches);
+  if (settled || released) teams = await store.getEngineTeams(tournamentId);
 
   // A tournament whose final was won before prizes were paid out at all — or
   // one whose payout was interrupted — never had its pot settled. The final
@@ -2282,7 +2360,7 @@ app.get("/api/engine/tournaments/:id/state", async (c) => {
   const arenaId = engineArenaId(tournamentId);
   const arena = await store.getArena(arenaId).catch(() => null);
   const published = !!(arena?.state as any)?.isStarted;
-  if (settled && published) await syncEngineArena(c, tournament, [teams, matches]);
+  if ((settled || released) && published) await syncEngineArena(c, tournament, [teams, matches]);
 
   // Only fetched when the rule is on, so an ordinary tournament pays nothing
   // for a feature it is not using.

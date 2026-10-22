@@ -47,6 +47,40 @@ describe("planFrameConfirmation", () => {
     expect(plan.autoConfirm).toEqual([]);
   });
 
+  it("lets go of a frame both players have already agreed", () => {
+    // The worse half of the same bug. Both players tapped agree, the confirm
+    // route cleared the hold and recorded the result, and recording the result
+    // ran this rule again and re-held the frame. An agreed frame could never
+    // reach the table.
+    const plan = planFrameConfirmation([signedIn("a"), signedIn("b")], "a", "b", ["a", "b"]);
+    expect(plan.hold).toBe(false);
+    expect(plan.autoConfirm).toEqual([]);
+  });
+
+  it("keeps holding while only one of two players has agreed", () => {
+    const plan = planFrameConfirmation([signedIn("a"), signedIn("b")], "a", "b", ["a"]);
+    expect(plan.hold).toBe(true);
+    expect(plan.autoConfirm).toEqual([]);
+  });
+
+  it("counts the frame once the only player who could agree has", () => {
+    // One account against a walk-in. That single tap is the whole of what
+    // confirmation can collect here, so the frame is done waiting.
+    const plan = planFrameConfirmation([signedIn("a"), walkIn("b")], "a", "b", ["a"]);
+    expect(plan.hold).toBe(false);
+  });
+
+  it("still asks the signed-in player when only the walk-in has been agreed for", () => {
+    const plan = planFrameConfirmation([signedIn("a"), walkIn("b")], "a", "b", ["b"]);
+    expect(plan.hold).toBe(true);
+    expect(plan.autoConfirm).toEqual([]);
+  });
+
+  it("ignores confirmations from sides that are not in this frame", () => {
+    const plan = planFrameConfirmation([signedIn("a"), signedIn("b")], "a", "b", ["c", "d"]);
+    expect(plan.hold).toBe(true);
+  });
+
   it("does not treat an empty user_id string as an account", () => {
     // A blank is what a seeded row leaves behind. Reading it as an account
     // would re-open the deadlock for exactly the nights it broke.

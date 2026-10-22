@@ -19,6 +19,14 @@
  * players who must both agree. One account against a walk-in needs only that
  * one tap. Two walk-ins settle at once, because there is nobody for the hold
  * to protect.
+ *
+ * AND THE TAPS ALREADY IN
+ * The hold has to know what has already been agreed, or it re-applies itself
+ * to a frame that is finished with it. That was the other half of the same
+ * bug, and the worse half: when both players did tap agree, the confirm route
+ * cleared the hold and then recorded the result — and recording the result ran
+ * this rule again, which put the hold straight back. Two signed-in players
+ * could agree a frame all night and it would never reach the table.
  */
 
 export interface ConfirmableSide {
@@ -47,20 +55,28 @@ export interface ConfirmationPlan {
  *
  * `sides` is the tournament's teams; a side missing from it is treated as
  * having no account, which is the safe reading — the alternative is holding a
- * frame for a team the engine cannot even find.
+ * frame for a team the engine cannot even find. `alreadyConfirmed` is the team
+ * ids that have agreed this frame, so a settled frame is not held again.
  */
 export function planFrameConfirmation(
   sides: ConfirmableSide[],
   teamAId: string,
-  teamBId: string
+  teamBId: string,
+  alreadyConfirmed: readonly string[] = []
 ): ConfirmationPlan {
+  const agreed = new Set(alreadyConfirmed);
   const hasAccount = (id: string) => !!sides.find((s) => s.id === id)?.user_id;
 
-  const unattended = [teamAId, teamBId].filter((id) => !hasAccount(id));
+  // Both taps are in. The frame is done with the hold, and re-applying it here
+  // is what stopped an agreed frame from ever counting.
+  if (agreed.has(teamAId) && agreed.has(teamBId)) return { hold: false, autoConfirm: [] };
 
-  // Nobody to ask at all. Holding the frame would wait forever, so it counts
-  // immediately — the same outcome as a night run without confirmation on.
-  if (unattended.length === 2) return { hold: false, autoConfirm: [] };
+  const pending = [teamAId, teamBId].filter((id) => !agreed.has(id));
 
-  return { hold: true, autoConfirm: unattended };
+  // Nobody left who can be asked: whoever has not agreed has no account to
+  // agree with. Holding the frame would wait forever, so it counts now — the
+  // same outcome as a night run without confirmation switched on.
+  if (pending.every((id) => !hasAccount(id))) return { hold: false, autoConfirm: [] };
+
+  return { hold: true, autoConfirm: pending.filter((id) => !hasAccount(id)) };
 }
