@@ -128,7 +128,7 @@
   font-family: 'Outfit', sans-serif;
   font-size: 5rem;
   font-weight: 900;
-  color: white;
+  color: var(--text-primary);
   line-height: 1;
   text-shadow: 0 0 30px rgba(255,255,255,0.2);
   z-index: 5;
@@ -161,7 +161,7 @@
   justify-content: center;
   font-size: 0.8rem;
   font-weight: 900;
-  color: white;
+  color: var(--text-primary);
 }
 
 .divider-line {
@@ -208,7 +208,7 @@
   font-family: 'Outfit', sans-serif;
   font-size: 3.5rem;
   font-weight: 800;
-  color: white;
+  color: var(--text-primary);
   text-shadow: 0 0 20px rgba(255,255,255,0.2);
   line-height: 1;
   margin-bottom: 1.5rem;
@@ -249,7 +249,7 @@
   width: 100%;
   background: var(--bg-inset);
   border: 1px solid var(--glass-border-color);
-  color: white;
+  color: var(--text-primary);
   padding: 0.5rem;
   border-radius: 8px;
   font-weight: 800;
@@ -308,7 +308,7 @@
 .player-name-field {
   background: transparent;
   border: none;
-  color: white;
+  color: var(--text-primary);
   font-weight: 800;
   font-size: 1.25rem;
   width: 100%;
@@ -319,7 +319,7 @@
 .player-hud-score {
   font-size: 3.5rem;
   font-weight: 900;
-  color: white;
+  color: var(--text-primary);
   opacity: 0.2;
   transition: 0.3s;
   flex-shrink: 0;
@@ -363,7 +363,7 @@
   padding: 1rem;
   background: var(--glass-bg);
   border: 1px solid var(--glass-border-color);
-  color: white;
+  color: var(--text-primary);
   border-radius: 12px;
   font-size: 0.75rem;
   font-weight: 800;
@@ -551,7 +551,7 @@
   justify-content: center;
   font-size: 0.75rem;
   font-weight: 900;
-  color: white;
+  color: var(--text-primary);
   box-shadow: 0 5px 15px rgba(0,0,0,0.4);
 }
 
@@ -578,7 +578,7 @@
 
 .winner-content { text-align: center; position: relative; }
 .winner-icon { font-size: 10rem; margin-bottom: 1rem; }
-.winner-title { font-size: 5rem; font-weight: 900; color: white; margin-bottom: 3rem; letter-spacing: -2px; }
+.winner-title { font-size: 5rem; font-weight: 900; color: var(--text-primary); margin-bottom: 3rem; letter-spacing: -2px; }
 
 @keyframes pulse {
   0%, 100% { opacity: 0.5; transform: scale(1); }
@@ -626,7 +626,7 @@
 }
 
 .banner-btn.confirm { background: #ff4444; color: white; }
-.banner-btn.cancel { background: var(--glass-bg); color: white; }
+.banner-btn.cancel { background: var(--glass-bg); color: var(--text-primary); }
 .banner-btn:hover { transform: translateY(-1px); filter: brightness(1.1); }
 
 /* Mobile Optimization */

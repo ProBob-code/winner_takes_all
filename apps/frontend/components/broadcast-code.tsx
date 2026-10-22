@@ -102,7 +102,7 @@ export function BroadcastCode({ arenaId, matchId, pin, onClose }: Props) {
             style={{
               fontSize: "1.05rem",
               fontWeight: 800,
-              color: "#fff",
+              color: "var(--text-primary)",
               marginBottom: "16px",
               wordBreak: "break-all",
             }}

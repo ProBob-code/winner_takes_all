@@ -189,52 +189,76 @@ export default function PlayEightBallPage() {
         </div>
       </header>
 
+      {/* ── The result, over the table ──
+          This used to be a strip above the iframe, which put it in a different
+          part of the screen from the game's own game-over panel — so the thing
+          telling you about coins appeared nowhere near the thing telling you
+          the game had ended, and was easy to miss entirely. It is an overlay
+          now: same place you are already looking. */}
       {claiming && (
-        <div className="chip" style={{ margin: "var(--space-2) auto" }}>
-          Counting your coins…
+        <div className="game-result-layer" role="status" aria-live="polite">
+          <div className="game-result counting">
+            <span className="spinner" aria-hidden="true" />
+            <span>Counting your coins…</span>
+          </div>
         </div>
       )}
 
       {claimed && (
         <div
-          className="panel"
-          style={{
-            margin: "var(--space-3) var(--space-4) 0",
-            borderColor: claimed.awarded > 0 ? "var(--gold)" : "var(--glass-border-color)",
-            padding: "var(--space-4)",
-          }}
+          className="game-result-layer"
+          role="status"
+          aria-live="polite"
+          onClick={() => setClaimed(null)}
         >
-          <div className="h-stack between">
-            <div className="h-stack tight" style={{ minWidth: 0 }}>
-              {claimed.awarded > 0 && <CoinMark size={28} />}
-              <div style={{ minWidth: 0 }}>
-                <strong style={{ fontSize: "var(--text-lg)" }}>
-                  {claimed.awarded > 0
-                    ? `+${formatCoinsExact(claimed.awarded)} coins`
-                    : claimed.message ?? "Nothing earned this time."}
-                </strong>
+          <div
+            className={`game-result ${claimed.awarded > 0 ? "won" : "lost"}`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {claimed.awarded > 0 ? (
+              <>
+                <span className="game-result-mark">
+                  <CoinMark size={72} />
+                </span>
+                <span className="game-result-amount">
+                  +{formatCoinsExact(claimed.awarded)}
+                </span>
+                <span className="game-result-unit">WTA Coins</span>
                 {claimed.awards.length > 0 && (
-                  <div className="muted" style={{ fontSize: "var(--text-xs)" }}>
+                  <span className="game-result-note">
                     {claimed.awards.map((a) => a.description).join(" · ")}
-                  </div>
+                  </span>
                 )}
-              </div>
-            </div>
-            <button
-              type="button"
-              className="button-secondary button-sm"
-              onClick={() => setClaimed(null)}
-            >
-              Dismiss
-            </button>
-          </div>
+              </>
+            ) : (
+              <>
+                <span className="game-result-amount lost">No coins</span>
+                <span className="game-result-note">
+                  {claimed.message ?? "Only the winner earns. Beat the machine and they are yours."}
+                </span>
+              </>
+            )}
 
-          {claimed.cappedOut && (
-            <p className="muted" style={{ fontSize: "var(--text-xs)", marginTop: "var(--space-3)" }}>
-              A night at a venue is worth far more than a day of browser play — that is
-              deliberate. <Link href="/run">Run a league night</Link>.
-            </p>
-          )}
+            {claimed.cappedOut && (
+              <span className="game-result-note">
+                A night at a venue is worth far more than a day of browser play — that
+                is deliberate. <Link href="/run">Run a league night</Link>.
+              </span>
+            )}
+
+            <div className="game-result-actions">
+              <button
+                type="button"
+                className="button"
+                onClick={() => setClaimed(null)}
+              >
+                Play again
+              </button>
+              <Link className="button-secondary" href="/coins" style={{ textDecoration: "none" }}>
+                My coins
+              </Link>
+            </div>
+          </div>
         </div>
       )}
 

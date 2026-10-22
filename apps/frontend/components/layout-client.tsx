@@ -79,7 +79,7 @@ export function LayoutClient({ children }: { children: React.ReactNode }) {
           textAlign: "center",
           borderTop: "1px solid var(--glass-bg-hover)",
           marginTop: "auto",
-          color: "#cbd5e1", 
+          color: "var(--text-secondary)", 
           fontSize: "0.9rem",
           background: "var(--bg-inset)"
         }}>

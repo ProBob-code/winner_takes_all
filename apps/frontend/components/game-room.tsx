@@ -242,7 +242,7 @@ export function GameRoom({
 
       <div className="game-frame-container">
         {status === "ready" && (
-          <div className="waiting-room" style={{ position: "absolute", inset: 0, zIndex: 10, background: "rgba(10,14,26,.95)" }}>
+          <div className="waiting-room" style={{ position: "absolute", inset: 0, zIndex: 10, background: "var(--bg-card)" }}>
             <h2 style={{ fontSize: "1.5rem", marginBottom: "1rem" }}>🎱 Match Ready!</h2>
             <p className="muted" style={{ marginBottom: "1rem" }}>{displayName} vs {opponentName}</p>
             <div className="waiting-spinner" style={{ marginBottom: "1rem" }} />

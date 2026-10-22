@@ -160,7 +160,7 @@ export function LandingPage() {
   }, []);
 
   return (
-    <div className="landing-wrapper" style={{ color: "#f8fafc", minHeight: "100vh", position: "relative", overflowX: "hidden", background: "#030014" }}>
+    <div className="landing-wrapper" style={{ color: "var(--text-primary)", minHeight: "100vh", position: "relative", overflowX: "hidden", background: "#030014" }}>
       <style jsx global>{`
         :root {
           --bg-deep: #080512;
@@ -247,7 +247,7 @@ export function LandingPage() {
             POWERING GLOBAL.<br />
             <span className="gradient-text">ESPORTS EVENTS.</span>
           </h1>
-          <p className="hero-desc" style={{ maxWidth: "700px", fontSize: "1.2rem", color: "#94a3b8", marginBottom: "3.5rem", lineHeight: 1.6 }}>The comprehensive SaaS platform for esports organizers, communities, and competitive events. Manage brackets, schedules, and tournament operations with professional-grade tools.</p>
+          <p className="hero-desc" style={{ maxWidth: "700px", fontSize: "1.2rem", color: "var(--text-muted)", marginBottom: "3.5rem", lineHeight: 1.6 }}>The comprehensive SaaS platform for esports organizers, communities, and competitive events. Manage brackets, schedules, and tournament operations with professional-grade tools.</p>
           <div className="hero-buttons" style={{ display: "flex", gap: "1.5rem" }}>
             <Link href="/tournaments" style={{ background: "var(--gradient-fill)", color: "var(--on-gold)", padding: "1.25rem 2.5rem", borderRadius: "16px", textDecoration: "none", fontWeight: 800, fontSize: "1.1rem" }}>EXPLORE PLATFORM →</Link>
             <Link href="#how-it-works" style={{ background: "var(--glass-bg)", border: "1px solid var(--glass-border-color)", color: "white", padding: "1.25rem 2.5rem", borderRadius: "16px", textDecoration: "none", fontWeight: 800, fontSize: "1.1rem" }}>HOW IT WORKS</Link>
@@ -262,19 +262,19 @@ export function LandingPage() {
                     <div style={{ position: "absolute", top: "-20px", right: "-10px", fontSize: "8rem", fontWeight: 900, opacity: 0.05, color: "white" }}>01</div>
                     <div style={{ background: "linear-gradient(135deg, var(--accent), var(--accent))", width: "60px", height: "60px", borderRadius: "16px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.5rem", marginBottom: "2rem", boxShadow: "0 0 20px color-mix(in oklab, var(--accent) 40%, transparent)" }}>📊</div>
                     <h3 style={{ fontSize: "1.5rem", marginBottom: "1rem" }}>Configure Event</h3>
-                    <p style={{ color: "#94a3b8", lineHeight: 1.6 }}>Organizers define rules, schedules, and participation parameters. Our infrastructure handles the complex backend orchestration.</p>
+                    <p style={{ color: "var(--text-muted)", lineHeight: 1.6 }}>Organizers define rules, schedules, and participation parameters. Our infrastructure handles the complex backend orchestration.</p>
                 </div>
                 <div className="card-3d" style={{ padding: "4rem 3rem", position: "relative", overflow: "hidden" }}>
                     <div style={{ position: "absolute", top: "-20px", right: "-10px", fontSize: "8rem", fontWeight: 900, opacity: 0.05, color: "white" }}>02</div>
                     <div style={{ background: "linear-gradient(135deg, #f59e0b, #ef4444)", width: "60px", height: "60px", borderRadius: "16px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.5rem", marginBottom: "2rem", boxShadow: "0 0 20px rgba(245, 158, 11, 0.4)" }}>🛡️</div>
                     <h3 style={{ fontSize: "1.5rem", marginBottom: "1rem" }}>Registration & Play</h3>
-                    <p style={{ color: "#94a3b8", lineHeight: 1.6 }}>Participants register via secure participation fees. Real-time bracket management and automated score tracking begin.</p>
+                    <p style={{ color: "var(--text-muted)", lineHeight: 1.6 }}>Participants register via secure participation fees. Real-time bracket management and automated score tracking begin.</p>
                 </div>
                 <div className="card-3d" style={{ padding: "4rem 3rem", position: "relative", overflow: "hidden" }}>
                     <div style={{ position: "absolute", top: "-20px", right: "-10px", fontSize: "8rem", fontWeight: 900, opacity: 0.05, color: "white" }}>03</div>
                     <div style={{ background: "linear-gradient(135deg, var(--gold), var(--team-blue))", width: "60px", height: "60px", borderRadius: "16px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.5rem", marginBottom: "2rem", boxShadow: "0 0 20px rgba(16, 185, 129, 0.4)" }}>🏆</div>
                     <h3 style={{ fontSize: "1.5rem", marginBottom: "1rem" }}>Event Finalization</h3>
-                    <p style={{ color: "#94a3b8", lineHeight: 1.6 }}>Validation of results and professional tournament operations management based on verified performance.</p>
+                    <p style={{ color: "var(--text-muted)", lineHeight: 1.6 }}>Validation of results and professional tournament operations management based on verified performance.</p>
                 </div>
             </div>
         </section>
@@ -285,17 +285,17 @@ export function LandingPage() {
                 <div className="card-3d" style={{ padding: "3rem" }}>
                     <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>⚡</div>
                     <h3>Automated Orchestration</h3>
-                    <p style={{ color: "#94a3b8" }}>Self-generating brackets and automated score validation.</p>
+                    <p style={{ color: "var(--text-muted)" }}>Self-generating brackets and automated score validation.</p>
                 </div>
                 <div className="card-3d" style={{ padding: "3rem" }}>
                     <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>💎</div>
                     <h3>Organizer Dashboard</h3>
-                    <p style={{ color: "#94a3b8" }}>Comprehensive tools for community and event management.</p>
+                    <p style={{ color: "var(--text-muted)" }}>Comprehensive tools for community and event management.</p>
                 </div>
                 <div className="card-3d" style={{ padding: "3rem" }}>
                     <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>🛡️</div>
                     <h3>Secure Settlement</h3>
-                    <p style={{ color: "#94a3b8" }}>Tournament operations management and participation verification.</p>
+                    <p style={{ color: "var(--text-muted)" }}>Tournament operations management and participation verification.</p>
                 </div>
             </div>
         </section>

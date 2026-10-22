@@ -87,7 +87,7 @@
 .ball-slot.black {
   background: #111;
   border-color: #333;
-  color: #fff;
+  color: var(--text-primary);
   font-weight: 900;
   box-shadow: inset 0 0 5px rgba(255,255,255,0.1);
 }
@@ -96,7 +96,7 @@
   background: #fff;
   color: #000;
   box-shadow: 0 0 20px #fff;
-  border-color: #fff;
+  border-color: var(--text-primary);
 }
 
 /* Team Cards */
@@ -140,7 +140,7 @@
 
 .active-badge {
   background: var(--accent-primary);
-  color: white;
+  color: var(--text-primary);
   padding: 2px 8px;
   border-radius: 4px;
   font-size: 0.6rem;
@@ -191,7 +191,7 @@
 .q-btn {
   background: var(--bg-inset);
   border: 1px solid var(--glass-border-color);
-  color: white;
+  color: var(--text-primary);
   width: 32px;
   height: 32px;
   border-radius: 8px;
@@ -437,7 +437,7 @@ select.premium-input-v2 option {
   font-weight: 300;
   transition: all 0.2s ease;
   border: none;
-  color: white;
+  color: var(--text-primary);
   cursor: pointer;
 }
 
@@ -636,7 +636,7 @@ select.premium-input-v2 option {
   transition: 0.3s;
 }
 
-.share-btn:hover { background: var(--accent); color: white; }
+.share-btn:hover { background: var(--accent); color: var(--text-primary); }
 .share-btn.shared { background: var(--gold-fill); color: var(--on-gold); border-color: transparent; }
 
 /* Ends the tournament rather than erasing it; sits beside the reset control. */
@@ -834,7 +834,7 @@ select.premium-input-v2 option {
 .blue .ball-btn { background: rgba(59, 130, 246, 0.1); color: var(--team-blue); border: 1px solid rgba(59, 130, 246, 0.3); }
 
 .red .ball-btn:hover { background: #ef4444; color: white; }
-.blue .ball-btn:hover { background: var(--team-blue); color: white; }
+.blue .ball-btn:hover { background: var(--team-blue); color: var(--text-primary); }
 
 .active-glow {
   position: absolute;
@@ -989,7 +989,7 @@ select.premium-input-v2 option {
   font-size: 0.65rem;
   font-weight: 900;
   border: none;
-  color: white;
+  color: var(--text-primary);
   cursor: pointer;
   transition: 0.3s;
   text-align: center;
@@ -1196,7 +1196,7 @@ select.premium-input-v2 option {
 }
 
 .standing-card-v2.gold { border-color: var(--gold); background: linear-gradient(135deg, rgba(245, 158, 11, 0.05), transparent); }
-.standing-card-v2.silver { border-color: #94a3b8; }
+.standing-card-v2.silver { border-color: var(--text-muted); }
 .standing-card-v2.bronze { border-color: #b45309; }
 
 .rank-indicator {
@@ -1274,7 +1274,7 @@ select.premium-input-v2 option {
 /* Match Queue Overlay */
 .queue-overlay {
   margin-top: 3rem;
-  background: rgba(13, 17, 23, 0.6);
+  background: var(--bg-card);
   backdrop-filter: blur(20px);
   border: 1px solid var(--glass-border-color);
   border-radius: 24px;
@@ -1592,7 +1592,7 @@ select.premium-input-v2 option {
 .timer-scroller-v2 .s-btn {
   background: var(--glass-bg);
   border: 1px solid var(--glass-border-color);
-  color: white;
+  color: var(--text-primary);
   width: 24px;
   height: 24px;
   border-radius: 6px;
@@ -1609,7 +1609,7 @@ select.premium-input-v2 option {
 .t-adj {
   background: var(--glass-bg);
   border: 1px solid var(--glass-border-color);
-  color: white;
+  color: var(--text-primary);
   width: 28px;
   height: 28px;
   border-radius: 50%;
@@ -1671,7 +1671,7 @@ select.premium-input-v2 option {
   font-size: 0.6rem;
   font-weight: 900;
   letter-spacing: 1px;
-  color: #94a3b8;
+  color: var(--text-muted);
   z-index: 1000;
   pointer-events: none;
 }
@@ -1826,7 +1826,7 @@ select.premium-input-v2 option {
 .v-mvp-name {
   font-size: 1.2rem;
   font-weight: 950;
-  color: white;
+  color: var(--text-primary);
 }
 
 .v-mvp-badge {
@@ -1905,7 +1905,7 @@ select.premium-input-v2 option {
 }
 
 .toast-content {
-  background: rgba(13, 17, 23, 0.95);
+  background: var(--bg-card);
   backdrop-filter: blur(20px);
   border: 1px solid var(--gold);
   padding: 1rem 1.5rem;
@@ -1926,7 +1926,7 @@ select.premium-input-v2 option {
 
 @keyframes toastPulse {
   0%, 100% { transform: scale(1); border-color: var(--gold); }
-  50% { transform: scale(1.02); border-color: white; }
+  50% { transform: scale(1.02); border-color: var(--text-primary); }
 }
 
 /* Phase Transition Overlay */
@@ -1937,7 +1937,7 @@ select.premium-input-v2 option {
 }
 
 .phase-card {
-  background: rgba(13, 17, 23, 0.8);
+  background: var(--bg-card);
   backdrop-filter: blur(20px);
   border: 1px solid var(--gold);
   padding: 3rem;
@@ -1948,7 +1948,7 @@ select.premium-input-v2 option {
 }
 
 .phase-card .p-icon { font-size: 3rem; margin-bottom: 1rem; }
-.phase-card h3 { font-size: 1.5rem; font-weight: 950; letter-spacing: 2px; margin-bottom: 1rem; color: white; }
+.phase-card h3 { font-size: 1.5rem; font-weight: 950; letter-spacing: 2px; margin-bottom: 1rem; color: var(--text-primary); }
 
 /* BYE / Seeking Indicator */
 .bye-badge {
@@ -2135,7 +2135,7 @@ select.premium-input-v2 option {
   border-radius: 6px;
   border: none;
   background: transparent;
-  color: white;
+  color: var(--text-primary);
   opacity: 0.3;
   cursor: pointer;
   transition: 0.3s;
@@ -2214,7 +2214,7 @@ select.premium-input-v2 option {
   border-radius: 8px;
   border: 1px solid var(--glass-border-color);
   background: var(--glass-bg);
-  color: white;
+  color: var(--text-primary);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -2275,7 +2275,7 @@ select.premium-input-v2 option {
   background: var(--glass-bg);
   border: 1px solid var(--gold);
   border-radius: 4px;
-  color: white;
+  color: var(--text-primary);
   padding: 2px 8px;
   font-size: 1rem;
   width: 100%;
@@ -2286,7 +2286,7 @@ select.premium-input-v2 option {
   background: var(--glass-bg);
   border: 1px solid var(--gold);
   border-radius: 4px;
-  color: white;
+  color: var(--text-primary);
   padding: 2px 4px;
   font-size: 0.8rem;
   width: 80px;
@@ -2587,7 +2587,7 @@ select.premium-input-v2 option {
   border: 1px solid var(--glass-border-color);
   padding: 0.6rem 0.8rem;
   border-radius: 8px;
-  color: white;
+  color: var(--text-primary);
   font-size: 0.8rem;
   width: 100%;
 }
@@ -2717,7 +2717,7 @@ select.premium-input-v2 option {
 .item-value {
   font-size: 1.5rem;
   font-weight: 950;
-  color: white;
+  color: var(--text-primary);
 }
 
 /* --- Standings & Leaderboard Revamp --- */
@@ -2846,7 +2846,7 @@ select.premium-input-v2 option {
 .p-b-name {
   font-size: 0.9rem;
   font-weight: 950;
-  color: white;
+  color: var(--text-primary);
 }
 
 .p-b-stats {
@@ -2981,12 +2981,12 @@ select.premium-input-v2 option {
   filter: drop-shadow(0 0 10px currentColor);
 }
 .sb-team-badge.red { background: #ef4444; color: white; }
-.sb-team-badge.blue { background: var(--team-blue); color: white; }
+.sb-team-badge.blue { background: var(--team-blue); color: var(--text-primary); }
 
 .sb-team-name {
   font-size: 1.4rem;
   font-weight: 950;
-  color: white;
+  color: var(--text-primary);
   text-transform: uppercase;
   letter-spacing: 2px;
 }
@@ -3029,9 +3029,9 @@ select.premium-input-v2 option {
   border-radius: 100px;
 }
 
-.sb-status { font-size: 0.65rem; font-weight: 900; letter-spacing: 1px; color: #94a3b8; }
+.sb-status { font-size: 0.65rem; font-weight: 900; letter-spacing: 1px; color: var(--text-muted); }
 .sb-status.live { color: #ef4444; }
-.sb-timer { font-size: 0.8rem; font-weight: 950; color: white; letter-spacing: 1px; }
+.sb-timer { font-size: 0.8rem; font-weight: 950; color: var(--text-primary); letter-spacing: 1px; }
 
 .sb-bottom-glow {
   position: absolute;
@@ -3080,7 +3080,7 @@ select.premium-input-v2 option {
 .segment-a { background: linear-gradient(90deg, rgba(239, 68, 68, 0.25), transparent); padding-left: 2rem; }
 .segment-b { background: linear-gradient(-90deg, rgba(59, 130, 246, 0.25), transparent); justify-content: flex-end; padding-right: 2rem; margin-left: auto; }
 
-.pos-label { font-size: 2rem; font-weight: 950; color: white; text-shadow: 0 0 20px rgba(0,0,0,0.5); }
+.pos-label { font-size: 2rem; font-weight: 950; color: var(--text-primary); text-shadow: 0 0 20px rgba(0,0,0,0.5); }
 
 .pos-ball-tracker {
   position: absolute;
@@ -3105,7 +3105,7 @@ select.premium-input-v2 option {
   padding: 0 1rem;
 }
 
-.p-team { font-size: 0.8rem; font-weight: 950; color: white; letter-spacing: 1px; }
+.p-team { font-size: 0.8rem; font-weight: 950; color: var(--text-primary); letter-spacing: 1px; }
 .p-title { font-size: 0.6rem; font-weight: 900; color: #f59e0b; letter-spacing: 4px; opacity: 0.6; }
 
 /* --- PREMIUM FOOTBALL TEAM CARD --- */
@@ -3139,17 +3139,17 @@ select.premium-input-v2 option {
   opacity: 0.2;
 }
 
-.team-info .team-name { font-size: 1.5rem; font-weight: 950; color: white; }
-.team-tag { font-size: 0.6rem; font-weight: 900; color: #94a3b8; letter-spacing: 3px; }
+.team-info .team-name { font-size: 1.5rem; font-weight: 950; color: var(--text-primary); }
+.team-tag { font-size: 0.6rem; font-weight: 900; color: var(--text-muted); letter-spacing: 3px; }
 
 .score-display-xl { text-align: center; margin-bottom: 3rem; }
-.score-num { font-size: 7rem; font-weight: 950; color: white; line-height: 0.9; filter: drop-shadow(0 0 20px rgba(255,255,255,0.1)); }
+.score-num { font-size: 7rem; font-weight: 950; color: var(--text-primary); line-height: 0.9; filter: drop-shadow(0 0 20px rgba(255,255,255,0.1)); }
 .score-sub { font-size: 0.75rem; font-weight: 900; color: #f59e0b; letter-spacing: 5px; margin-top: 0.5rem; }
 
 .stats-dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2.5rem; }
 .dashboard-item { background: var(--glass-bg); padding: 1.25rem; border-radius: 20px; border: 1px solid var(--glass-border-color); }
-.d-label { font-size: 0.55rem; font-weight: 900; color: #94a3b8; letter-spacing: 1px; margin-bottom: 4px; }
-.d-val { font-size: 1.5rem; font-weight: 950; color: white; }
+.d-label { font-size: 0.55rem; font-weight: 900; color: var(--text-muted); letter-spacing: 1px; margin-bottom: 4px; }
+.d-val { font-size: 1.5rem; font-weight: 950; color: var(--text-primary); }
 .d-progress { height: 6px; background: var(--glass-bg); border-radius: 100px; margin-top: 10px; overflow: hidden; }
 .d-fill { height: 100%; box-shadow: 0 0 10px currentColor; }
 
@@ -3174,7 +3174,7 @@ select.premium-input-v2 option {
 
 .undo-trigger {
   background: var(--glass-bg);
-  color: #94a3b8;
+  color: var(--text-muted);
   border: 1px solid var(--glass-border-color);
   padding: 0.75rem;
   border-radius: 12px;
@@ -3278,7 +3278,7 @@ select.premium-input-v2 option {
 
 /* --- FOOTBALL EXTRA TIME CONTROL --- */
 .football-extra-time-control {
-  background: rgba(15, 23, 42, 0.8);
+  background: var(--bg-card);
   border: 1px solid rgba(16, 185, 129, 0.3);
   border-radius: 16px;
   padding: 1rem;
@@ -3344,7 +3344,7 @@ select.premium-input-v2 option {
 .player-dot .dot-label {
   font-size: 0.7rem;
   font-weight: bold;
-  color: #fff;
+  color: var(--text-primary);
   text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
   white-space: nowrap;
 }

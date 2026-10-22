@@ -62,7 +62,7 @@ export function ShortBroadcastClient({ code }: { code: string }) {
             className="panel page-card slide-in text-center"
             style={{
               padding: "2.5rem",
-              background: "rgba(9, 9, 22, 0.55)",
+              background: "var(--bg-card)",
               borderRadius: "16px",
               border: "1px solid var(--glass-border-color)",
             }}

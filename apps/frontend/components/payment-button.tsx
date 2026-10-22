@@ -291,7 +291,7 @@ export function PaymentButton({ onSuccess }: PaymentButtonProps) {
             zIndex: 100000,
             position: "fixed",
             top: 0, left: 0, right: 0, bottom: 0,
-            background: "rgba(3, 0, 20, 0.85)",
+            background: "var(--bg-card)",
             backdropFilter: "blur(12px)",
             display: "flex",
             alignItems: "center",

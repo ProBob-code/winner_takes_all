@@ -86,7 +86,7 @@ export function PayoutButton({ withdrawable, bonus, feePercent, onRequested }: P
             style={{
               position: "fixed",
               inset: 0,
-              background: "rgba(3, 2, 10, 0.75)",
+              background: "var(--bg-card)",
               backdropFilter: "blur(6px)",
               zIndex: 6000,
               display: "flex",

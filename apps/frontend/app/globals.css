@@ -1823,7 +1823,7 @@ label {
   top: 100px;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(18, 14, 33, 0.95);
+  background: var(--bg-card);
   backdrop-filter: blur(12px);
   border: 1px solid var(--gold);
   border-radius: var(--radius-full);
@@ -2430,7 +2430,7 @@ label {
 }
 .wallet-balance-card .razorpay-button {
   background: var(--glass-bg);
-  color: white;
+  color: var(--text-primary);
   border: 1px solid var(--glass-border-color);
   backdrop-filter: blur(8px);
   padding: 0.75rem 1.5rem;
@@ -2719,7 +2719,7 @@ label {
 .form-control:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 20%, transparent);
-  background: rgba(30, 30, 40, 0.9);
+  background: var(--bg-card);
 }
 
 select.form-control {
@@ -2806,7 +2806,7 @@ select.form-control option {
 }
 
 .payment-modal-v2 {
-  background: rgba(15, 15, 20, 0.9);
+  background: var(--bg-card);
   backdrop-filter: blur(25px);
   border: 1px solid var(--glass-border-color);
   padding: 2.5rem;
@@ -2832,7 +2832,7 @@ select.form-control option {
   transform: translateX(-50%);
   width: calc(100% - 2.5rem);
   max-width: 460px;
-  background: rgba(5, 1, 26, 0.85);
+  background: var(--bg-card);
   backdrop-filter: blur(28px) saturate(180%);
   -webkit-backdrop-filter: blur(28px) saturate(180%);
   border: 1px solid var(--glass-border-color);
@@ -3323,7 +3323,7 @@ select.form-control option {
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  background: rgba(3, 0, 20, 0.85) !important;
+  background: var(--bg-card) !important;
   backdrop-filter: blur(12px) !important;
   overflow-y: auto !important; /* Enable scrolling for tall modals */
 }
@@ -3797,7 +3797,7 @@ select.form-control option {
   min-height: 100vh;
   min-height: 100dvh;
   background: radial-gradient(ellipse at top, #0a0620 0%, #030014 60%);
-  color: #fff;
+  color: var(--text-primary);
   display: flex;
   flex-direction: column;
   padding: clamp(var(--space-3), 2.5vw, var(--space-6));
@@ -4904,7 +4904,7 @@ select.form-control option {
   letter-spacing: 0.12em;
   text-transform: uppercase;
   background: var(--wta-red-deep);
-  color: #fff;
+  color: var(--text-primary);
   transform: rotate(-3deg);
   box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.35);
 }
@@ -5043,7 +5043,7 @@ select.form-control option {
 .level-card:nth-child(even) .level-no {
   transform: rotate(4deg);
   background: var(--wta-red-deep);
-  color: #fff;
+  color: var(--text-primary);
   border-color: var(--gold-fill);
   box-shadow: 3px 3px 0 var(--gold-fill);
 }
@@ -5427,4 +5427,128 @@ main .action-card.is-primary::before { display: none; }
 @media (prefers-reduced-motion: reduce) {
   .coin-toast { animation: none }
   .coin-toast.leaving { transition: none }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   The in-game result
+   ══════════════════════════════════════════════════════════════════════════
+
+   Sits over the table rather than above it. The strip it replaces lived in a
+   different part of the screen from the game's own game-over panel, so the
+   thing announcing coins appeared nowhere near the thing announcing the game
+   had ended — and was missed.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+@keyframes gameResultIn {
+  from { opacity: 0; transform: translateY(18px) scale(0.92) }
+  to   { opacity: 1; transform: translateY(0) scale(1) }
+}
+
+@keyframes coinPop {
+  0%   { transform: scale(0.3) rotate(-25deg); opacity: 0 }
+  55%  { transform: scale(1.18) rotate(6deg); opacity: 1 }
+  100% { transform: scale(1) rotate(0deg); opacity: 1 }
+}
+
+.game-result-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 970;
+  display: grid;
+  place-items: center;
+  padding: var(--space-4);
+  background: oklch(0% 0 0 / 0.62);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+}
+
+.game-result {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--space-3);
+  width: min(23rem, 100%);
+  padding: var(--space-6) var(--space-5);
+  border-radius: var(--radius-lg);
+  background: var(--bg-dropdown);
+  border: 3px solid var(--gold);
+  box-shadow: var(--shadow-lg);
+  animation: gameResultIn 0.34s cubic-bezier(0.2, 0.9, 0.3, 1.25);
+}
+
+/* A loss is not a failure state — it just did not pay. Quieter edge, same card. */
+.game-result.lost {
+  border-color: var(--glass-border-color);
+}
+
+.game-result.counting {
+  flex-direction: row;
+  width: auto;
+  padding: var(--space-4) var(--space-5);
+  border-color: var(--glass-border-color);
+  color: var(--text-secondary);
+}
+
+.game-result-mark {
+  display: grid;
+  place-items: center;
+  animation: coinPop 0.55s cubic-bezier(0.2, 0.9, 0.3, 1.4) 0.1s both;
+}
+
+.game-result-amount {
+  font-family: var(--font-outfit), system-ui, sans-serif;
+  font-size: clamp(2.4rem, 11vw, 3.4rem);
+  font-weight: 900;
+  line-height: 1;
+  color: var(--gold);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+.game-result-amount.lost {
+  color: var(--text-secondary);
+  font-size: clamp(1.6rem, 7vw, 2.2rem);
+}
+
+.game-result-unit {
+  font-size: var(--text-xs);
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.game-result-note {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.game-result-actions {
+  display: flex;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: var(--space-2);
+}
+
+/* The counting spinner. */
+.game-result .spinner {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid var(--glass-border-color);
+  border-top-color: var(--gold);
+  animation: wtaSpin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes wtaSpin { to { transform: rotate(360deg) } }
+
+@media (prefers-reduced-motion: reduce) {
+  .game-result,
+  .game-result-mark,
+  .game-result .spinner { animation: none }
 }

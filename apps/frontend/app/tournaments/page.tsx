@@ -435,7 +435,7 @@ export default function TournamentsPage() {
         .past-card:hover { background: rgba(255,255,255,0.04); border-color: var(--gold-subtle); }
         .past-main { min-width: 0; }
         .past-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 6px; }
-        .status-badge.completed { background: rgba(148, 163, 184, 0.12); color: #94a3b8; }
+        .status-badge.completed { background: rgba(148, 163, 184, 0.12); color: var(--text-muted); }
         .past-meta { font-size: 0.68rem; font-weight: 700; color: var(--text-muted); letter-spacing: 0.5px; }
         .past-title { font-size: 1.05rem; font-weight: 800; margin: 0 0 4px; }
         .past-winner { font-size: 0.85rem; color: var(--text-secondary); }

@@ -56,7 +56,7 @@ export function ConfirmModal({
         left: 0,
         right: 0,
         bottom: 0,
-        background: "rgba(3, 0, 20, 0.85)",
+        background: "var(--bg-card)",
         animation: "fadeIn 0.3s ease"
       }}
     >

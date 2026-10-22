@@ -111,7 +111,7 @@ export function DeleteTournamentDialog({ tournamentId, tournamentName }: DeleteT
       <div className="premium-delete-modal-panel" style={{
         maxWidth: "480px",
         width: "100%",
-        background: "rgba(20, 20, 30, 0.85)",
+        background: "var(--bg-card)",
         border: "1px solid rgba(255, 77, 77, 0.3)",
         borderRadius: "28px",
         boxShadow: "0 40px 100px rgba(0, 0, 0, 0.8), 0 0 40px rgba(255, 77, 77, 0.1)",

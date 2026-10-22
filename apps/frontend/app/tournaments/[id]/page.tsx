@@ -319,7 +319,7 @@ export default function TournamentDetailPage() {
               { label: "TEAM SIZE", value: tournament.teamSize > 1 ? `${tournament.teamSize} a side` : "Solo" },
               { label: "PLAYED", value: tournament.tournamentType === "offline" ? "Offline" : "Online" },
             ].map((f: { label: string; value: string; gold?: boolean }) => (
-              <div key={f.label} style={{ padding: "0.9rem 1rem", background: "rgba(9,9,22,0.6)" }}>
+              <div key={f.label} style={{ padding: "0.9rem 1rem", background: "var(--bg-card)" }}>
                 <div style={{ fontSize: "0.6rem", letterSpacing: "1px", opacity: 0.5, fontWeight: 800 }}>{f.label}</div>
                 <div style={{ fontWeight: 900, marginTop: "3px", color: f.gold ? "var(--gold)" : undefined }}>{f.value}</div>
               </div>

@@ -24,7 +24,7 @@ export function StreamCodeEntry() {
           className="panel page-card slide-in"
           style={{
             padding: "2.5rem 2rem",
-            background: "rgba(9, 9, 22, 0.55)",
+            background: "var(--bg-card)",
             borderRadius: "16px",
             border: "1px solid var(--glass-border-color)",
             textAlign: "center",
@@ -69,7 +69,7 @@ export function StreamCodeEntry() {
                 background: "var(--bg-inset)",
                 border: "1px solid var(--glass-border-color)",
                 borderRadius: "12px",
-                color: "#fff",
+                color: "var(--text-primary)",
               }}
             />
 

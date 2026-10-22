@@ -155,7 +155,7 @@ export function JoinTournamentButton({
           transform: "translateX(-50%)",
           zIndex: 5000,
           padding: "1rem 2rem",
-          background: "rgba(10, 10, 20, 0.9)",
+          background: "var(--bg-card)",
           backdropFilter: "blur(16px)",
           borderRadius: "16px",
           border: `1px solid ${message.includes("Invalid") || message.includes("Unable") || message.includes("failed") ? "rgba(239, 68, 68, 0.3)" : "rgba(16, 185, 129, 0.3)"}`,

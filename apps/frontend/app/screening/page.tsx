@@ -202,11 +202,11 @@ export default function ScreeningPage() {
       <div className="shell" style={{ maxWidth: "1200px", width: "100%", margin: "0 auto" }}>
         
         {/* Header Block */}
-        <div className="panel page-card slide-in mb-8" style={{ padding: "2.5rem 3rem", background: "rgba(9, 9, 22, 0.45)", borderRadius: "16px", border: "1px solid var(--glass-border-color)" }}>
+        <div className="panel page-card slide-in mb-8" style={{ padding: "2.5rem 3rem", background: "var(--bg-card)", borderRadius: "16px", border: "1px solid var(--glass-border-color)" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "20px" }}>
             <div>
               <span className="section-label-v2 mb-2 block glow-text" style={{ fontSize: "0.85rem", letterSpacing: "2px" }}>📺 MULTIPLEX ARENA BROADCAST</span>
-              <h1 className="glow-text mb-2" style={{ fontSize: "2.2rem", fontWeight: "900", background: "linear-gradient(to right, #fff, #b59f5b)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>LIVE SCREENING</h1>
+              <h1 className="glow-text mb-2" style={{ fontSize: "2.2rem", fontWeight: "900", background: "var(--gradient-primary)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>LIVE SCREENING</h1>
               <p className="muted" style={{ fontSize: "0.95rem" }}>Spectate ongoing tournaments, track live soccer scorelines, 8-ball clearances, lineups, and strategic pitches in real-time.</p>
             </div>
             <div style={{ display: "flex", gap: "10px" }}>
@@ -250,7 +250,7 @@ export default function ScreeningPage() {
               className="premium-input-v2"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              style={{ width: "100%", padding: "10px 16px", borderRadius: "8px", background: "var(--glass-bg)", border: "1px solid var(--glass-border-color)", color: "#fff" }}
+              style={{ width: "100%", padding: "10px 16px", borderRadius: "8px", background: "var(--glass-bg)", border: "1px solid var(--glass-border-color)", color: "var(--text-primary)" }}
             />
           </div>
         </div>
@@ -288,7 +288,7 @@ export default function ScreeningPage() {
                     </span>
                   </div>
 
-                  <div style={{ fontSize: "0.78rem", color: "#8b8b9a", marginBottom: "4px", fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  <div style={{ fontSize: "0.78rem", color: "var(--text-muted)", marginBottom: "4px", fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     🏟️ {m.arenaName}
                   </div>
 
