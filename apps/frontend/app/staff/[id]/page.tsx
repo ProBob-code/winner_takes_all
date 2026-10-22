@@ -383,6 +383,8 @@ export default function StaffModePage() {
           teamAName={teamName(awaiting.team_a_id)}
           teamBName={teamName(awaiting.team_b_id)}
           winnerId={awaiting.winner_id}
+          scoreA={awaiting.score_team_a}
+          scoreB={awaiting.score_team_b}
           confirmations={state.confirmations ?? []}
           myTeamId={null}
           isHost

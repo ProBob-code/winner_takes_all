@@ -178,11 +178,33 @@ export function tableText(tournamentName: string, teams: ShareTeam[]): string {
     return lines.join("\n");
   }
 
+  // Nothing has counted yet, so there is no order to report. Medalling the
+  // first three rows of an all-zero table crowns whoever happens to sort
+  // first, which is how a group chat ends up congratulating someone who has
+  // not played a frame. Say what is actually true instead.
+  const anythingCounted = ranked.some((t) => t.matches_played > 0 || t.group_points > 0);
+  if (!anythingCounted) {
+    lines.push(`${ranked.length} entered. No frames have counted yet.`);
+    lines.push("A frame counts once it is finished and both players agree it.");
+    lines.push("");
+    for (const t of ranked) lines.push(`· ${short(t.name)}`);
+    return lines.join("\n");
+  }
+
   const medal = ["🥇", "🥈", "🥉"];
   ranked.forEach((t, i) => {
-    const place = medal[i] ?? `${i + 1}.`;
-    lines.push(`${place} ${short(t.name)} — ${t.group_points} pts (${t.matches_played} played)`);
+    // A medal is for a score, not for a position in a list of zeroes.
+    const earned = t.group_points > 0 || t.matches_played > 0;
+    const place = earned ? medal[i] ?? `${i + 1}.` : `${i + 1}.`;
+    // "pts" was wrong twice over: group_points is frames won, and nobody
+    // reading a bar's group chat knows what a point is here. Say "won".
+    lines.push(
+      `${place} ${short(t.name)} — ${t.group_points} won of ${t.matches_played} played`
+    );
   });
+
+  lines.push("");
+  lines.push("Most frames won takes it.");
 
   return lines.join("\n");
 }

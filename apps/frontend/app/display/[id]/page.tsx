@@ -9,9 +9,9 @@ export const dynamic = "force-dynamic";
 /**
  * The big screen.
  *
- * Full bleed, no chrome, readable from across a room: the live frame with both
- * scores and the clock, the table beside it, and the join QR so a walk-in can
- * enter without asking anyone.
+ * Full bleed, readable from across a room: the live frame with both scores and
+ * the clock, the table beside it, and the join QR so a walk-in can enter
+ * without asking anyone.
  *
  * TWO THINGS THE BUYER PANEL CHANGED ABOUT THIS
  * Two of the twenty said the wall TV is already showing cricket, so this does
@@ -20,12 +20,25 @@ export const dynamic = "force-dynamic";
  * degrades to a phone. Nothing is positioned absolutely against an assumed
  * aspect ratio.
  *
- * Read-only by design. There is nothing to tap, so it can be left on a screen
- * nobody is guarding, and no control can be nudged by a passer-by.
+ * WHY THERE IS NOW A WAY OUT
+ * It used to have no link off it at all, on the reasoning that a read-only
+ * screen should have nothing a passer-by can nudge. In practice the person who
+ * opened it was the host, on their own phone, and they were stranded: the only
+ * way back to the controls was the browser's back button, which is not where
+ * anyone looks on a page that fills the screen. So there is one link out, in
+ * the corner, dimmed until it is wanted. Nothing else is tappable.
+ *
+ * WHY THE TABLE EXPLAINS ITSELF
+ * A table of zeroes is the most alarming thing this screen can show, and it is
+ * usually telling the truth: frames have been played but not agreed, so
+ * nothing has counted. The screen now says that in words, names the frames it
+ * is waiting on, and labels its columns for what they actually hold — frames
+ * won, not "points" — so nobody has to guess whether the night is broken.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 import { backendFetch } from "@/lib/backend";
 import { qrToSvg } from "@/lib/qr";
 
@@ -56,6 +69,7 @@ interface Match {
 interface State {
   ok: boolean;
   phase: string;
+  sport?: string;
   teams: Team[];
   matches: Match[];
   joinCode: string | null;
@@ -71,7 +85,10 @@ const clock = (seconds: number) => {
 };
 
 const phaseLabel = (phase: string) =>
-  phase === "SEMI" ? "SEMI-FINAL" : phase === "FINAL" ? "GRAND FINAL" : "GROUP STAGE";
+  phase === "SEMI" ? "Semi-final" : phase === "FINAL" ? "Grand final" : "Group stage";
+
+/** How many rows fit on a wall before the type shrinks past reading size. */
+const ROWS_ON_SCREEN = 8;
 
 export default function DisplayPage() {
   const params = useParams<{ id: string }>();
@@ -147,6 +164,20 @@ export default function DisplayPage() {
     [state]
   );
 
+  /**
+   * Frames that are over but not yet on the table.
+   *
+   * This is the usual reason a table sits on zero, so the frames are named on
+   * the screen rather than left for the host to work out.
+   */
+  const awaiting = useMemo(
+    () =>
+      (state?.matches ?? [])
+        .filter((m) => m.status === "COMPLETED" && m.awaiting_confirmation)
+        .sort((a, b) => a.match_order - b.match_order),
+    [state]
+  );
+
   const ranked = useMemo(
     () =>
       [...(state?.teams ?? [])].sort(
@@ -156,6 +187,18 @@ export default function DisplayPage() {
           a.matches_played - b.matches_played
       ),
     [state]
+  );
+
+  /**
+   * Has anything reached the table yet?
+   *
+   * Until it has, every row is identical and the order is arbitrary, so the
+   * screen stops dressing it up as a ranking: no leader, no top three, and a
+   * line saying why.
+   */
+  const counted = useMemo(
+    () => ranked.some((t) => t.matches_played > 0 || t.group_points > 0),
+    [ranked]
   );
 
   const teamName = useCallback(
@@ -180,39 +223,53 @@ export default function DisplayPage() {
     }
   }, [state?.joinUrl]);
 
+  // One link off the page, in the corner, for the host who opened it on their
+  // own phone and would otherwise have no way back.
+  const backLink = (
+    <Link className="display-back" href={`/tournaments/${tournamentId}`}>
+      <span aria-hidden="true">&#8592;</span> Back to controls
+    </Link>
+  );
+
   if (!state) {
     return (
       <main className="display">
-        <div style={{ margin: "auto", textAlign: "center" }}>
+        <header className="display-head">
           <div className="display-title">{error ?? "Opening the screen…"}</div>
-        </div>
+          <div className="display-head-right">{backLink}</div>
+        </header>
       </main>
     );
   }
+
+  // What the night is doing, in words rather than a bare phase name. "GROUP
+  // STAGE" on its own told nobody whether a frame was being played.
+  const statusLine = liveMatch
+    ? `${phaseLabel(liveMatch.phase)} · being played now`
+    : state.phase === "COMPLETED"
+      ? "Night finished"
+      : nextMatch
+        ? `${phaseLabel(nextMatch.phase)} · next on the table`
+        : "Waiting for the host to draw the next round";
+
+  // total_score is balls potted at pool and goals at football. Heading it
+  // "Score" left both groups guessing.
+  const scoreHeading = state.sport === "FOOTBALL" ? "Goals" : "Balls";
 
   return (
     <main className="display">
       <header className="display-head">
         <div style={{ minWidth: 0 }}>
           <div className="display-title">{name || "League night"}</div>
-          <div
-            style={{
-              color: "#9ca3af",
-              letterSpacing: "0.18em",
-              fontSize: "clamp(0.7rem, 1.2vw, 1rem)",
-              textTransform: "uppercase",
-              marginTop: "0.35rem",
-            }}
-          >
-            {liveMatch ? phaseLabel(liveMatch.phase) : state.phase === "COMPLETED" ? "FINISHED" : "UP NEXT"}
-            {liveMatch?.sudden_death && " · SUDDEN DEATH"}
+          <div className="display-status">
+            {statusLine}
+            {liveMatch?.sudden_death && <span className="display-sudden"> · sudden death</span>}
           </div>
         </div>
-        {error && (
-          <span className="chip warn" style={{ background: "transparent" }}>
-            {error}
-          </span>
-        )}
+        <div className="display-head-right">
+          {error && <span className="display-warn">{error}</span>}
+          {backLink}
+        </div>
       </header>
 
       {liveMatch ? (
@@ -228,9 +285,12 @@ export default function DisplayPage() {
 
           <div>
             {remaining !== null && (
-              <div className={`display-clock${remaining <= 30 ? " low" : ""}`}>
-                {clock(remaining)}
-              </div>
+              <>
+                <div className={`display-clock${remaining <= 30 ? " low" : ""}`}>
+                  {clock(remaining)}
+                </div>
+                <div className="display-clock-note">time left</div>
+              </>
             )}
           </div>
 
@@ -246,81 +306,116 @@ export default function DisplayPage() {
       ) : (
         <section className="display-live" style={{ gridTemplateColumns: "1fr" }}>
           <div style={{ textAlign: "center" }}>
-            <div
-              style={{
-                fontSize: "var(--text-display)",
-                fontWeight: 900,
-                fontFamily: "var(--font-outfit), system-ui, sans-serif",
-              }}
-            >
+            <div className="display-idle">
               {state.phase === "COMPLETED"
-                ? ranked[0]
-                  ? `${ranked[0].name} wins`
-                  : "Finished"
+                ? ranked[0] && counted
+                  ? `${ranked[0].name} wins the night`
+                  : "Night finished"
                 : nextMatch
                   ? `${teamName(nextMatch.team_a_id)} v ${teamName(nextMatch.team_b_id)}`
-                  : "Waiting for the next frame"}
+                  : "No frame on the table"}
             </div>
-            {state.phase !== "COMPLETED" && nextMatch && (
-              <div style={{ color: "#9ca3af", marginTop: "var(--space-3)" }}>
-                {phaseLabel(nextMatch.phase)} · up next
-              </div>
-            )}
+            <div className="display-idle-note">
+              {state.phase === "COMPLETED"
+                ? "Thanks for playing."
+                : nextMatch
+                  ? "Next up — the host starts the clock"
+                  : "The host draws the next round from their phone"}
+            </div>
           </div>
         </section>
       )}
 
+      {/* The usual reason a table sits on zero. Named here, where both players
+          can see it, because that is what actually gets the taps. */}
+      {awaiting.length > 0 && (
+        <section className="display-pending">
+          <span className="display-pending-tag">
+            {awaiting.length === 1
+              ? "Waiting to be agreed"
+              : `${awaiting.length} frames waiting to be agreed`}
+          </span>
+          <div className="display-pending-list">
+            {awaiting.slice(0, 3).map((m) => (
+              <span key={m.id}>
+                {teamName(m.team_a_id)} {m.score_team_a}&#8211;{m.score_team_b}{" "}
+                {teamName(m.team_b_id)}
+              </span>
+            ))}
+          </div>
+          <span className="display-pending-note">
+            {awaiting.length === 1 ? "It joins" : "They join"} the table once both players tap
+            agree on their phones — or the host settles it for them.
+          </span>
+        </section>
+      )}
+
       <footer className="display-foot">
-        <div>
+        <section className="display-standings">
+          <div className="display-standings-head">
+            <h2>The table</h2>
+            <span>
+              {counted
+                ? `Most frames won first, then ${scoreHeading.toLowerCase()}`
+                : "Nothing has counted yet"}
+            </span>
+          </div>
+
           <table className="display-table">
             <thead>
               <tr>
+                <th className="pos">#</th>
                 <th>Player</th>
-                <th>P</th>
-                <th>Pts</th>
+                <th className="num">Played</th>
+                <th className="num">Won</th>
+                <th className="num">{scoreHeading}</th>
               </tr>
             </thead>
             <tbody>
-              {ranked.slice(0, 8).map((team, i) => (
-                <tr key={team.id}>
-                  <td>
-                    <span style={{ color: "#6b7280", marginRight: "0.6em" }}>{i + 1}</span>
-                    {team.name}
+              {ranked.slice(0, ROWS_ON_SCREEN).map((team, i) => (
+                <tr key={team.id} className={counted && i === 0 ? "leader" : undefined}>
+                  <td className="pos">
+                    <span className={counted && i < 3 ? `display-place p${i + 1}` : "display-place"}>
+                      {i + 1}
+                    </span>
                   </td>
-                  <td>{team.matches_played}</td>
-                  <td style={{ fontWeight: 900 }}>{team.group_points}</td>
+                  <td className="who">{team.name}</td>
+                  <td className="num">{team.matches_played}</td>
+                  <td className="num won">{team.group_points}</td>
+                  <td className="num">{team.total_score}</td>
                 </tr>
               ))}
               {ranked.length === 0 && (
                 <tr>
-                  <td colSpan={3} style={{ color: "#9ca3af" }}>
-                    Nobody has entered yet.
+                  <td colSpan={5} className="display-empty">
+                    Nobody has entered yet. Scan the code to be first.
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
-        </div>
+
+          {ranked.length > 0 && !counted && (
+            <p className="display-standings-note">
+              Everyone is on zero because no frame has counted yet. A frame counts once it is
+              finished and agreed.
+            </p>
+          )}
+          {ranked.length > ROWS_ON_SCREEN && (
+            <p className="display-standings-note">
+              {ranked.length - ROWS_ON_SCREEN} more further down the table.
+            </p>
+          )}
+        </section>
 
         {state.joinCode && (
           <div className="display-join">
-            {joinQr && (
-              <div className="qr" dangerouslySetInnerHTML={{ __html: joinQr }} />
-            )}
+            {joinQr && <div className="qr" dangerouslySetInnerHTML={{ __html: joinQr }} />}
             <div style={{ minWidth: 0 }}>
-              <div
-                style={{
-                  color: "#9ca3af",
-                  fontSize: "clamp(0.7rem, 1.2vw, 0.95rem)",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.14em",
-                }}
-              >
-                Scan to play — free
-              </div>
+              <div className="display-join-label">Scan to play — free</div>
               <div className="code">{state.joinCode}</div>
-              <div style={{ color: "#9ca3af", fontSize: "clamp(0.7rem, 1.1vw, 0.9rem)" }}>
-                No account needed
+              <div className="display-join-note">
+                No account needed. Coins for every frame.
               </div>
             </div>
           </div>

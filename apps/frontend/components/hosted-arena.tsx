@@ -389,6 +389,15 @@ export function HostedArena({
   const standings = [...teams].sort(
     (a, b) => b.group_points - a.group_points || b.total_score - a.total_score
   );
+  /**
+   * Whether anything has reached the table.
+   *
+   * Until it has, the order is arbitrary and showing a leader and a top three
+   * crowns whoever happens to sort first. The table says so instead.
+   */
+  const tableHasCounted = teams.some((t) => t.matches_played > 0 || t.group_points > 0);
+  /** total_score is balls potted at pool and goals at football. */
+  const scoreHeading = isFootball ? "Goals" : "Balls";
   const championId = concluded ? finalMatch?.winner_id ?? null : null;
   const champion = championId ? getTeamName(championId) : null;
 
@@ -812,6 +821,8 @@ export function HostedArena({
             teamAName={getTeamName(awaitingFrame.team_a_id)}
             teamBName={getTeamName(awaitingFrame.team_b_id)}
             winnerId={awaitingFrame.winner_id}
+            scoreA={awaitingFrame.score_team_a}
+            scoreB={awaitingFrame.score_team_b}
             confirmations={confirmations}
             myTeamId={myTeamId}
             isHost={isHost}
@@ -1104,42 +1115,102 @@ export function HostedArena({
         </div>
       )}
 
-      {/* ── Standings ── */}
+      {/* ── Standings ──
+          The thing the room argues about, so it explains itself: what each
+          column holds, how the order was decided, and — the question that
+          actually gets asked — why everyone is on zero. */}
       {activeSubTab === "standings" && (
         <div className="premium-standings">
-          <table className="leaderboard-table">
-            <thead>
-              <tr>
-                <th>RANK</th>
-                <th>TEAM / PLAYER</th>
-                <th>PLAYED</th>
-                <th>WINS</th>
-                <th>SCORE</th>
-              </tr>
-            </thead>
-            <tbody>
-              {standings.map((t, i) => (
-                <tr key={t.id}>
-                  <td style={{ padding: "1rem" }}>#{i + 1}</td>
-                  <td style={{ fontWeight: 900 }}>
-                    {t.name}
-                    {(championId ? championId === t.id : i === 0 && played.length > 0) && (
-                      <span style={{ marginLeft: "8px" }}>👑</span>
-                    )}
-                    {t.bye_assigned && (
-                      <span className="status-badge" style={{ marginLeft: "10px", fontSize: "0.6rem" }}>BYE</span>
-                    )}
-                  </td>
-                  <td>
-                    {t.matches_played}
-                    {!inKnockout && <span className="muted">/{matchesPerTeam}</span>}
-                  </td>
-                  <td style={{ color: "var(--accent-primary)" }}>{t.group_points}</td>
-                  <td style={{ fontWeight: 900, color: "var(--gold)" }}>{t.total_score}</td>
+          <div className="standings-head">
+            <h3>The table</h3>
+            <span>
+              {tableHasCounted
+                ? `Most frames won first, then ${scoreHeading.toLowerCase()} as the tie-break`
+                : "Nothing has counted yet"}
+            </span>
+          </div>
+
+          <div className="standings-scroll">
+            <table className="leaderboard-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>PLAYER</th>
+                  <th>PLAYED</th>
+                  <th>WON</th>
+                  <th>{scoreHeading.toUpperCase()}</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {standings.map((t, i) => (
+                  <tr key={t.id} className={tableHasCounted && i === 0 ? "leader" : undefined}>
+                    <td style={{ padding: "1rem" }}>
+                      <span
+                        className={
+                          tableHasCounted && i < 3 ? `standings-place p${i + 1}` : "standings-place"
+                        }
+                      >
+                        {i + 1}
+                      </span>
+                    </td>
+                    <td style={{ fontWeight: 900 }}>
+                      {t.name}
+                      {(championId ? championId === t.id : i === 0 && played.length > 0) && (
+                        <span style={{ marginLeft: "8px" }} title="Top of the table">
+                          👑
+                        </span>
+                      )}
+                      {t.bye_assigned && (
+                        <span
+                          className="status-badge"
+                          style={{ marginLeft: "10px", fontSize: "0.6rem" }}
+                          title="Sat out a round and was given the frame"
+                        >
+                          BYE
+                        </span>
+                      )}
+                    </td>
+                    <td>
+                      {t.matches_played}
+                      {!inKnockout && <span className="muted">/{matchesPerTeam}</span>}
+                    </td>
+                    <td style={{ color: "var(--accent-primary)", fontWeight: 900 }}>
+                      {t.group_points}
+                    </td>
+                    <td style={{ fontWeight: 900, color: "var(--gold)" }}>{t.total_score}</td>
+                  </tr>
+                ))}
+                {standings.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="muted">
+                      Nobody has entered yet.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {standings.length > 0 && !tableHasCounted && (
+            <p className="standings-note">
+              Everyone is on zero because no frame has counted yet. A frame counts once it is
+              finished{requireFrameConfirmation ? " and both players have agreed it" : ""}.
+            </p>
+          )}
+          {awaitingFrame && (
+            <p className="standings-note">
+              {getTeamName(awaitingFrame.team_a_id)} {awaitingFrame.score_team_a}–
+              {awaitingFrame.score_team_b} {getTeamName(awaitingFrame.team_b_id)} is finished but
+              not yet agreed, so it is not in these numbers.
+            </p>
+          )}
+          <p className="standings-note">
+            <strong>Played</strong> frames started.{" "}
+            <strong>Won</strong> frames taken — this is what ranks the table.{" "}
+            <strong>{scoreHeading}</strong>{" "}
+            {isFootball ? "goals scored" : "balls potted"}, used only to split players level on
+            wins.
+          </p>
         </div>
       )}
 

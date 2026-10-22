@@ -150,7 +150,7 @@ describe("resultsText", () => {
 describe("tableText", () => {
   it("ranks on points, then score, then fewest played", () => {
     const text = tableText("Friday night", teams);
-    const lines = text.split("\n").filter((l) => l.includes("pts"));
+    const lines = text.split("\n").filter((l) => l.includes("played"));
     expect(lines[0]).toContain("Ravi");
     expect(lines[1]).toContain("Priya");
     expect(lines[2]).toContain("Arun");
@@ -167,12 +167,54 @@ describe("tableText", () => {
     expect(text).toContain("4. Sana");
   });
 
+
+  it("gives nobody a medal when nothing has been played", () => {
+    // Three medals on an all-zero table crown whoever happens to sort first,
+    // which is how a group chat ends up congratulating someone who has not
+    // played a frame.
+    const fresh: ShareTeam[] = teams.map((t) => ({
+      ...t,
+      matches_played: 0,
+      group_points: 0,
+      total_score: 0,
+    }));
+    const text = tableText("Friday night", fresh);
+    expect(text).not.toContain("🥇");
+    expect(text).not.toContain("🥈");
+    expect(text).not.toContain("🥉");
+  });
+
+  it("says plainly that nothing has counted, and still lists who is in", () => {
+    const fresh: ShareTeam[] = teams.map((t) => ({
+      ...t,
+      matches_played: 0,
+      group_points: 0,
+      total_score: 0,
+    }));
+    const text = tableText("Friday night", fresh);
+    expect(text).toContain("No frames have counted yet");
+    expect(text).toContain("both players agree it");
+    for (const t of fresh) expect(text).toContain(t.name);
+  });
+
+  it("medals again as soon as a frame has counted", () => {
+    expect(tableText("Friday night", teams)).toContain("🥇");
+  });
+
   it("says nobody has entered rather than printing a bare heading", () => {
     expect(tableText("Friday night", [])).toContain("Nobody has entered yet");
   });
 
-  it("shows how many each player has played, so the table can be checked", () => {
-    expect(tableText("Friday night", teams)).toContain("(2 played)");
+  it("names the columns in words, so nobody has to guess what a point is", () => {
+    // group_points is frames won. Printing it as "2 pts" asked a bar's group
+    // chat to infer a scoring system that does not exist.
+    const text = tableText("Friday night", teams);
+    expect(text).toContain("2 won of 2 played");
+    expect(text).not.toContain("pts");
+  });
+
+  it("says how the order was decided, in one line", () => {
+    expect(tableText("Friday night", teams)).toContain("Most frames won takes it.");
   });
 });
 

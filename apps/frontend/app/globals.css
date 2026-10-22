@@ -2079,6 +2079,74 @@ label {
   border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
 }
 
+/* ── The table, in the arena ──
+   Five columns of 1.5rem padding do not fit a phone, and the standings are
+   read on a phone more than anywhere else. The table scrolls sideways inside
+   its own box rather than pushing the page wide, and the padding comes in. */
+
+.standings-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.standings-head h3 {
+  margin: 0;
+  font-family: var(--font-outfit), system-ui, sans-serif;
+  font-size: var(--text-lg);
+  font-weight: var(--weight-black);
+}
+
+.standings-head span {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.standings-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.standings-note {
+  margin: var(--space-3) 0 0;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  line-height: 1.55;
+}
+
+.standings-note strong { color: var(--text-primary); }
+
+/* Position. A medal colour only once a frame has counted. */
+.standings-place {
+  display: inline-grid;
+  place-items: center;
+  min-width: 2em;
+  min-height: 2em;
+  border-radius: 999px;
+  font-weight: var(--weight-black);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+  border: 1px solid var(--glass-border-color);
+}
+
+.standings-place.p1 { background: #ffd700; color: #1a1300; border-color: #ffd700; }
+.standings-place.p2 { background: #d6d6d6; color: #1a1a1a; border-color: #d6d6d6; }
+.standings-place.p3 { background: #c9843f; color: #1a0f00; border-color: #c9843f; }
+
+.leaderboard-table tr.leader td {
+  border-color: var(--gold-subtle);
+}
+
+@media (max-width: 640px) {
+  .leaderboard-table th { padding: 0.6rem 0.7rem; letter-spacing: 0.08em; }
+  .leaderboard-table td { padding: 0.75rem 0.7rem; }
+  .leaderboard-table tr:hover { transform: none; }
+}
+
 .leaderboard-rank {
   font-family: var(--font-outfit);
   font-weight: 900;
@@ -3682,6 +3750,25 @@ select.form-control option {
   overflow-wrap: anywhere;
 }
 
+/* The host's override, set apart from the players' taps.
+
+   It used to be a small ghost button with a line of hint text under it, which
+   read as a shortcut past a slow player. It is actually the host signing a
+   result in a player's place, so it gets its own bordered block, says what it
+   records, and asks twice. */
+.confirm-settle {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+  padding: var(--space-4);
+  border-radius: var(--radius-sm);
+  border: 1px dashed var(--gold-subtle);
+  background: color-mix(in oklab, var(--gold) 6%, transparent);
+}
+
+.confirm-settle p { line-height: 1.5; }
+
 /* ── 1.5 Staff mode ──
    One screen, big buttons, scoring only. Built for someone trained for ninety
    seconds, holding a phone, in a dark room. */
@@ -3793,23 +3880,53 @@ select.form-control option {
    that the wall TV is already showing cricket, so this has to work propped on
    a tablet and degrade to a phone. Everything scales with the viewport. */
 
+/* The big screen carries its own palette.
+
+   It is a wall screen: always dark, whatever the viewer's theme, because a
+   pearl-white television across a dark room is a lamp pointed at the players.
+   It used to take `color: var(--text-primary)` from the theme while painting
+   its own near-black background, so in light mode the whole screen was dark
+   text on dark — the scores were there and unreadable. Every colour inside is
+   now declared here, in W.T.A gold and red on black. */
+
 .display {
+  /* Pinned, not inherited: the theme's gold shifts in light mode and this
+     screen is always on black. */
+  --gold-light: #ffd700;
+  --display-ink: #fff8e1;
+  --display-dim: #b9ad8e;
+  --display-line: rgba(255, 215, 0, 0.16);
+  --display-panel: rgba(255, 215, 0, 0.04);
+
+  color-scheme: dark;
   min-height: 100vh;
   min-height: 100dvh;
-  background: radial-gradient(ellipse at top, #0a0620 0%, #030014 60%);
-  color: var(--text-primary);
+  background:
+    radial-gradient(ellipse at 50% -15%, rgba(255, 215, 0, 0.1) 0%, transparent 55%),
+    radial-gradient(ellipse at 90% 110%, rgba(220, 38, 38, 0.12) 0%, transparent 50%),
+    #050403;
+  color: var(--display-ink);
   display: flex;
   flex-direction: column;
-  padding: clamp(var(--space-3), 2.5vw, var(--space-6));
+  padding: calc(clamp(var(--space-3), 2.5vw, var(--space-6)) + env(safe-area-inset-top, 0px))
+           clamp(var(--space-3), 2.5vw, var(--space-6))
+           calc(clamp(var(--space-3), 2.5vw, var(--space-6)) + env(safe-area-inset-bottom, 0px));
   gap: clamp(var(--space-3), 2vw, var(--space-5));
-  overflow: hidden;
+  overflow-x: hidden;
 }
 
 .display-head {
   display: flex;
-  align-items: baseline;
+  align-items: flex-start;
   justify-content: space-between;
   gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.display-head-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
   flex-wrap: wrap;
 }
 
@@ -3819,6 +3936,53 @@ select.form-control option {
   font-weight: var(--weight-black);
   letter-spacing: -0.02em;
   overflow-wrap: anywhere;
+  color: var(--display-ink);
+}
+
+.display-status {
+  color: var(--display-dim);
+  letter-spacing: 0.14em;
+  font-size: clamp(0.72rem, 1.2vw, 1rem);
+  text-transform: uppercase;
+  font-weight: var(--weight-semibold);
+  margin-top: 0.35rem;
+}
+
+.display-sudden { color: #ff8f6b; }
+
+.display-warn {
+  font-size: clamp(0.7rem, 1.1vw, 0.9rem);
+  color: #ffb866;
+  border: 1px solid rgba(255, 184, 102, 0.4);
+  border-radius: 999px;
+  padding: 0.3em 0.9em;
+  white-space: nowrap;
+}
+
+/* The one way off this page. Dimmed so it does not compete with the score on
+   a wall, full strength the moment it is wanted. */
+.display-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45em;
+  padding: 0.5em 1em;
+  border-radius: 999px;
+  border: 1px solid var(--display-line);
+  background: var(--display-panel);
+  color: var(--display-dim);
+  text-decoration: none;
+  font-size: clamp(0.75rem, 1.1vw, 0.95rem);
+  font-weight: var(--weight-semibold);
+  min-height: var(--touch-min);
+  opacity: 0.55;
+  transition: opacity 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+}
+
+.display-back:hover,
+.display-back:focus-visible {
+  opacity: 1;
+  color: var(--gold-light, #ffd700);
+  border-color: rgba(255, 215, 0, 0.5);
 }
 
 .display-live {
@@ -3847,19 +4011,20 @@ select.form-control option {
   min-width: 0;
   padding: clamp(var(--space-3), 2vw, var(--space-5));
   border-radius: var(--radius-lg);
-  border: 2px solid var(--glass-border-color);
-  background: var(--glass-bg);
+  border: 2px solid var(--display-line);
+  background: var(--display-panel);
 }
 
-.display-team.a { border-color: rgba(239, 68, 68, 0.55); }
-.display-team.b { border-color: rgba(59, 130, 246, 0.55); }
-.display-team.winning { box-shadow: 0 0 60px rgba(255, 215, 0, 0.18); }
+.display-team.a { border-color: rgba(220, 38, 38, 0.6); }
+.display-team.b { border-color: rgba(255, 215, 0, 0.55); }
+.display-team.winning { box-shadow: 0 0 70px rgba(255, 215, 0, 0.22); }
 
 .display-team .name {
   font-size: var(--text-xl);
   font-weight: var(--weight-bold);
   overflow-wrap: anywhere;
   max-width: 100%;
+  color: var(--display-ink);
 }
 
 .display-team .score {
@@ -3868,6 +4033,7 @@ select.form-control option {
   font-weight: var(--weight-black);
   line-height: 0.9;
   font-variant-numeric: tabular-nums;
+  color: var(--display-ink);
 }
 
 .display-clock {
@@ -3877,42 +4043,188 @@ select.form-control option {
   font-variant-numeric: tabular-nums;
   text-align: center;
   white-space: nowrap;
+  color: var(--display-ink);
 }
 
-.display-clock.low { color: #f87171; }
+.display-clock.low { color: #ff6b6b; }
+
+.display-clock-note {
+  text-align: center;
+  color: var(--display-dim);
+  font-size: clamp(0.65rem, 1vw, 0.85rem);
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+}
+
+/* Nothing on the table: say what is coming, and who makes it happen. */
+.display-idle {
+  font-size: var(--text-display);
+  font-weight: var(--weight-black);
+  font-family: var(--font-outfit), system-ui, sans-serif;
+  overflow-wrap: anywhere;
+  color: var(--display-ink);
+}
+
+.display-idle-note {
+  color: var(--display-dim);
+  margin-top: var(--space-3);
+  font-size: clamp(0.8rem, 1.3vw, 1.05rem);
+}
+
+/* Frames played but not yet agreed — the reason a table sits on zero. Amber,
+   because it is not an error and not a result either. */
+.display-pending {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-4);
+  padding: clamp(var(--space-2), 1.4vw, var(--space-4));
+  border-radius: var(--radius);
+  border: 1px solid rgba(255, 184, 102, 0.35);
+  background: rgba(255, 184, 102, 0.07);
+}
+
+.display-pending-tag {
+  font-size: clamp(0.66rem, 1vw, 0.85rem);
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-weight: var(--weight-bold);
+  color: #ffc078;
+  white-space: nowrap;
+}
+
+.display-pending-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  font-weight: var(--weight-bold);
+  font-size: clamp(0.95rem, 1.6vw, 1.35rem);
+  font-variant-numeric: tabular-nums;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.display-pending-note {
+  color: var(--display-dim);
+  font-size: clamp(0.75rem, 1.1vw, 0.95rem);
+  flex: 1 1 16rem;
+  min-width: 0;
+}
 
 .display-foot {
   display: grid;
   gap: clamp(var(--space-3), 2vw, var(--space-5));
-  grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr));
   align-items: start;
+}
+
+/* ── The table ──
+   It is the thing the room argues about, so it gets a heading, column names
+   that say what they hold, and a line explaining itself when it is empty. */
+
+.display-standings {
+  min-width: 0;
+  padding: clamp(var(--space-2), 1.2vw, var(--space-4));
+  border-radius: var(--radius);
+  border: 1px solid var(--display-line);
+  background: var(--display-panel);
+}
+
+.display-standings-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-2);
+}
+
+.display-standings-head h2 {
+  margin: 0;
+  font-family: var(--font-outfit), system-ui, sans-serif;
+  font-size: clamp(1rem, 1.8vw, 1.5rem);
+  font-weight: var(--weight-black);
+  letter-spacing: -0.01em;
+  color: var(--display-ink);
+}
+
+.display-standings-head span {
+  color: var(--display-dim);
+  font-size: clamp(0.68rem, 1vw, 0.88rem);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.display-standings-note {
+  margin: var(--space-2) 0 0;
+  color: var(--display-dim);
+  font-size: clamp(0.72rem, 1.05vw, 0.92rem);
+  line-height: 1.45;
 }
 
 .display-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: clamp(0.9rem, 1.6vw, 1.4rem);
+  font-size: clamp(0.88rem, 1.5vw, 1.3rem);
+  color: var(--display-ink);
 }
 
 .display-table th,
 .display-table td {
-  padding: var(--space-2) var(--space-3);
+  padding: clamp(0.35rem, 0.7vw, 0.6rem) clamp(0.4rem, 0.8vw, 0.75rem);
   text-align: left;
-  border-bottom: 1px solid var(--glass-border-color);
+  border-bottom: 1px solid var(--display-line);
   white-space: nowrap;
 }
 
 .display-table th {
-  font-size: 0.75em;
+  font-size: 0.7em;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: #9ca3af;
+  color: var(--display-dim);
+  font-weight: var(--weight-bold);
+}
+
+.display-table .pos { width: 1%; padding-right: 0; }
+.display-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+.display-table .won { font-weight: var(--weight-black); color: var(--gold-light, #ffd700); }
+
+.display-table .who {
+  white-space: normal;
+  overflow-wrap: anywhere;
   font-weight: var(--weight-semibold);
 }
 
-.display-table td:first-child {
+.display-table tr:last-child td { border-bottom: none; }
+
+/* The leader, once there is one to have. */
+.display-table tr.leader td {
+  background: rgba(255, 215, 0, 0.07);
+}
+.display-table tr.leader .who { font-weight: var(--weight-black); }
+
+/* Position. A medal colour only once a frame has actually counted: three
+   coloured discs on an all-zero table crown whoever happens to sort first. */
+.display-place {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.9em;
+  min-height: 1.9em;
+  border-radius: 999px;
+  font-size: 0.8em;
+  font-weight: var(--weight-black);
+  font-variant-numeric: tabular-nums;
+  color: var(--display-dim);
+  border: 1px solid var(--display-line);
+}
+
+.display-place.p1 { background: #ffd700; color: #1a1300; border-color: #ffd700; }
+.display-place.p2 { background: #d6d6d6; color: #1a1a1a; border-color: #d6d6d6; }
+.display-place.p3 { background: #c9843f; color: #1a0f00; border-color: #c9843f; }
+
+.display-empty {
+  color: var(--display-dim);
   white-space: normal;
-  overflow-wrap: anywhere;
 }
 
 /* The join QR, on the screen so a walk-in can enter without asking. */
@@ -3922,9 +4234,10 @@ select.form-control option {
   gap: var(--space-4);
   padding: var(--space-4);
   border-radius: var(--radius);
-  background: var(--glass-bg);
-  border: 1px solid rgba(255, 215, 0, 0.25);
+  background: var(--display-panel);
+  border: 1px solid rgba(255, 215, 0, 0.3);
   flex-wrap: wrap;
+  min-width: 0;
 }
 
 .display-join .qr {
@@ -3935,11 +4248,25 @@ select.form-control option {
   flex-shrink: 0;
 }
 
+.display-join-label {
+  color: var(--gold-light, #ffd700);
+  font-size: clamp(0.7rem, 1.2vw, 0.95rem);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-weight: var(--weight-bold);
+}
+
+.display-join-note {
+  color: var(--display-dim);
+  font-size: clamp(0.7rem, 1.1vw, 0.9rem);
+}
+
 .display-join .code {
   font-family: var(--font-outfit), system-ui, sans-serif;
   font-size: clamp(1.5rem, 4vw, 2.5rem);
   font-weight: var(--weight-black);
   letter-spacing: 0.15em;
+  color: var(--display-ink);
 }
 
 /* ── 1.7 Join by QR, the player's side ── */

@@ -64,6 +64,7 @@ import {
   statusEntitles,
 } from "./lib/billing";
 import { shareText, whatsappShareUrl, type ShareKind } from "./lib/share-text";
+import { planFrameConfirmation } from "./lib/frame-confirmation";
 import {
   COIN_AWARDS,
   COIN_RULES,
@@ -2151,9 +2152,33 @@ async function recordEngineResult(
   // but nothing is added to either team's totals and a final does not pay out
   // until both sides have confirmed. See the confirm route below.
   if (tournament.require_frame_confirmation && !match.awaiting_confirmation) {
-    await store.updateEngineMatch(match.id, { awaiting_confirmation: true });
-    match.awaiting_confirmation = true;
-    return;
+    // A side with no account has nobody to ask.
+    //
+    // This was a deadlock. Walk-ins seated by name — which is most of a real
+    // league night, and everyone in a night started from "Run a night" — have
+    // no account, so they could never tap confirm. Every frame sat waiting on
+    // a person who did not exist, nothing reached the table, and the standings
+    // stayed on zero all evening with no indication why.
+    //
+    // So a side that cannot be asked is confirmed on its behalf, recorded as
+    // such rather than silently. What remains is the case the feature is for:
+    // two signed-in players who both have to agree. One account against a
+    // walk-in needs only that one tap, and two walk-ins settle at once.
+    const sides = await store.getEngineTeams(tournament.id).catch(() => []);
+    const plan = planFrameConfirmation(sides, match.team_a_id, match.team_b_id);
+
+    if (plan.hold) {
+      await store.updateEngineMatch(match.id, { awaiting_confirmation: true });
+      match.awaiting_confirmation = true;
+
+      for (const teamId of plan.autoConfirm) {
+        await store
+          .confirmFrame(match.id, teamId, null, match.winner_id)
+          .catch(() => undefined);
+      }
+      return;
+    }
+    // Nobody to ask at all, so this falls through and counts now.
   }
 
   for (const delta of Engine.resultDeltas(match, engineSport(tournament))) {
