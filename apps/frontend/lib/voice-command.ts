@@ -17,6 +17,9 @@
  *   "Asha the black" / "8 ball"      the black (the screen asks before it counts)
  *   "undo Ravi's foul", "remove a ball from Asha"
  *   "scratch that" / "undo"          take back the last thing said
+ *   "left two balls", "right foul"   the side instead of the name: left (or top,
+ *                                    on a phone held upright) is the first player
+ *   "kay kay foul"                   a name that is initials, said as letters
  *
  * WHY SO FORGIVING
  * Speech recognisers write "to balls", "fowl", "bowls" and "2balls". The
@@ -90,7 +93,8 @@ const UNITS: Record<string, Unit> = {
   point: "POINT", points: "POINT",
   foul: "FOUL", fouls: "FOUL", fowl: "FOUL", fowls: "FOUL", foal: "FOUL", foals: "FOUL",
   // How the on-device model actually wrote "foul" from a synthesised voice.
-  fell: "FOUL", fouled: "FOUL", fool: "FOUL",
+  fell: "FOUL", fouled: "FOUL", fool: "FOUL", feller: "FOUL", fall: "FOUL", falls: "FOUL",
+  fal: "FOUL", fow: "FOUL", faul: "FOUL",
   // "a foul" run together into one word.
   afoul: "FOUL", afel: "FOUL", afell: "FOUL",
   black: "BLACK", blacks: "BLACK", blake: "BLACK",
@@ -108,7 +112,7 @@ const REMOVERS = new Set([
  * recognised, and stops the score going to whoever was named before it.
  */
 const FILLERS = new Set([
-  "um", "umm", "uh", "er", "hmm", "ah", "oh", "okay", "ok", "so", "yeah", "yes", "right",
+  "um", "umm", "uh", "er", "hmm", "ah", "oh", "okay", "ok", "so", "yeah", "yes", "side",
   "now", "also", "again", "then", "just", "more", "with", "have", "had", "made", "makes",
   "scored", "score", "scores", "pot", "pots", "potted", "sunk", "sinks", "sank", "did",
   "does", "commits", "committed", "gave", "plays", "played", "shot", "wait", "sorry",
@@ -202,7 +206,44 @@ function commonPrefix(a: string, b: string): number {
 interface Alias {
   teamId: string;
   tokens: string[];
+  /** Set when the name is initials ("KK", "Rj"): the letters, to be heard spoken. */
+  letters?: string[];
 }
+
+/**
+ * How recognisers write a letter said on its own. "KK" is said "kay kay", and
+ * comes back as "k k", "kay kay", "okay okay" or "kaykay", never as "kk".
+ */
+const LETTER_FORMS: Record<string, string[]> = {
+  a: ["a", "ay", "eh", "hey"], b: ["b", "be", "bee"], c: ["c", "see", "sea", "si"],
+  d: ["d", "dee", "di"], e: ["e", "ee"], f: ["f", "ef", "eff"], g: ["g", "gee", "ji", "jee"],
+  h: ["h", "aitch", "edge", "etch"], i: ["i", "eye", "aye"], j: ["j", "jay", "je", "jai"],
+  k: ["k", "kay", "kai", "okay", "ok", "cay", "que", "kei", "ke"], l: ["l", "el", "ell"],
+  m: ["m", "em"], n: ["n", "en"], o: ["o", "oh"], p: ["p", "pee", "pea", "pe"],
+  q: ["q", "queue", "cue"], r: ["r", "are", "ar"], s: ["s", "es", "ess"],
+  t: ["t", "tee", "tea", "ti"], u: ["u", "you"], v: ["v", "vee", "we"],
+  w: ["w"], x: ["x", "ex"], y: ["y", "why"], z: ["z", "zed", "zee"],
+};
+
+/**
+ * Whether a written name is initials rather than a word: "KK", "RJ", "Kk".
+ * Upper case and short, or short with no vowel to say it by.
+ */
+function isInitials(raw: string): boolean {
+  const word = raw.replace(/[^\p{L}]/gu, "");
+  if (word.length < 1 || word.length > 3 || !/^[a-z]+$/i.test(word)) return false;
+  return /^[A-Z]+$/.test(word) || !/[aeiouy]/i.test(word);
+}
+
+/**
+ * Words that name a side without naming the player: the first player's card
+ * is on the left (on top, on a phone held upright), the second's on the right.
+ * A name the recogniser keeps mangling can always be scored this way.
+ */
+const SIDE_WORDS: [string[][], string[][]] = [
+  [["left"], ["top"], ["first"], ["player", "one"], ["player", "1"], ["first", "player"]],
+  [["right"], ["bottom"], ["second"], ["player", "two"], ["player", "2"], ["player", "to"], ["second", "player"]],
+];
 
 /**
  * Every way a player can be named: the whole name, and each word of it that
@@ -224,6 +265,26 @@ function buildAliases(players: VoicePlayer[]): { aliases: Alias[]; shared: Set<s
 
   const shared = new Set<string>();
   const aliases: Alias[] = [];
+
+  // Initials, heard as letters. Only when the whole name is initials, so a
+  // "Raj" stays a word.
+  for (const player of players) {
+    const raw = player.name.trim().split(/\s+/).filter(Boolean);
+    if (raw.length === 1 && isInitials(raw[0])) {
+      const letters = raw[0].toLowerCase().split("");
+      if (letters.every((l) => own(LETTER_FORMS, l))) {
+        aliases.push({ teamId: player.id, tokens: letters, letters });
+      }
+    }
+  }
+
+  // The sides. Every frame has two.
+  if (players.length === 2) {
+    players.forEach((player, index) => {
+      for (const tokens of SIDE_WORDS[index]) aliases.push({ teamId: player.id, tokens });
+    });
+  }
+
   for (const player of tokenised) {
     // A side called "Black" or "Two" cannot be named by voice without
     // swallowing the word that scores; its other words still work.
@@ -255,6 +316,25 @@ function matchPlayer(
     }
   }
 
+  // Initials said as letters: "kay kay", "okay okay", or run into one word.
+  for (const alias of aliases) {
+    const letters = alias.letters;
+    if (!letters) continue;
+    const slice = words.slice(at, at + letters.length);
+    if (slice.length === letters.length && slice.every((w, i) => LETTER_FORMS[letters[i]].includes(w))) {
+      return { teamId: alias.teamId, length: letters.length };
+    }
+    if (spokenAsOneWord(words[at], letters)) return { teamId: alias.teamId, length: 1 };
+  }
+
+  // One name written as two words: "ball a" for "Bala", "ash a" for "Asha".
+  // Held to one letter off, so a real "ball" is never taken for a name.
+  const following = words[at + 1];
+  if (following !== undefined && !/^\p{N}+$/u.test(words[at]) && !/^\p{N}+$/u.test(following) && !own(UNITS, following)) {
+    const owner = closestSpelling(words[at] + following, aliases, 1);
+    if (owner) return { teamId: owner, length: 2 };
+  }
+
   // Close enough, for one word: "Ashaa", "Ravvi". Only for words long enough
   // that one letter off is still recognisably the same name.
   const word = words[at];
@@ -267,24 +347,25 @@ function matchPlayer(
   if (key.length < 2) return null;
   const heard = new Set(
     aliases
-      .filter((a) => a.tokens.length === 1 && soundsLike(a.tokens[0]) === key)
+      .filter((a) => a.tokens.length === 1 && !a.letters && !isSideWord(a.tokens) && soundsLike(a.tokens[0]) === key)
       .map((a) => a.teamId)
   );
   return heard.size === 1 ? { teamId: [...heard][0], length: 1 } : null;
 }
 
 /** The one player whose name is a letter or two from `word`, if only one is. */
-function closestSpelling(word: string, aliases: Alias[]): string | null {
+function closestSpelling(word: string, aliases: Alias[], maxCap?: number): string | null {
   let best: { teamId: string; distance: number } | null = null;
   let tie = false;
   for (const alias of aliases) {
-    if (alias.tokens.length !== 1) continue;
+    if (alias.tokens.length !== 1 || alias.letters || isSideWord(alias.tokens)) continue;
     const target = alias.tokens[0];
     if (target.length < 4) continue;
     // Two edits for long names, or for a word that starts like the name:
     // the on-device model wrote "Asha" as "Asher". With two players at the
     // table and ties refused, generous costs little.
-    const cap = target.length >= 7 || commonPrefix(word, target) >= 3 ? 2 : 1;
+    const loose = target.length >= 7 || commonPrefix(word, target) >= 3 ? 2 : 1;
+    const cap = maxCap === undefined ? loose : Math.min(loose, maxCap);
     const distance = editDistance(word, target, cap);
     if (distance > cap) continue;
     if (!best || distance < best.distance) {
@@ -295,6 +376,71 @@ function closestSpelling(word: string, aliases: Alias[]): string | null {
     }
   }
   return best && !tie ? best.teamId : null;
+}
+
+/**
+ * How alike two words are, 0 to 1: the better of their spelling and their
+ * sound (soundsLike), each as one minus edit distance over the longer length.
+ */
+function likeness(heard: string, name: string): number {
+  const ratio = (a: string, b: string) => {
+    const longer = Math.max(a.length, b.length);
+    if (longer === 0) return 0;
+    return 1 - editDistance(a, b, longer) / longer;
+  };
+  return Math.max(ratio(heard, name), ratio(soundsLike(heard), soundsLike(name)));
+}
+
+/** How alike a heard word must be to the nearer name, and by how much nearer. */
+const NEAREST_FLOOR = 0.45;
+const NEAREST_MARGIN = 0.2;
+
+/**
+ * The player an unrecognised word most likely was, at a two-player table.
+ *
+ * Only ever asked about words in a name's place: just before a count or a
+ * scoring word, where nothing else could be. There are two names to choose
+ * between, not a dictionary, so "Ballot" is plainly Bala and not Kk even
+ * though it is three letters from either spelling. Refuses when the two
+ * names are about as near as each other, or when neither is near at all.
+ * Benchmarked on what the on-device models really wrote: "Ballot", "ballet",
+ * "Baller" for Bala, "I should" for Aishu.
+ */
+function nearestOfTwo(run: string[], players: VoicePlayer[]): string | null {
+  if (players.length !== 2 || run.length === 0) return null;
+  const names = players.map((p) => normaliseSpeech(p.name).replace(/ /g, ""));
+  const candidates = new Set<string>();
+  for (let take = 1; take <= Math.min(3, run.length); take++) candidates.add(run.slice(-take).join(""));
+  let best: { id: string; score: number } | null = null;
+  let second = 0;
+  for (const heard of candidates) {
+    if (heard.length < 2) continue;
+    const scores = names.map((name) => likeness(heard, name));
+    const winner = scores[0] >= scores[1] ? 0 : 1;
+    const gap = scores[winner] - scores[1 - winner];
+    if (!best || scores[winner] > best.score) {
+      best = { id: players[winner].id, score: scores[winner] };
+      second = scores[winner] - gap;
+    }
+  }
+  if (!best || best.score < NEAREST_FLOOR || best.score - second < NEAREST_MARGIN) return null;
+  return best.id;
+}
+
+/** "kaykay", "kk", "kayk": initials said and written as one word. */
+function spokenAsOneWord(word: string, letters: string[]): boolean {
+  let options = [""];
+  for (const letter of letters) {
+    const next: string[] = [];
+    for (const start of options) for (const form of LETTER_FORMS[letter]) next.push(start + form);
+    options = next;
+  }
+  return options.includes(word);
+}
+
+const SIDE_KEYS = new Set(SIDE_WORDS.flat().map((tokens) => tokens.join(" ")));
+function isSideWord(tokens: string[]): boolean {
+  return SIDE_KEYS.has(tokens.join(" "));
 }
 
 /** The tap a scoring word makes, or why it makes none. */
@@ -352,8 +498,25 @@ export function parseVoiceCommand(
   let remove = false;
   let removeUsed = false;
   let sharedHeard: string | null = null;
+  /** Words since the last thing understood that no rule recognised. */
+  let unknownRun: string[] = [];
 
   const emit = (type: LocalScoreEvent, times: number) => {
+    // A score with nobody (or nobody we know) named just before it: the words
+    // in the name's place were most likely one of the two names, misheard.
+    if ((current === null || current === BLOCKED) && unknownRun.length > 0) {
+      const guess = nearestOfTwo(unknownRun, players);
+      if (guess) {
+        if (current === null && orphans.length > 0) {
+          for (const orphan of orphans.splice(0)) {
+            for (let k = 0; k < orphan.count; k++) events.push({ teamId: guess, type: orphan.type });
+          }
+        }
+        current = guess;
+        blockedBy = null;
+      }
+    }
+    unknownRun = [];
     if (current === BLOCKED) {
       if (blockedBy && !blockedReported.has(blockedBy)) {
         blockedReported.add(blockedBy);
@@ -387,6 +550,7 @@ export function parseVoiceCommand(
       current = player.teamId;
       blockedBy = null;
       count = null;
+      unknownRun = [];
       i += player.length - 1;
       continue;
     }
@@ -413,6 +577,7 @@ export function parseVoiceCommand(
     if (looksLikeName) {
       current = BLOCKED;
       blockedBy = word;
+      unknownRun.push(word);
       continue;
     }
 
@@ -435,7 +600,10 @@ export function parseVoiceCommand(
     }
 
     const unit = own(UNITS, word) ? UNITS[word] : undefined;
-    if (!unit) continue;
+    if (!unit) {
+      if (!RESERVED.has(word)) unknownRun.push(word);
+      continue;
+    }
 
     // "8 ball" and "eight ball" are the black, not eight balls.
     const isEightBall = unit === "BALL" && count === 8 && sport === "POOL";
@@ -458,6 +626,17 @@ export function parseVoiceCommand(
     emit(result.event, times);
   }
 
+  // "Two balls for ballet": the score came first and the name, misheard,
+  // after it. Whatever was said after the last score is in the run.
+  if (orphans.length > 0 && current === null && unknownRun.length > 0) {
+    const guess = nearestOfTwo(unknownRun, players);
+    if (guess) {
+      for (const orphan of orphans.splice(0)) {
+        for (let k = 0; k < orphan.count; k++) events.push({ teamId: guess, type: orphan.type });
+      }
+    }
+  }
+
   if (orphans.length > 0) {
     problems.push(
       sharedHeard
@@ -473,11 +652,19 @@ export function parseVoiceCommand(
     problems.push(
       sharedHeard
         ? `Both players are called “${sharedHeard}”. Use a surname or the other word of the name.`
-        : "Heard you, but not a score. Try “Asha two balls” or “Ravi foul”."
+        : `Heard you, but not a score. Try ${exampleFor(players)}.`
     );
   }
 
   return { events, undoLast, problems, wake: found, heard: after };
+}
+
+/** "“Bala two balls” or “Kk foul”, or the sides", for this table. */
+export function exampleFor(players: VoicePlayer[]): string {
+  const first = (p?: VoicePlayer) => (p ? p.name.trim().split(/\s+/)[0] : "");
+  const a = first(players[0]) || "left";
+  const b = first(players[1]) || "right";
+  return `“${a} two balls” or “${b} foul” (or “left” and “right” for the two sides)`;
 }
 
 /**

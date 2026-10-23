@@ -19,7 +19,7 @@
  * at the table, and matches them forgivingly.
  *
  * COST
- * About 27 MB of model and 2 MB of VAD, fetched from huggingface.co the first
+ * About 63 MB of model and 2 MB of VAD, fetched from huggingface.co the first
  * time and kept in the browser's Cache API after that, plus ONNX Runtime's
  * WebAssembly from jsDelivr, also cached. Loaded only when someone asks for
  * on-device listening.
@@ -56,9 +56,16 @@ const MAX_UTTERANCE_MS = 8000;
 /** Talk mode gives up after this long with nothing said. */
 const TALK_TIMEOUT_MS = 7000;
 
-const ASR_MODEL = "onnx-community/moonshine-tiny-ONNX";
-/** Moonshine tiny at q8 (encoder + merged decoder) plus Silero, in bytes. */
-const EXPECTED_BYTES = 29_500_000;
+/**
+ * Moonshine base, not tiny. Benchmarked on the scoring phrases with this
+ * table's names (Bala, Kk, Aishu): base scored 13/20 to tiny's 10/20 on the
+ * old parser, at the same ~0.5 s a sentence. Whisper tiny.en and base.en were
+ * no more accurate and took 5–12 s a sentence in WebAssembly, which is no use
+ * at a table.
+ */
+const ASR_MODEL = "onnx-community/moonshine-base-ONNX";
+/** Moonshine base at q8 (encoder + merged decoder) plus Silero, in bytes. */
+const EXPECTED_BYTES = 65_200_000;
 const VAD_MODEL = "onnx-community/silero-vad";
 
 const ms = (samples: number) => (samples / SAMPLE_RATE) * 1000;

@@ -267,3 +267,96 @@ describe("a score never goes to the wrong player", () => {
     expect(types("Asha constructor ball")).toEqual([]);
   });
 });
+
+/**
+ * The table from the bug report: Bala v Kk. "Kk" is said "kay kay" and no
+ * recogniser writes it "kk"; "Bala" comes back as "Bella", "ball a" or
+ * "baller". And whatever the names, the sides always work.
+ */
+describe("a table the recogniser finds hard", () => {
+  const table = [
+    { id: "a", name: "Bala" },
+    { id: "b", name: "Kk" },
+  ];
+  const at = (text: string) => types(text, "POOL", table);
+
+  it("hears initials said as letters", () => {
+    for (const said of ["Kay Kay one foul", "K K foul", "k.k. foul", "okay okay foul", "kaykay foul", "Kay-Kay, a foul"]) {
+      expect(at(said), said).toEqual(["b:FOUL"]);
+    }
+  });
+
+  it("does not take a lone letter word for the initials", () => {
+    expect(at("okay Bala two balls")).toEqual(["a:BALL", "a:BALL"]);
+  });
+
+  it("hears a name the recogniser misspells or splits", () => {
+    for (const said of ["Bala two balls", "Bella two balls", "Ball a two balls", "Baller, two balls", "Balaa 2 balls"]) {
+      expect(at(said), said).toEqual(["a:BALL", "a:BALL"]);
+    }
+  });
+
+  it("still counts a real ball after a name", () => {
+    expect(at("Bala ball")).toEqual(["a:BALL"]);
+    expect(at("Kay Kay ball, Bala ball")).toEqual(["b:BALL", "a:BALL"]);
+  });
+
+  it("scores by side when the name will not come", () => {
+    expect(at("left two balls")).toEqual(["a:BALL", "a:BALL"]);
+    expect(at("right, one foul")).toEqual(["b:FOUL"]);
+    expect(at("left side one ball right side a foul")).toEqual(["a:BALL", "b:FOUL"]);
+    expect(at("top two balls, bottom foul")).toEqual(["a:BALL", "a:BALL", "b:FOUL"]);
+    expect(at("player one ball, player two foul")).toEqual(["a:BALL", "b:FOUL"]);
+    expect(at("two balls for the left")).toEqual(["a:BALL", "a:BALL"]);
+  });
+
+  it("names the actual players when it cannot help", () => {
+    const parsed = parseVoiceCommand("some might kick you", table, "POOL");
+    expect(parsed.events).toEqual([]);
+    expect(parsed.problems.join(" ")).toContain("Bala two balls");
+    expect(parsed.problems.join(" ")).toContain("Kk foul");
+    expect(parsed.problems.join(" ")).not.toContain("Asha");
+  });
+
+  it("keeps a full name that happens to be a short word as a word", () => {
+    const raj = [{ id: "a", name: "Raj" }, { id: "b", name: "Meena" }];
+    expect(types("Raj two balls", "POOL", raj)).toEqual(["a:BALL", "a:BALL"]);
+  });
+});
+
+/**
+ * Word for word what the on-device models wrote in the benchmark (synthesised
+ * voices saying the phrase on the left of each case). At a two-player table a
+ * misheard name only has to be nearer one name than the other.
+ */
+describe("what the models actually wrote", () => {
+  const bala = [{ id: "a", name: "Bala" }, { id: "b", name: "Kk" }];
+  const aishu = [{ id: "a", name: "Bob" }, { id: "b", name: "Aishu" }];
+
+  it("places a misheard name by which player it sounds nearer", () => {
+    expect(types("Ballot two balls", "POOL", bala)).toEqual(["a:BALL", "a:BALL"]);
+    expect(types("Two balls for ballet", "POOL", bala)).toEqual(["a:BALL", "a:BALL"]);
+    expect(types("Baller one ball k k foul", "POOL", bala)).toEqual(["a:BALL", "b:FOUL"]);
+    expect(types("I should three balls.", "POOL", aishu)).toEqual(["b:BALL", "b:BALL", "b:BALL"]);
+  });
+
+  it("reads foul the ways the models write it", () => {
+    for (const said of ["Kk1 fell", "Kk1 feller", "KK one fall", "kk 1 foul"]) {
+      expect(types(said, "POOL", bala), said).toEqual(["b:FOUL"]);
+    }
+  });
+
+  it("gives nothing to a word near neither name", () => {
+    expect(types("Priya two balls", "POOL", bala)).toEqual([]);
+    expect(types("the table two balls", "POOL", [{ id: "a", name: "Anand" }, { id: "b", name: "Kk" }])).toEqual([]);
+  });
+
+  it("gives nothing when the word is as near one name as the other", () => {
+    const twins = [{ id: "a", name: "Mani" }, { id: "b", name: "Mini" }];
+    expect(types("Moni two balls", "POOL", twins)).toEqual([]);
+  });
+
+  it("still lets a named player keep the score after an unknown word", () => {
+    expect(types("um okay Bala two balls", "POOL", bala)).toEqual(["a:BALL", "a:BALL"]);
+  });
+});

@@ -4,13 +4,16 @@
  * Scoring by voice, for the scorer whose hands are full.
  *
  * THREE WAYS IN, BEST FIRST
- * 1. On this device (the default). Silero VAD and the Moonshine model run in
- *    the browser itself — see lib/speech/on-device.worker.ts — so audio never
- *    leaves the phone and it works with the bar's wifi down. It costs one
- *    download of about 40 MB, which is asked for, not assumed.
- * 2. The browser's own speech service (Web Speech API). Nothing to download,
- *    but Chrome sends the audio to Google and it needs a connection. The
- *    fallback for a phone that cannot run the model.
+ * 1. The browser's own speech service (Web Speech API), the default wherever
+ *    it exists. It is set to Indian English, offers several guesses for each
+ *    sentence, and is told the two names at the table where the browser takes
+ *    hints. It was the fallback until a live night showed the small on-device
+ *    model writing "Some might kick you" for a score: accuracy is the feature.
+ *    Chrome sends the audio to Google, and it needs a connection.
+ * 2. On this device. Silero VAD and Moonshine run in the browser itself (see
+ *    lib/speech/on-device.worker.ts): private, and it works with the bar's
+ *    wifi down. One download, asked for, not assumed. Used by choice, or by
+ *    itself when the phone is offline.
  * 3. Handy (github.com/cjpais/Handy) on a laptop, or typing. Handy has no
  *    API; it pastes into whatever has focus, so this is a text field.
  *
@@ -75,6 +78,29 @@ interface Recognition {
   onend: (() => void) | null;
 }
 
+/**
+ * Contextual biasing: the names at the table and the words that score, given
+ * to recognisers that take hints (Chrome's SpeechRecognitionPhrase). Feature
+ * detected; a browser without it simply ignores the idea.
+ */
+function biasTowards(recognition: Recognition, players: VoicePlayer[], sport: VoiceSport) {
+  const Phrase = (window as unknown as { SpeechRecognitionPhrase?: new (phrase: string, boost: number) => unknown })
+    .SpeechRecognitionPhrase;
+  if (!Phrase || !("phrases" in (recognition as object))) return;
+  const words = new Set<string>();
+  for (const player of players) {
+    words.add(player.name.trim());
+    for (const part of player.name.trim().split(/\s+/)) if (part.length > 1) words.add(part);
+  }
+  for (const word of sport === "FOOTBALL" ? ["goal", "goals"] : ["ball", "balls", "foul", "the black"]) words.add(word);
+  for (const word of ["left", "right", "scratch that", "Bob note the points"]) words.add(word);
+  try {
+    (recognition as unknown as { phrases: unknown[] }).phrases = [...words].map((w) => new Phrase(w, 5));
+  } catch {
+    // A browser that lists the property but will not take these: no hints, no harm.
+  }
+}
+
 function recognitionConstructor(): (new () => Recognition) | null {
   if (typeof window === "undefined") return null;
   const w = window as unknown as {
@@ -90,10 +116,14 @@ type Listening = "off" | "talk" | "handsfree";
 type Feedback = { tone: "ok" | "warn" | "error" | "info"; text: string } | null;
 
 const SOURCE_KEY = "wta-voice-source";
-/** Set once the scorer has agreed to the download, so it is asked once. */
-const CONSENT_KEY = "wta-voice-model-ok";
+/**
+ * Set once the scorer has agreed to the download, so it is asked once. "-v2"
+ * since the model became Moonshine base: agreeing to 40 MB is not agreeing
+ * to 70, so everyone is asked again.
+ */
+const CONSENT_KEY = "wta-voice-model-ok-v2";
 /** What the first on-device use downloads, for the prompt. */
-const DOWNLOAD_MB = 40;
+const DOWNLOAD_MB = 70;
 
 const readStorage = (key: string): string | null => {
   try {
@@ -171,7 +201,10 @@ export function VoiceScorer({ match, players, sport, onScore }: VoiceScorerProps
           ? saved
           : null;
     const usable = (s: Source) => (s === "device" ? device : s === "browser" ? browser : true);
-    setSource(wanted && usable(wanted) ? wanted : device ? "device" : browser ? "browser" : "handy");
+    // The browser's recogniser first: on a live night the small on-device
+    // model could not hear a score. On-device stays one tap away, and takes
+    // over by itself when the phone is offline (see startListening).
+    setSource(wanted && usable(wanted) ? wanted : browser ? "browser" : device ? "device" : "handy");
     if (device && onDeviceSpeech().isReady) setModel("ready");
   }, []);
 
@@ -336,7 +369,8 @@ export function VoiceScorer({ match, players, sport, onScore }: VoiceScorerProps
       recognition.lang = LANG;
       recognition.continuous = mode === "handsfree";
       recognition.interimResults = true;
-      recognition.maxAlternatives = 3;
+      recognition.maxAlternatives = 5;
+      biasTowards(recognition, playersRef.current, sport);
       heardSomethingRef.current = false;
 
       recognition.onresult = (event) => {
@@ -421,7 +455,7 @@ export function VoiceScorer({ match, players, sport, onScore }: VoiceScorerProps
         stopListening();
       }
     },
-    [handleUtterance, stopListening]
+    [handleUtterance, sport, stopListening]
   );
 
   /** Open the mic through the on-device engine. The model must be ready. */
@@ -533,8 +567,16 @@ export function VoiceScorer({ match, players, sport, onScore }: VoiceScorerProps
     startOnDevice(waitingFor ?? "talk");
   };
 
-  const startListening = (mode: Exclude<Listening, "off">) =>
-    source === "device" ? startOnDevice(mode) : startBrowser(mode);
+  const startListening = (mode: Exclude<Listening, "off">) => {
+    if (source === "device") return startOnDevice(mode);
+    // The browser's service needs a connection. Offline, the on-device model
+    // listens instead, rather than the scorer meeting a "network" error.
+    if (typeof navigator !== "undefined" && navigator.onLine === false && deviceSupported) {
+      setFeedback({ tone: "info", text: "No connection, so listening on this phone instead." });
+      return startOnDevice(mode);
+    }
+    return startBrowser(mode);
+  };
 
   // Hidden tab, locked phone: stop holding the mic. Unmount: let it go.
   useEffect(() => {
@@ -608,7 +650,7 @@ export function VoiceScorer({ match, players, sport, onScore }: VoiceScorerProps
     (source === "device" && deviceSupported) || (source === "browser" && browserSupported);
   const example = players.length >= 2
     ? `“${firstWord(players[0].name)} two balls one foul”`
-    : "“Asha two balls one foul”";
+    : "“left two balls one foul”";
 
   return (
     <section className="voice" aria-label="Score by voice">
@@ -750,20 +792,26 @@ export function VoiceScorer({ match, players, sport, onScore }: VoiceScorerProps
       {help && (
         <div className="voice-help">
           <p>
-            Say the player, then what happened: {example}, “{players[1] ? firstWord(players[1].name) : "Ravi"}{" "}
-            {sport === "FOOTBALL" ? "goal" : "point"}”, “two balls for{" "}
-            {players[0] ? firstWord(players[0].name) : "Asha"}”.
+            Say the player, then what happened: {example}, “{players[1] ? firstWord(players[1].name) : "right"}{" "}
+            {sport === "FOOTBALL" ? "goal" : "foul"}”, “two balls for{" "}
+            {players[0] ? firstWord(players[0].name) : "left"}”.
             {sport === "POOL" && " “The black” asks before it counts."} “Scratch that” takes back the last one.
+          </p>
+          <p>
+            <strong>Name not catching?</strong> Say the side instead: “left two balls”, “right foul”
+            (on a phone held upright, “top” and “bottom”). Initials work spelt out: “kay kay foul”.
           </p>
           <p>
             <strong>Hands-free</strong> keeps listening and only acts after “Bob note the points”.
           </p>
           <p>
-            <strong>On this phone</strong> listens with a speech model that runs on the phone itself:
-            private, and it works offline after a one-time download. <strong>Browser speech</strong>{" "}
-            needs nothing downloaded, but sends the audio to the browser's service (Google, for Chrome)
-            and needs a connection. <strong>Handy</strong> is for a laptop: click the field, press your
-            Handy shortcut, and speak; if Handy types rather than pastes, turn on its auto-submit.
+            <strong>Browser speech</strong> (the default) is the most accurate: nothing to download, but
+            it sends the audio to the browser's service (Google, for Chrome) and needs a connection.{" "}
+            <strong>On this phone</strong> runs a speech model on the phone itself: private, works
+            offline after a one-time download, and takes over by itself when there is no connection,
+            but it hears less well in a loud room. <strong>Handy</strong> is for a laptop: click the
+            field, press your Handy shortcut, and speak; if Handy types rather than pastes, turn on its
+            auto-submit.
           </p>
           <div className="voice-source">
             {deviceSupported && (
