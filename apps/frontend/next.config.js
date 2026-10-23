@@ -15,6 +15,16 @@ const nextConfig = {
     if (isServer) {
       config.resolve.alias = { ...config.resolve.alias, "@huggingface/transformers": false };
     }
+    // ONNX Runtime's WebAssembly is loaded from jsDelivr at run time (see
+    // lib/speech/on-device.worker.ts), never from our own static files. The
+    // asyncify build alone is 25.6 MiB, over Cloudflare Pages' 25 MiB per-file
+    // limit, and emitting it failed the whole deploy at upload. The reference
+    // in the bundle is kept, the file is just not written.
+    config.module.rules.push({
+      test: /ort-wasm[^/\\]*\.wasm$/,
+      type: "asset/resource",
+      generator: { emit: false },
+    });
     return config;
   },
   async headers() {

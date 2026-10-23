@@ -76,6 +76,28 @@ const post = (message: unknown) => (self as unknown as Worker).postMessage(messa
 
 env.allowLocalModels = false;
 
+/**
+ * Where ONNX Runtime's WebAssembly comes from: jsDelivr, pinned to the exact
+ * onnxruntime-web this build bundles, not our own static files.
+ *
+ * The runtime is 25.6 MiB, and Cloudflare Pages refuses any file over 25 MiB:
+ * shipping it made the whole frontend deploy fail at upload, after a clean
+ * build. next.config.js therefore stops webpack emitting it, and this is
+ * what makes that safe. The models already come from the Hugging Face hub,
+ * so this adds no new kind of dependency, only a second host. jsDelivr
+ * serves it compressed (about 5.5 MB).
+ *
+ * The version is read from the runtime itself, so an upgrade cannot leave
+ * this pointing at a runtime that does not match the JavaScript using it.
+ */
+const ORT_FALLBACK_VERSION = "1.31.0-dev.20260914-8d85527a0";
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const onnx = (env.backends as any).onnx;
+if (onnx?.wasm) {
+  const version = onnx.versions?.web || ORT_FALLBACK_VERSION;
+  onnx.wasm.wasmPaths = `https://cdn.jsdelivr.net/npm/onnxruntime-web@${version}/dist/`;
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let transcriber: any = null;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

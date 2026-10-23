@@ -45,3 +45,9 @@ apps/frontend/.open-next/
 # Stray duplicate checkouts of this project (105 MB each), not part of the repo.
 /winner_takes_all/
 /winner_takes_all-1/
+
+# A local clone of github.com/cjpais/Handy, the desktop dictation app the
+# voice scorer can take text from. WTA never builds or loads its code: a
+# scorer installs Handy from its own releases (docs/external-integrations.md)
+# and it pastes into the scorer's text field. Kept out of this repo on purpose.
+Handy/
