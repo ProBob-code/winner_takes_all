@@ -97,8 +97,11 @@ import {
   PRICES,
   SHOWCASE_SIZE,
   STARTER_IDS,
+  EMOTES_PER_NIGHT,
+  EMOTE_COOLDOWN_SECONDS,
   checkLoadout,
   collectionPointsFor,
+  playableEmotes,
   dailyPicks,
   isForSale,
   itemById,
@@ -290,6 +293,7 @@ for (const family of [
   "/api/online/*",
   "/api/shop",
   "/api/shop/*",
+  "/api/nights/*",
 ]) {
   app.use(family, async (c, next) => {
     try {
@@ -5459,6 +5463,71 @@ app.post("/api/shop/buy", async (c) => {
     itemId: item.id,
     balance: result.balance,
     level: levelInfo(coins.lifetime, collectionPointsFor(owned)),
+  });
+});
+
+// --- Emotes at a live night ---
+
+/**
+ * Fire an emote at a night: it pops up on the venue TV and the night page.
+ *
+ * Only a signed-in player with a seat in this night, only an emote from their
+ * deck (or the six starters if they never built one), one every few seconds
+ * and a fair number a night. Pre-set emotes only, never free text, so there
+ * is nothing to moderate.
+ */
+app.post("/api/nights/:id/emotes", async (c) => {
+  const user = requireUser(c);
+  if (!user) return c.json({ ok: false, message: "Sign in to send emotes." }, 401);
+
+  const store = c.get("store");
+  const tournamentId = c.req.param("id");
+  const tournament = await store.getTournament(tournamentId);
+  if (!tournament) return c.json({ ok: false, message: "No such night." }, 404);
+  if (tournament.status === "completed") return c.json({ ok: false, message: "This night is over." }, 410);
+
+  const teams = await store.getEngineTeams(tournamentId);
+  const seat = teams.find((t) => t.user_id === user.id);
+  if (!seat) return c.json({ ok: false, message: "Only players at this night can send emotes." }, 403);
+
+  const body = (await readJson(c).catch(() => ({}))) as { emoteId?: unknown };
+  const emoteId = typeof body?.emoteId === "string" ? body.emoteId : "";
+  const [owned, loadout] = await Promise.all([store.getUnlocks(user.id), store.getLoadout(user.id)]);
+  if (!playableEmotes(loadout.emoteDeck, owned).includes(emoteId)) {
+    return c.json({ ok: false, message: "That emote is not in your deck." }, 400);
+  }
+
+  const history = await store.emoteHistory(user.id, tournamentId);
+  if (history.count >= EMOTES_PER_NIGHT) {
+    return c.json({ ok: false, message: "That's plenty of emotes for one night." }, 429);
+  }
+  if (history.last && Date.now() - Date.parse(history.last) < EMOTE_COOLDOWN_SECONDS * 1000) {
+    return c.json({ ok: false, message: "One at a time." }, 429);
+  }
+
+  const at = await store.addNightEmote({ tournamentId, userId: user.id, teamId: seat.id, emoteId });
+  return c.json({ ok: true, at, cooldownSeconds: EMOTE_COOLDOWN_SECONDS });
+});
+
+/**
+ * The emotes fired at a night since `since`. Public, like the TV that shows
+ * them: names are the seat names already on that screen. Pass back the
+ * returned `now` as the next `since`, so the client never needs its own
+ * clock to agree with the server's.
+ */
+app.get("/api/nights/:id/emotes", async (c) => {
+  const now = new Date().toISOString();
+  const raw = c.req.query("since");
+  const floor = new Date(Date.now() - 60_000).toISOString();
+  // Nothing older than a minute, and on a first call nothing at all: a TV
+  // switched on should not replay the last hour.
+  const since = raw && raw > floor ? raw : raw ? floor : now;
+  const rows = await c.get("store").recentNightEmotes(c.req.param("id"), since).catch(() => []);
+  c.header("Cache-Control", "no-store");
+  return c.json({
+    ok: true,
+    now,
+    emotes: rows.map((r: any) => ({ id: r.id, emoteId: r.emote_id, teamId: r.team_id, name: r.seat_name ?? "", at: r.created_at })),
   });
 });
 

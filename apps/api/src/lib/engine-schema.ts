@@ -22,7 +22,8 @@
  * Kept deliberately in step with apps/api/migrations/0006_engine_tables.sql,
  * 0007_series.sql, 0009_engine_houses.sql, 0010_wallet_description.sql,
  * 0011_payouts_and_bonus.sql, 0012_venues_offline_and_billing.sql,
- * 0013_wta_coins.sql, 0014_player_loadout.sql, 0015_trophies.sql and 0016_shop.sql;
+ * 0013_wta_coins.sql, 0014_player_loadout.sql, 0015_trophies.sql, 0016_shop.sql and
+ * 0017_night_emotes.sql;
  * apps/api/migrations/rehearse.py and
  * rehearse_bootstrap.py check the SQL runs.
  */
@@ -315,6 +316,17 @@ const CREATE_STATEMENTS = [
     unlocked_at TEXT NOT NULL,
     PRIMARY KEY (user_id, item_id)
   )`,
+  // Emotes fired during a live night; pruned after an hour.
+  `CREATE TABLE IF NOT EXISTS night_emotes (
+    id TEXT PRIMARY KEY,
+    tournament_id TEXT NOT NULL,
+    user_id TEXT NOT NULL,
+    team_id TEXT NOT NULL,
+    emote_id TEXT NOT NULL,
+    created_at TEXT NOT NULL
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_night_emotes_recent ON night_emotes(tournament_id, created_at)`,
+  `CREATE INDEX IF NOT EXISTS idx_night_emotes_user ON night_emotes(user_id, tournament_id, created_at)`,
 ];
 
 /**

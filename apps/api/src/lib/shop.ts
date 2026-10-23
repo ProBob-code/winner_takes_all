@@ -180,3 +180,19 @@ export function checkLoadout(
 
   return { ok: true, borderId, showcase, emoteDeck };
 }
+
+// ── Emotes at a live night ──
+
+/** Seconds a player waits between emotes, and the most one player fires a night. */
+export const EMOTE_COOLDOWN_SECONDS = 4;
+export const EMOTES_PER_NIGHT = 60;
+
+/**
+ * The emotes a player can fire: their deck, keeping only what they still own
+ * (or the starters), or the six starters when they have never built one.
+ */
+export function playableEmotes(deck: string[], owned: Iterable<string>): string[] {
+  const have = new Set([...owned, ...STARTER_IDS]);
+  const fromDeck = deck.filter((id) => itemById(id)?.kind === "emote" && have.has(id));
+  return fromDeck.length > 0 ? fromDeck : [...STARTER_IDS];
+}

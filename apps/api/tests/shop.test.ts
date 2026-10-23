@@ -11,6 +11,9 @@ import {
   dailyPicks,
   isForSale,
   itemById,
+  playableEmotes,
+  EMOTE_COOLDOWN_SECONDS,
+  EMOTES_PER_NIGHT,
 } from "../src/lib/shop";
 import { COIN_RULES } from "../src/lib/coins";
 import { levelInfo } from "../src/lib/progression";
@@ -126,5 +129,28 @@ describe("what a player may have on show", () => {
   it("treats a missing or empty frame as no frame", () => {
     expect(checkLoadout({ borderId: "" }, owned)).toMatchObject({ ok: true, borderId: null });
     expect(checkLoadout({}, owned)).toEqual({ ok: true, borderId: null, showcase: [], emoteDeck: [] });
+  });
+});
+
+describe("emotes a player can fire at a night", () => {
+  it("are their deck, when they have built one", () => {
+    expect(playableEmotes(["emote.clutch", "emote.gg"], ["emote.clutch"])).toEqual(["emote.clutch", "emote.gg"]);
+  });
+
+  it("are the six starters, when they have not", () => {
+    expect(playableEmotes([], [])).toEqual(STARTER_IDS);
+  });
+
+  it("drop anything no longer owned or not an emote", () => {
+    expect(playableEmotes(["emote.crown", "artifact.rack", "emote.shot"], [])).toEqual(["emote.shot"]);
+  });
+
+  it("fall back to the starters if nothing in the deck is playable", () => {
+    expect(playableEmotes(["emote.crown"], [])).toEqual(STARTER_IDS);
+  });
+
+  it("are limited to one every few seconds and a fair number a night", () => {
+    expect(EMOTE_COOLDOWN_SECONDS).toBeGreaterThanOrEqual(3);
+    expect(EMOTES_PER_NIGHT).toBeLessThanOrEqual(100);
   });
 });

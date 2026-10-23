@@ -8,6 +8,8 @@ import { ShareTournament } from "@/components/share-tournament";
 import { DeleteTournamentDialog } from "@/components/delete-tournament-dialog";
 import { HostedArena, type ArenaMatch, type ArenaTeam } from "@/components/hosted-arena";
 import { ClaimSeat } from "@/components/claim-seat";
+import { NightEmoteBar, NightEmoteBubbles } from "@/components/night-emotes";
+import "@/components/progression.css";
 import "@/components/tournament-engine.css";
 import { formatCoins } from "@/lib/format";
 import { useCoinSchedule, championCoins } from "@/lib/coin-schedule";
@@ -362,6 +364,16 @@ export default function TournamentDetailPage() {
               onClaimed={() => void fetchTournamentData()}
             />
           )}
+
+        {/* Emotes: a seated player's deck to fire, and what everyone fires. */}
+        {hasStarted && engineState && !isClosed && (
+          <>
+            {engineState.teams.some((t: any) => t.user_id && t.user_id === profileData?.user?.id) && (
+              <NightEmoteBar tournamentId={id} deck={profileData?.user?.loadout?.emoteDeck ?? []} />
+            )}
+            <NightEmoteBubbles tournamentId={id} />
+          </>
+        )}
 
         {hasStarted && engineState && (
           <HostedArena

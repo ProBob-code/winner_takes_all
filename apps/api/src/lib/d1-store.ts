@@ -2330,6 +2330,46 @@ export class D1Store {
     return out;
   }
 
+  // ── Emotes at a live night ──
+
+  /** This player's emotes at this night: the last one's time, and how many. */
+  async emoteHistory(userId: string, tournamentId: string): Promise<{ last: string | null; count: number }> {
+    const r = await this.db.prepare(
+      `SELECT MAX(created_at) AS last, COUNT(*) AS n FROM night_emotes WHERE user_id = ? AND tournament_id = ?`
+    ).bind(userId, tournamentId).first<any>();
+    return { last: r?.last ?? null, count: Number(r?.n) || 0 };
+  }
+
+  /** Record one emote, and clear out anything older than an hour. */
+  async addNightEmote(args: { tournamentId: string; userId: string; teamId: string; emoteId: string }): Promise<string> {
+    const now = new Date().toISOString();
+    const id = createId("emo");
+    const hourAgo = new Date(Date.now() - 3600_000).toISOString();
+    await this.db.batch([
+      this.db.prepare(
+        `INSERT INTO night_emotes (id, tournament_id, user_id, team_id, emote_id, created_at) VALUES (?, ?, ?, ?, ?, ?)`
+      ).bind(id, args.tournamentId, args.userId, args.teamId, args.emoteId, now),
+      this.db.prepare(`DELETE FROM night_emotes WHERE created_at < ?`).bind(hourAgo),
+    ]);
+    return now;
+  }
+
+  /** Emotes at a night after `since`, oldest first, at most `limit`. */
+  async recentNightEmotes(tournamentId: string, since: string, limit = 20): Promise<any[]> {
+    try {
+      const { results } = await this.db.prepare(
+        `SELECT ne.id, ne.emote_id, ne.team_id, ne.user_id, ne.created_at, et.name AS seat_name
+         FROM night_emotes ne LEFT JOIN engine_teams et ON et.id = ne.team_id
+         WHERE ne.tournament_id = ? AND ne.created_at > ?
+         ORDER BY ne.created_at ASC LIMIT ?`
+      ).bind(tournamentId, since, limit).all<any>();
+      return results;
+    } catch (err) {
+      if (isMissingTableError(err)) return [];
+      throw err;
+    }
+  }
+
   // ── Trophies (lib/trophies.ts) ──
 
   /** Every track this player has trophies on. */

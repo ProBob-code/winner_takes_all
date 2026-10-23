@@ -42,6 +42,8 @@ import Link from "next/link";
 import { backendFetch } from "@/lib/backend";
 import { qrToSvg } from "@/lib/qr";
 import { rankStandings, placeStandings, anythingCounted } from "@/lib/standings";
+import { NightEmoteBubbles } from "@/components/night-emotes";
+import "@/components/progression.css";
 
 interface Team {
   id: string;
@@ -266,6 +268,8 @@ export default function DisplayPage() {
 
   return (
     <main className="display">
+      {/* Emotes the players fire from their phones. */}
+      <NightEmoteBubbles tournamentId={tournamentId} size="big" />
       <header className="display-head">
         <div style={{ minWidth: 0 }}>
           <div className="display-title">{name || "League night"}</div>
