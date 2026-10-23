@@ -265,7 +265,10 @@ async function refreshPending(): Promise<number> {
  * moment, and is retried.
  */
 function isPermanentFailure(statusCode: number): boolean {
-  if (statusCode === 408 || statusCode === 429) return false;
+  // 401 is a lapsed sign-in, not a refused score: signing in again makes the
+  // same request good. It used to count as permanent, so a session that ran
+  // out mid-night silently threw away every tap made after it.
+  if (statusCode === 401 || statusCode === 408 || statusCode === 429) return false;
   return statusCode >= 400 && statusCode < 500;
 }
 
@@ -346,7 +349,12 @@ export function flushOutbox(): Promise<void> {
           tries: entry.tries + 1,
           lastError: `HTTP ${response.status}`,
         });
-        publish({ lastError: "The server is not answering. Scores are saved on this device." });
+        publish({
+          lastError:
+            response.status === 401
+              ? "Your sign-in has lapsed. Sign in again on this phone and the scores waiting here will be sent."
+              : "The server is not answering. Scores are saved on this device.",
+        });
         return;
       }
 

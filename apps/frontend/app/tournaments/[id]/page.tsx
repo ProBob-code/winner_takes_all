@@ -7,6 +7,7 @@ import { JoinTournamentButton } from "@/components/join-tournament-button";
 import { ShareTournament } from "@/components/share-tournament";
 import { DeleteTournamentDialog } from "@/components/delete-tournament-dialog";
 import { HostedArena, type ArenaMatch, type ArenaTeam } from "@/components/hosted-arena";
+import { ClaimSeat } from "@/components/claim-seat";
 import "@/components/tournament-engine.css";
 import { formatCoins } from "@/lib/format";
 import { useCoinSchedule, championCoins } from "@/lib/coin-schedule";
@@ -281,7 +282,12 @@ export default function TournamentDetailPage() {
                   </div>
                   {championPrize !== null && (
                     <div className="muted" style={{ fontSize: "0.72rem", marginTop: "4px" }}>
-                      {formatCoins(championPrize)} WTA Coins for the night
+                      {/* Only a seat with an account can be paid. Saying "400K for
+                          the night" over a seat typed in by name promised coins
+                          that went nowhere. */}
+                      {result.winners.some((w: any) => w.userId)
+                        ? `${formatCoins(championPrize)} WTA Coins for the night`
+                        : "No WTA account on this seat, so no coins were paid"}
                     </div>
                   )}
                 </>
@@ -344,6 +350,18 @@ export default function TournamentDetailPage() {
             <p className="muted" style={{ fontSize: "0.82rem", margin: "0.5rem 0 0" }}>{engineError}</p>
           </div>
         )}
+
+        {/* A host with no seat of their own in the night they are running. */}
+        {isHost &&
+          engineState &&
+          !engineState.teams.some((t: any) => t.user_id && t.user_id === profileData?.user?.id) && (
+            <ClaimSeat
+              tournamentId={id}
+              teams={engineState.teams}
+              hostName={profileData?.user?.name}
+              onClaimed={() => void fetchTournamentData()}
+            />
+          )}
 
         {hasStarted && engineState && (
           <HostedArena

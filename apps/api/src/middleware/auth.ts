@@ -4,7 +4,13 @@
  */
 
 import type { Context, Next } from "hono";
-import { getAccessSession, parseCookies } from "../lib/kv-sessions";
+import {
+  buildAccessCookie,
+  createAccessSession,
+  getAccessSession,
+  getRefreshSession,
+  parseCookies,
+} from "../lib/kv-sessions";
 import type { AppContext } from "../types";
 
 export interface AuthUser {
@@ -23,21 +29,54 @@ export function extractAccessToken(c: Context<AppContext>): string | undefined {
   return cookies["wta_access_token"];
 }
 
-/** Middleware: attach `user` to context if a valid session exists. */
+/**
+ * Middleware: attach `user` to context if a valid session exists.
+ *
+ * SILENT RENEWAL
+ * The access token lives 15 minutes and nothing in the app ever called
+ * /api/auth/refresh, so a quarter of an hour after signing in every request
+ * was a 401. On a league night that meant the scorer's queued taps were
+ * refused and dropped while the screen went on showing them. Now, when the
+ * access token is missing or expired but the 7-day refresh cookie is valid,
+ * this mints a new access token on the spot and sets its cookie on the
+ * response, so a session lasts as long as its refresh token, as intended.
+ */
 export async function authMiddleware(c: Context<AppContext>, next: Next) {
+  const kv = c.env.SESSIONS;
   const token = extractAccessToken(c);
+  let userId: string | null = null;
 
-  if (token && c.env.SESSIONS) {
-    const userId = await getAccessSession(c.env.SESSIONS, token);
-    if (userId) {
-      const user = await c.get("store").getUserById(userId);
-      if (user) {
-        c.set("user", user as AuthUser);
-      }
+  if (token && kv) userId = await getAccessSession(kv, token);
+
+  let renewed: string | null = null;
+  if (!userId && kv) {
+    const refresh = parseCookies(c.req.header("Cookie"))["wta_refresh_token"];
+    if (refresh) {
+      userId = await getRefreshSession(kv, refresh);
+      if (userId) renewed = await createAccessSession(kv, userId).catch(() => null);
+    }
+  }
+
+  if (userId) {
+    const user = await c.get("store").getUserById(userId);
+    if (user) {
+      c.set("user", user as AuthUser);
+    } else {
+      renewed = null;
     }
   }
 
   await next();
+
+  // After the route, so a route that sets its own cookies (login, logout,
+  // refresh) is not overridden: only when it set none.
+  if (renewed && !c.res.headers.has("Set-Cookie")) {
+    try {
+      c.res.headers.append("Set-Cookie", buildAccessCookie(renewed));
+    } catch {
+      // A response with immutable headers: the next request renews again.
+    }
+  }
 }
 
 /** Helper: get user from context, or null (route returns 401). */

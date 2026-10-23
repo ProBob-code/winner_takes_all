@@ -829,6 +829,25 @@ export class D1Store {
     return (res.meta.changes ?? 0) > 0;
   }
 
+  /**
+   * Put an account on a seat that has none. Conditional on the seat still
+   * being empty, so two claims at once cannot both land: false means someone
+   * else's account is already there.
+   */
+  async linkEngineTeam(teamId: string, userId: string): Promise<boolean> {
+    const res = await this.db.prepare(
+      `UPDATE engine_teams SET user_id = ? WHERE id = ? AND user_id IS NULL`
+    ).bind(userId, teamId).run();
+    return (res.meta.changes ?? 0) > 0;
+  }
+
+  /** Record the champion's account on a night closed before it was known. */
+  async setTournamentWinnerAccount(id: string, winnerUserId: string | null, state: any): Promise<void> {
+    await this.db.prepare(
+      `UPDATE tournaments SET winner_id = COALESCE(winner_id, ?), bracket_state = ?, updated_at = ? WHERE id = ?`
+    ).bind(winnerUserId, JSON.stringify(state), new Date().toISOString(), id).run();
+  }
+
   async updateTournamentBracketState(id: string, state: any): Promise<void> {
     await this.db.prepare(
       `UPDATE tournaments SET bracket_state = ?, updated_at = ? WHERE id = ?`

@@ -90,6 +90,7 @@ import {
 } from "./lib/coins";
 import { levelInfo } from "./lib/progression";
 import { checkAvatar, parseStoredAvatar } from "./lib/avatar";
+import { hostSeatIndex } from "./lib/seating";
 import {
   GUEST_DAILY_GAIN,
   GUEST_WEIGHT,
@@ -2690,6 +2691,95 @@ app.get("/api/engine/tournaments/:id/state", async (c) => {
   });
 });
 
+/**
+ * "This seat is me": the host puts their own account on a seat that has none.
+ *
+ * For a host whose name was not on the list when the night was set up, or
+ * whose night was set up before seats were matched by name. Whatever that
+ * seat has already earned is then paid, frame by frame and the night itself,
+ * through the same idempotent paths as a live frame, so a claim made twice,
+ * or after the frames were already paid, pays nothing more.
+ *
+ * Only ever the caller's own account. A host who could put any account on a
+ * seat could hand a stranger frames they never played, or losses that cost
+ * them trophies; other players join by the night's QR code, which links them
+ * to their own seat.
+ */
+app.post("/api/engine/tournaments/:id/claim-seat", async (c) => {
+  const tournamentId = c.req.param("id");
+  const access = await requireTournamentManager(c, tournamentId);
+  if ("error" in access) return access.error;
+  const { tournament } = access;
+  const user = requireUser(c)!;
+
+  const limited = await rateLimit(c, `claim-seat:${user.id}`, 20, 3600);
+  if (limited) return limited;
+
+  const store = c.get("store");
+  const body = (await readJson(c).catch(() => ({}))) as { teamId?: unknown };
+  const teamId = typeof body?.teamId === "string" ? body.teamId : "";
+
+  const teams = await store.getEngineTeams(tournamentId);
+  const seat = teams.find((t) => t.id === teamId);
+  if (!seat) return c.json({ ok: false, message: "That seat is not in this night." }, 404);
+
+  const mine = teams.find((t) => t.user_id === user.id);
+  if (mine && mine.id !== seat.id) {
+    return c.json(
+      { ok: false, message: `Your account is already on ${mine.name}'s seat in this night.` },
+      409
+    );
+  }
+  if (seat.user_id && seat.user_id !== user.id) {
+    return c.json({ ok: false, message: `${seat.name}'s seat already belongs to another account.` }, 409);
+  }
+
+  if (!seat.user_id && !(await store.linkEngineTeam(seat.id, user.id))) {
+    return c.json({ ok: false, message: `${seat.name}'s seat was just claimed by another account.` }, 409);
+  }
+  seat.user_id = user.id;
+
+  const before = await store.getCoinBalance(user.id);
+
+  // Every frame this seat finished, oldest first, through the live paths.
+  const matches = (await store.getEngineMatches(tournamentId))
+    .filter(
+      (m) =>
+        (m.team_a_id === seat.id || m.team_b_id === seat.id) &&
+        m.status === "COMPLETED" &&
+        !m.awaiting_confirmation
+    )
+    .sort((a, b) => (a.match_order ?? 0) - (b.match_order ?? 0));
+  for (const match of matches) {
+    await awardFrameCoins(c, tournament, match);
+    await settleFrameTrophies(c, tournament, match);
+  }
+
+  // The night itself, if this seat took it and nobody's account was there.
+  const result = (tournament.bracket_state as any)?.result as TournamentResult | undefined;
+  let wonNight = false;
+  if (tournament.status === "completed" && result) {
+    const winner = result.winners.find((w) => w.teamId === seat.id);
+    if (winner) {
+      wonNight = true;
+      winner.userId = user.id;
+      const sole = result.winners.length === 1 ? user.id : null;
+      await store.setTournamentWinnerAccount(tournament.id, sole, { ...(tournament.bracket_state as any), result });
+      await awardNightCoins(c, tournament, [user.id]);
+    }
+  }
+
+  const after = await store.getCoinBalance(user.id);
+  return c.json({
+    ok: true,
+    teamId: seat.id,
+    seatName: seat.name,
+    framesCounted: matches.length,
+    wonNight,
+    coinsPaid: Math.max(0, after.lifetime - before.lifetime),
+  });
+});
+
 app.post("/api/engine/tournaments/:id/add-team", async (c) => {
   const tournamentId = c.req.param("id");
   const access = await requireTournamentManager(c, tournamentId);
@@ -3993,15 +4083,17 @@ app.post("/api/engine/quick-setup", async (c) => {
     maxMatchesPerTeam: matchesPerTeam,
   });
 
-  // The host takes the first seat under their own account unless they say
-  // they are only running the night. Without this, "Run a night" seated
-  // everybody by name alone, no team carried an account, and the person who
-  // set the whole thing up earned nothing from it.
+  // The host's account goes on the host's own seat: the one with their name,
+  // or a blank first line left for them (lib/seating.ts). It used to go on
+  // the first seat whatever was typed there, which once paid the host for
+  // another player's frames and left their own night win with no account.
+  // A host whose name is not on the list claims their seat afterwards.
+  const hostSeat = hostSeatIndex(names, supplied, user.name, body.hostPlaying);
   for (let i = 0; i < names.length; i++) {
-    const seatIsHost = body.hostPlaying && i === 0;
+    const seatIsHost = hostSeat === i;
     await store.createEngineTeam(
       tournament.id,
-      seatIsHost && !supplied[0] ? user.name : names[i],
+      seatIsHost && !(supplied[i] ?? "").trim() ? user.name : names[i],
       seatIsHost ? user.id : null
     );
   }

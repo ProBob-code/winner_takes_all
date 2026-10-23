@@ -88,6 +88,33 @@ export async function deleteAccessSession(
   await kv.delete(`access:${token}`);
 }
 
+/**
+ * A new access token for a user who still holds a valid refresh token.
+ *
+ * For the middleware's silent renewal: the refresh token is left as it is,
+ * because a page fires several requests at once and rotating it on each would
+ * leave all but one holding a revoked token. One KV write per user per
+ * ACCESS_TTL, at most a few when requests race.
+ */
+export async function createAccessSession(kv: KVNamespace, userId: string): Promise<string> {
+  const accessToken = createSessionToken();
+  const data: SessionData = { userId, createdAt: new Date().toISOString() };
+  await kv.put(`access:${accessToken}`, JSON.stringify(data), { expirationTtl: ACCESS_TTL });
+  return accessToken;
+}
+
+/** The Set-Cookie header for an access token on its own. */
+export function buildAccessCookie(accessToken: string): string {
+  return [
+    `wta_access_token=${encodeURIComponent(accessToken)}`,
+    "Path=/",
+    "HttpOnly",
+    "SameSite=None",
+    "Secure",
+    `Max-Age=${ACCESS_TTL}`,
+  ].join("; ");
+}
+
 /** Build Set-Cookie headers for session cookies. */
 export function buildSessionCookies(
   tokens: SessionTokens
