@@ -31,6 +31,9 @@ interface Claim {
 /** Keeps a second mount in the same tab from claiming twice over. */
 const ONCE_PER_LOAD = "wta-daily-claimed";
 
+/** Fired on window when coins have just been paid, with the claim as detail. */
+export const COINS_AWARDED_EVENT = "wta:coins-awarded";
+
 export function CoinToast() {
   const [claim, setClaim] = useState<Claim | null>(null);
   const [leaving, setLeaving] = useState(false);
@@ -66,6 +69,9 @@ export function CoinToast() {
         }
 
         setClaim(payload);
+        // Pages showing a balance read it before this claim landed; tell them
+        // so they can read it again (the profile listens for this).
+        window.dispatchEvent(new CustomEvent(COINS_AWARDED_EVENT, { detail: payload }));
         // Long enough to read, short enough not to sit in the way.
         timers.current.push(window.setTimeout(dismiss, 6000));
       } catch {

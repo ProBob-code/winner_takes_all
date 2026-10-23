@@ -14,6 +14,7 @@ import { useRouter } from "next/navigation";
 import { backendFetch } from "@/lib/backend";
 import { formatCoins } from "@/lib/format";
 import { PlayerHero, PlayerStats, PlayerTrophies, type PlayerCardData } from "@/components/player-profile";
+import { COINS_AWARDED_EVENT } from "@/components/coin-toast";
 
 interface OwnProfile extends PlayerCardData {
   email: string;
@@ -50,7 +51,7 @@ export default function ProfilePage() {
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+    const load = async () => {
       try {
         const res = await backendFetch("/user/profile", { cache: "no-store" });
         if (res.status === 401) {
@@ -75,9 +76,17 @@ export default function ProfilePage() {
       } finally {
         if (!cancelled) setLoading(false);
       }
-    })();
+    };
+    void load();
+
+    // The day's first visit pays coins after this page has already read the
+    // balance, which left the hero saying 0 beside a ledger showing +1K.
+    // Read it again when the toast says coins have landed.
+    const onAward = () => void load();
+    window.addEventListener(COINS_AWARDED_EVENT, onAward);
     return () => {
       cancelled = true;
+      window.removeEventListener(COINS_AWARDED_EVENT, onAward);
     };
   }, [router]);
 
