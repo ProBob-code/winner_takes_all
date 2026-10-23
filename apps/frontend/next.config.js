@@ -7,6 +7,16 @@ const nextConfig = {
     // being inferred from the layout.
     NEXT_PUBLIC_BUILD_SHA: (process.env.CF_PAGES_COMMIT_SHA || "dev").slice(0, 7),
   },
+  webpack(config, { isServer }) {
+    // On-device voice scoring (lib/speech) runs transformers.js in a browser
+    // Web Worker only. The server build must never try to bundle it: its
+    // Node entry pulls in onnxruntime-node and sharp, native modules that
+    // neither the Pages worker nor the Node server can load.
+    if (isServer) {
+      config.resolve.alias = { ...config.resolve.alias, "@huggingface/transformers": false };
+    }
+    return config;
+  },
   async headers() {
     return [
       {

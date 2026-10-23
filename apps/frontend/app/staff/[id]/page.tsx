@@ -42,6 +42,11 @@ export const dynamic = "force-dynamic";
  * pips you can count without reading. And fouls were recorded but never shown,
  * so the one number a player would actually argue about was invisible to the
  * person holding the phone.
+ *
+ * AND BY VOICE
+ * The scorer is often the one holding the cue. components/voice-scorer.tsx
+ * turns "Asha two balls one foul" into the same taps, from this phone's mic
+ * or from Handy on a laptop, and "Bob note the points" wakes it hands-free.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -51,6 +56,7 @@ import { backendFetch } from "@/lib/backend";
 import { enqueueWrite, startOutbox, subscribeToOutbox, pendingWrites } from "@/lib/outbox";
 import { projectPending, type LocalScoreEvent, type PendingTap } from "@/lib/local-score";
 import { FrameConfirm, type FrameConfirmation } from "@/components/frame-confirm";
+import { VoiceScorer } from "@/components/voice-scorer";
 
 interface Team {
   id: string;
@@ -447,6 +453,20 @@ export default function StaffModePage() {
       </header>
 
       {error && <div className="staff-error">{error}</div>}
+
+      {/* Voice: the same taps as the buttons, for a scorer with a cue or a
+          drink in hand. Spoken taps go through the same outbox. */}
+      {liveMatch && (
+        <VoiceScorer
+          match={liveMatch}
+          players={[
+            { id: liveMatch.team_a_id, name: teamName(liveMatch.team_a_id) },
+            { id: liveMatch.team_b_id, name: teamName(liveMatch.team_b_id) },
+          ]}
+          sport={isFootball ? "FOOTBALL" : "POOL"}
+          onScore={score}
+        />
+      )}
 
       {awaiting && state.requireFrameConfirmation && (
         <FrameConfirm

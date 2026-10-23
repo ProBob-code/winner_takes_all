@@ -26,6 +26,12 @@ allowBuilds:
   sharp: true
   vercel: true
   workerd: true
+  # Pulled in by @huggingface/transformers, which the frontend uses only in
+  # the browser (on-device voice scoring). onnxruntime-node's script downloads
+  # a native Node binary nothing here runs, and protobufjs's is a version
+  # nag. Neither is needed, so neither runs.
+  onnxruntime-node: false
+  protobufjs: false
 
 onlyBuiltDependencies:
   - esbuild

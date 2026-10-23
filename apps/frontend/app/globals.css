@@ -4109,6 +4109,167 @@ select.form-control option {
   .staff-btn.ghost { min-height: 44px; }
 }
 
+/* ── Voice scoring, inside staff mode ──
+   One compact row, so both players still fit one phone screen. The Talk
+   button is the only big thing here; everything else is a chip. */
+.voice {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+.voice-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.voice-talk {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5em;
+  min-height: var(--touch-min);
+  padding: 0 var(--space-4);
+  border-radius: 999px;
+  border: 2px solid var(--gold);
+  background: transparent;
+  color: var(--text-primary);
+  font-size: var(--text-base);
+  font-weight: var(--weight-black);
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  flex-shrink: 0;
+}
+
+/* Listening is said by the button itself, so it reads from across the table. */
+.voice-talk.live {
+  background: var(--gold-fill);
+  color: var(--on-gold);
+  animation: voice-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes voice-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 var(--gold-subtle); }
+  50% { box-shadow: 0 0 0 8px var(--gold-subtle); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .voice-talk.live { animation: none; }
+}
+
+.voice-chip {
+  min-height: 40px;
+  padding: 0 var(--space-3);
+  border-radius: 999px;
+  border: 1px solid var(--glass-border-color);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+  white-space: nowrap;
+  touch-action: manipulation;
+  flex-shrink: 0;
+}
+
+.voice-chip.on {
+  border-color: var(--gold);
+  color: var(--text-primary);
+  background: var(--gold-subtle);
+}
+
+.voice-chip.quiet { margin-left: auto; min-width: 40px; padding: 0; }
+
+.voice-handy {
+  flex: 1;
+  min-width: 0;
+  min-height: 40px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--glass-border-color);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  /* 16px or iOS zooms the page on focus. */
+  font-size: max(16px, var(--text-sm));
+}
+
+.voice-feedback {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--glass-border-color);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+}
+
+.voice-feedback-text { min-width: 0; overflow-wrap: anywhere; }
+.voice-feedback.ok { border-color: var(--gold); }
+.voice-feedback.warn { border-color: rgba(234, 179, 8, 0.6); background: rgba(234, 179, 8, 0.08); }
+.voice-feedback.error { border-color: rgba(220, 38, 38, 0.4); background: rgba(220, 38, 38, 0.12); }
+.voice-feedback.info { color: var(--text-muted); }
+
+.voice-black {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
+  border: 2px solid #ffd700;
+  background: var(--bg-card);
+  font-size: var(--text-sm);
+}
+
+.voice-black-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+}
+
+.voice-black-actions .staff-btn { min-height: var(--touch-min); }
+
+/* The one-time model download, asked for rather than assumed: forty
+   megabytes is real money on a prepaid data plan. */
+.voice-consent {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--gold);
+  background: var(--bg-card);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+}
+
+.voice-progress {
+  width: 6rem;
+  flex-shrink: 0;
+  accent-color: var(--gold);
+}
+
+.voice-help {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--glass-border-color);
+  background: var(--bg-card);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.voice-help p { margin: 0; }
+.voice-source { display: flex; gap: var(--space-2); flex-wrap: wrap; }
+
 /* ── 1.6 Big-screen display ──
    Full bleed, no chrome, readable from across a room. The panel's caveat was
    that the wall TV is already showing cricket, so this has to work propped on
