@@ -268,7 +268,9 @@
   background: var(--bg-card);
 }
 
-.av-preview svg {
+/* The big avatar only: the level badge beside it is an svg too, and a plain
+   descendant selector drew it at 220px. */
+.av-preview > svg {
   width: min(220px, 60vw);
   height: auto;
 }
