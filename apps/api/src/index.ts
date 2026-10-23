@@ -10,6 +10,7 @@ import {
   type PayoutRequestRecord,
   type SeriesRecord,
   type TournamentRecord,
+  type TrophyRow,
   type VenueRecord,
 } from "./lib/d1-store";
 import { computeSeasonStandings } from "./lib/season";
@@ -87,6 +88,27 @@ import {
   MIN_ONLINE_SHOTS,
   type CoinAward,
 } from "./lib/coins";
+import { levelInfo } from "./lib/progression";
+import { checkAvatar, parseStoredAvatar } from "./lib/avatar";
+import {
+  GUEST_DAILY_GAIN,
+  GUEST_WEIGHT,
+  ONLINE_ABANDON_MINUTES,
+  ONLINE_DAILY_GAIN,
+  ONLINE_OVERALL_WEIGHT,
+  OVERALL,
+  TROPHY_TRACKS,
+  aiTrophies,
+  applyTrophies,
+  capGain,
+  isTrack,
+  offlineTrack,
+  onlineTrack,
+  pairWeight,
+  trackSummary,
+  trophyDelta,
+  type Sport,
+} from "./lib/trophies";
 import { checkRateLimit, clientKey } from "./lib/rate-limit";
 import * as Engine from "./lib/tournament-engine";
 import {
@@ -121,6 +143,7 @@ import {
   adminBonusSchema,
   adminResetPasswordSchema,
   claimOnlineGameSchema,
+  startOnlineGameSchema,
   confirmFrameSchema,
   quickSetupSchema,
   joinByCodeSchema,
@@ -245,6 +268,12 @@ for (const family of [
   "/api/join/*",
   "/api/tournaments/*",
   "/api/coins/*",
+  // The profile reads the coin tables and the avatar's loadout table.
+  "/api/user/*",
+  "/api/players/*",
+  "/api/progression/*",
+  "/api/trophies/*",
+  "/api/online/*",
 ]) {
   app.use(family, async (c, next) => {
     try {
@@ -467,22 +496,124 @@ app.post("/api/auth/logout", async (c) => {
   return c.json({ ok: true, message: "Logged out successfully" });
 });
 
+/**
+ * What a profile shows about a player: level, coins, avatar and record.
+ *
+ * Shared by the player's own profile and the public one, so the public page
+ * can only ever be this same card with fields taken away, never a second
+ * query that might reach for more. Nothing in here is private: email, role and
+ * the coin ledger are added by the owner's route alone.
+ */
+async function playerCard(store: D1Store, userId: string) {
+  const [stats, coins, counts, avatarRaw, record, trophies] = await Promise.all([
+    store.getUserMatchStats(userId),
+    store.getCoinBalance(userId).catch(() => null),
+    store.coinReasonCounts(userId).catch(() => ({} as Record<string, number>)),
+    store.getAvatar(userId).catch(() => null),
+    store.getUserById(userId).catch(() => null),
+    trophyStanding(store, userId),
+  ]);
+  const lifetime = coins?.lifetime ?? 0;
+  const played = stats.wins + stats.losses;
+
+  return {
+    memberSince: (record as any)?.created_at ?? null,
+    coins: { balance: coins?.balance ?? 0, lifetime },
+    title: titleFor(lifetime),
+    level: levelInfo(lifetime),
+    avatar: parseStoredAvatar(avatarRaw),
+    trophies,
+    // Listed field by field rather than spread, so a figure added to
+    // getUserMatchStats later (it already carries payout earnings in cents)
+    // never reaches the public profile by accident.
+    stats: {
+      wins: stats.wins,
+      losses: stats.losses,
+      totalScore: stats.total_score,
+      played,
+      winRate: played > 0 ? Math.round((stats.wins / played) * 100) : 0,
+      tournamentWins: stats.tournament_wins,
+      // A night taken is recorded twice over: on the tournament row for a
+      // classic bracket and in the coin ledger for a hosted night. The larger
+      // of the two counts each night once whichever way it was run.
+      nightsWon: Math.max(stats.tournament_wins, counts.NIGHT_WON ?? 0),
+      nightsPlayed: counts.NIGHT_PLAYED ?? 0,
+      clearances: counts.CLEARANCE ?? 0,
+      streaks: counts.STREAK ?? 0,
+      seasonsWon: counts.SEASON_WON ?? 0,
+      onlineWins: counts.ONLINE_WON ?? 0,
+    },
+  };
+}
+
 app.get("/api/user/profile", async (c) => {
   const user = requireUser(c);
   if (!user) return c.json({ ok: false, message: "Authentication required" }, 401);
 
-  const store = c.get("store");
-  const stats = await store.getUserMatchStats(user.id);
-  const totalMatches = stats.wins + stats.losses;
-  const winRate = totalMatches > 0 ? Math.round((stats.wins / totalMatches) * 100) : 0;
+  // A browser game left open long enough is a loss; count it before showing
+  // trophies, so the profile never shows a standing the next request revises.
+  await settleAbandonedGames(c.get("store"), user.id);
+  const card = await playerCard(c.get("store"), user.id);
 
   return c.json({
     ok: true,
     user: {
       ...serializeUser(user),
-      stats: { ...stats, winRate, tournamentWins: stats.tournament_wins },
+      ...card,
     },
   });
+});
+
+/**
+ * Anyone's public profile: what they have done and how they look.
+ *
+ * Public because a showcase nobody else can see is not a showcase, and the
+ * same names and coin totals are on the public leaderboard already. Never the
+ * email, the role, the wallet or the coin ledger.
+ */
+app.get("/api/players/:id", async (c) => {
+  const store = c.get("store");
+  const id = c.req.param("id");
+  const player = await store.getUserById(id).catch(() => null);
+  if (!player) return c.json({ ok: false, message: "No player by that ID" }, 404);
+
+  const card = await playerCard(store, player.id);
+  const { balance: _balance, ...publicCoins } = card.coins;
+
+  return c.json({
+    ok: true,
+    player: {
+      id: player.id,
+      name: player.name,
+      ...card,
+      coins: publicCoins,
+    },
+  });
+});
+
+/**
+ * Save the avatar a player built.
+ *
+ * Every part is checked against the catalogue and the player's level on the
+ * server, so a locked part cannot be worn by editing the request.
+ */
+app.put("/api/progression/avatar", async (c) => {
+  const user = requireUser(c);
+  if (!user) return c.json({ ok: false, message: "Authentication required" }, 401);
+
+  const limited = await rateLimit(c, `avatar:${user.id}`, 30, 60);
+  if (limited) return limited;
+
+  const store = c.get("store");
+  const body = (await readJson(c)) as { avatar?: unknown } | null;
+  const coins = await store.getCoinBalance(user.id);
+  const level = levelInfo(coins.lifetime).level;
+
+  const checked = checkAvatar(body?.avatar, level);
+  if (!checked.ok) return c.json({ ok: false, message: checked.message }, 400);
+
+  await store.setAvatar(user.id, JSON.stringify(checked.avatar));
+  return c.json({ ok: true, avatar: checked.avatar });
 });
 
 // --- Payments ---
@@ -1123,10 +1254,18 @@ app.get("/api/leaderboard/global", async (c) => {
 
   const store = c.get("store");
   const rows = await store.getGlobalLeaderboard();
+  // Two batched reads for the whole table rather than two per row.
+  const ids = rows.map((r) => r.user_id);
+  const [avatars, lifetimes] = await Promise.all([
+    store.getAvatars(ids).catch(() => new Map<string, string>()),
+    store.lifetimeCoins(ids).catch(() => new Map<string, number>()),
+  ]);
 
   const entries = rows.map((r) => ({
     userId: r.user_id,
     displayName: r.name,
+    level: levelInfo(lifetimes.get(r.user_id) ?? 0).level,
+    avatar: parseStoredAvatar(avatars.get(r.user_id)),
     /** Matches played, across bracket matches and hosted tournaments alike. */
     played: r.played,
     wins: r.wins,
@@ -2075,6 +2214,154 @@ async function awardFrameCoins(
  * arbitrarily — the standings already sort on weeks won, then match wins, then
  * score, and a genuine tie after all three is a shared title.
  */
+/**
+ * Move both players' trophies for a finished frame.
+ *
+ * Two tracks each: the sport's offline track and Overall. Every figure is read
+ * before anything is written, so the second player's change is worked out
+ * from where the first player stood before the frame, not after.
+ *
+ * Like the coins, this never fails a frame: a trophy that could not be written
+ * is logged and the night carries on.
+ */
+async function settleFrameTrophies(
+  c: Context<AppContext>,
+  tournament: TournamentRecord,
+  match: EngineMatchRow
+): Promise<void> {
+  try {
+    // A draw moves nobody, and an undecided frame has no result yet.
+    if (!match.winner_id) return;
+
+    const store = c.get("store");
+    const competitors = await store.countCompetitors(tournament.id);
+    if (competitors < MIN_PLAYERS_FOR_COINS) return;
+
+    const teams = await store.getEngineTeams(tournament.id);
+    const sideA = teams.find((t) => t.id === match.team_a_id);
+    const sideB = teams.find((t) => t.id === match.team_b_id);
+    if (!sideA || !sideB) return;
+
+    const keyOf = (team: EngineTeamRow) =>
+      team.user_id
+        ? `user:${team.user_id}`
+        : `guest:${String((team as any).guest_label || team.name || "").trim().toLowerCase()}`;
+
+    const tracks = [offlineTrack(engineSport(tournament)), OVERALL];
+    const accounts = [sideA.user_id, sideB.user_id].filter((id): id is string => !!id);
+    if (accounts.length === 0) return;
+    // Two players on one account would be a frame against yourself.
+    if (sideA.user_id && sideA.user_id === sideB.user_id) return;
+
+    const standing = new Map<string, Map<string, number>>();
+    for (const track of tracks) standing.set(track, await store.trophiesOn(track, accounts));
+
+    const plans: Array<Parameters<D1Store["recordTrophies"]>[0]> = [];
+    for (const [me, them] of [[sideA, sideB], [sideB, sideA]] as const) {
+      if (!me.user_id) continue;
+      const opponentKey = keyOf(them);
+      const isGuest = !them.user_id;
+      const won = match.winner_id === me.id;
+
+      for (const track of tracks) {
+        const mine = standing.get(track)!.get(me.user_id) ?? 0;
+        const theirs = isGuest ? mine : standing.get(track)!.get(them.user_id!) ?? 0;
+        const already = await store.trophyGamesToday(me.user_id, track, opponentKey);
+        const weight = (isGuest ? GUEST_WEIGHT : 1) * pairWeight(already);
+        if (weight === 0) continue;
+
+        let delta = trophyDelta({ mine, theirs, won, weight });
+        if (isGuest) {
+          const gained = await store.trophyGainsToday(me.user_id, track, "guest:");
+          delta = capGain(delta, gained, GUEST_DAILY_GAIN);
+        }
+        const applied = applyTrophies(mine, delta);
+        plans.push({
+          userId: me.user_id,
+          track,
+          delta: applied.delta,
+          floor: applied.floor,
+          won,
+          opponentKey,
+          referenceType: "match",
+          referenceId: match.id,
+        });
+      }
+    }
+
+    for (const plan of plans) await store.recordTrophies(plan);
+  } catch (err) {
+    console.error("Could not move trophies for a frame:", err);
+  }
+}
+
+/**
+ * Settle one browser game against the AI: the sport's online track, and
+ * Overall at half weight. Online gains are capped per day, losses are not.
+ */
+async function settleOnlineTrophies(
+  store: D1Store,
+  game: { id: string; user_id: string; sport: string; ai_rating: number },
+  won: boolean
+): Promise<Array<{ track: string; delta: number; trophies: number }>> {
+  const sport = (game.sport === "FOOTBALL" ? "FOOTBALL" : "8BALL") as Sport;
+  const theirs = aiTrophies(game.ai_rating);
+  const opponentKey = `ai:${game.ai_rating}`;
+  const moved: Array<{ track: string; delta: number; trophies: number }> = [];
+
+  for (const [track, weight] of [
+    [onlineTrack(sport), 1],
+    [OVERALL, ONLINE_OVERALL_WEIGHT],
+  ] as const) {
+    const mine = (await store.trophiesOn(track, [game.user_id])).get(game.user_id) ?? 0;
+    let delta = trophyDelta({ mine, theirs, won, weight });
+    const gained = await store.trophyGainsToday(game.user_id, track, "ai:");
+    delta = capGain(delta, gained, ONLINE_DAILY_GAIN * weight);
+    const applied = applyTrophies(mine, delta);
+    const after = await store.recordTrophies({
+      userId: game.user_id,
+      track,
+      delta: applied.delta,
+      floor: applied.floor,
+      won,
+      opponentKey,
+      referenceType: "online_game",
+      referenceId: game.id,
+    });
+    if (after !== null) moved.push({ track, delta: applied.delta, trophies: after });
+  }
+  return moved;
+}
+
+/**
+ * Count any of this player's online games that started and never finished as
+ * losses. Called whenever the player next shows up, so leaving a losing game
+ * open does not dodge it.
+ */
+async function settleAbandonedGames(store: D1Store, userId: string): Promise<void> {
+  try {
+    const before = new Date(Date.now() - ONLINE_ABANDON_MINUTES * 60_000).toISOString();
+    const stale = await store.staleOnlineGames(userId, before);
+    for (const game of stale) {
+      if (await store.finishOnlineGame(game.id, "abandoned")) {
+        await settleOnlineTrophies(store, game, false);
+      }
+    }
+  } catch (err) {
+    console.error("Could not settle abandoned games:", err);
+  }
+}
+
+/** A player's trophies on every track, for a profile or the trophy page. */
+async function trophyStanding(store: D1Store, userId: string) {
+  const rows = await store.getTrophyRows(userId).catch(() => [] as TrophyRow[]);
+  return TROPHY_TRACKS.map((t) => ({
+    track: t.id,
+    label: t.label,
+    ...trackSummary(rows.find((r) => r.track === t.id)),
+  }));
+}
+
 async function awardSeasonCoins(
   c: Context<AppContext>,
   series: SeriesRecord
@@ -2209,6 +2496,8 @@ async function recordEngineResult(
   // The same moment the table counts the frame, the players earn for it. Both
   // are guarded against paying twice, so a re-settled frame changes neither.
   await awardFrameCoins(c, tournament, match);
+  // And their trophies move, on the same guard.
+  await settleFrameTrophies(c, tournament, match);
 
   // Winning the grand final ends the tournament: it closes, and the pot is
   // paid out, without the host having to do anything.
@@ -4670,7 +4959,7 @@ app.post("/api/coins/daily", async (c) => {
     award: paid[0] ?? null,
     firstEver: firstEver && awarded > 0,
     balance: balance.balance,
-    title: titleFor(balance.balance),
+    title: titleFor(balance.lifetime),
   });
 });
 
@@ -4690,8 +4979,9 @@ app.get("/api/coins/me", async (c) => {
     balance: balance.balance,
     lifetime: balance.lifetime,
     rank,
-    title: titleFor(balance.balance),
-    next: nextTitle(balance.balance),
+    title: titleFor(balance.lifetime),
+    next: nextTitle(balance.lifetime),
+    level: levelInfo(balance.lifetime),
     earnedToday,
     dailyCap: DAILY_COIN_CAP,
     rules: COIN_RULES,
@@ -4728,7 +5018,9 @@ app.get("/api/coins/ledger", async (c) => {
 /** Who has earned the most. Public: it is a league table, not an account. */
 app.get("/api/coins/leaderboard", async (c) => {
   const limit = Math.min(Number(c.req.query("limit") ?? 50) || 50, 100);
-  const rows = await c.get("store").coinLeaderboard(limit);
+  const store = c.get("store");
+  const rows = await store.coinLeaderboard(limit);
+  const avatars = await store.getAvatars(rows.map((r) => r.user_id)).catch(() => new Map());
 
   return c.json({
     ok: true,
@@ -4737,7 +5029,9 @@ app.get("/api/coins/leaderboard", async (c) => {
       userId: row.user_id,
       name: row.user_name ?? "Unknown",
       balance: row.balance,
-      title: titleFor(row.balance),
+      title: titleFor(row.lifetime),
+      level: levelInfo(row.lifetime).level,
+      avatar: parseStoredAvatar(avatars.get(row.user_id)),
     })),
   });
 });
@@ -4768,11 +5062,28 @@ app.post("/api/coins/claim-online", async (c) => {
 
   const store = c.get("store");
   const body = parseBody(claimOnlineGameSchema, await readJson(c));
+  const tooShort = body.seconds < MIN_ONLINE_SECONDS || body.shots < MIN_ONLINE_SHOTS;
+
+  // Trophies first, and whatever happens to the coins: a game the server saw
+  // start is settled exactly once, here or as abandoned. A loss always counts;
+  // a "win" too short to have been played closes the game without moving
+  // anything, the same judgement the coins make.
+  let trophies: Array<{ track: string; delta: number; trophies: number }> = [];
+  if (body.mode === 1) {
+    const game = await store.getOnlineGame(body.sessionId).catch(() => null);
+    if (game && game.user_id === user.id) {
+      const won = body.won && !tooShort;
+      if (await store.finishOnlineGame(game.id, body.won ? "won" : "lost")) {
+        if (!body.won || won) trophies = await settleOnlineTrophies(store, game, won);
+      }
+    }
+  }
 
   // A game that lasted four seconds and took one shot was not played.
-  if (body.seconds < MIN_ONLINE_SECONDS || body.shots < MIN_ONLINE_SHOTS) {
+  if (tooShort) {
     return c.json({
       ok: true,
+      trophies,
       awarded: 0,
       awards: [],
       message: "That game was too short to count.",
@@ -4786,6 +5097,7 @@ app.post("/api/coins/claim-online", async (c) => {
   if (earnedOnlineToday >= ONLINE_DAILY_CAP) {
     return c.json({
       ok: true,
+      trophies,
       awarded: 0,
       awards: [],
       cappedOut: true,
@@ -4810,6 +5122,7 @@ app.post("/api/coins/claim-online", async (c) => {
   if (wanted.length === 0) {
     return c.json({
       ok: true,
+      trophies,
       awarded: 0,
       awards: [],
       lost: true,
@@ -4836,11 +5149,110 @@ app.post("/api/coins/claim-online", async (c) => {
 
   return c.json({
     ok: true,
+    trophies,
     awarded: paid.reduce((sum, a) => sum + a.amount, 0),
     awards: paid,
     balance: balance.balance,
-    title: titleFor(balance.balance),
+    title: titleFor(balance.lifetime),
     onlineRemainingToday: Math.max(0, ONLINE_DAILY_CAP - earnedOnlineToday),
+  });
+});
+
+/**
+ * A browser game against the AI has started.
+ *
+ * Recorded so the game counts even if the player closes the tab while losing:
+ * one with no result ONLINE_ABANDON_MINUTES later is settled as a loss. Keyed
+ * on the page's session id, the same one the result is claimed with.
+ */
+app.post("/api/online/start", async (c) => {
+  const user = requireUser(c);
+  if (!user) return c.json({ ok: false, message: "Authentication required" }, 401);
+
+  const limited = await rateLimit(c, `online-start:${user.id}`, 60, 3600);
+  if (limited) return limited;
+
+  const store = c.get("store");
+  const body = parseBody(startOnlineGameSchema, await readJson(c));
+  await settleAbandonedGames(store, user.id);
+
+  const existing = await store.getOnlineGame(body.sessionId).catch(() => null);
+  if (existing && existing.user_id !== user.id) {
+    return c.json({ ok: false, message: "That game belongs to someone else." }, 409);
+  }
+
+  const aiRating = Math.min(Math.max(body.aiRating ?? 1, 1), 3);
+  await store.startOnlineGame({ id: body.sessionId, userId: user.id, sport: "8BALL", aiRating });
+  const mine = (await store.trophiesOn(onlineTrack("8BALL"), [user.id])).get(user.id) ?? 0;
+
+  return c.json({
+    ok: true,
+    rated: true,
+    // What is at stake, so the page can say it before the break.
+    stakes: {
+      win: applyTrophies(mine, trophyDelta({ mine, theirs: aiTrophies(aiRating), won: true })).delta,
+      loss: applyTrophies(mine, trophyDelta({ mine, theirs: aiTrophies(aiRating), won: false })).delta,
+    },
+    abandonMinutes: ONLINE_ABANDON_MINUTES,
+  });
+});
+
+/** The signed-in player's trophies on every track, and the recent changes. */
+app.get("/api/trophies/me", async (c) => {
+  const user = requireUser(c);
+  if (!user) return c.json({ ok: false, message: "Authentication required" }, 401);
+
+  const store = c.get("store");
+  await settleAbandonedGames(store, user.id);
+  const [tracks, recent] = await Promise.all([
+    trophyStanding(store, user.id),
+    store.getTrophyLedger(user.id, 20),
+  ]);
+
+  return c.json({
+    ok: true,
+    tracks,
+    recent: recent.map((r) => ({
+      track: r.track,
+      delta: r.delta,
+      trophies: r.trophies_after,
+      won: r.won === 1,
+      against: String(r.opponent_key).startsWith("ai:")
+        ? "ai"
+        : String(r.opponent_key).startsWith("guest:")
+          ? "walk-in"
+          : "player",
+      at: r.created_at,
+    })),
+  });
+});
+
+/** One track's ladder. Public, like every other league table here. */
+app.get("/api/trophies/leaderboard", async (c) => {
+  const track = c.req.query("track") || OVERALL;
+  if (!isTrack(track)) return c.json({ ok: false, message: "No such ladder" }, 400);
+  const limit = Math.min(Number(c.req.query("limit") ?? 50) || 50, 100);
+
+  const store = c.get("store");
+  const rows = await store.trophyLadder(track, limit).catch(() => []);
+  const ids = rows.map((r) => r.user_id);
+  const [avatars, lifetimes] = await Promise.all([
+    store.getAvatars(ids).catch(() => new Map<string, string>()),
+    store.lifetimeCoins(ids).catch(() => new Map<string, number>()),
+  ]);
+
+  return c.json({
+    ok: true,
+    track,
+    tracks: TROPHY_TRACKS,
+    leaders: rows.map((r, i) => ({
+      rank: i + 1,
+      userId: r.user_id,
+      name: r.user_name ?? "Unknown",
+      ...trackSummary(r),
+      level: levelInfo(lifetimes.get(r.user_id) ?? 0).level,
+      avatar: parseStoredAvatar(avatars.get(r.user_id)),
+    })),
   });
 });
 

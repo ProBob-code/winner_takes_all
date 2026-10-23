@@ -21,8 +21,9 @@
  *
  * Kept deliberately in step with apps/api/migrations/0006_engine_tables.sql,
  * 0007_series.sql, 0009_engine_houses.sql, 0010_wallet_description.sql,
- * 0011_payouts_and_bonus.sql, 0012_venues_offline_and_billing.sql and
- * 0013_wta_coins.sql; apps/api/migrations/rehearse.py and
+ * 0011_payouts_and_bonus.sql, 0012_venues_offline_and_billing.sql,
+ * 0013_wta_coins.sql, 0014_player_loadout.sql and 0015_trophies.sql;
+ * apps/api/migrations/rehearse.py and
  * rehearse_bootstrap.py check the SQL runs.
  */
 
@@ -257,6 +258,53 @@ const CREATE_STATEMENTS = [
   // settles a match a second time, or a host restarts and re-finishes a frame.
   `CREATE UNIQUE INDEX IF NOT EXISTS idx_coin_ledger_once ON coin_ledger(user_id, reason, reference_type, reference_id)`,
   `CREATE INDEX IF NOT EXISTS idx_coin_balances_rank ON coin_balances(balance DESC)`,
+  // What a player shows: the avatar now, the rest of the loadout later.
+  `CREATE TABLE IF NOT EXISTS player_loadout (
+    user_id TEXT PRIMARY KEY,
+    avatar TEXT,
+    border_id TEXT,
+    sticker_id TEXT,
+    showcase TEXT NOT NULL DEFAULT '[]',
+    emote_deck TEXT NOT NULL DEFAULT '[]',
+    updated_at TEXT NOT NULL
+  )`,
+  // Trophies, apart from coins: a standing, never a currency.
+  `CREATE TABLE IF NOT EXISTS player_trophies (
+    user_id TEXT NOT NULL,
+    track TEXT NOT NULL,
+    trophies INTEGER NOT NULL DEFAULT 0 CHECK (trophies >= 0),
+    peak INTEGER NOT NULL DEFAULT 0,
+    games INTEGER NOT NULL DEFAULT 0,
+    wins INTEGER NOT NULL DEFAULT 0,
+    losses INTEGER NOT NULL DEFAULT 0,
+    updated_at TEXT NOT NULL,
+    PRIMARY KEY (user_id, track)
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_player_trophies_ladder ON player_trophies(track, trophies DESC)`,
+  `CREATE TABLE IF NOT EXISTS trophy_ledger (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    track TEXT NOT NULL,
+    delta INTEGER NOT NULL,
+    trophies_after INTEGER NOT NULL,
+    won INTEGER NOT NULL,
+    opponent_key TEXT NOT NULL,
+    reference_type TEXT NOT NULL,
+    reference_id TEXT NOT NULL,
+    created_at TEXT NOT NULL
+  )`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS idx_trophy_ledger_once ON trophy_ledger(user_id, track, reference_type, reference_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_trophy_ledger_user ON trophy_ledger(user_id, created_at DESC)`,
+  `CREATE TABLE IF NOT EXISTS online_games (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    sport TEXT NOT NULL,
+    ai_rating INTEGER NOT NULL,
+    started_at TEXT NOT NULL,
+    finished_at TEXT,
+    result TEXT
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_online_games_open ON online_games(user_id, finished_at, started_at)`,
 ];
 
 /**

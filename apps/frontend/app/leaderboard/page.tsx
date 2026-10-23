@@ -3,11 +3,18 @@
 export const dynamic = "force-dynamic";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { getApiUrl } from "@/lib/api-config";
+import { Avatar } from "@/components/avatar";
+import { TrophyLadder } from "@/components/trophy-ladder";
+import type { AvatarConfig } from "@/lib/avatar";
 
 type LeaderboardEntry = {
   userId: string;
   displayName: string;
+  /** Absent against an API from before levels and avatars. */
+  level?: number;
+  avatar?: AvatarConfig | null;
   /** Matches played, across bracket matches and hosted tournaments alike. */
   played: number;
   wins: number;
@@ -20,13 +27,6 @@ type LeaderboardEntry = {
 
 const MEDALS = ["🥇", "🥈", "🥉"];
 
-const initials = (name: string) =>
-  name
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part[0] || "")
-    .join("")
-    .toUpperCase() || "?";
 
 
 export default function LeaderboardPage() {
@@ -131,6 +131,16 @@ export default function LeaderboardPage() {
           </div>
         </div>
 
+        {/* Trophies first: the ladder a win climbs and a loss falls down. The
+            points table below is the all-time record. */}
+        <div className="slide-in" style={{ margin: "var(--space-5) 0" }}>
+          <TrophyLadder meId={meId} />
+        </div>
+
+        <h2 style={{ fontSize: "var(--text-xl)", fontWeight: 900, margin: "var(--space-5) 0 var(--space-3)" }}>
+          All-time points
+        </h2>
+
         {/* The top three, in order, tallest in the middle. */}
         {top3.length >= 3 && (
           <div className="lb-podium slide-in">
@@ -139,9 +149,14 @@ export default function LeaderboardPage() {
               return (
                 <div key={entry.userId} className={`lb-pod place-${place + 1}`}>
                   <div className="lb-pod-medal">{MEDALS[place]}</div>
-                  <div className="lb-avatar lg">{initials(entry.displayName)}</div>
+                  <Link href={`/players/${encodeURIComponent(entry.userId)}`} className="lb-avatar lg" aria-hidden tabIndex={-1}>
+                    <Avatar avatar={entry.avatar} seed={entry.userId} size={54} />
+                  </Link>
                   <div className="lb-pod-name">
-                    {entry.displayName}
+                    <Link href={`/players/${encodeURIComponent(entry.userId)}`} className="lb-name-link">
+                      {entry.displayName}
+                    </Link>
+                    {entry.level ? <span className="lb-level">Lv {entry.level}</span> : null}
                     {entry.userId === meId && <span className="lb-you">YOU</span>}
                   </div>
                   <div className="lb-pod-points">{entry.points} pts</div>
@@ -185,10 +200,15 @@ export default function LeaderboardPage() {
                 <span className="lb-rank">{i < 3 ? MEDALS[i] : `#${i + 1}`}</span>
 
                 <span className="lb-player">
-                  <span className="lb-avatar">{initials(entry.displayName)}</span>
+                  <span className="lb-avatar">
+                    <Avatar avatar={entry.avatar} seed={entry.userId} size={34} />
+                  </span>
                   <span className="lb-player-text">
                     <span className="lb-name">
-                      {entry.displayName}
+                      <Link href={`/players/${encodeURIComponent(entry.userId)}`} className="lb-name-link">
+                        {entry.displayName}
+                      </Link>
+                      {entry.level ? <span className="lb-level">Lv {entry.level}</span> : null}
                       {entry.userId === meId && <span className="lb-you">YOU</span>}
                     </span>
                     {/* On a narrow screen the columns fold away, so the row
@@ -332,6 +352,15 @@ export default function LeaderboardPage() {
           color: var(--accent-light);
         }
         .lb-avatar.lg { width: 54px; height: 54px; font-size: 1rem; }
+        .lb-avatar { overflow: hidden; padding: 0; }
+        .lb-avatar svg { width: 100%; height: 100%; }
+        .lb-name-link { color: inherit; text-decoration: none; }
+        .lb-name-link:hover { text-decoration: underline; }
+        .lb-level {
+          margin-left: 6px; padding: 1px 6px; border-radius: 999px;
+          border: 1px solid var(--gold-subtle); color: var(--gold);
+          font-size: 0.68rem; font-weight: 800; vertical-align: middle;
+        }
         .lb-player-text { display: flex; flex-direction: column; min-width: 0; }
         .lb-name {
           font-weight: 800;

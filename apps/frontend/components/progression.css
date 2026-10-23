@@ -1,0 +1,475 @@
+/*
+ * The profile, the public player page and the avatar editor.
+ *
+ * Built only on the theme's tokens, so light and dark both come for free from
+ * globals.css. Phone first: one column, then two from tablet width up.
+ */
+
+.pp {
+  display: grid;
+  gap: var(--space-5, 1.25rem);
+  max-width: 64rem;
+  margin: 0 auto;
+}
+
+/* ── Hero ── */
+
+.pp-hero {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-5, 1.25rem);
+  align-items: center;
+  padding: clamp(1.25rem, 3vw, 2rem);
+  border: 1px solid var(--border-color);
+  border-top: 4px solid var(--gold-light);
+  border-radius: 1rem;
+  background:
+    radial-gradient(120% 140% at 0% 0%, var(--gold-subtle), transparent 55%),
+    var(--bg-card);
+  box-shadow: var(--shadow-md);
+}
+
+.pp-avatar-wrap {
+  position: relative;
+  width: clamp(88px, 22vw, 128px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  padding: 4px;
+  background: conic-gradient(from 210deg, var(--gold-light), var(--wta-red), var(--gold-light));
+  box-shadow: 0 0 24px var(--gold-subtle);
+}
+
+.pp-avatar-wrap svg {
+  width: 100%;
+  height: 100%;
+}
+
+.pp-avatar-badge {
+  position: absolute;
+  right: -6px;
+  bottom: -6px;
+}
+
+.pp-name {
+  margin: 0;
+  font-size: clamp(1.8rem, 5vw, 2.6rem);
+  font-weight: 900;
+  line-height: 1.05;
+  letter-spacing: -0.5px;
+  overflow-wrap: anywhere;
+}
+
+.pp-level-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.6rem;
+  margin-top: 0.35rem;
+  font-weight: 800;
+}
+
+.pp-level-line .pp-band {
+  color: var(--gold);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  font-size: var(--text-sm, 0.875rem);
+}
+
+.pp-xp {
+  margin-top: 0.75rem;
+  max-width: 26rem;
+}
+
+.pp-xp-bar {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--bg-inset);
+  overflow: hidden;
+}
+
+.pp-xp-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--gradient-gold);
+  transition: width 0.6s ease;
+}
+
+.pp-xp-label {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+  font-size: var(--text-xs, 0.75rem);
+  color: var(--text-muted);
+}
+
+.pp-coins {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1.5rem;
+  padding-top: var(--space-4, 1rem);
+  border-top: 1px solid var(--border-color);
+}
+
+.pp-coin-figure {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.pp-coin-figure strong {
+  display: block;
+  font-size: clamp(1.6rem, 4.5vw, 2.2rem);
+  font-weight: 900;
+  line-height: 1;
+  color: var(--gold);
+}
+
+.pp-label {
+  font-size: var(--text-xs, 0.75rem);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.pp-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.pp-actions .button,
+.pp-actions .button-secondary {
+  text-decoration: none;
+}
+
+/* ── Stats ── */
+
+.pp-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 8.5rem), 1fr));
+  gap: 0.75rem;
+}
+
+.pp-stat {
+  padding: 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 0.85rem;
+  background: var(--bg-card);
+}
+
+.pp-stat strong {
+  display: block;
+  font-size: 1.6rem;
+  font-weight: 900;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Cards ── */
+
+.pp-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
+  gap: var(--space-5, 1.25rem);
+}
+
+.pp-card {
+  padding: clamp(1.1rem, 3vw, 1.6rem);
+  border: 1px solid var(--border-color);
+  border-radius: 1rem;
+  background: var(--bg-card);
+}
+
+.pp-card h2 {
+  margin: 0 0 0.85rem;
+  font-size: var(--text-lg, 1.125rem);
+  font-weight: 900;
+}
+
+.pp-rows {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.pp-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: 0.65rem;
+  background: var(--bg-inset);
+  font-size: var(--text-sm, 0.875rem);
+  min-width: 0;
+}
+
+.pp-row > :first-child {
+  color: var(--text-muted);
+}
+
+.pp-row > :last-child {
+  font-weight: 700;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.pp-copy {
+  border: 1px solid var(--border-color);
+  background: transparent;
+  color: var(--text-primary);
+  border-radius: 0.5rem;
+  padding: 0.2rem 0.55rem;
+  font: inherit;
+  font-size: var(--text-xs, 0.75rem);
+  cursor: pointer;
+  margin-left: 0.4rem;
+}
+
+.pp-gain {
+  color: var(--gold);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Avatar editor ── */
+
+.av-editor {
+  display: grid;
+  gap: var(--space-5, 1.25rem);
+  max-width: 64rem;
+  margin: 0 auto;
+}
+
+@media (min-width: 760px) {
+  .av-editor {
+    grid-template-columns: minmax(15rem, 20rem) 1fr;
+    align-items: start;
+  }
+  .av-preview {
+    position: sticky;
+    top: 5rem;
+  }
+}
+
+.av-preview {
+  display: grid;
+  justify-items: center;
+  gap: 1rem;
+  padding: 1.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: 1rem;
+  background: var(--bg-card);
+}
+
+.av-preview svg {
+  width: min(220px, 60vw);
+  height: auto;
+}
+
+.av-tabs {
+  display: flex;
+  gap: 0.4rem;
+  overflow-x: auto;
+  padding-bottom: 0.35rem;
+  scrollbar-width: thin;
+}
+
+.av-tab {
+  flex: none;
+  padding: 0.45rem 0.85rem;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: var(--text-sm, 0.875rem);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.av-tab[aria-selected="true"] {
+  border-color: var(--gold);
+  background: var(--gold-subtle);
+  color: var(--text-primary);
+}
+
+.av-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(5.25rem, 1fr));
+  gap: 0.6rem;
+  margin-top: 0.75rem;
+}
+
+.av-option {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 0.35rem;
+  padding: 0.6rem 0.4rem;
+  border: 2px solid var(--border-color);
+  border-radius: 0.85rem;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: var(--text-xs, 0.75rem);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.av-option[aria-pressed="true"] {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px var(--gold-subtle);
+}
+
+.av-option:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.av-option:focus-visible,
+.av-tab:focus-visible {
+  outline: 3px solid var(--gold-light);
+  outline-offset: 2px;
+}
+
+.av-swatch {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid var(--border-color);
+}
+
+.av-lock {
+  position: absolute;
+  top: 0.3rem;
+  right: 0.3rem;
+  padding: 0.05rem 0.35rem;
+  border-radius: 999px;
+  background: var(--bg-inset);
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: var(--text-muted);
+}
+
+.av-error {
+  color: var(--red);
+  font-weight: 700;
+  font-size: var(--text-sm, 0.875rem);
+}
+
+/* ── Small avatar beside a name in a table ── */
+
+.name-with-avatar {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-width: 0;
+  color: inherit;
+  text-decoration: none;
+}
+
+.name-with-avatar:hover .name-with-avatar-text {
+  text-decoration: underline;
+}
+
+.level-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.05rem 0.45rem;
+  border-radius: 999px;
+  border: 1px solid var(--gold-subtle);
+  color: var(--gold);
+  font-size: 0.7rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+/* ── Trophies ── */
+
+.pp-trophy-line {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-top: 0.4rem;
+  font-size: var(--text-sm, 0.875rem);
+}
+
+.pp-trophy-overall {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.pp-trophy-overall strong {
+  display: block;
+  font-size: 2rem;
+  font-weight: 900;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Trophy ladder ── */
+
+.tl-head {
+  display: grid;
+  gap: 0.75rem;
+  margin-bottom: 0.85rem;
+}
+
+.tl-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.tl-row {
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: 0.65rem;
+  background: var(--bg-inset);
+}
+
+.tl-row.me {
+  box-shadow: inset 3px 0 0 var(--gold);
+}
+
+.tl-rank {
+  font-weight: 900;
+  color: var(--text-muted);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.tl-name {
+  display: block;
+  font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tl-meta {
+  display: block;
+  font-size: var(--text-xs, 0.75rem);
+  color: var(--text-muted);
+}
+
+.tl-trophies {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}

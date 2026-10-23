@@ -133,7 +133,7 @@ export default function CoinsPage() {
   }, [load]);
 
   const progress = me?.next
-    ? Math.min(100, Math.round((me.balance / me.next.at) * 100))
+    ? Math.min(100, Math.round((me.lifetime / me.next.at) * 100))
     : 100;
 
   return (
@@ -242,7 +242,7 @@ export default function CoinsPage() {
                       {coins(me.next.toGo)} to {me.next.title}
                     </span>
                     <span className="muted">
-                      {coins(me.balance)} / {coins(me.next.at)}
+                      {coins(me.lifetime)} / {coins(me.next.at)}
                     </span>
                   </div>
                   <div

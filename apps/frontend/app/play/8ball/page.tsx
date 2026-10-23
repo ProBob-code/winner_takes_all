@@ -24,6 +24,8 @@ import Link from "next/link";
 import { backendFetch } from "@/lib/backend";
 import { CoinMark } from "@/components/coin-mark";
 import { formatCoins, formatCoinsExact } from "@/lib/format";
+import { TrophyBadge } from "@/components/trophy-badge";
+import { TRACKS, signedTrophies } from "@/lib/trophies";
 
 interface Claimed {
   awarded: number;
@@ -32,6 +34,14 @@ interface Claimed {
   title?: string;
   message?: string;
   cappedOut?: boolean;
+  /** What the game did to the player's trophies; empty when it was unrated. */
+  trophies?: Array<{ track: string; delta: number; trophies: number }>;
+}
+
+/** What a rated game is worth, from /api/online/start. */
+interface Stakes {
+  win: number;
+  loss: number;
 }
 
 /** One id per loaded game, so a result can only ever be claimed once. */
@@ -54,6 +64,7 @@ export default function PlayEightBallPage() {
   const [signedIn, setSignedIn] = useState(true);
   const [claimed, setClaimed] = useState<Claimed | null>(null);
   const [claiming, setClaiming] = useState(false);
+  const [stakes, setStakes] = useState<Stakes | null>(null);
 
   // A fresh id per game, replaced once a result has been claimed so a second
   // game in the same sitting is a new claim rather than a duplicate.
@@ -86,6 +97,24 @@ export default function PlayEightBallPage() {
 
       if (data.type === "exit") {
         window.location.href = "/games";
+        return;
+      }
+
+      // A game against the AI has begun: put it on record before anyone knows
+      // how it ends, so closing the tab while losing still counts as a loss.
+      if (data.type === "game_start") {
+        if (!signedIn || data.mode !== 1) return;
+        try {
+          const res = await backendFetch("/online/start", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ sessionId: sessionRef.current, mode: 1, aiRating: data.aiRating }),
+          });
+          const payload: any = await res.json().catch(() => ({}));
+          if (payload?.ok && payload.stakes) setStakes(payload.stakes);
+        } catch {
+          /* unrated rather than broken: the coins still work without it */
+        }
         return;
       }
 
@@ -133,6 +162,7 @@ export default function PlayEightBallPage() {
         setClaiming(false);
         // The next game is a new claim.
         sessionRef.current = newSessionId();
+        setStakes(null);
       }
     };
 
@@ -175,6 +205,11 @@ export default function PlayEightBallPage() {
               <strong style={{ fontSize: "var(--text-sm)" }}>
                 {balance === null ? "…" : formatCoins(balance)}
               </strong>
+              {stakes && (
+                <span className="chip gold" title="A rated game against the AI. Leaving it unfinished counts as a loss.">
+                  🏆 {signedTrophies(stakes.win)} / {signedTrophies(stakes.loss)}
+                </span>
+              )}
               {onlineLeft !== null && (
                 <span className="chip" title="What browser play can still earn today">
                   {formatCoins(onlineLeft)} left today
@@ -239,6 +274,18 @@ export default function PlayEightBallPage() {
               </>
             )}
 
+            {claimed.trophies && claimed.trophies.length > 0 && (
+              <span className="game-result-note" style={{ display: "flex", gap: "1rem", justifyContent: "center", flexWrap: "wrap" }}>
+                {claimed.trophies.map((t) => (
+                  <span key={t.track} style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem" }}>
+                    <TrophyBadge trophies={t.trophies} size={26} />
+                    <strong>{signedTrophies(t.delta)}</strong>
+                    <span className="muted">{TRACKS.find((x) => x.id === t.track)?.label ?? t.track}</span>
+                  </span>
+                ))}
+              </span>
+            )}
+
             {claimed.cappedOut && (
               <span className="game-result-note">
                 A night at a venue is worth far more than a day of browser play — that
@@ -285,7 +332,8 @@ export default function PlayEightBallPage() {
       >
         <p className="muted" style={{ fontSize: "var(--text-xs)", textAlign: "center" }}>
           Only the winner earns — beat the machine and the coins are yours, lose and
-          nothing is paid. Browser games are worth a fraction of a league night and have
+          nothing is paid. Signed-in games against the AI are rated: a win gains trophies,
+          a loss costs them, and a game left unfinished counts as a loss. Browser games are worth a fraction of a league night and have
           their own daily limit. WTA Coins have no cash value and cannot be bought or
           withdrawn.
         </p>

@@ -194,7 +194,10 @@ describe("the denomination", () => {
 
   it("scales the cap and the titles with the awards", () => {
     expect(DAILY_COIN_CAP).toBe(1_000_000);
-    expect(COIN_TITLES[COIN_TITLES.length - 1].at).toBe(20_000_000);
+    // The titles are the level bands now (lib/progression.ts): Legend starts
+    // at level 28, Hall of Fame at level 50.
+    expect(COIN_TITLES.find((t) => t.title === "Legend")!.at).toBe(18_900_000);
+    expect(COIN_TITLES[COIN_TITLES.length - 1].at).toBe(61_250_000);
     for (const step of COIN_TITLES) {
       expect(step.at % COIN_UNIT).toBe(0);
     }

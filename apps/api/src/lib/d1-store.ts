@@ -90,6 +90,16 @@ export interface CoinBalanceRecord {
   user_name?: string;
 }
 
+export interface TrophyRow {
+  user_id: string; track: string; trophies: number; peak: number;
+  games: number; wins: number; losses: number; updated_at: string;
+}
+
+export interface OnlineGameRow {
+  id: string; user_id: string; sport: string; ai_rating: number;
+  started_at: string; finished_at: string | null; result: string | null;
+}
+
 export interface CoinLedgerRecord {
   id: string; user_id: string; reason: string; amount: number;
   balance_after: number; description: string | null;
@@ -2094,6 +2104,255 @@ export class D1Store {
       `SELECT COUNT(*) AS ahead FROM coin_balances WHERE balance > ?`
     ).bind(me.balance).first<any>();
     return (r?.ahead ?? 0) + 1;
+  }
+
+  /**
+   * How many times each award has been paid to this account.
+   *
+   * The profile's record of what someone has done — frames played and won,
+   * nights taken, clearances — read from the coin ledger rather than the match
+   * tables, because the ledger is the one place a frame at a venue, a frame in
+   * a hosted bracket and a browser game all land, once each, idempotently.
+   */
+  async coinReasonCounts(userId: string): Promise<Record<string, number>> {
+    const { results } = await this.db.prepare(
+      `SELECT reason, COUNT(*) AS n FROM coin_ledger WHERE user_id = ? GROUP BY reason`
+    ).bind(userId).all<any>();
+    const counts: Record<string, number> = {};
+    for (const row of results) counts[row.reason] = Number(row.n) || 0;
+    return counts;
+  }
+
+  /** The raw stored avatar JSON, or null for the generated default. */
+  async getAvatar(userId: string): Promise<string | null> {
+    try {
+      const r = await this.db.prepare(
+        `SELECT avatar FROM player_loadout WHERE user_id = ?`
+      ).bind(userId).first<any>();
+      return r?.avatar ?? null;
+    } catch (err) {
+      // No loadout table yet simply means nobody has saved an avatar.
+      if (isMissingTableError(err)) return null;
+      throw err;
+    }
+  }
+
+  /** Stored avatars for several accounts at once, for a table of names. */
+  async getAvatars(userIds: string[]): Promise<Map<string, string>> {
+    const out = new Map<string, string>();
+    const ids = [...new Set(userIds.filter(Boolean))].slice(0, 100);
+    if (ids.length === 0) return out;
+    try {
+      const slots = ids.map(() => "?").join(", ");
+      const { results } = await this.db.prepare(
+        `SELECT user_id, avatar FROM player_loadout
+         WHERE avatar IS NOT NULL AND user_id IN (${slots})`
+      ).bind(...ids).all<any>();
+      for (const row of results) out.set(row.user_id, row.avatar);
+    } catch (err) {
+      if (!isMissingTableError(err)) throw err;
+    }
+    return out;
+  }
+
+  async setAvatar(userId: string, avatarJson: string): Promise<void> {
+    await this.db.prepare(
+      `INSERT INTO player_loadout (user_id, avatar, updated_at) VALUES (?, ?, ?)
+       ON CONFLICT(user_id) DO UPDATE SET avatar = excluded.avatar, updated_at = excluded.updated_at`
+    ).bind(userId, avatarJson, new Date().toISOString()).run();
+  }
+
+  /** Lifetime coins for several accounts at once, for their levels. */
+  async lifetimeCoins(userIds: string[]): Promise<Map<string, number>> {
+    const out = new Map<string, number>();
+    const ids = [...new Set(userIds.filter(Boolean))].slice(0, 100);
+    if (ids.length === 0) return out;
+    const slots = ids.map(() => "?").join(", ");
+    const { results } = await this.db.prepare(
+      `SELECT user_id, lifetime FROM coin_balances WHERE user_id IN (${slots})`
+    ).bind(...ids).all<any>();
+    for (const row of results) out.set(row.user_id, Number(row.lifetime) || 0);
+    return out;
+  }
+
+  // ── Trophies (lib/trophies.ts) ──
+
+  /** Every track this player has trophies on. */
+  async getTrophyRows(userId: string): Promise<TrophyRow[]> {
+    try {
+      const { results } = await this.db.prepare(
+        `SELECT * FROM player_trophies WHERE user_id = ?`
+      ).bind(userId).all<any>();
+      return results as TrophyRow[];
+    } catch (err) {
+      if (isMissingTableError(err)) return [];
+      throw err;
+    }
+  }
+
+  /** Trophies on one track for several players, 0 for anyone not on it yet. */
+  async trophiesOn(track: string, userIds: string[]): Promise<Map<string, number>> {
+    const out = new Map<string, number>();
+    const ids = [...new Set(userIds.filter(Boolean))].slice(0, 100);
+    if (ids.length === 0) return out;
+    const slots = ids.map(() => "?").join(", ");
+    const { results } = await this.db.prepare(
+      `SELECT user_id, trophies FROM player_trophies WHERE track = ? AND user_id IN (${slots})`
+    ).bind(track, ...ids).all<any>();
+    for (const row of results) out.set(row.user_id, Number(row.trophies) || 0);
+    return out;
+  }
+
+  /** Games already played today against one opponent on one track. */
+  async trophyGamesToday(userId: string, track: string, opponentKey: string): Promise<number> {
+    const since = new Date();
+    since.setUTCHours(0, 0, 0, 0);
+    const r = await this.db.prepare(
+      `SELECT COUNT(*) AS n FROM trophy_ledger
+       WHERE user_id = ? AND track = ? AND opponent_key = ? AND created_at >= ?`
+    ).bind(userId, track, opponentKey, since.toISOString()).first<any>();
+    return Number(r?.n) || 0;
+  }
+
+  /** Trophies gained today on a track from opponents whose key starts with `prefix`. */
+  async trophyGainsToday(userId: string, track: string, prefix: string): Promise<number> {
+    const since = new Date();
+    since.setUTCHours(0, 0, 0, 0);
+    const r = await this.db.prepare(
+      `SELECT COALESCE(SUM(delta), 0) AS total FROM trophy_ledger
+       WHERE user_id = ? AND track = ? AND delta > 0 AND created_at >= ?
+         AND substr(opponent_key, 1, ?) = ?`
+    ).bind(userId, track, since.toISOString(), prefix.length, prefix).first<any>();
+    return Number(r?.total) || 0;
+  }
+
+  /**
+   * Record one game's trophies, once.
+   *
+   * The ledger row goes in first, guarded by its unique index on (user, track,
+   * reference), so a frame settled twice moves trophies once. Only a claim
+   * that wrote a row moves the count, and the move is relative and floored in
+   * SQL, so two results landing together cannot drop a player below the
+   * arena they have reached.
+   *
+   * Returns the trophies after, or null when this game had already counted.
+   */
+  async recordTrophies(args: {
+    userId: string;
+    track: string;
+    delta: number;
+    floor: number;
+    won: boolean;
+    opponentKey: string;
+    referenceType: string;
+    referenceId: string;
+  }): Promise<number | null> {
+    const now = new Date().toISOString();
+    const claim = await this.db.prepare(
+      `INSERT OR IGNORE INTO trophy_ledger
+         (id, user_id, track, delta, trophies_after, won, opponent_key, reference_type, reference_id, created_at)
+       VALUES (?, ?, ?, ?, 0, ?, ?, ?, ?, ?)`
+    ).bind(
+      createId("tro"), args.userId, args.track, args.delta, args.won ? 1 : 0,
+      args.opponentKey, args.referenceType, args.referenceId, now
+    ).run();
+    if ((claim.meta?.changes ?? 0) === 0) return null;
+
+    const win = args.won ? 1 : 0;
+    await this.db.prepare(
+      `INSERT INTO player_trophies (user_id, track, trophies, peak, games, wins, losses, updated_at)
+       VALUES (?, ?, MAX(0, ?), MAX(0, ?), 1, ?, ?, ?)
+       ON CONFLICT(user_id, track) DO UPDATE SET
+         trophies = MAX(?, trophies + ?),
+         peak = MAX(peak, MAX(?, trophies + ?)),
+         games = games + 1,
+         wins = wins + ?,
+         losses = losses + ?,
+         updated_at = excluded.updated_at`
+    ).bind(
+      args.userId, args.track, args.delta, args.delta, win, 1 - win, now,
+      args.floor, args.delta, args.floor, args.delta, win, 1 - win
+    ).run();
+
+    const r = await this.db.prepare(
+      `SELECT trophies FROM player_trophies WHERE user_id = ? AND track = ?`
+    ).bind(args.userId, args.track).first<any>();
+    const after = Number(r?.trophies) || 0;
+
+    await this.db.prepare(
+      `UPDATE trophy_ledger SET trophies_after = ?
+       WHERE user_id = ? AND track = ? AND reference_type = ? AND reference_id = ?`
+    ).bind(after, args.userId, args.track, args.referenceType, args.referenceId).run();
+
+    return after;
+  }
+
+  /** The recent trophy changes on a player's account, newest first. */
+  async getTrophyLedger(userId: string, limit = 20): Promise<any[]> {
+    try {
+      const { results } = await this.db.prepare(
+        `SELECT track, delta, trophies_after, won, opponent_key, reference_type, created_at
+         FROM trophy_ledger WHERE user_id = ? ORDER BY created_at DESC LIMIT ?`
+      ).bind(userId, limit).all<any>();
+      return results;
+    } catch (err) {
+      if (isMissingTableError(err)) return [];
+      throw err;
+    }
+  }
+
+  /** The top of one track's ladder. */
+  async trophyLadder(track: string, limit = 50): Promise<Array<TrophyRow & { user_name: string | null }>> {
+    const { results } = await this.db.prepare(
+      `SELECT pt.*, u.name AS user_name FROM player_trophies pt
+       LEFT JOIN users u ON u.id = pt.user_id
+       WHERE pt.track = ? AND pt.games > 0
+       ORDER BY pt.trophies DESC, pt.updated_at ASC
+       LIMIT ?`
+    ).bind(track, limit).all<any>();
+    return results as any;
+  }
+
+  // ── Online games, so an abandoned one still counts ──
+
+  async startOnlineGame(args: { id: string; userId: string; sport: string; aiRating: number }): Promise<boolean> {
+    const r = await this.db.prepare(
+      `INSERT OR IGNORE INTO online_games (id, user_id, sport, ai_rating, started_at)
+       VALUES (?, ?, ?, ?, ?)`
+    ).bind(args.id, args.userId, args.sport, args.aiRating, new Date().toISOString()).run();
+    return (r.meta?.changes ?? 0) > 0;
+  }
+
+  async getOnlineGame(id: string): Promise<OnlineGameRow | null> {
+    try {
+      return (await this.db.prepare(`SELECT * FROM online_games WHERE id = ?`).bind(id).first<any>()) ?? null;
+    } catch (err) {
+      if (isMissingTableError(err)) return null;
+      throw err;
+    }
+  }
+
+  /** Close an open game. False if it was already closed, so it settles once. */
+  async finishOnlineGame(id: string, result: "won" | "lost" | "abandoned"): Promise<boolean> {
+    const r = await this.db.prepare(
+      `UPDATE online_games SET finished_at = ?, result = ? WHERE id = ? AND finished_at IS NULL`
+    ).bind(new Date().toISOString(), result, id).run();
+    return (r.meta?.changes ?? 0) > 0;
+  }
+
+  /** This player's games that started before `before` and never finished. */
+  async staleOnlineGames(userId: string, before: string): Promise<OnlineGameRow[]> {
+    try {
+      const { results } = await this.db.prepare(
+        `SELECT * FROM online_games
+         WHERE user_id = ? AND finished_at IS NULL AND started_at < ?
+         ORDER BY started_at ASC LIMIT 20`
+      ).bind(userId, before).all<any>();
+      return results as OnlineGameRow[];
+    } catch (err) {
+      if (isMissingTableError(err)) return [];
+      throw err;
+    }
   }
 
   /**

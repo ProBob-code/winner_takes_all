@@ -33,6 +33,7 @@
 
   var startedAt = Date.now();
   var reported = false;
+  var started = false;
   var lastShotNum = 0;
   var shots = 0;
 
@@ -96,6 +97,15 @@
 
     // A practice table has no opponent and no result worth paying for.
     if (gi.mode === "practice" || gi.trial === 1) return;
+
+    // The first sight of a real game in progress: tell the host, so a game
+    // against the AI is on record before anyone knows how it will end. One
+    // closed while losing then still counts as a loss (see the API's
+    // /api/online/start). The menu and the practice table never get here.
+    if (!started && !gi.gameOver) {
+      started = true;
+      send({ type: "game_start", mode: mode(), aiRating: aiRating() });
+    }
 
     if (!gi.gameOver || reported) return;
 

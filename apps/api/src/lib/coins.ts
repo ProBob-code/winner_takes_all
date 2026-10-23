@@ -468,18 +468,29 @@ export function totalOf(awards: CoinAward[]): number {
 }
 
 /**
- * The rank a balance earns, shown beside a player's name.
+ * The title lifetime coins earn, shown beside a player's name.
  *
  * Titles rather than anything spendable: a title cannot be converted to
  * money, so it is a sink for status that does not create a sink for value.
+ *
+ * These are now the names of the level bands in lib/progression.ts, and each
+ * figure is the lifetime coins at which that band's first level starts. They
+ * are written out here rather than computed so the published ladder reads as
+ * plain numbers; the progression test fails if the two ever disagree. Every
+ * threshold sits at or below the one it replaced (Regular was 250k, Contender
+ * 1M, Shark 3M, Hustler 8M, Legend 20M), so the move cost nobody a title.
+ *
+ * Pass LIFETIME coins, never the balance: a balance can one day be spent, and
+ * spending must not take a title away.
  */
 export const COIN_TITLES: Array<{ at: number; title: string }> = [
   { at: 0, title: "New in" },
-  { at: 250 * COIN_UNIT, title: "Regular" },
-  { at: 1_000 * COIN_UNIT, title: "Contender" },
-  { at: 3_000 * COIN_UNIT, title: "Shark" },
-  { at: 8_000 * COIN_UNIT, title: "Hustler" },
-  { at: 20_000 * COIN_UNIT, title: "Legend" },
+  { at: 150 * COIN_UNIT, title: "Regular" },
+  { at: 750 * COIN_UNIT, title: "Contender" },
+  { at: 2_750 * COIN_UNIT, title: "Shark" },
+  { at: 7_650 * COIN_UNIT, title: "Hustler" },
+  { at: 18_900 * COIN_UNIT, title: "Legend" },
+  { at: 61_250 * COIN_UNIT, title: "Hall of Fame" },
 ];
 
 export function titleFor(balance: number): string {

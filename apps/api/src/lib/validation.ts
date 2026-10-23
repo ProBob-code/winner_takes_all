@@ -351,6 +351,15 @@ export const subscribeSchema = z.object({
 
 // ── Browser play ──
 
+/** A browser game starting, so it counts even if it is abandoned. */
+export const startOnlineGameSchema = z.object({
+  /** The same id the page will claim the result with. */
+  sessionId: z.string().trim().min(8).max(64),
+  /** Only games against the AI are rated. */
+  mode: z.literal(1),
+  aiRating: z.coerce.number().int().min(1).max(5).optional(),
+});
+
 export const claimOnlineGameSchema = z.object({
   /**
    * An id the page mints when the game starts, so one finished game can be

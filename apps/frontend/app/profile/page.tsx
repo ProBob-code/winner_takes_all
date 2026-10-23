@@ -1,48 +1,102 @@
 "use client";
 
+/**
+ * The player's own profile: who they are on WTA, and what they have done.
+ *
+ * Coins, level and record up top; account details at the bottom. There is no
+ * wallet here and no transfer form. Stakes are off, so there is no money to
+ * show, and coins can never be sent to anyone else (lib/coins.ts in the API).
+ */
+
+import Link from "next/link";
 import { useEffect, useState } from "react";
-import { formatCoins } from "@/lib/format";
 import { useRouter } from "next/navigation";
-import { getApiUrl } from "@/lib/api-config";
-import { TransferForm } from "@/components/transfer-form";
+import { backendFetch } from "@/lib/backend";
+import { formatCoins } from "@/lib/format";
+import { PlayerHero, PlayerStats, PlayerTrophies, type PlayerCardData } from "@/components/player-profile";
+
+interface OwnProfile extends PlayerCardData {
+  email: string;
+  role: string;
+}
+
+interface LedgerEntry {
+  id: string;
+  amount: number;
+  description: string | null;
+  reason: string;
+  at: string;
+}
+
+const ROLE_LABEL: Record<string, string> = {
+  player: "Player",
+  admin: "Admin",
+};
+
+function formatDate(iso?: string | null): string {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime())
+    ? "—"
+    : d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+}
 
 export default function ProfilePage() {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<OwnProfile | null>(null);
+  const [ledger, setLedger] = useState<LedgerEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    const fetchProfile = async () => {
+    let cancelled = false;
+    (async () => {
       try {
-        const apiUrl = getApiUrl();
-        const res = await fetch(`${apiUrl}/api/user/profile`, { credentials: "include", cache: "no-store" });
+        const res = await backendFetch("/user/profile", { cache: "no-store" });
         if (res.status === 401) {
           router.push("/login");
           return;
         }
-        const data = await res.json();
-        if (data.user) {
-          setUser(data.user);
-        } else {
+        const data: any = await res.json().catch(() => null);
+        if (!data?.user) {
           router.push("/login");
+          return;
         }
+        if (!cancelled) setUser(data.user);
+
+        // The recent coins are a nicety; the profile stands without them.
+        const l: any = await backendFetch("/coins/ledger?limit=5")
+          .then((r) => r.json())
+          .catch(() => null);
+        if (!cancelled && l?.ok) setLedger(l.entries ?? []);
       } catch (err) {
         console.error("Profile fetch error:", err);
         router.push("/login");
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
+    })();
+    return () => {
+      cancelled = true;
     };
-    fetchProfile();
   }, [router]);
+
+  async function copyId() {
+    if (!user) return;
+    try {
+      await navigator.clipboard.writeText(user.id);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1600);
+    } catch {
+      /* the id is on screen to read either way */
+    }
+  }
 
   if (loading) {
     return (
-      <main className="page profile-page" style={{ padding: "1rem 2rem" }}>
+      <main className="page">
         <div className="shell">
-          <section className="panel page-card text-center">
-            <h2>Loading Profile...</h2>
-          </section>
+          <p className="muted">Loading your profile…</p>
         </div>
       </main>
     );
@@ -51,77 +105,67 @@ export default function ProfilePage() {
   if (!user) return null;
 
   return (
-    <main className="page profile-page" style={{ padding: "1rem 2rem" }}>
-      <div className="shell">
-        {/* Extreme Premium User Banner */}
-        <div className="profile-banner slide-in" style={{
-          background: "linear-gradient(145deg, var(--bg-secondary) 0%, var(--bg-card) 100%)",
-          border: "1px solid var(--glass-border-color)",
-          boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255,255,255,0.1)",
-          backdropFilter: "blur(20px)"
-        }}>
-          <div className="profile-avatar" style={{ transform: "scale(1.1)", border: "3px solid var(--glass-bg)", boxShadow: "0 0 20px var(--gold-light)" }}>
-            {user.name ? user.name[0].toUpperCase() : "U"}
-          </div>
-          <div className="profile-hero-info" style={{ paddingLeft: "1rem" }}>
-            <h2 className="glow-text" style={{ fontSize: "2.8rem", letterSpacing: "-1px" }}>{user.name || "Guest Player"}</h2>
-            <div className="profile-badge" style={{ background: "color-mix(in oklab, var(--accent) 15%, transparent)", border: "1px solid color-mix(in oklab, var(--accent) 30%, transparent)", color: "var(--accent-light)", marginTop: "0.25rem", padding: "0.3rem 0.8rem", fontSize: "0.9rem" }}>
-              <span style={{opacity: 0.7}}>ID:</span> {user.id}
-            </div>
-          </div>
-          <div className="profile-balance-highlight" style={{ paddingLeft: "3rem", borderLeftColor: "rgba(255, 255, 255, 0.1)" }}>
-            <span className="muted text-sm" style={{ letterSpacing: "2px", textTransform: "uppercase" }}>Wallet Balance</span>
-            <div className="balance-amount" style={{ textShadow: "0 0 15px rgba(245, 158, 11, 0.5)", fontSize: "3rem" }}>
-              {/* Coins, not rupees. There is no wallet on this platform any
-                  more, and a balance in money here was describing something
-                  that no longer exists. */}
-              {formatCoins(Number(user.coins ?? 0))}
-            </div>
-          </div>
-        </div>
+    <main className="page profile-page">
+      <div className="shell pp">
+        <PlayerHero player={user} own />
+        <PlayerStats player={user} />
 
-        <div className="dashboard-grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 20rem), 1fr))", gap: "2rem" }}>
-          {/* Transfer Card */}
-          <div className="panel slide-in dashboard-card p-6" style={{ animationDelay: "0.1s", background: "var(--bg-surface)", border: "1px solid var(--glass-border-color)", padding: "2.5rem" }}>
-            <div className="card-header" style={{ marginBottom: "2rem" }}>
-              <h3 style={{ display: "flex", alignItems: "center", gap: "0.75rem", fontSize: "1.5rem" }}>
-                <span style={{ padding: "0.5rem", background: "var(--glass-bg)", borderRadius: "50%" }}>💸</span> Peer-to-Peer Transfer
-              </h3>
-              <p className="muted">Send credits instantly to any other player via their User ID.</p>
+        <div className="pp-grid">
+          <PlayerTrophies player={user} />
+          <section className="pp-card">
+            <div className="h-stack between" style={{ marginBottom: "0.85rem" }}>
+              <h2 style={{ margin: 0 }}>Recent coins</h2>
+              <Link href="/coins" className="muted" style={{ fontSize: "var(--text-sm)" }}>
+                All coins →
+              </Link>
             </div>
-            <div className="card-body">
-              <TransferForm />
-            </div>
-          </div>
-
-          {/* Settings/Info Card */}
-          <div className="panel slide-in dashboard-card p-6" style={{ animationDelay: "0.2s", background: "var(--bg-surface)", border: "1px solid var(--glass-border-color)", padding: "2.5rem" }}>
-            <div className="card-header" style={{ marginBottom: "2rem" }}>
-              <h3 style={{ display: "flex", alignItems: "center", gap: "0.75rem", fontSize: "1.5rem" }}>
-                <span style={{ padding: "0.5rem", background: "var(--glass-bg)", borderRadius: "50%" }}>⚙️</span> Account Details
-              </h3>
-              <p className="muted">Your personal account information and status.</p>
-            </div>
-            <div className="card-body">
-              <div className="info-list">
-                <div className="info-row" style={{ padding: "1.25rem 1.5rem", background: "var(--bg-inset)", backdropFilter: "blur(5px)" }}>
-                  <span className="info-label">Email Address</span>
-                  <span className="info-value">{user.email || "Not Provided"}</span>
-                </div>
-                <div className="info-row" style={{ padding: "1.25rem 1.5rem", background: "var(--bg-inset)", backdropFilter: "blur(5px)" }}>
-                  <span className="info-label">Account Status</span>
-                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                    <div style={{ width: "8px", height: "8px", background: "var(--green)", borderRadius: "50%", boxShadow: "0 0 10px var(--green)" }}></div>
-                    <span className="info-value text-green">Active & Verified</span>
+            {ledger.length === 0 ? (
+              <p className="muted" style={{ fontSize: "var(--text-sm)" }}>
+                Nothing yet. Every frame you play at a night earns coins, win or lose.
+              </p>
+            ) : (
+              <div className="pp-rows">
+                {ledger.map((e) => (
+                  <div className="pp-row" key={e.id}>
+                    <span>
+                      {e.description || e.reason}
+                      <span style={{ display: "block", fontSize: "var(--text-xs)" }}>
+                        {formatDate(e.at)}
+                      </span>
+                    </span>
+                    <span className="pp-gain">+{formatCoins(e.amount)}</span>
                   </div>
-                </div>
-                <div className="info-row" style={{ padding: "1.25rem 1.5rem", background: "var(--bg-inset)", backdropFilter: "blur(5px)" }}>
-                  <span className="info-label">Current Role</span>
-                  <span className="info-value text-accent" style={{ background: "color-mix(in oklab, var(--accent) 20%, transparent)", padding: "0.2rem 0.8rem", borderRadius: "1rem" }}>Player</span>
-                </div>
+                ))}
+              </div>
+            )}
+          </section>
+
+          <section className="pp-card">
+            <h2>Account</h2>
+            <div className="pp-rows">
+              <div className="pp-row">
+                <span>Email</span>
+                <span>{user.email}</span>
+              </div>
+              <div className="pp-row">
+                <span>Role</span>
+                <span>{ROLE_LABEL[user.role] ?? user.role}</span>
+              </div>
+              <div className="pp-row">
+                <span>Member since</span>
+                <span>{formatDate(user.memberSince)}</span>
+              </div>
+              <div className="pp-row">
+                <span>Player ID</span>
+                <span>
+                  <code>{user.id}</code>
+                  <button type="button" className="pp-copy" onClick={copyId}>
+                    {copied ? "Copied" : "Copy"}
+                  </button>
+                </span>
               </div>
             </div>
-          </div>
+          </section>
         </div>
       </div>
     </main>
