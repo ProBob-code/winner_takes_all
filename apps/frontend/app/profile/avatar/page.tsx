@@ -28,6 +28,10 @@ import "@/components/progression.css";
 /** Layers whose options are colours: shown as swatches, not faces. */
 const COLOUR_LAYERS = new Set(["skin", "hairColour", "headwearColour", "outfitColour"]);
 
+/** Headwear that hides the hair, as components/avatar.tsx draws it. */
+const HIDES_HAIR = new Set(["turban", "patka", "hijab", "cap", "backwards-cap", "beanie", "bandana"]);
+const HAIR_LAYERS = new Set(["hair", "hairColour"]);
+
 export default function AvatarEditorPage() {
   const router = useRouter();
   const [userId, setUserId] = useState<string | null>(null);
@@ -60,6 +64,13 @@ export default function AvatarEditorPage() {
 
   const layer = useMemo(() => AVATAR_LAYERS.find((l) => l.key === tab)!, [tab]);
   const playerLevel = level?.level ?? 1;
+
+  // Under a hijab, turban or cap every hairstyle looks the same, so choosing
+  // one seemed to do nothing. Preview hair without the headwear, and say so.
+  const hairHidden = !!avatar && HAIR_LAYERS.has(tab) && HIDES_HAIR.has(avatar.headwear);
+  const previewBase = hairHidden && avatar ? { ...avatar, headwear: "none" } : avatar;
+  const headwearName =
+    AVATAR_LAYERS.find((l) => l.key === "headwear")?.parts.find((p) => p.id === avatar?.headwear)?.label.toLowerCase() ?? "headwear";
 
   function pick(key: string, id: string) {
     setError(null);
@@ -161,6 +172,13 @@ export default function AvatarEditorPage() {
               ))}
             </div>
 
+            {hairHidden && (
+              <p className="muted" style={{ fontSize: "var(--text-sm)", margin: "0.75rem 0 0" }}>
+                Your {headwearName} covers your hair, so these show it without. Choose None under
+                Headwear to wear it uncovered.
+              </p>
+            )}
+
             <div className="av-options" role="tabpanel" aria-label={layer.label}>
               {layer.parts.map((p) => {
                 const locked = p.level > playerLevel;
@@ -178,7 +196,7 @@ export default function AvatarEditorPage() {
                     {COLOUR_LAYERS.has(layer.key) && p.swatch ? (
                       <span className="av-swatch" style={{ background: p.swatch }} />
                     ) : (
-                      <Avatar avatar={{ ...avatar, [layer.key]: p.id }} seed={userId} size={56} />
+                      <Avatar avatar={{ ...previewBase, [layer.key]: p.id }} seed={userId} size={56} />
                     )}
                     <span>{p.label}</span>
                     {locked && <span className="av-lock">Lv {p.level}</span>}

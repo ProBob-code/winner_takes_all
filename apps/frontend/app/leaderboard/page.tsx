@@ -27,6 +27,15 @@ type LeaderboardEntry = {
 
 const MEDALS = ["🥇", "🥈", "🥉"];
 
+// Inline, not in the <style jsx> below: styled-jsx scopes its rules to the
+// elements this file renders itself, and never reaches inside <Link>, so a
+// class rule for these was silently ignored and the global gold link colour
+// won, which made the champion's name gold on the gold podium card.
+const NAME_LINK = { color: "inherit", textDecoration: "none" } as const;
+const POD_AVATAR = {
+  width: 54, height: 54, borderRadius: "50%", overflow: "hidden", display: "flex", flex: "none",
+} as const;
+
 
 
 export default function LeaderboardPage() {
@@ -149,11 +158,11 @@ export default function LeaderboardPage() {
               return (
                 <div key={entry.userId} className={`lb-pod place-${place + 1}`}>
                   <div className="lb-pod-medal">{MEDALS[place]}</div>
-                  <Link href={`/players/${encodeURIComponent(entry.userId)}`} className="lb-avatar lg" aria-hidden tabIndex={-1}>
+                  <Link href={`/players/${encodeURIComponent(entry.userId)}`} className="lb-avatar lg" style={POD_AVATAR} aria-hidden tabIndex={-1}>
                     <Avatar avatar={entry.avatar} seed={entry.userId} size={54} />
                   </Link>
                   <div className="lb-pod-name">
-                    <Link href={`/players/${encodeURIComponent(entry.userId)}`} className="lb-name-link">
+                    <Link href={`/players/${encodeURIComponent(entry.userId)}`} className="lb-name-link" style={NAME_LINK}>
                       {entry.displayName}
                     </Link>
                     {entry.level ? <span className="lb-level">Lv {entry.level}</span> : null}
@@ -205,7 +214,7 @@ export default function LeaderboardPage() {
                   </span>
                   <span className="lb-player-text">
                     <span className="lb-name">
-                      <Link href={`/players/${encodeURIComponent(entry.userId)}`} className="lb-name-link">
+                      <Link href={`/players/${encodeURIComponent(entry.userId)}`} className="lb-name-link" style={NAME_LINK}>
                         {entry.displayName}
                       </Link>
                       {entry.level ? <span className="lb-level">Lv {entry.level}</span> : null}
@@ -358,7 +367,8 @@ export default function LeaderboardPage() {
         .lb-name-link:hover { text-decoration: underline; }
         .lb-level {
           margin-left: 6px; padding: 1px 6px; border-radius: 999px;
-          border: 1px solid var(--gold-subtle); color: var(--gold);
+          /* Its card's own text colour, so it reads on the gold podium too. */
+          border: 1px solid currentColor; color: inherit; opacity: 0.85;
           font-size: 0.68rem; font-weight: 800; vertical-align: middle;
         }
         .lb-player-text { display: flex; flex-direction: column; min-width: 0; }
