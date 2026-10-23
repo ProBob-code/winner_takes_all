@@ -19,6 +19,8 @@ import { formatCoins } from "@/lib/format";
 import type { AvatarConfig } from "@/lib/avatar";
 import { levelProgress, type LevelInfo } from "@/lib/progression";
 import { TrophyBadge } from "@/components/trophy-badge";
+import { ArtifactArt, EmoteArt, FramedAvatar } from "@/components/shop-art";
+import { itemArt, RARITY_COLOUR } from "@/lib/shop";
 import { arenaProgress, type TrackStanding } from "@/lib/trophies";
 import "@/components/progression.css";
 
@@ -33,6 +35,9 @@ export interface PlayerCardData {
   avatar: AvatarConfig | null;
   /** Every trophy track, Overall first. Absent against an older API. */
   trophies?: TrackStanding[];
+  /** What they have on show from the shop. Absent against an older API. */
+  loadout?: { borderId: string | null; showcase: string[]; emoteDeck: string[] };
+  collection?: { owned: number; points: number };
   stats: {
     played: number;
     wins: number;
@@ -68,8 +73,10 @@ export function PlayerHero({ player, own }: { player: PlayerCardData; own: boole
 
   return (
     <section className="pp-hero slide-in" aria-label={`${player.name}'s profile`}>
-      <div className="pp-avatar-wrap">
-        <Avatar avatar={player.avatar} seed={player.id} size={128} />
+      <div className={`pp-avatar-wrap${player.loadout?.borderId ? " framed" : ""}`}>
+        <FramedAvatar borderId={player.loadout?.borderId} size={128}>
+          <Avatar avatar={player.avatar} seed={player.id} size={128} />
+        </FramedAvatar>
         <span className="pp-avatar-badge">
           <LevelBadge
             level={level.level}
@@ -239,5 +246,64 @@ function ArenaBar({ standing }: { standing: TrackStanding }) {
         )}
       </div>
     </div>
+  );
+}
+
+/**
+ * What a player has chosen to show: up to three artifacts and their emote
+ * deck. On their own profile, a way to the shop; on anyone else's, only
+ * what is there.
+ */
+export function PlayerShowcase({ player, own }: { player: PlayerCardData; own: boolean }) {
+  const showcase = player.loadout?.showcase ?? [];
+  const emotes = player.loadout?.emoteDeck ?? [];
+  if (!own && showcase.length === 0 && emotes.length === 0) return null;
+
+  return (
+    <section className="pp-card" aria-label="Showcase">
+      <div className="h-stack between" style={{ marginBottom: "0.85rem" }}>
+        <h2 style={{ margin: 0 }}>Showcase</h2>
+        {own && (
+          <Link href="/shop" className="muted" style={{ fontSize: "var(--text-sm)" }}>
+            Shop →
+          </Link>
+        )}
+      </div>
+      {showcase.length > 0 ? (
+        <div className="pp-showcase">
+          {showcase.map((id) => {
+            const item = itemArt(id);
+            return (
+              <div key={id} className="pp-showcase-item" style={{ ["--rarity" as string]: item ? RARITY_COLOUR[item.rarity] : "#8a9099" }}>
+                <ArtifactArt id={id} size={56} />
+                <span>{item?.name ?? id}</span>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        own && (
+          <p className="muted" style={{ fontSize: "var(--text-sm)", margin: 0 }}>
+            Nothing on show yet. Artifacts from the shop go here, three at a time.
+          </p>
+        )
+      )}
+      {emotes.length > 0 && (
+        <>
+          <h3 className="pp-label" style={{ margin: "1rem 0 0.5rem" }}>Emote deck</h3>
+          <div className="pp-showcase">
+            {emotes.map((id) => (
+              <EmoteArt key={id} id={id} size={52} />
+            ))}
+          </div>
+        </>
+      )}
+      {own && player.collection && (
+        <p className="muted" style={{ fontSize: "var(--text-xs)", margin: "0.85rem 0 0" }}>
+          {player.collection.owned} item{player.collection.owned === 1 ? "" : "s"} owned, worth {player.collection.points} XP
+          towards your Collection Level.
+        </p>
+      )}
+    </section>
   );
 }

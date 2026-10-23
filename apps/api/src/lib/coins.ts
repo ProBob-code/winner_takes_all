@@ -244,6 +244,13 @@ export const COIN_RULES = {
   withdrawable: false,
   transferable: false,
   wagerable: false,
+  /**
+   * What a coin can be spent on: cosmetics in the shop (lib/shop.ts), at
+   * fixed prices, never random, owned for good and never sold on. Spending
+   * lowers the balance and never the lifetime, so no title, level or place
+   * on the coin table is lost by it.
+   */
+  spendableOn: "cosmetics",
   /** There is no exchange rate, because there is no exchange. */
   cashValue: 0,
 } as const;

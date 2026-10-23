@@ -22,7 +22,7 @@
  * Kept deliberately in step with apps/api/migrations/0006_engine_tables.sql,
  * 0007_series.sql, 0009_engine_houses.sql, 0010_wallet_description.sql,
  * 0011_payouts_and_bonus.sql, 0012_venues_offline_and_billing.sql,
- * 0013_wta_coins.sql, 0014_player_loadout.sql and 0015_trophies.sql;
+ * 0013_wta_coins.sql, 0014_player_loadout.sql, 0015_trophies.sql and 0016_shop.sql;
  * apps/api/migrations/rehearse.py and
  * rehearse_bootstrap.py check the SQL runs.
  */
@@ -305,6 +305,16 @@ const CREATE_STATEMENTS = [
     result TEXT
   )`,
   `CREATE INDEX IF NOT EXISTS idx_online_games_open ON online_games(user_id, finished_at, started_at)`,
+  // What a player owns from the shop.
+  `CREATE TABLE IF NOT EXISTS player_unlocks (
+    user_id TEXT NOT NULL,
+    item_id TEXT NOT NULL,
+    source TEXT NOT NULL,
+    price_paid INTEGER,
+    reference_id TEXT,
+    unlocked_at TEXT NOT NULL,
+    PRIMARY KEY (user_id, item_id)
+  )`,
 ];
 
 /**

@@ -2033,8 +2033,10 @@ export class D1Store {
     const since = new Date();
     since.setUTCHours(0, 0, 0, 0);
     const r = await this.db.prepare(
+      // amount > 0: a purchase is a negative row, and counting it would
+      // reopen the day's cap by the price of whatever was bought.
       `SELECT COALESCE(SUM(amount), 0) AS total FROM coin_ledger
-       WHERE user_id = ? AND created_at >= ?`
+       WHERE user_id = ? AND created_at >= ? AND amount > 0`
     ).bind(userId, since.toISOString()).first<any>();
     return r?.total ?? 0;
   }
@@ -2050,7 +2052,7 @@ export class D1Store {
     const slots = reasons.map(() => "?").join(", ");
     const r = await this.db.prepare(
       `SELECT COALESCE(SUM(amount), 0) AS total FROM coin_ledger
-       WHERE user_id = ? AND created_at >= ? AND reason IN (${slots})`
+       WHERE user_id = ? AND created_at >= ? AND amount > 0 AND reason IN (${slots})`
     ).bind(userId, since.toISOString(), ...reasons).first<any>();
     return r?.total ?? 0;
   }
@@ -2109,7 +2111,7 @@ export class D1Store {
     const { results } = await this.db.prepare(
       `SELECT cb.*, u.name AS user_name FROM coin_balances cb
        LEFT JOIN users u ON u.id = cb.user_id
-       ORDER BY cb.balance DESC, cb.updated_at ASC
+       ORDER BY cb.lifetime DESC, cb.updated_at ASC
        LIMIT ?`
     ).bind(limit).all<any>();
     return results as CoinBalanceRecord[];
@@ -2117,11 +2119,12 @@ export class D1Store {
 
   /** Where this account sits on the leaderboard. 1-based; 0 when unranked. */
   async coinRank(userId: string): Promise<number> {
+    // By lifetime, as the table is ordered: spending must not cost a place.
     const me = await this.getCoinBalance(userId);
-    if (me.balance <= 0) return 0;
+    if (me.lifetime <= 0) return 0;
     const r = await this.db.prepare(
-      `SELECT COUNT(*) AS ahead FROM coin_balances WHERE balance > ?`
-    ).bind(me.balance).first<any>();
+      `SELECT COUNT(*) AS ahead FROM coin_balances WHERE lifetime > ?`
+    ).bind(me.lifetime).first<any>();
     return (r?.ahead ?? 0) + 1;
   }
 
@@ -2191,6 +2194,139 @@ export class D1Store {
       `SELECT user_id, lifetime FROM coin_balances WHERE user_id IN (${slots})`
     ).bind(...ids).all<any>();
     for (const row of results) out.set(row.user_id, Number(row.lifetime) || 0);
+    return out;
+  }
+
+  // ── The shop (lib/shop.ts) ──
+
+  /** Item ids this player owns from the shop. */
+  async getUnlocks(userId: string): Promise<string[]> {
+    try {
+      const { results } = await this.db.prepare(
+        `SELECT item_id FROM player_unlocks WHERE user_id = ? ORDER BY unlocked_at`
+      ).bind(userId).all<any>();
+      return results.map((r: any) => r.item_id);
+    } catch (err) {
+      if (isMissingTableError(err)) return [];
+      throw err;
+    }
+  }
+
+  /** Owned item ids for several players at once, for their levels. */
+  async getUnlocksFor(userIds: string[]): Promise<Map<string, string[]>> {
+    const out = new Map<string, string[]>();
+    const ids = [...new Set(userIds.filter(Boolean))].slice(0, 100);
+    if (ids.length === 0) return out;
+    try {
+      const slots = ids.map(() => "?").join(", ");
+      const { results } = await this.db.prepare(
+        `SELECT user_id, item_id FROM player_unlocks WHERE user_id IN (${slots})`
+      ).bind(...ids).all<any>();
+      for (const row of results) {
+        if (!out.has(row.user_id)) out.set(row.user_id, []);
+        out.get(row.user_id)!.push(row.item_id);
+      }
+    } catch (err) {
+      if (!isMissingTableError(err)) throw err;
+    }
+    return out;
+  }
+
+  /**
+   * Buy one item, all or nothing, in one transaction.
+   *
+   * Three statements in a D1 batch, which runs as a single transaction, so no
+   * other request's writes land between them:
+   *   1. the ownership row, only if the balance covers the price and the item
+   *      is not already owned, tagged with this purchase's own id;
+   *   2. the debit, only if step 1 wrote that tagged row, and never below 0;
+   *   3. the ledger row, on the same condition, so a player can see the
+   *      spend in their history like any award.
+   * A double tap therefore buys once, and a balance one short buys nothing.
+   */
+  async buyItem(args: { userId: string; itemId: string; itemName: string; price: number }): Promise<
+    { ok: true; balance: number } | { ok: false; reason: "owned" | "funds" }
+  > {
+    const now = new Date().toISOString();
+    const purchase = createId("buy");
+    const owns = `EXISTS (SELECT 1 FROM player_unlocks WHERE user_id = ? AND item_id = ? AND reference_id = ?)`;
+
+    await this.db.batch([
+      this.db.prepare(
+        `INSERT INTO player_unlocks (user_id, item_id, source, price_paid, reference_id, unlocked_at)
+         SELECT ?, ?, 'shop', ?, ?, ?
+         WHERE EXISTS (SELECT 1 FROM coin_balances WHERE user_id = ? AND balance >= ?)
+           AND NOT EXISTS (SELECT 1 FROM player_unlocks WHERE user_id = ? AND item_id = ?)`
+      ).bind(args.userId, args.itemId, args.price, purchase, now, args.userId, args.price, args.userId, args.itemId),
+      this.db.prepare(
+        `UPDATE coin_balances SET balance = balance - ?, updated_at = ?
+         WHERE user_id = ? AND balance >= ? AND ${owns}`
+      ).bind(args.price, now, args.userId, args.price, args.userId, args.itemId, purchase),
+      this.db.prepare(
+        `INSERT INTO coin_ledger (id, user_id, reason, amount, balance_after, description, reference_type, reference_id, created_at)
+         SELECT ?, ?, 'PURCHASE', ?, (SELECT balance FROM coin_balances WHERE user_id = ?), ?, 'item', ?, ?
+         WHERE ${owns}`
+      ).bind(createId("coin"), args.userId, -args.price, args.userId, `Bought ${args.itemName}`, args.itemId, now, args.userId, args.itemId, purchase),
+    ]);
+
+    const bought = await this.db.prepare(
+      `SELECT 1 AS hit FROM player_unlocks WHERE user_id = ? AND item_id = ? AND reference_id = ?`
+    ).bind(args.userId, args.itemId, purchase).first<any>();
+    if (bought) {
+      const balance = await this.getCoinBalance(args.userId);
+      return { ok: true, balance: balance.balance };
+    }
+    const already = await this.db.prepare(
+      `SELECT 1 AS hit FROM player_unlocks WHERE user_id = ? AND item_id = ?`
+    ).bind(args.userId, args.itemId).first<any>();
+    return { ok: false, reason: already ? "owned" : "funds" };
+  }
+
+  /** What a player has on show: frame, showcase and emote deck. */
+  async getLoadout(userId: string): Promise<{ borderId: string | null; showcase: string[]; emoteDeck: string[] }> {
+    const empty = { borderId: null, showcase: [] as string[], emoteDeck: [] as string[] };
+    try {
+      const r = await this.db.prepare(
+        `SELECT border_id, showcase, emote_deck FROM player_loadout WHERE user_id = ?`
+      ).bind(userId).first<any>();
+      if (!r) return empty;
+      const parse = (raw: string | null) => {
+        try {
+          const v = JSON.parse(raw ?? "[]");
+          return Array.isArray(v) ? v.filter((x) => typeof x === "string") : [];
+        } catch {
+          return [];
+        }
+      };
+      return { borderId: r.border_id ?? null, showcase: parse(r.showcase), emoteDeck: parse(r.emote_deck) };
+    } catch (err) {
+      if (isMissingTableError(err)) return empty;
+      throw err;
+    }
+  }
+
+  async setLoadout(userId: string, loadout: { borderId: string | null; showcase: string[]; emoteDeck: string[] }): Promise<void> {
+    await this.db.prepare(
+      `INSERT INTO player_loadout (user_id, border_id, showcase, emote_deck, updated_at) VALUES (?, ?, ?, ?, ?)
+       ON CONFLICT(user_id) DO UPDATE SET border_id = excluded.border_id, showcase = excluded.showcase,
+         emote_deck = excluded.emote_deck, updated_at = excluded.updated_at`
+    ).bind(userId, loadout.borderId, JSON.stringify(loadout.showcase), JSON.stringify(loadout.emoteDeck), new Date().toISOString()).run();
+  }
+
+  /** Equipped frames for several players at once, for tables of names. */
+  async getBorders(userIds: string[]): Promise<Map<string, string>> {
+    const out = new Map<string, string>();
+    const ids = [...new Set(userIds.filter(Boolean))].slice(0, 100);
+    if (ids.length === 0) return out;
+    try {
+      const slots = ids.map(() => "?").join(", ");
+      const { results } = await this.db.prepare(
+        `SELECT user_id, border_id FROM player_loadout WHERE border_id IS NOT NULL AND user_id IN (${slots})`
+      ).bind(...ids).all<any>();
+      for (const row of results) out.set(row.user_id, row.border_id);
+    } catch (err) {
+      if (!isMissingTableError(err)) throw err;
+    }
     return out;
   }
 

@@ -13,7 +13,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { backendFetch } from "@/lib/backend";
 import { formatCoins } from "@/lib/format";
-import { PlayerHero, PlayerStats, PlayerTrophies, type PlayerCardData } from "@/components/player-profile";
+import { PlayerHero, PlayerShowcase, PlayerStats, PlayerTrophies, type PlayerCardData } from "@/components/player-profile";
 import { COINS_AWARDED_EVENT } from "@/components/coin-toast";
 
 interface OwnProfile extends PlayerCardData {
@@ -121,6 +121,7 @@ export default function ProfilePage() {
 
         <div className="pp-grid">
           <PlayerTrophies player={user} />
+          <PlayerShowcase player={user} own />
           <section className="pp-card">
             <div className="h-stack between" style={{ marginBottom: "0.85rem" }}>
               <h2 style={{ margin: 0 }}>Recent coins</h2>
@@ -142,7 +143,7 @@ export default function ProfilePage() {
                         {formatDate(e.at)}
                       </span>
                     </span>
-                    <span className="pp-gain">+{formatCoins(e.amount)}</span>
+                    <span className="pp-gain">{e.amount < 0 ? `−${formatCoins(-e.amount)}` : `+${formatCoins(e.amount)}`}</span>
                   </div>
                 ))}
               </div>

@@ -92,6 +92,19 @@ import { levelInfo } from "./lib/progression";
 import { checkAvatar, parseStoredAvatar } from "./lib/avatar";
 import { hostSeatIndex } from "./lib/seating";
 import {
+  CATALOGUE,
+  EMOTE_DECK_SIZE,
+  PRICES,
+  SHOWCASE_SIZE,
+  STARTER_IDS,
+  checkLoadout,
+  collectionPointsFor,
+  dailyPicks,
+  isForSale,
+  itemById,
+  priceOf,
+} from "./lib/shop";
+import {
   GUEST_DAILY_GAIN,
   GUEST_WEIGHT,
   ONLINE_ABANDON_MINUTES,
@@ -275,6 +288,8 @@ for (const family of [
   "/api/progression/*",
   "/api/trophies/*",
   "/api/online/*",
+  "/api/shop",
+  "/api/shop/*",
 ]) {
   app.use(family, async (c, next) => {
     try {
@@ -497,6 +512,14 @@ app.post("/api/auth/logout", async (c) => {
   return c.json({ ok: true, message: "Logged out successfully" });
 });
 
+/** Collection points for several players at once, for their levels. */
+async function collectionPointsMap(store: D1Store, userIds: string[]): Promise<Map<string, number>> {
+  const owned = await store.getUnlocksFor(userIds).catch(() => new Map<string, string[]>());
+  const out = new Map<string, number>();
+  for (const [id, items] of owned) out.set(id, collectionPointsFor(items));
+  return out;
+}
+
 /**
  * What a profile shows about a player: level, coins, avatar and record.
  *
@@ -506,13 +529,15 @@ app.post("/api/auth/logout", async (c) => {
  * the coin ledger are added by the owner's route alone.
  */
 async function playerCard(store: D1Store, userId: string) {
-  const [stats, coins, counts, avatarRaw, record, trophies] = await Promise.all([
+  const [stats, coins, counts, avatarRaw, record, trophies, owned, loadout] = await Promise.all([
     store.getUserMatchStats(userId),
     store.getCoinBalance(userId).catch(() => null),
     store.coinReasonCounts(userId).catch(() => ({} as Record<string, number>)),
     store.getAvatar(userId).catch(() => null),
     store.getUserById(userId).catch(() => null),
     trophyStanding(store, userId),
+    store.getUnlocks(userId).catch(() => [] as string[]),
+    store.getLoadout(userId).catch(() => ({ borderId: null, showcase: [] as string[], emoteDeck: [] as string[] })),
   ]);
   const lifetime = coins?.lifetime ?? 0;
   const played = stats.wins + stats.losses;
@@ -521,8 +546,15 @@ async function playerCard(store: D1Store, userId: string) {
     memberSince: (record as any)?.created_at ?? null,
     coins: { balance: coins?.balance ?? 0, lifetime },
     title: titleFor(lifetime),
-    level: levelInfo(lifetime),
+    level: levelInfo(lifetime, collectionPointsFor(owned)),
     avatar: parseStoredAvatar(avatarRaw),
+    // What they have on show. An item no longer owned is never shown.
+    loadout: {
+      borderId: loadout.borderId && owned.includes(loadout.borderId) ? loadout.borderId : null,
+      showcase: loadout.showcase.filter((id) => owned.includes(id)),
+      emoteDeck: loadout.emoteDeck.filter((id) => owned.includes(id) || STARTER_IDS.includes(id)),
+    },
+    collection: { owned: owned.length, points: collectionPointsFor(owned) },
     trophies,
     // Listed field by field rather than spread, so a figure added to
     // getUserMatchStats later (it already carries payout earnings in cents)
@@ -608,7 +640,8 @@ app.put("/api/progression/avatar", async (c) => {
   const store = c.get("store");
   const body = (await readJson(c)) as { avatar?: unknown } | null;
   const coins = await store.getCoinBalance(user.id);
-  const level = levelInfo(coins.lifetime).level;
+  const owned = await store.getUnlocks(user.id).catch(() => [] as string[]);
+  const level = levelInfo(coins.lifetime, collectionPointsFor(owned)).level;
 
   const checked = checkAvatar(body?.avatar, level);
   if (!checked.ok) return c.json({ ok: false, message: checked.message }, 400);
@@ -1257,15 +1290,16 @@ app.get("/api/leaderboard/global", async (c) => {
   const rows = await store.getGlobalLeaderboard();
   // Two batched reads for the whole table rather than two per row.
   const ids = rows.map((r) => r.user_id);
-  const [avatars, lifetimes] = await Promise.all([
+  const [avatars, lifetimes, points] = await Promise.all([
     store.getAvatars(ids).catch(() => new Map<string, string>()),
     store.lifetimeCoins(ids).catch(() => new Map<string, number>()),
+    collectionPointsMap(store, ids),
   ]);
 
   const entries = rows.map((r) => ({
     userId: r.user_id,
     displayName: r.name,
-    level: levelInfo(lifetimes.get(r.user_id) ?? 0).level,
+    level: levelInfo(lifetimes.get(r.user_id) ?? 0, points.get(r.user_id) ?? 0).level,
     avatar: parseStoredAvatar(avatars.get(r.user_id)),
     /** Matches played, across bracket matches and hosted tournaments alike. */
     played: r.played,
@@ -5002,7 +5036,7 @@ app.get("/api/coins/rules", (c) => {
     // Said plainly, in the API as well as on the page, because this is the
     // sentence that keeps the whole thing lawful.
     notice:
-      "WTA Coins have no cash value. They cannot be bought, sold, transferred, withdrawn or staked. They are a score you build by playing, with a small amount for signing in each day.",
+      "WTA Coins have no cash value. They cannot be bought, sold, transferred, withdrawn or staked. They are a score you build by playing, with a small amount for signing in each day, and they can be spent on cosmetics in the shop.",
   });
 });
 
@@ -5073,7 +5107,7 @@ app.get("/api/coins/me", async (c) => {
     rank,
     title: titleFor(balance.lifetime),
     next: nextTitle(balance.lifetime),
-    level: levelInfo(balance.lifetime),
+    level: levelInfo(balance.lifetime, collectionPointsFor(await store.getUnlocks(user.id).catch(() => []))),
     earnedToday,
     dailyCap: DAILY_COIN_CAP,
     rules: COIN_RULES,
@@ -5113,6 +5147,7 @@ app.get("/api/coins/leaderboard", async (c) => {
   const store = c.get("store");
   const rows = await store.coinLeaderboard(limit);
   const avatars = await store.getAvatars(rows.map((r) => r.user_id)).catch(() => new Map());
+  const points = await collectionPointsMap(store, rows.map((r) => r.user_id));
 
   return c.json({
     ok: true,
@@ -5122,7 +5157,7 @@ app.get("/api/coins/leaderboard", async (c) => {
       name: row.user_name ?? "Unknown",
       balance: row.balance,
       title: titleFor(row.lifetime),
-      level: levelInfo(row.lifetime).level,
+      level: levelInfo(row.lifetime, points.get(row.user_id) ?? 0).level,
       avatar: parseStoredAvatar(avatars.get(row.user_id)),
     })),
   });
@@ -5328,9 +5363,10 @@ app.get("/api/trophies/leaderboard", async (c) => {
   const store = c.get("store");
   const rows = await store.trophyLadder(track, limit).catch(() => []);
   const ids = rows.map((r) => r.user_id);
-  const [avatars, lifetimes] = await Promise.all([
+  const [avatars, lifetimes, points] = await Promise.all([
     store.getAvatars(ids).catch(() => new Map<string, string>()),
     store.lifetimeCoins(ids).catch(() => new Map<string, number>()),
+    collectionPointsMap(store, ids),
   ]);
 
   return c.json({
@@ -5342,10 +5378,106 @@ app.get("/api/trophies/leaderboard", async (c) => {
       userId: r.user_id,
       name: r.user_name ?? "Unknown",
       ...trackSummary(r),
-      level: levelInfo(lifetimes.get(r.user_id) ?? 0).level,
+      level: levelInfo(lifetimes.get(r.user_id) ?? 0, points.get(r.user_id) ?? 0).level,
       avatar: parseStoredAvatar(avatars.get(r.user_id)),
     })),
   });
+});
+
+// --- Shop (lib/shop.ts) ---
+
+/**
+ * The shop, with what this player owns and has on show.
+ *
+ * Readable signed out (prices are no secret); owning and equipping need an
+ * account. Closed, and says so, whenever stakes are on: see lib/shop.ts.
+ */
+app.get("/api/shop", async (c) => {
+  const user = requireUser(c);
+  const store = c.get("store");
+  const today = new Date().toISOString().slice(0, 10);
+  const [owned, loadout, balance] = user
+    ? await Promise.all([
+        store.getUnlocks(user.id).catch(() => [] as string[]),
+        store.getLoadout(user.id).catch(() => ({ borderId: null, showcase: [] as string[], emoteDeck: [] as string[] })),
+        store.getCoinBalance(user.id).catch(() => null),
+      ])
+    : [[] as string[], null, null];
+
+  return c.json({
+    ok: true,
+    open: !stakesEnabled(c.env),
+    signedIn: !!user,
+    balance: balance?.balance ?? null,
+    prices: PRICES,
+    showcaseSize: SHOWCASE_SIZE,
+    emoteDeckSize: EMOTE_DECK_SIZE,
+    picks: dailyPicks(today),
+    items: CATALOGUE.map((item) => ({
+      ...item,
+      price: isForSale(item) ? priceOf(item) : 0,
+      forSale: isForSale(item),
+      owned: owned.includes(item.id) || STARTER_IDS.includes(item.id),
+    })),
+    loadout,
+  });
+});
+
+/** Buy one item, at its fixed price. */
+app.post("/api/shop/buy", async (c) => {
+  const user = requireUser(c);
+  if (!user) return c.json({ ok: false, message: "Sign in to buy." }, 401);
+  if (stakesEnabled(c.env)) {
+    return c.json({ ok: false, code: "shop_closed", message: "The shop is closed on this deployment." }, 410);
+  }
+  const limited = await rateLimit(c, `shop-buy:${user.id}`, 30, 3600);
+  if (limited) return limited;
+
+  const body = (await readJson(c).catch(() => ({}))) as { itemId?: unknown };
+  const item = typeof body?.itemId === "string" ? itemById(body.itemId) : undefined;
+  if (!item || !isForSale(item)) return c.json({ ok: false, message: "That is not for sale." }, 404);
+
+  const store = c.get("store");
+  const price = priceOf(item);
+  const result = await store.buyItem({ userId: user.id, itemId: item.id, itemName: item.name, price });
+  if (!result.ok) {
+    return c.json(
+      {
+        ok: false,
+        message: result.reason === "owned" ? `You already own ${item.name}.` : `${item.name} costs more coins than you have.`,
+      },
+      409
+    );
+  }
+
+  const [owned, coins] = await Promise.all([
+    store.getUnlocks(user.id).catch(() => [] as string[]),
+    store.getCoinBalance(user.id),
+  ]);
+  return c.json({
+    ok: true,
+    itemId: item.id,
+    balance: result.balance,
+    level: levelInfo(coins.lifetime, collectionPointsFor(owned)),
+  });
+});
+
+/** What a player has on show: their frame, three artifacts, eight emotes. */
+app.put("/api/progression/loadout", async (c) => {
+  const user = requireUser(c);
+  if (!user) return c.json({ ok: false, message: "Authentication required" }, 401);
+  const limited = await rateLimit(c, `loadout:${user.id}`, 60, 3600);
+  if (limited) return limited;
+
+  const store = c.get("store");
+  const body = ((await readJson(c).catch(() => ({}))) ?? {}) as Record<string, unknown>;
+  const owned = new Set(await store.getUnlocks(user.id));
+  const checked = checkLoadout(body, owned);
+  if (!checked.ok) return c.json({ ok: false, message: checked.message }, 400);
+
+  const loadout = { borderId: checked.borderId, showcase: checked.showcase, emoteDeck: checked.emoteDeck };
+  await store.setLoadout(user.id, loadout);
+  return c.json({ ok: true, loadout });
 });
 
 // --- Fallback ---

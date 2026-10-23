@@ -475,3 +475,159 @@
   font-weight: 900;
   font-variant-numeric: tabular-nums;
 }
+
+/* ── Shop ── */
+
+.shop-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.shop-balance {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--gold-subtle);
+  border-radius: 999px;
+  background: var(--bg-card);
+}
+
+.shop-balance strong {
+  font-size: 1.4rem;
+  font-weight: 900;
+  color: var(--gold);
+}
+
+.shop-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
+  gap: 0.75rem;
+}
+
+.shop-card {
+  display: grid;
+  justify-items: center;
+  gap: 0.4rem;
+  padding: 0.9rem 0.6rem;
+  border: 2px solid color-mix(in oklab, var(--rarity) 55%, transparent);
+  border-radius: 0.9rem;
+  background:
+    radial-gradient(120% 90% at 50% 0%, color-mix(in oklab, var(--rarity) 18%, transparent), transparent 70%),
+    var(--bg-inset);
+  text-align: center;
+}
+
+.shop-card.owned {
+  border-style: solid;
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--rarity) 35%, transparent);
+}
+
+.shop-art {
+  display: grid;
+  place-items: center;
+  width: 80px;
+  height: 80px;
+}
+
+.shop-name {
+  font-size: var(--text-sm, 0.875rem);
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.shop-rarity {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--rarity);
+}
+
+.shop-price {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.8rem;
+  border-radius: 999px;
+  border: 1px solid var(--gold-subtle);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.shop-price:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.shop-confirm {
+  display: grid;
+  gap: 0.35rem;
+  justify-items: center;
+  font-size: var(--text-xs, 0.75rem);
+}
+
+.shop-confirm .button,
+.shop-confirm .button-secondary,
+.shop-card > .button,
+.shop-card > .button-secondary {
+  padding: 0.35rem 0.8rem;
+  font-size: var(--text-xs, 0.75rem);
+}
+
+.shop-note {
+  margin: 0;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  font-weight: 700;
+  font-size: var(--text-sm, 0.875rem);
+}
+
+.shop-note.ok {
+  background: var(--gold-subtle);
+}
+
+.shop-note.error {
+  background: var(--red-subtle);
+  color: var(--red);
+}
+
+/* ── Showcase on a profile ── */
+
+.pp-showcase {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.pp-showcase-item {
+  display: grid;
+  justify-items: center;
+  gap: 0.3rem;
+  width: 6.5rem;
+  padding: 0.6rem 0.4rem;
+  border-radius: 0.8rem;
+  background: var(--bg-inset);
+  border: 1px solid color-mix(in oklab, var(--rarity) 50%, transparent);
+  text-align: center;
+  font-size: var(--text-xs, 0.75rem);
+  font-weight: 700;
+}
+
+/* A worn frame replaces the default ring, and scales with the avatar. */
+.pp-avatar-wrap.framed {
+  padding: 0;
+  background: none;
+  box-shadow: none;
+}
+
+.pp-avatar-wrap > div {
+  width: 100% !important;
+  height: 100% !important;
+}

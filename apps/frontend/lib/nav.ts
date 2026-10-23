@@ -32,6 +32,7 @@ export const MEMBER_NAV: NavItem[] = [
   { label: "Run a Night", short: "Run", href: "/run", icon: "⚡", primary: true },
   { label: "Tournaments", short: "Play", href: "/tournaments", icon: "🎮", primary: true },
   { label: "WTA Coins", short: "Coins", href: "/coins", icon: "🪙", primary: true },
+  { label: "Shop", short: "Shop", href: "/shop", icon: "🛍️" },
   { label: "Venues", short: "Venues", href: "/venues", icon: "🏠" },
   { label: "Live Screening", short: "Live", href: "/screening", icon: "📺" },
   { label: "Games", short: "Games", href: "/games", icon: "🕹️" },
@@ -51,6 +52,7 @@ export const GUEST_NAV: NavItem[] = [
   { label: "Tournaments", short: "Play", href: "/tournaments", icon: "🎮", primary: true },
   { label: "WTA Coins", short: "Coins", href: "/coins", icon: "🪙", primary: true },
   { label: "Playbook", short: "Guide", href: "/playbook", icon: "📖", primary: true },
+  { label: "Shop", short: "Shop", href: "/shop", icon: "🛍️" },
   { label: "Live Screening", short: "Live", href: "/screening", icon: "📺" },
   { label: "Rankings", short: "Ranks", href: "/leaderboard", icon: "🏆" },
 ];

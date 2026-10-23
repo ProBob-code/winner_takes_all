@@ -1,7 +1,9 @@
 # Progression, shop and trophies
 
-Status: **v2. Phases 1, 1b, 2 and 5 are built** (levels, profile and avatars,
-trophies offline and online). Everything else is still a plan.
+Status: **v2. Phases 1, 1b, 2, 3 and 5 are built** (levels, profile and avatars,
+trophies offline and online, the shop). Everything else is still a plan. The shop was
+built at the owner's direction before the gaming lawyer's view in §2.5; that review
+is still owed.
 was earn-only. v2 adds win/loss points, separate online and offline tracks, a
 coin shop, and ordering physical trophies.
 
@@ -449,7 +451,7 @@ Pure logic goes in its own testable files, the way `coins.ts` and
 | **1. Level + names + badges** | XP, level bands, badge on profile and leaderboard; titles move to lifetime | curve monotonic; never decreases |
 | **1b. Profile revamp + avatars** | new profile layout (§7b), coins actually shown, transfer and fake status removed, avatar builder with free parts, `/players/[id]` | profile never leaks email; avatar rejects unowned parts; default avatar stable per user |
 | **2. Trophies, offline** *(built)* | trophy tables, settle on frame, arenas, floors, first-arena protection, walk-in and same-pair rules, ladders per track, trophies on profile | idempotent re-settle; walk-in weight and cap; same-pair decay; floor holds |
-| **3. Shop** *(after legal view, §2.5)* | catalogue, `spendCoins`, daily rotation, locker, cap and leaderboard fixes | can't overspend under concurrency; cap ignores purchases; shop 404 with stakes on |
+| **3. Shop** *(built)* | 11 artifacts, 7 avatar frames, 12 emotes (6 free), fixed prices, today's six picks, atomic purchase, showcase and emote deck, cap and coin-table fixes | race buys once; never below zero; cap ignores spending; closed with stakes on |
 | **4. Emotes live** | `NightEmotes` DO, bar + TV bubbles | rate limit; non-participant rejected |
 | **5. Trophies, online** *(built)* | server-issued games, abandon = loss, daily gain cap, stakes shown before the break | abandonment settles once as a loss; a game can't be claimed by another account |
 | **6. Trophies** *(after refund endpoint, R2, vendor)* | designer, quote, Razorpay, admin queue, digital twin | price maths; webhook idempotent; "tonight" blocked past lead time |

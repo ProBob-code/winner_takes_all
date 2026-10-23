@@ -16,7 +16,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { backendFetch } from "@/lib/backend";
-import { PlayerHero, PlayerStats, PlayerTrophies, type PlayerCardData } from "@/components/player-profile";
+import { PlayerHero, PlayerShowcase, PlayerStats, PlayerTrophies, type PlayerCardData } from "@/components/player-profile";
 
 export default function PlayerPage() {
   const params = useParams<{ id: string }>();
@@ -68,6 +68,7 @@ export default function PlayerPage() {
             <PlayerHero player={player} own={false} />
             <PlayerStats player={player} />
             <PlayerTrophies player={player} />
+            <PlayerShowcase player={player} own={false} />
           </>
         )}
       </div>

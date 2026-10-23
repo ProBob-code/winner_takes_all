@@ -356,7 +356,7 @@ export default function CoinsPage() {
                         })}
                       </td>
                       <td style={{ textAlign: "right", color: "var(--gold)", fontWeight: 700 }}>
-                        +{exact(e.amount)}
+                        {e.amount < 0 ? `−${exact(-e.amount)}` : `+${exact(e.amount)}`}
                       </td>
                       <td style={{ textAlign: "right" }} className="muted">
                         {exact(e.balanceAfter)}
