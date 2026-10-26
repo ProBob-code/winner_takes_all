@@ -619,8 +619,33 @@ export function QuickTournament() {
 
   const removeTeam = (teamId: string) => {
     if (isLocked) return;
-    setTeams(teams.filter(t => t.id !== teamId));
-    setMatches(matches.filter(m => m.team_a_id !== teamId && m.team_b_id !== teamId));
+    setTeams(prev => prev.filter(t => t.id !== teamId));
+    setMatches(prev => prev.filter(m => m.team_a_id !== teamId && m.team_b_id !== teamId));
+  };
+
+  /**
+   * Removing a team once play has started takes its whole match history
+   * with it, results included. It used to be one tap on a small × beside the
+   * name, mid-match, with no way back; found in testing, where a stray tap
+   * deleted the winning side and the victory screen named the champion
+   * "Unknown". It now asks first, and says what will go.
+   */
+  const confirmRemoveTeam = (teamId: string) => {
+    if (isLocked) return;
+    const team = teams.find(t => t.id === teamId);
+    const played = matches.filter(m => (m.team_a_id === teamId || m.team_b_id === teamId) && m.status !== 'CREATED').length;
+    setModalConfig({
+      icon: "⚠️",
+      title: `REMOVE ${(team?.name ?? "THIS TEAM").toUpperCase()}?`,
+      message: played > 0
+        ? `This deletes ${team?.name ?? "the team"} and all ${played} of their matches, including results already played. It cannot be undone.`
+        : `This deletes ${team?.name ?? "the team"} and their scheduled matches.`,
+      onConfirm: () => {
+        removeTeam(teamId);
+        setModalConfig(null);
+      },
+      showCancel: true,
+    });
   };
 
   const updateTeamName = (teamId: string, newName: string) => {
@@ -2419,7 +2444,7 @@ export function QuickTournament() {
                         {!isLocked && (
                           <div className="t-actions">
                             <button className="t-edit" onClick={() => { setEditingTeamId(t.id); setEditingTeamName(t.name); }}>✎</button>
-                            <button className="t-remove" onClick={() => removeTeam(t.id)}>×</button>
+                            <button className="t-remove" onClick={() => confirmRemoveTeam(t.id)} aria-label={`Remove ${t.name}`} title={`Remove ${t.name}`}>×</button>
                           </div>
                         )}
                         {matches.filter(m => m.team_a_id === t.id || m.team_b_id === t.id).length < matchesPerTeam && <div className="bye-badge animate-pulse">SEEKING OPPONENT</div>}

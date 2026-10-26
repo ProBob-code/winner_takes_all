@@ -3546,3 +3546,35 @@ select.premium-input-v2 option {
   background: var(--bg-inset, rgba(255, 255, 255, 0.06));
   font-variant-numeric: tabular-nums;
 }
+
+/*
+ * The match clock sits above the scoreboard in the flow, never on it.
+ *
+ * It used to be pinned 5rem above the board with position:absolute. That
+ * held for pool, but football adds a "Half 1 · 5m half (10m whole match)"
+ * line that wraps and makes the panel taller, so it spilled down over the
+ * score, and the "need extra?" prompt, pinned below the panel, landed on
+ * the score too. Found testing football live. The phone layout already
+ * worked this way; now every width does, and the prompt is a row inside the
+ * panel rather than floating over the board.
+ */
+.match-timer-v3 {
+  position: relative;
+  top: 0;
+  left: auto;
+  transform: none;
+  margin: 0 auto 1.5rem;
+  width: fit-content;
+  max-width: 100%;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.match-timer-v3 .extra-time-toast {
+  position: static;
+  transform: none;
+  flex-basis: 100%;
+  display: flex;
+  justify-content: center;
+  width: auto;
+}

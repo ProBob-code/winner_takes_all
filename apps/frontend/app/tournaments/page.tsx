@@ -114,7 +114,7 @@ export default function TournamentsPage() {
         <div className="app-header slide-in">
           <div className="header-info">
             <h1 className="glow-text">The Arena</h1>
-            <p className="muted">Pool and football nights, run by the people whose tables they are.</p>
+            <p className="muted">Pool, football, tennis, badminton, pickleball and table tennis nights, run by the people whose tables and courts they are.</p>
           </div>
           <div className="header-actions" style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
             <div className="tab-switcher-v2">

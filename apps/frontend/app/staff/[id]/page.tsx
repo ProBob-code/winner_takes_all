@@ -121,12 +121,26 @@ export default function StaffModePage() {
   const [name, setName] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
   const [queued, setQueued] = useState<PendingTap[]>([]);
+  /**
+   * Taps already sent but not yet in a server snapshot.
+   *
+   * A tap leaves the queue the moment the server accepts it, and the board
+   * used to drop it then, falling back to the last poll, which did not have
+   * it yet. So every goal, point or undo flickered back for up to the 4 s
+   * between polls (found testing football live: the board read 2-1 while the
+   * server had 2-0). A sent tap now stays on the board until a poll that
+   * began after it was sent comes back, and a drained tap prompts that poll
+   * at once.
+   */
+  const [settled, setSettled] = useState<Array<PendingTap & { id: string; sentAt: number }>>([]);
+  const queuedIdsRef = useRef<Map<string, PendingTap>>(new Map());
   const [tick, setTick] = useState(nowSeconds());
   const [working, setWorking] = useState(false);
   const skewRef = useRef(0);
 
   const load = useCallback(async () => {
     if (!tournamentId) return;
+    const startedAt = Date.now();
     try {
       const res = await backendFetch(`/engine/tournaments/${tournamentId}/state`);
       const payload: any = await res.json();
@@ -138,6 +152,8 @@ export default function StaffModePage() {
         skewRef.current = payload.serverTime - nowSeconds();
       }
       setState(payload);
+      // This snapshot includes every tap sent before the request began.
+      setSettled((prev) => prev.filter((tap) => tap.sentAt >= startedAt));
       setError(null);
     } catch {
       // Keep the last good picture. The queued taps are still being shown on
@@ -145,6 +161,8 @@ export default function StaffModePage() {
       setError(null);
     }
   }, [tournamentId]);
+  const loadRef = useRef<(() => Promise<void>) | null>(null);
+  loadRef.current = load;
 
   /**
    * The night's name, once.
@@ -173,13 +191,25 @@ export default function StaffModePage() {
   const readQueue = useCallback(async () => {
     const entries = await pendingWrites();
     const taps: PendingTap[] = [];
+    const ids = new Map<string, PendingTap>();
     for (const entry of entries) {
       const body = entry.body as any;
       const matchId = /\/engine\/matches\/([^/]+)\/score/.exec(entry.path)?.[1];
       if (!matchId || !body?.teamId || !body?.type) continue;
-      taps.push({ matchId, teamId: body.teamId, type: body.type as LocalScoreEvent });
+      const tap = { matchId, teamId: body.teamId, type: body.type as LocalScoreEvent };
+      taps.push(tap);
+      ids.set(String(body.eventId ?? entry.seq), tap);
     }
+    // Whatever left the queue since last time was sent: keep it on the board
+    // until a fresh snapshot carries it, and fetch that snapshot now.
+    const sent: Array<PendingTap & { id: string; sentAt: number }> = [];
+    for (const [id, tap] of queuedIdsRef.current) {
+      if (!ids.has(id)) sent.push({ ...tap, id, sentAt: Date.now() });
+    }
+    queuedIdsRef.current = ids;
+    if (sent.length > 0) setSettled((prev) => [...prev, ...sent]);
     setQueued(taps);
+    if (sent.length > 0) void loadRef.current?.();
   }, []);
 
   useEffect(() => {
@@ -212,8 +242,9 @@ export default function StaffModePage() {
    */
   const projection = useMemo(() => {
     if (!serverMatch) return null;
-    return projectPending(serverMatch as any, queued, state?.sport ?? "8BALL");
-  }, [serverMatch, queued]);
+    // Sent-but-unconfirmed taps first: they happened before the queued ones.
+    return projectPending(serverMatch as any, [...settled, ...queued], state?.sport ?? "8BALL");
+  }, [serverMatch, queued, settled]);
 
   const liveMatch = (projection?.match as Match | undefined) ?? serverMatch;
   const pendingHere = projection?.applied ?? 0;
