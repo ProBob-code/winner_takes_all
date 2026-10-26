@@ -3578,3 +3578,91 @@ select.premium-input-v2 option {
   justify-content: center;
   width: auto;
 }
+
+/*
+ * The quick arena's setup, at any width.
+ *
+ * The sport picker was one row of cards with 2rem of padding each, which
+ * with six sports needs ~827px; the setup grid's columns grew to fit it, so
+ * between 480px and ~900px the whole form ran off the right edge (sport
+ * cards, the format buttons, every input). Under 480px the cards stacked
+ * one per row instead, six tall tiles. Now: columns that may shrink below
+ * their content, and a sport picker that wraps into a grid of compact
+ * cards, three across on a phone and more as the width allows.
+ */
+.setup-grid {
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+}
+
+@media (max-width: 900px) {
+  .setup-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
+
+.setup-section,
+.setup-card .form-group {
+  min-width: 0;
+}
+
+.segmented-control-v2.sport-picker {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(6.5rem, 1fr));
+  gap: 6px;
+  flex-direction: initial;
+}
+
+.sport-picker .sport-card {
+  padding: 0.9rem 0.4rem !important;
+  gap: 6px;
+  border-radius: 14px !important;
+  width: auto !important;
+  min-width: 0;
+  font-size: 0.72rem;
+  line-height: 1.2;
+  text-align: center;
+  white-space: normal;
+  overflow-wrap: break-word;
+}
+
+.sport-picker .s-icon {
+  font-size: 1.7rem;
+}
+
+@media (max-width: 480px) {
+  .segmented-control-v2.sport-picker {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  /* Whole words on a phone: tighter tracking instead of "FOOTBAL L". */
+  .sport-picker .sport-card {
+    font-size: 0.66rem;
+    letter-spacing: 0.04em;
+  }
+  .setup-view { padding: 0.25rem 0 !important; }
+  .setup-card { padding: 1.1rem !important; border-radius: 20px; }
+}
+
+/* Long names (Badminton, Pickleball) need two columns on narrow phones. */
+@media (max-width: 430px) {
+  .segmented-control-v2.sport-picker {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .sport-picker .sport-card { padding: 0.7rem 0.4rem !important; }
+}
+
+/* The racket sports' picked state, alongside pool's and football's. */
+.sport-card.rally.active {
+  border-color: var(--gold) !important;
+  background: linear-gradient(135deg, #3b2a00 0%, var(--gold) 100%) !important;
+  box-shadow: 0 0 30px rgba(232, 185, 35, 0.35) !important;
+}
+
+/* Any other segmented control (format, participant type) never overflows. */
+.segmented-control-v2 {
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.segmented-control-v2 .segment-btn {
+  min-width: 0;
+}

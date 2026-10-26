@@ -1454,7 +1454,7 @@ export function QuickTournament() {
 
               <div className="form-group mt-10">
                 <label className="section-label-v2">SELECT SPORT</label>
-                <div className="segmented-control-v2">
+                <div className="segmented-control-v2 sport-picker">
                   <button className={`segment-btn sport-card pool ${selectedSport === '8BALL' ? 'active' : ''}`} onClick={() => setSelectedSport('8BALL')}>
                     <span className="s-icon">🎱</span> 8-BALL POOL
                   </button>

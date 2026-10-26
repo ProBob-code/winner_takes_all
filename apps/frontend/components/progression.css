@@ -853,3 +853,30 @@
   color: #e8b923;
   font-variant-numeric: tabular-nums;
 }
+
+/*
+ * Phones: the editor's columns may shrink below their content.
+ *
+ * A grid column sizes to its widest unbreakable child, and the tab row (a
+ * horizontal scroller of eleven tabs) is very wide, so on a phone the whole
+ * editor, preview included, was 1048px across a 390px screen and cut off.
+ * minmax(0, …) and min-width: 0 let the column fit the screen and the tabs
+ * scroll inside it, as they were meant to.
+ */
+.av-editor {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.av-editor > * {
+  min-width: 0;
+}
+
+@media (min-width: 760px) {
+  .av-editor {
+    grid-template-columns: minmax(15rem, 20rem) minmax(0, 1fr);
+  }
+}
+
+.av-preview svg {
+  max-width: 100%;
+}
