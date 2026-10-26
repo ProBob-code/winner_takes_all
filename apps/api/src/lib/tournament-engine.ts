@@ -21,28 +21,51 @@ export const SPORTS: Sport[] = ['8BALL', 'FOOTBALL', 'TENNIS', 'BADMINTON', 'PIC
 export type RallySport = 'TENNIS' | 'BADMINTON' | 'PICKLEBALL' | 'TABLE_TENNIS';
 
 /**
- * Rally scoring: every rally is a point to whoever won it, and a match is one
- * game to `target`, won by `winBy` clear, never past `cap`.
+ * Rally scoring, for badminton, table tennis and pickleball: every rally is a
+ * point to whoever won it, and a match is one game to `target`, won by
+ * `winBy` clear, never past `cap`. Level at target − 1 is deuce; a point ahead
+ * from there is advantage.
  *
  *   Badminton     21, by 2, capped at 30   (BWF)
  *   Table tennis  11, by 2                 (ITTF)
  *   Pickleball    11, by 2, rally scoring  (as Major League Pickleball plays)
- *   Tennis        a match tie-break to 10, by 2 (the deciding-set tie-break)
+ *
+ * Tennis keeps its own scoring (TENNIS_RULES, below).
  *
  * One game per match, so a night stays time-boxed the way an 8-ball frame
  * does. The clock still applies: at time the higher score wins, a level group
  * match is a draw, and a level knockout match goes to sudden death, where the
  * next point wins.
  */
-export const RALLY_RULES: Record<RallySport, { target: number; winBy: number; cap: number | null }> = {
-  TENNIS: { target: 10, winBy: 2, cap: null },
+export const RALLY_RULES: Record<Exclude<RallySport, 'TENNIS'>, { target: number; winBy: number; cap: number | null }> = {
   BADMINTON: { target: 21, winBy: 2, cap: 30 },
   PICKLEBALL: { target: 11, winBy: 2, cap: null },
   TABLE_TENNIS: { target: 11, winBy: 2, cap: null },
 };
 
+/**
+ * Tennis, scored as tennis: points 0, 15, 30, 40 and game; at 40–40 deuce,
+ * then advantage, and a game needs two clear points. A match is one set:
+ * first to 6 games, two clear, with a tie-break at 6–6, first to 7 points
+ * two clear, which takes the set 7–6.
+ *
+ * WHERE IT IS KEPT: score_team_a/b hold games, the number every table and
+ * screen shows as the score, and balls_potted_a/b hold the points of the game
+ * in progress. Tennis has no balls to count, and those two columns are
+ * already stored and synced everywhere, so the game in progress survives a
+ * refresh, a second phone and the offline queue without a new column.
+ */
+export const TENNIS_RULES = {
+  /** Points to win a game, two clear: 0, 15, 30, 40, game. */
+  GAME_POINTS: 4,
+  SET_GAMES: 6,
+  TIEBREAK_AT: 6,
+  TIEBREAK_POINTS: 7,
+  WIN_BY: 2,
+} as const;
+
 export function isRallySport(sport: string): sport is RallySport {
-  return Object.prototype.hasOwnProperty.call(RALLY_RULES, sport);
+  return sport === 'TENNIS' || Object.prototype.hasOwnProperty.call(RALLY_RULES, sport);
 }
 
 /** Any stored value read as a sport; anything unknown is 8-ball, as before. */
@@ -50,8 +73,9 @@ export function toSport(raw: unknown): Sport {
   return SPORTS.includes(raw as Sport) ? (raw as Sport) : '8BALL';
 }
 
-/** Whether a rally score is a finished game, and for whom. */
+/** Whether a rally score is a finished game, and for whom. Not for tennis. */
 export function rallyWinner(a: number, b: number, sport: RallySport): 'A' | 'B' | null {
+  if (sport === 'TENNIS') return null;
   const { target, winBy, cap } = RALLY_RULES[sport];
   const top = Math.max(a, b);
   if (cap !== null && top >= cap && a !== b) return a > b ? 'A' : 'B';
@@ -194,6 +218,77 @@ export function generateNextMatches(
 }
 
 /**
+ * One point of tennis, applied to the match in place. Returns true when it won
+ * the set, and with it the match.
+ */
+function tennisPoint(m: EngineMatch, isTeamA: boolean): boolean {
+  const tiebreak = m.score_team_a === TENNIS_RULES.TIEBREAK_AT && m.score_team_b === TENNIS_RULES.TIEBREAK_AT;
+  if (isTeamA) m.balls_potted_a++;
+  else m.balls_potted_b++;
+
+  const need = tiebreak ? TENNIS_RULES.TIEBREAK_POINTS : TENNIS_RULES.GAME_POINTS;
+  const pa = m.balls_potted_a;
+  const pb = m.balls_potted_b;
+  if (Math.max(pa, pb) < need || Math.abs(pa - pb) < TENNIS_RULES.WIN_BY) return false;
+
+  // Game (or tie-break) won.
+  if (pa > pb) m.score_team_a++;
+  else m.score_team_b++;
+  m.balls_potted_a = 0;
+  m.balls_potted_b = 0;
+
+  const ga = m.score_team_a;
+  const gb = m.score_team_b;
+  const setWon =
+    tiebreak ||
+    (Math.max(ga, gb) >= TENNIS_RULES.SET_GAMES && Math.abs(ga - gb) >= TENNIS_RULES.WIN_BY);
+  if (!setWon) return false;
+  m.status = 'COMPLETED';
+  m.winner_id = ga > gb ? m.team_a_id : m.team_b_id;
+  return true;
+}
+
+/**
+ * The call a scoreboard makes on a racket score: deuce, advantage, game,
+ * set or match point, or a tennis tie-break. Null when nothing needs saying.
+ */
+export function racketCall(
+  m: Pick<EngineMatch, 'score_team_a' | 'score_team_b' | 'balls_potted_a' | 'balls_potted_b'>,
+  sport: RallySport
+): { call: 'DEUCE' | 'ADVANTAGE' | 'GAME_POINT' | 'TIEBREAK' | null; side: 'A' | 'B' | null } {
+  if (sport === 'TENNIS') {
+    const tiebreak = m.score_team_a === TENNIS_RULES.TIEBREAK_AT && m.score_team_b === TENNIS_RULES.TIEBREAK_AT;
+    const pa = m.balls_potted_a;
+    const pb = m.balls_potted_b;
+    if (tiebreak) return { call: 'TIEBREAK', side: null };
+    if (pa >= 3 && pb >= 3) {
+      if (pa === pb) return { call: 'DEUCE', side: null };
+      return { call: 'ADVANTAGE', side: pa > pb ? 'A' : 'B' };
+    }
+    if (pa >= 3 && pa > pb) return { call: 'GAME_POINT', side: 'A' };
+    if (pb >= 3 && pb > pa) return { call: 'GAME_POINT', side: 'B' };
+    return { call: null, side: null };
+  }
+  const { target } = RALLY_RULES[sport];
+  const a = m.score_team_a;
+  const b = m.score_team_b;
+  if (a >= target - 1 && b >= target - 1) {
+    if (a === b) return { call: 'DEUCE', side: null };
+    if (Math.abs(a - b) === 1) return { call: 'ADVANTAGE', side: a > b ? 'A' : 'B' };
+  }
+  if (rallyWinner(a + 1, b, sport) === 'A') return { call: 'GAME_POINT', side: 'A' };
+  if (rallyWinner(a, b + 1, sport) === 'B') return { call: 'GAME_POINT', side: 'B' };
+  return { call: null, side: null };
+}
+
+/** A tennis game score as it is said: 0, 15, 30, 40, or AD. */
+export function tennisPointsLabel(mine: number, theirs: number, tiebreak: boolean): string {
+  if (tiebreak) return String(mine);
+  if (mine >= 3 && theirs >= 3) return mine > theirs ? 'AD' : '40';
+  return ['0', '15', '30', '40'][Math.min(mine, 3)];
+}
+
+/**
  * PHASE 4 — Scoring Engine
  *
  * The corrections (REMOVE_*) only ever take a count back down, so they never
@@ -295,6 +390,10 @@ export function processScoreUpdate<M extends EngineMatch>(
     // nothing, so an old or confused client cannot score a pool frame with it.
     case 'POINT': {
       if (!isRallySport(sport)) return unchanged;
+      if (sport === 'TENNIS') {
+        if (tennisPoint(updatedMatch, isTeamA)) return { updatedMatch, matchEnded: true };
+        break;
+      }
       addScore(1);
       const won = rallyWinner(updatedMatch.score_team_a, updatedMatch.score_team_b, sport);
       if (won) {
@@ -307,6 +406,14 @@ export function processScoreUpdate<M extends EngineMatch>(
 
     case 'REMOVE_POINT': {
       if (!isRallySport(sport)) return unchanged;
+      // Tennis takes back a point of the game in progress; a game already won
+      // stays won.
+      if (sport === 'TENNIS') {
+        if ((isTeamA ? updatedMatch.balls_potted_a : updatedMatch.balls_potted_b) <= 0) return unchanged;
+        if (isTeamA) updatedMatch.balls_potted_a--;
+        else updatedMatch.balls_potted_b--;
+        return unchanged;
+      }
       if ((isTeamA ? updatedMatch.score_team_a : updatedMatch.score_team_b) <= 0) return unchanged;
       addScore(-1);
       return unchanged;

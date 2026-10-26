@@ -15,7 +15,8 @@
  */
 
 import { sportInfo } from "@/lib/sports";
-import { RALLY_RULES } from "@/lib/local-score";
+import { racketRuleText } from "@/lib/local-score";
+import { RacketCallBanner, tennisGameScore } from "@/components/racket-call";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { formatCoins } from "@/lib/format";
 import { createPortal } from "react-dom";
@@ -412,7 +413,7 @@ export function HostedArena({
    */
   const info = sportInfo(sport);
   const isRally = info.kind === "rally";
-  const rally = isRally ? RALLY_RULES[info.id] : null;
+
   const scoreHeading = isFootball ? "Goals" : "Points";
   const championId = concluded ? finalMatch?.winner_id ?? null : null;
   const champion = championId ? getTeamName(championId) : null;
@@ -967,12 +968,23 @@ export function HostedArena({
                     time={liveMatch.sudden_death ? "NEXT POINT WINS" : formatClock(remaining)}
                     status="LIVE"
                   />
-                  {rally && (
-                    <p className="muted" style={{ textAlign: "center", marginTop: "0.75rem", fontSize: "0.85rem" }}>
-                      {info.icon} First to {rally.target}, win by {rally.winBy}
-                      {rally.cap ? ` (capped at ${rally.cap})` : ""}
+                  {info.id === "TENNIS" && (
+                    <p style={{ textAlign: "center", marginTop: "0.6rem", fontSize: "1.3rem", fontWeight: 900 }}>
+                      This game: {tennisGameScore(liveMatch as any, "A")} – {tennisGameScore(liveMatch as any, "B")}
                     </p>
                   )}
+                  <div style={{ textAlign: "center", marginTop: "0.6rem" }}>
+                    <RacketCallBanner
+                      match={liveMatch as any}
+                      sport={info.id}
+                      nameA={getTeamName(liveMatch.team_a_id)}
+                      nameB={getTeamName(liveMatch.team_b_id)}
+                    />
+                  </div>
+                  <p className="muted" style={{ textAlign: "center", fontSize: "0.85rem" }}>
+                    {info.icon} {info.id === "TENNIS" ? "Score is games. " : ""}
+                    {racketRuleText(info.id)}
+                  </p>
                   {isHost && (
                     <div style={{ display: "flex", justifyContent: "center", gap: "1rem", marginTop: "1.25rem", flexWrap: "wrap" }}>
                       {[liveMatch.team_a_id, liveMatch.team_b_id].map((teamId) => (

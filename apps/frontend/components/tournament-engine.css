@@ -3507,3 +3507,42 @@ select.premium-input-v2 option {
     grid-template-columns: 1fr;
   }
 }
+
+/* The call: deuce, advantage, game and match point (components/racket-call.tsx). */
+.racket-call {
+  display: inline-block;
+  margin: 0 auto 0.9rem;
+  padding: 0.35rem 1rem;
+  border-radius: 999px;
+  background: #0b0a07;
+  border: 2px solid #e8b923;
+  color: #e8b923;
+  font-weight: 900;
+  letter-spacing: 2px;
+  font-size: 0.9rem;
+  animation: racket-call-in 0.35s ease;
+}
+
+.racket-call.big {
+  font-size: clamp(1.4rem, 4vw, 2.6rem);
+  padding: 0.4rem 1.6rem;
+}
+
+@keyframes racket-call-in {
+  from { transform: scale(0.85); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .racket-call { animation: none; }
+}
+
+.rally-game {
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: var(--text-primary);
+  padding: 0.1rem 0.8rem;
+  border-radius: 8px;
+  background: var(--bg-inset, rgba(255, 255, 255, 0.06));
+  font-variant-numeric: tabular-nums;
+}

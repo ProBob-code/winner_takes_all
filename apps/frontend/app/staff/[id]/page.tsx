@@ -54,7 +54,8 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { backendFetch } from "@/lib/backend";
 import { enqueueWrite, startOutbox, subscribeToOutbox, pendingWrites } from "@/lib/outbox";
-import { projectPending, RALLY_RULES, type LocalScoreEvent, type PendingTap } from "@/lib/local-score";
+import { projectPending, racketRuleText, type LocalScoreEvent, type PendingTap } from "@/lib/local-score";
+import { RacketCallBanner, tennisGameScore } from "@/components/racket-call";
 import { sportInfo } from "@/lib/sports";
 import { FrameConfirm, type FrameConfirmation } from "@/components/frame-confirm";
 import { VoiceScorer } from "@/components/voice-scorer";
@@ -259,7 +260,7 @@ export default function StaffModePage() {
   // Tennis, badminton, pickleball, table tennis: rally points to a target.
   const sport = sportInfo(state?.sport);
   const isRally = sport.kind === "rally";
-  const rallyRules = isRally ? RALLY_RULES[sport.id] : null;
+  const isTennis = sport.id === "TENNIS";
 
   /**
    * Score a tap.
@@ -346,9 +347,9 @@ export default function StaffModePage() {
           <div className="staff-meta">
             {/* Counted, not read. Seven pips fill as the balls go down, so the
                 state of the frame is legible from across a dark room. */}
-            {isRally && rallyRules && (
-              <span className="staff-fouls">
-                first to {rallyRules.target}, win by {rallyRules.winBy}
+            {isTennis && (
+              <span className="staff-fouls" title="The game in progress">
+                This game <strong style={{ fontSize: "1.4em" }}>{tennisGameScore(liveMatch, which === "a" ? "A" : "B")}</strong>
               </span>
             )}
             {!isFootball && !isRally && (
@@ -513,6 +514,21 @@ export default function StaffModePage() {
           isHost
           onConfirmed={() => void load()}
         />
+      )}
+
+      {liveMatch && isRally && (
+        <div style={{ textAlign: "center", margin: "0.25rem 0" }}>
+          <RacketCallBanner
+            match={liveMatch}
+            sport={sport.id}
+            nameA={teamName(liveMatch.team_a_id)}
+            nameB={teamName(liveMatch.team_b_id)}
+          />
+          <div className="muted" style={{ fontSize: "0.75rem" }}>
+            {isTennis ? "Score is games. " : ""}
+            {racketRuleText(sport.id)}
+          </div>
+        </div>
       )}
 
       {liveMatch ? (

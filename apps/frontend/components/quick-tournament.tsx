@@ -1,7 +1,7 @@
 "use client";
 
 import { SPORTS, sportInfo } from '@/lib/sports';
-import { isRallySport, rallyWinner } from '@/lib/local-score';
+import { applyLocalScore, isRallySport } from '@/lib/local-score';
 import { RallyMatchEngine } from '@/components/rally-match-engine';
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
@@ -890,21 +890,20 @@ export function QuickTournament() {
           nm.fouls_b--;
           nm.score_team_b += 5;
         }
-      } else if (type === 'POINT') {
-        // A rally won at a racket sport: one game to the sport's target, clear
-        // by two (lib/local-score.ts, the same rules a hosted night uses).
+      } else if (type === 'POINT' || type === 'REMOVE_POINT') {
+        // A rally won (or taken back) at a racket sport, by the very rules a
+        // hosted night uses (lib/local-score.ts): deuce and advantage
+        // included, and for tennis 15-30-40, games and the set.
         if (!isRallySport(nm.sport)) return m;
-        if (isA) nm.score_team_a += 1;
-        else nm.score_team_b += 1;
-        const won = rallyWinner(nm.score_team_a, nm.score_team_b, nm.sport);
-        if (won) {
-          nm.status = 'COMPLETED';
-          nm.winner_id = won === 'A' ? nm.team_a_id : nm.team_b_id;
-        }
-      } else if (type === 'REMOVE_POINT') {
-        if (!isRallySport(nm.sport)) return m;
-        if (isA && nm.score_team_a > 0) nm.score_team_a -= 1;
-        else if (!isA && nm.score_team_b > 0) nm.score_team_b -= 1;
+        const applied = applyLocalScore({ ...nm, winner_id: nm.winner_id ?? null } as any, teamId, type, nm.sport).match;
+        Object.assign(nm, {
+          score_team_a: applied.score_team_a,
+          score_team_b: applied.score_team_b,
+          balls_potted_a: applied.balls_potted_a,
+          balls_potted_b: applied.balls_potted_b,
+          status: applied.status,
+          winner_id: applied.winner_id,
+        });
       } else if (type === 'BLACK') {
         const currentBalls = isA ? nm.balls_potted_a : nm.balls_potted_b;
         if (currentBalls < 7) {
@@ -2192,7 +2191,7 @@ export function QuickTournament() {
                 />
               ) : isRallySport(liveMatch.sport) ? (
                 <RallyMatchEngine
-                  match={liveMatch}
+                  match={{ ...liveMatch, sudden_death: false }}
                   teamAName={getTeamName(liveMatch.team_a_id)}
                   teamBName={getTeamName(liveMatch.team_b_id)}
                   isLocked={isLocked}

@@ -6,7 +6,7 @@
  * scoring buttons need to say.
  */
 
-import { RALLY_RULES, type LocalSport } from "./local-score";
+import { racketRuleText, type LocalSport } from "./local-score";
 
 export type ScoringKind = "pool" | "goals" | "rally";
 
@@ -21,22 +21,19 @@ export interface SportInfo {
   summary: string;
 }
 
-const rally = (id: LocalSport, label: string, icon: string, extra = ""): SportInfo => {
-  const r = RALLY_RULES[id];
-  return {
-    id,
-    label,
-    icon,
-    kind: "rally",
-    unit: "point",
-    summary: `One game to ${r.target}, win by ${r.winBy}${r.cap ? `, capped at ${r.cap}` : ""}${extra}. Every rally is a point.`,
-  };
-};
+const rally = (id: LocalSport, label: string, icon: string): SportInfo => ({
+  id,
+  label,
+  icon,
+  kind: "rally",
+  unit: "point",
+  summary: `${racketRuleText(id)} Every rally is a point.`,
+});
 
 export const SPORTS: SportInfo[] = [
   { id: "8BALL", label: "8-Ball", icon: "🎱", kind: "pool", unit: "ball", summary: "Seven balls then the black. A ball is 10, a foul costs 5." },
   { id: "FOOTBALL", label: "Football", icon: "⚽", kind: "goals", unit: "goal", summary: "Most goals when the clock runs out." },
-  rally("TENNIS", "Tennis", "🎾", " (a match tie-break)"),
+  rally("TENNIS", "Tennis", "🎾"),
   rally("BADMINTON", "Badminton", "🏸"),
   rally("PICKLEBALL", "Pickleball", "🏓"),
   rally("TABLE_TENNIS", "Table Tennis", "🏓"),

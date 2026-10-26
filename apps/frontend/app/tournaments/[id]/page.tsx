@@ -181,9 +181,11 @@ export default function TournamentDetailPage() {
   // The same rules Quick Tournament plays, which the engine now enforces.
   const sportMeta = sportInfo(tournament.sport);
   const rally = RALLY_RULES[sportMeta.id];
-  const rules = sportMeta.kind === "rally" && rally
+  const rules = sportMeta.kind === "rally"
     ? [
-        `Every rally is a point to whoever wins it. A match is one game to ${rally.target}, won by ${rally.winBy} clear${rally.cap ? `, and never past ${rally.cap}` : ""}.`,
+        sportMeta.id === "TENNIS"
+          ? "Points go 15, 30, 40 and game. At 40–40 it is deuce; the next point is advantage, and the one after wins the game or returns it to deuce. A match is one set: first to 6 games by 2, with a tie-break to 7 at 6–6."
+          : `Every rally is a point to whoever wins it. A match is one game to ${rally?.target}, won by ${rally?.winBy} clear${rally?.cap ? `, and never past ${rally.cap}` : ""}. Level at ${(rally?.target ?? 1) - 1} is deuce, and a point ahead from there is advantage.`,
         "The host or the scorer records each point as it is won.",
         "If the clock runs out, the higher score wins. A level group match is a draw; a level knockout match goes to sudden death, where the next point wins.",
       ]

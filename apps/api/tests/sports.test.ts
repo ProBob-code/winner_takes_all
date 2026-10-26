@@ -43,7 +43,8 @@ describe("the rules for each racket sport", () => {
     expect(Engine.RALLY_RULES.BADMINTON).toEqual({ target: 21, winBy: 2, cap: 30 });
     expect(Engine.RALLY_RULES.TABLE_TENNIS).toEqual({ target: 11, winBy: 2, cap: null });
     expect(Engine.RALLY_RULES.PICKLEBALL).toEqual({ target: 11, winBy: 2, cap: null });
-    expect(Engine.RALLY_RULES.TENNIS).toEqual({ target: 10, winBy: 2, cap: null });
+    // Tennis is scored as tennis, not to a rally target (tests/tennis.test.ts).
+    expect((Engine.RALLY_RULES as Record<string, unknown>).TENNIS).toBeUndefined();
   });
 
   it("end a game at the target with a two-point lead, not before", () => {
@@ -51,8 +52,7 @@ describe("the rules for each racket sport", () => {
     expect(Engine.rallyWinner(11, 10, "TABLE_TENNIS")).toBeNull();
     expect(Engine.rallyWinner(12, 10, "TABLE_TENNIS")).toBe("A");
     expect(Engine.rallyWinner(9, 11, "PICKLEBALL")).toBe("B");
-    expect(Engine.rallyWinner(10, 8, "TENNIS")).toBe("A");
-    expect(Engine.rallyWinner(10, 9, "TENNIS")).toBeNull();
+    expect(Engine.rallyWinner(10, 8, "TENNIS")).toBeNull();
   });
 
   it("stop badminton at 30, whatever the lead", () => {
@@ -115,7 +115,9 @@ describe("scoring a rally", () => {
 
 describe("the scorer's copy of the rules", () => {
   it("has the same targets as the server", () => {
-    for (const sport of RALLY) expect(LOCAL_RULES[sport]).toEqual(Engine.RALLY_RULES[sport]);
+    for (const sport of ["BADMINTON", "PICKLEBALL", "TABLE_TENNIS"] as const) {
+      expect(LOCAL_RULES[sport]).toEqual(Engine.RALLY_RULES[sport]);
+    }
   });
 
   it("agrees with the server on every score up to the cap", () => {

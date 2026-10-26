@@ -43,6 +43,20 @@ import { backendFetch } from "@/lib/backend";
 import { qrToSvg } from "@/lib/qr";
 import { rankStandings, placeStandings, anythingCounted } from "@/lib/standings";
 import { NightEmoteBubbles } from "@/components/night-emotes";
+import { RacketCallBanner, tennisGameScore } from "@/components/racket-call";
+import { isRallySport } from "@/lib/local-score";
+import "@/components/tournament-engine.css";
+
+/** A live match in the shape the racket scoreboard reads. */
+function racketView(m: Match) {
+  return {
+    ...m,
+    balls_potted_a: m.balls_potted_a ?? 0,
+    balls_potted_b: m.balls_potted_b ?? 0,
+    black_potted_a: false,
+    black_potted_b: false,
+  };
+}
 import "@/components/progression.css";
 
 interface Team {
@@ -67,6 +81,9 @@ interface Match {
   duration: number;
   match_order: number;
   awaiting_confirmation?: boolean;
+  /** Pool's balls; for tennis, the points of the game in progress. */
+  balls_potted_a?: number;
+  balls_potted_b?: number;
 }
 
 interface State {
@@ -293,6 +310,7 @@ export default function DisplayPage() {
           >
             <div className="name">{teamName(liveMatch.team_a_id)}</div>
             <div className="score">{liveMatch.score_team_a}</div>
+            {state.sport === "TENNIS" && <div className="display-game">{tennisGameScore(racketView(liveMatch), "A")}</div>}
           </div>
 
           <div>
@@ -304,6 +322,18 @@ export default function DisplayPage() {
                 <div className="display-clock-note">time left</div>
               </>
             )}
+            {isRallySport(state.sport) && (
+              <div style={{ textAlign: "center", marginTop: "1rem" }}>
+                <RacketCallBanner
+                  match={racketView(liveMatch)}
+                  sport={state.sport!}
+                  nameA={teamName(liveMatch.team_a_id)}
+                  nameB={teamName(liveMatch.team_b_id)}
+                  size="big"
+                />
+                {state.sport === "TENNIS" && <div className="display-clock-note">games</div>}
+              </div>
+            )}
           </div>
 
           <div
@@ -313,6 +343,7 @@ export default function DisplayPage() {
           >
             <div className="name">{teamName(liveMatch.team_b_id)}</div>
             <div className="score">{liveMatch.score_team_b}</div>
+            {state.sport === "TENNIS" && <div className="display-game">{tennisGameScore(racketView(liveMatch), "B")}</div>}
           </div>
         </section>
       ) : (
