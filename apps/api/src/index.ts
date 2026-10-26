@@ -2710,11 +2710,16 @@ app.get("/api/engine/tournaments/:id/state", async (c) => {
   // The code on the screen, if the host has put one there. Reused rather than
   // reissued so a QR the room has already scanned keeps working.
   const joinCode = await store.getLiveJoinCodeFor(tournamentId).catch(() => null);
+  const appliedEventIds = await store
+    .appliedScoreEventIds(matches.filter((m) => m.status === "LIVE").map((m) => m.id))
+    .catch(() => [] as string[]);
 
   return c.json({
     ok: true,
     phase: tournament.status as Engine.TournamentPhase,
     sport: tournament.sport,
+    // Taps already in these scores, so a scorer's board adds only the rest.
+    appliedEventIds,
     teams,
     matches,
     arenaId,

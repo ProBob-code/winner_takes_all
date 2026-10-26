@@ -120,7 +120,7 @@ export default function StaffModePage() {
   const [state, setState] = useState<State | null>(null);
   const [name, setName] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
-  const [queued, setQueued] = useState<PendingTap[]>([]);
+  const [queued, setQueued] = useState<Array<PendingTap & { id: string }>>([]);
   /**
    * Taps already sent but not yet in a server snapshot.
    *
@@ -134,6 +134,8 @@ export default function StaffModePage() {
    */
   const [settled, setSettled] = useState<Array<PendingTap & { id: string; sentAt: number }>>([]);
   const queuedIdsRef = useRef<Map<string, PendingTap>>(new Map());
+  /** Tap ids the last snapshot already contains (from the state route). */
+  const appliedRef = useRef<Set<string>>(new Set());
   const [tick, setTick] = useState(nowSeconds());
   const [working, setWorking] = useState(false);
   const skewRef = useRef(0);
@@ -152,8 +154,16 @@ export default function StaffModePage() {
         skewRef.current = payload.serverTime - nowSeconds();
       }
       setState(payload);
-      // This snapshot includes every tap sent before the request began.
-      setSettled((prev) => prev.filter((tap) => tap.sentAt >= startedAt));
+      // The server lists the taps it has applied, so the board knows exactly
+      // which of its own it no longer needs to add. Timing alone could not
+      // tell: a tap applied just before a poll, but noticed as sent just
+      // after it, was counted twice (seen live as 3-0 on the way to 2-0).
+      // A sent tap the server has not listed is kept, for at most 20 s.
+      const applied = new Set<string>(Array.isArray(payload.appliedEventIds) ? payload.appliedEventIds : []);
+      appliedRef.current = applied;
+      setSettled((prev) =>
+        prev.filter((tap) => !applied.has(tap.id) && (applied.size > 0 || tap.sentAt >= startedAt) && Date.now() - tap.sentAt < 20_000)
+      );
       setError(null);
     } catch {
       // Keep the last good picture. The queued taps are still being shown on
@@ -190,15 +200,16 @@ export default function StaffModePage() {
   /** What is still on this device, so the board can project it. */
   const readQueue = useCallback(async () => {
     const entries = await pendingWrites();
-    const taps: PendingTap[] = [];
+    const taps: Array<PendingTap & { id: string }> = [];
     const ids = new Map<string, PendingTap>();
     for (const entry of entries) {
       const body = entry.body as any;
       const matchId = /\/engine\/matches\/([^/]+)\/score/.exec(entry.path)?.[1];
       if (!matchId || !body?.teamId || !body?.type) continue;
+      const tapId = String(body.eventId ?? entry.seq);
       const tap = { matchId, teamId: body.teamId, type: body.type as LocalScoreEvent };
-      taps.push(tap);
-      ids.set(String(body.eventId ?? entry.seq), tap);
+      taps.push({ ...tap, id: tapId });
+      ids.set(tapId, tap);
     }
     // Whatever left the queue since last time was sent: keep it on the board
     // until a fresh snapshot carries it, and fetch that snapshot now.
@@ -243,7 +254,10 @@ export default function StaffModePage() {
   const projection = useMemo(() => {
     if (!serverMatch) return null;
     // Sent-but-unconfirmed taps first: they happened before the queued ones.
-    return projectPending(serverMatch as any, [...settled, ...queued], state?.sport ?? "8BALL");
+    // Anything the server has already applied is in serverMatch and skipped.
+    const applied = appliedRef.current;
+    const notYetApplied = [...settled, ...queued].filter((tap) => !applied.has(tap.id));
+    return projectPending(serverMatch as any, notYetApplied, state?.sport ?? "8BALL");
   }, [serverMatch, queued, settled]);
 
   const liveMatch = (projection?.match as Match | undefined) ?? serverMatch;

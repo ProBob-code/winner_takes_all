@@ -1490,6 +1490,28 @@ export class D1Store {
     return (res.meta?.changes ?? 0) > 0;
   }
 
+  /**
+   * The ids of the taps already applied to these matches, newest first.
+   *
+   * For the scorer's board: it adds queued and just-sent taps on top of the
+   * last snapshot, and needs to know which of them that snapshot already
+   * contains, or a tap the server applied just before a poll is counted twice.
+   */
+  async appliedScoreEventIds(matchIds: string[], limit = 200): Promise<string[]> {
+    const ids = [...new Set(matchIds.filter(Boolean))].slice(0, 20);
+    if (ids.length === 0) return [];
+    try {
+      const slots = ids.map(() => "?").join(", ");
+      const { results } = await this.db.prepare(
+        `SELECT id FROM engine_score_events WHERE match_id IN (${slots}) ORDER BY created_at DESC LIMIT ?`
+      ).bind(...ids, limit).all<any>();
+      return results.map((r: any) => r.id);
+    } catch (err) {
+      if (isMissingTableError(err)) return [];
+      throw err;
+    }
+  }
+
   // ── Both players confirm the frame ──
 
   /**
