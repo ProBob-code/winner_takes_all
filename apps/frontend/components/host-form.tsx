@@ -1,5 +1,6 @@
 "use client";
 
+import { SPORTS } from "@/lib/sports";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ShareTournament } from "./share-tournament";
@@ -156,8 +157,11 @@ export default function HostTournamentForm() {
           className="form-control"
           style={{ width: "100%", padding: "1rem", borderRadius: "0.5rem", background: "var(--glass-bg)", border: "1px solid var(--glass-border-color)", color: "var(--text-primary)", outline: "none", cursor: "pointer" }}
         >
-          <option value="8BALL">🎱 8-Ball</option>
-          <option value="FOOTBALL">⚽ Football</option>
+          {SPORTS.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.icon} {s.label}
+            </option>
+          ))}
         </select>
         <p className="muted" style={{ fontSize: "0.78rem", marginTop: "0.5rem" }}>
           Decides how matches are scored: balls and the black, or goals.

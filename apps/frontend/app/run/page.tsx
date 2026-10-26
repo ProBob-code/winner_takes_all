@@ -23,6 +23,7 @@ export const dynamic = "force-dynamic";
  * anyone who walks in later.
  */
 
+import { SPORTS, sportInfo } from "@/lib/sports";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -84,7 +85,7 @@ function nightInUrl(): string | null {
 export default function RunNightPage() {
   const router = useRouter();
 
-  const [sport, setSport] = useState<"8BALL" | "FOOTBALL">("8BALL");
+  const [sport, setSport] = useState<string>("8BALL");
   const [size, setSize] = useState(8);
   const [framesEach, setFramesEach] = useState(2);
   const [name, setName] = useState("");
@@ -371,7 +372,7 @@ export default function RunNightPage() {
                 >
                   <span>{night.name}</span>
                   <span className="muted" style={{ fontSize: "var(--text-xs)" }}>
-                    {night.sport === "FOOTBALL" ? "Football" : "8-ball"} · reopen →
+                    {sportInfo(night.sport).label} · reopen →
                   </span>
                 </button>
               ))}
@@ -382,22 +383,21 @@ export default function RunNightPage() {
         <div className="v-stack" style={{ marginTop: "var(--space-6)", gap: "var(--space-5)" }}>
           <div className="field">
             <label>Which game</label>
-            <div className="h-stack tight">
-              <button
-                type="button"
-                className={sport === "8BALL" ? "button" : "button-secondary"}
-                onClick={() => setSport("8BALL")}
-              >
-                8-ball
-              </button>
-              <button
-                type="button"
-                className={sport === "FOOTBALL" ? "button" : "button-secondary"}
-                onClick={() => setSport("FOOTBALL")}
-              >
-                Football
-              </button>
+            <div className="h-stack tight" style={{ flexWrap: "wrap" }}>
+              {SPORTS.map((s) => (
+                <button
+                  key={s.id}
+                  type="button"
+                  className={sport === s.id ? "button" : "button-secondary"}
+                  onClick={() => setSport(s.id)}
+                >
+                  {s.icon} {s.label}
+                </button>
+              ))}
             </div>
+            <p className="muted" style={{ fontSize: "var(--text-sm)", margin: "0.4rem 0 0" }}>
+              {sportInfo(sport).summary}
+            </p>
           </div>
 
           <div className="field">

@@ -7,6 +7,7 @@
  * tournament page and its arena. Nothing about a week is special-cased here.
  */
 
+import { sportInfo } from "@/lib/sports";
 import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
@@ -174,7 +175,6 @@ export default function SeriesDetailPage() {
 
   const isHost = !!meId && meId === series.hostId;
   const isMember = !!meId && members.some((m) => m.user_id === meId);
-  const isFootball = series.sport === "FOOTBALL";
   const openWeek = weeks.find((w) => w.status === "open" || w.status === "full");
 
   return (
@@ -191,7 +191,7 @@ export default function SeriesDetailPage() {
               {series.status === "active" ? "RUNNING" : "ENDED"}
             </span>
             <span className="status-badge" style={{ background: "rgba(59,130,246,0.12)", color: "var(--team-blue)" }}>
-              {isFootball ? "⚽ FOOTBALL" : "🎱 8-BALL"}
+              {`${sportInfo(series.sport).icon} ${sportInfo(series.sport).label.toUpperCase()}`}
             </span>
             <span
               className="status-badge"

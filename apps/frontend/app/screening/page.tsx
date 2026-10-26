@@ -1,5 +1,6 @@
 "use client";
 
+import { sportInfo } from '@/lib/sports';
 import { useEffect, useState } from "react";
 import { getApiUrl, readJsonResponse } from "@/lib/api-config";
 import Link from "next/link";
@@ -284,7 +285,7 @@ export default function ScreeningPage() {
                       {isLive && <span className="live-pulse"></span>} {isLive ? 'LIVE' : 'UPCOMING'}
                     </span>
                     <span className="sport-badge" style={{ background: isFootball ? 'rgba(16, 185, 129, 0.1)' : 'rgba(59, 130, 246, 0.1)', color: isFootball ? 'var(--gold)' : 'var(--team-blue)', fontSize: '0.75rem', padding: '3px 10px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.05)', fontWeight: 'bold' }}>
-                      {isFootball ? '⚽ FOOTBALL' : '🎱 8-BALL'}
+                      {`${sportInfo(m.sport || m.arenaSport).icon} ${sportInfo(m.sport || m.arenaSport).label.toUpperCase()}`}
                     </span>
                   </div>
 

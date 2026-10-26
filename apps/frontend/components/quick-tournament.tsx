@@ -1,5 +1,8 @@
 "use client";
 
+import { SPORTS, sportInfo } from '@/lib/sports';
+import { isRallySport, rallyWinner } from '@/lib/local-score';
+import { RallyMatchEngine } from '@/components/rally-match-engine';
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { backendFetch } from "@/lib/backend";
@@ -101,7 +104,7 @@ const createDefaultFootballData = (teamA?: Team, teamB?: Team): FootballMatchDat
   subs: []
 });
 
-type SportType = '8BALL' | 'FOOTBALL';
+type SportType = '8BALL' | 'FOOTBALL' | 'TENNIS' | 'BADMINTON' | 'PICKLEBALL' | 'TABLE_TENNIS';
 
 type Match = {
   id: string;
@@ -433,7 +436,7 @@ export function QuickTournament() {
                 return { 
                   ...t, 
                   matches_played: t.matches_played + 1, 
-                  total_score: t.total_score + (t.id === nm.team_a_id ? nm.score_team_a : nm.score_team_b) + (!isFootball && isDraw ? 50 : 0), 
+                  total_score: t.total_score + (t.id === nm.team_a_id ? nm.score_team_a : nm.score_team_b) + (nm.sport === '8BALL' && isDraw ? 50 : 0), 
                   group_points: t.group_points + pointsGained,
                   total_balls_potted: t.total_balls_potted + (t.id === nm.team_a_id ? nm.balls_potted_a : nm.balls_potted_b),
                   total_fouls: t.total_fouls + (t.id === nm.team_a_id ? nm.fouls_a : nm.fouls_b),
@@ -849,7 +852,7 @@ export function QuickTournament() {
     }));
   };
 
-  const updateScore = (matchId: string, teamId: string, type: 'BALL' | 'BLACK' | 'FOUL' | 'REMOVE_BALL' | 'REMOVE_FOUL') => {
+  const updateScore = (matchId: string, teamId: string, type: 'BALL' | 'BLACK' | 'FOUL' | 'REMOVE_BALL' | 'REMOVE_FOUL' | 'POINT' | 'REMOVE_POINT') => {
     setMatches(matches.map(m => {
       if (m.id !== matchId || m.status !== 'LIVE') return m;
       const nm = { ...m };
@@ -887,6 +890,21 @@ export function QuickTournament() {
           nm.fouls_b--;
           nm.score_team_b += 5;
         }
+      } else if (type === 'POINT') {
+        // A rally won at a racket sport: one game to the sport's target, clear
+        // by two (lib/local-score.ts, the same rules a hosted night uses).
+        if (!isRallySport(nm.sport)) return m;
+        if (isA) nm.score_team_a += 1;
+        else nm.score_team_b += 1;
+        const won = rallyWinner(nm.score_team_a, nm.score_team_b, nm.sport);
+        if (won) {
+          nm.status = 'COMPLETED';
+          nm.winner_id = won === 'A' ? nm.team_a_id : nm.team_b_id;
+        }
+      } else if (type === 'REMOVE_POINT') {
+        if (!isRallySport(nm.sport)) return m;
+        if (isA && nm.score_team_a > 0) nm.score_team_a -= 1;
+        else if (!isA && nm.score_team_b > 0) nm.score_team_b -= 1;
       } else if (type === 'BLACK') {
         const currentBalls = isA ? nm.balls_potted_a : nm.balls_potted_b;
         if (currentBalls < 7) {
@@ -932,7 +950,7 @@ export function QuickTournament() {
         return { 
           ...t, 
           matches_played: isMatchComplete ? t.matches_played + 1 : t.matches_played, 
-          total_score: isMatchComplete ? t.total_score + (t.id === nm.team_a_id ? nm.score_team_a : nm.score_team_b) + (!isFootball && nm.score_team_a === nm.score_team_b ? 50 : 0) : t.total_score, 
+          total_score: isMatchComplete ? t.total_score + (t.id === nm.team_a_id ? nm.score_team_a : nm.score_team_b) + (nm.sport === '8BALL' && nm.score_team_a === nm.score_team_b ? 50 : 0) : t.total_score, 
           group_points: isMatchComplete ? t.group_points + pointsGained : t.group_points,
           total_balls_potted: t.total_balls_potted + (type === 'BALL' && isCurrentTeam ? 1 : (type === 'REMOVE_BALL' && isCurrentTeam ? -1 : 0)),
           total_fouls: t.total_fouls + (type === 'FOUL' && isCurrentTeam ? 1 : (type === 'REMOVE_FOUL' && isCurrentTeam ? -1 : 0)),
@@ -1419,6 +1437,15 @@ export function QuickTournament() {
                   <button className={`segment-btn sport-card football ${selectedSport === 'FOOTBALL' ? 'active' : ''}`} onClick={() => setSelectedSport('FOOTBALL')}>
                     <span className="s-icon">⚽</span> FOOTBALL
                   </button>
+                  {SPORTS.filter((sp) => sp.kind === 'rally').map((sp) => (
+                    <button
+                      key={sp.id}
+                      className={`segment-btn sport-card rally ${selectedSport === sp.id ? 'active' : ''}`}
+                      onClick={() => setSelectedSport(sp.id as SportType)}
+                    >
+                      <span className="s-icon">{sp.icon}</span> {sp.label.toUpperCase()}
+                    </button>
+                  ))}
                 </div>
               </div>
 
@@ -2073,7 +2100,7 @@ export function QuickTournament() {
                           style={{ padding: '8px 16px', fontSize: '0.85rem' }}
                           onClick={() => setActiveLiveMatchId(m.id)}
                         >
-                          {m.sport === 'FOOTBALL' ? '⚽' : '🎱'} {getTeamName(m.team_a_id)} vs {getTeamName(m.team_b_id)}
+                          {sportInfo(m.sport).icon} {getTeamName(m.team_a_id)} vs {getTeamName(m.team_b_id)}
                         </button>
                       );
                     })}
@@ -2162,6 +2189,14 @@ export function QuickTournament() {
                   onPerformSubstitution={performSubstitution}
                   onStartSecondHalf={startSecondHalf}
                   onScoreSync={handleScoreSync}
+                />
+              ) : isRallySport(liveMatch.sport) ? (
+                <RallyMatchEngine
+                  match={liveMatch}
+                  teamAName={getTeamName(liveMatch.team_a_id)}
+                  teamBName={getTeamName(liveMatch.team_b_id)}
+                  isLocked={isLocked}
+                  onPoint={(teamId, undo) => updateScore(liveMatch.id, teamId, undo ? 'REMOVE_POINT' : 'POINT')}
                 />
               ) : (
                 <PoolMatchEngine 
@@ -2415,7 +2450,7 @@ export function QuickTournament() {
                         <span className="live-pulse"></span> LIVE
                       </span>
                       <span className="sport-badge" style={{ background: isFootball ? 'rgba(16, 185, 129, 0.1)' : 'rgba(59, 130, 246, 0.1)', color: isFootball ? 'var(--gold)' : 'var(--team-blue)', fontSize: '0.75rem', padding: '2px 8px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.05)', fontWeight: 'bold' }}>
-                        {isFootball ? '⚽ FOOTBALL' : '🎱 8-BALL'}
+                        {`${sportInfo(m.sport).icon} ${sportInfo(m.sport).label.toUpperCase()}`}
                       </span>
                     </div>
 

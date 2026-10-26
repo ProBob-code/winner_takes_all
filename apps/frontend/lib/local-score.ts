@@ -39,7 +39,34 @@ export type LocalScoreEvent =
   | "FOUL"
   | "REMOVE_BALL"
   | "REMOVE_FOUL"
-  | "REMOVE_GOAL";
+  | "REMOVE_GOAL"
+  | "POINT"
+  | "REMOVE_POINT";
+
+/** Mirrors the API's Sport. */
+export type LocalSport = "8BALL" | "FOOTBALL" | "TENNIS" | "BADMINTON" | "PICKLEBALL" | "TABLE_TENNIS";
+
+/** Rally scoring for the racket sports. Mirrors the API's RALLY_RULES. */
+export const RALLY_RULES: Record<string, { target: number; winBy: number; cap: number | null }> = {
+  TENNIS: { target: 10, winBy: 2, cap: null },
+  BADMINTON: { target: 21, winBy: 2, cap: 30 },
+  PICKLEBALL: { target: 11, winBy: 2, cap: null },
+  TABLE_TENNIS: { target: 11, winBy: 2, cap: null },
+};
+
+export function isRallySport(sport: string | undefined | null): boolean {
+  return !!sport && Object.prototype.hasOwnProperty.call(RALLY_RULES, sport);
+}
+
+/** Mirrors the API's rallyWinner. */
+export function rallyWinner(a: number, b: number, sport: string): "A" | "B" | null {
+  const rules = RALLY_RULES[sport];
+  if (!rules) return null;
+  const top = Math.max(a, b);
+  if (rules.cap !== null && top >= rules.cap && a !== b) return a > b ? "A" : "B";
+  if (top >= rules.target && Math.abs(a - b) >= rules.winBy) return a > b ? "A" : "B";
+  return null;
+}
 
 /** The part of a match this projection touches. */
 export interface ScoreableMatch {
@@ -69,7 +96,9 @@ export interface ScoreableMatch {
 export function applyLocalScore<M extends ScoreableMatch>(
   match: M,
   scoringTeamId: string,
-  type: LocalScoreEvent
+  type: LocalScoreEvent,
+  /** Only POINT reads it. */
+  sport: string = "8BALL"
 ): { match: M; changed: boolean; ended: boolean } {
   if (match.status !== "LIVE") return { match, changed: false, ended: false };
   if (scoringTeamId !== match.team_a_id && scoringTeamId !== match.team_b_id) {
@@ -156,6 +185,26 @@ export function applyLocalScore<M extends ScoreableMatch>(
       addScore(-1);
       return { match: next, changed: true, ended: false };
     }
+
+    // A rally won at a racket sport: the game ends at the target, clear by two.
+    case "POINT": {
+      if (!isRallySport(sport)) return unchanged;
+      addScore(1);
+      const won = rallyWinner(next.score_team_a, next.score_team_b, sport);
+      if (won) {
+        next.status = "COMPLETED";
+        next.winner_id = won === "A" ? next.team_a_id : next.team_b_id;
+        return { match: next, changed: true, ended: true };
+      }
+      break;
+    }
+
+    case "REMOVE_POINT": {
+      if (!isRallySport(sport)) return unchanged;
+      if ((isTeamA ? next.score_team_a : next.score_team_b) <= 0) return unchanged;
+      addScore(-1);
+      return { match: next, changed: true, ended: false };
+    }
   }
 
   // Sudden death: the first event that breaks the tie decides it, and a foul
@@ -184,13 +233,14 @@ export interface PendingTap {
  */
 export function projectPending<M extends ScoreableMatch & { id: string }>(
   match: M,
-  pending: PendingTap[]
+  pending: PendingTap[],
+  sport: string = "8BALL"
 ): { match: M; applied: number } {
   let current = match;
   let applied = 0;
   for (const tap of pending) {
     if (tap.matchId !== match.id) continue;
-    const result = applyLocalScore(current, tap.teamId, tap.type);
+    const result = applyLocalScore(current, tap.teamId, tap.type, sport);
     current = result.match;
     if (result.changed) applied++;
   }

@@ -92,7 +92,7 @@ export const createTournamentSchema = z.object({
   maxPlayers: z.coerce.number().int().min(2).max(128).default(8),
   teamSize: z.coerce.number().int().min(1).max(11).default(1),
   tournamentType: z.enum(["online", "offline"]).default("online"),
-  sport: z.enum(["8BALL", "FOOTBALL"]).default("8BALL"),
+  sport: z.enum(["8BALL", "FOOTBALL", "TENNIS", "BADMINTON", "PICKLEBALL", "TABLE_TENNIS"]).default("8BALL"),
   bracketType: z
     .enum(["single_elimination", "double_elimination", "round_robin", "group_knockout"])
     .default("single_elimination"),
@@ -111,7 +111,7 @@ export const createSeriesSchema = z.object({
   maxPlayers: z.coerce.number().int().min(2).max(128).default(8),
   teamSize: z.coerce.number().int().min(1).max(11).default(1),
   tournamentType: z.enum(["online", "offline"]).default("online"),
-  sport: z.enum(["8BALL", "FOOTBALL"]).default("8BALL"),
+  sport: z.enum(["8BALL", "FOOTBALL", "TENNIS", "BADMINTON", "PICKLEBALL", "TABLE_TENNIS"]).default("8BALL"),
   bracketType: z
     .enum(["single_elimination", "double_elimination", "round_robin", "group_knockout"])
     .default("single_elimination"),
@@ -165,6 +165,8 @@ export const engineScoreSchema = z.object({
   type: z.enum([
     "BALL", "BLACK", "MISTAKE", "GOAL",
     "FOUL", "REMOVE_BALL", "REMOVE_FOUL", "REMOVE_GOAL",
+    // A rally won, at a racket sport.
+    "POINT", "REMOVE_POINT",
   ]),
 });
 
@@ -270,7 +272,7 @@ export const confirmFrameSchema = z.object({
 
 export const quickSetupSchema = z.object({
   name: z.string().trim().min(2).max(80).optional(),
-  sport: z.enum(["8BALL", "FOOTBALL"]).default("8BALL"),
+  sport: z.enum(["8BALL", "FOOTBALL", "TENNIS", "BADMINTON", "PICKLEBALL", "TABLE_TENNIS"]).default("8BALL"),
   /** How many competitors to seat. The only number the host has to choose. */
   size: z.coerce.number().int().min(2).max(64).default(8),
   /**

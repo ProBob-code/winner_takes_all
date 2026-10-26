@@ -1,5 +1,8 @@
 "use client";
 
+import { sportInfo } from '@/lib/sports';
+import { isRallySport } from '@/lib/local-score';
+import { RallyMatchEngine } from '@/components/rally-match-engine';
 import { useEffect, useState, useCallback } from "react";
 import { readBackendJson } from "@/lib/backend";
 import { FootballMatchEngine } from "@/components/football-match-engine";
@@ -209,7 +212,7 @@ export function ArenaClient({ id }: { id: string }) {
               ← BACK TO MULTIPLEX
             </button>
             <span className="sport-badge" style={{ background: 'rgba(255,255,255,0.05)', fontSize: '0.8rem', padding: '4px 10px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.1)' }}>
-              {liveMatch.sport === 'FOOTBALL' ? '⚽ FOOTBALL' : '🎱 8-BALL'}
+              {`${sportInfo(liveMatch.sport).icon} ${sportInfo(liveMatch.sport).label.toUpperCase()}`}
             </span>
           </div>
 
@@ -240,6 +243,14 @@ export function ArenaClient({ id }: { id: string }) {
               onPerformSubstitution={() => {}}
               onStartSecondHalf={() => {}}
               onScoreSync={() => {}}
+            />
+          ) : isRallySport(liveMatch.sport) ? (
+            <RallyMatchEngine
+              match={liveMatch}
+              teamAName={teams.find((t: any) => t.id === liveMatch.team_a_id)?.name ?? ""}
+              teamBName={teams.find((t: any) => t.id === liveMatch.team_b_id)?.name ?? ""}
+              isLocked={true}
+              onPoint={() => {}}
             />
           ) : (
             <PoolMatchEngine 
@@ -293,7 +304,7 @@ export function ArenaClient({ id }: { id: string }) {
                       <span className="live-pulse"></span> LIVE
                     </span>
                     <span className="sport-badge" style={{ background: isFootball ? 'rgba(16, 185, 129, 0.1)' : 'rgba(59, 130, 246, 0.1)', color: isFootball ? 'var(--gold)' : 'var(--team-blue)', fontSize: '0.75rem', padding: '2px 8px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.05)', fontWeight: 'bold' }}>
-                      {isFootball ? '⚽ FOOTBALL' : '🎱 8-BALL'}
+                      {`${sportInfo(m.sport).icon} ${sportInfo(m.sport).label.toUpperCase()}`}
                     </span>
                   </div>
 

@@ -19,6 +19,7 @@ export const dynamic = "force-dynamic";
  * refuses a join by code to any tournament carrying a fee.
  */
 
+import { sportInfo } from "@/lib/sports";
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
@@ -171,7 +172,7 @@ export default function JoinByCodePage() {
           {/* Said plainly and first. It is the honest description of the
               product and the reason there is nothing else to agree to. */}
           <span className="chip gold">free to enter</span>
-          <span className="chip">{info.sport === "FOOTBALL" ? "football" : "8-ball"}</span>
+          <span className="chip">{sportInfo(info.sport).label.toLowerCase()}</span>
           <span className="chip">
             {info.entered} of {info.capacity} in
           </span>

@@ -830,6 +830,17 @@ export class D1Store {
   }
 
   /**
+   * Make a tournament free to enter. For one created while stakes were on,
+   * now that they are off: the entry is waived, nobody is charged, and the
+   * join that follows reads a fee of 0.
+   */
+  async waiveEntryFee(id: string): Promise<void> {
+    await this.db.prepare(
+      `UPDATE tournaments SET entry_fee_cents = 0, updated_at = ? WHERE id = ? AND entry_fee_cents > 0`
+    ).bind(new Date().toISOString(), id).run();
+  }
+
+  /**
    * Put an account on a seat that has none. Conditional on the seat still
    * being empty, so two claims at once cannot both land: false means someone
    * else's account is already there.

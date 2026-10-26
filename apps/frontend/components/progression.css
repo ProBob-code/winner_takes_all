@@ -752,3 +752,95 @@
   font-size: 0.8rem;
   color: var(--text-muted);
 }
+
+/* ── The 8-ball page, in WTA's colours (app/play/8ball) ── */
+
+.wta-game-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: calc(0.5rem + env(safe-area-inset-top, 0px)) 0.9rem 0.5rem;
+  background: linear-gradient(180deg, #0b0a07, #16130b);
+  border-bottom: 2px solid #e8b923;
+  color: #f5f0e1;
+}
+
+.wta-game-back {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid rgba(232, 185, 35, 0.4);
+  color: #e8b923;
+  text-decoration: none;
+  font-weight: 900;
+}
+
+.wta-game-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-weight: 900;
+  letter-spacing: 1px;
+  color: #e8b923;
+  white-space: nowrap;
+}
+
+.wta-game-title em {
+  font-style: normal;
+  color: #f5f0e1;
+}
+
+.wta-game-head .h-stack,
+.wta-game-head > div {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.wta-game-info {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1px solid rgba(232, 185, 35, 0.5);
+  background: transparent;
+  color: #e8b923;
+  font-weight: 900;
+  font-family: Georgia, serif;
+  cursor: pointer;
+}
+
+.wta-game-frame {
+  flex: 1;
+  display: flex;
+  margin: 0.4rem;
+  border: 2px solid #e8b923;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 0 0 4px #0b0a07, 0 0 24px rgba(232, 185, 35, 0.25);
+  background: #0b0a07;
+}
+
+.wta-game-note {
+  position: relative;
+  padding: 0.5rem 2.4rem calc(0.5rem + env(safe-area-inset-bottom, 0px)) 1rem;
+  border-top: 1px solid rgba(232, 185, 35, 0.3);
+  background: #0b0a07;
+}
+
+.wta-game-note-close {
+  position: absolute;
+  top: 0.35rem;
+  right: 0.5rem;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid rgba(232, 185, 35, 0.4);
+  background: transparent;
+  color: #e8b923;
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+}

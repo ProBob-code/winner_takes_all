@@ -1,5 +1,6 @@
 "use client";
 
+import { sportInfo } from "@/lib/sports";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { readBackendJson } from "@/lib/backend";
@@ -115,7 +116,7 @@ export default function SeriesListPage() {
                     className="status-badge"
                     style={{ background: "rgba(59,130,246,0.12)", color: "var(--team-blue)" }}
                   >
-                    {s.sport === "FOOTBALL" ? "⚽ FOOTBALL" : "🎱 8-BALL"}
+                    {`${sportInfo(s.sport).icon} ${sportInfo(s.sport).label.toUpperCase()}`}
                   </span>
                   <span
                     className="status-badge"

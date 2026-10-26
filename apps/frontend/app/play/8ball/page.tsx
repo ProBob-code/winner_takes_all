@@ -23,6 +23,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { backendFetch } from "@/lib/backend";
 import { CoinMark } from "@/components/coin-mark";
+import { CrownLogo } from "@/components/brand-mark";
+import "@/components/progression.css";
 import { formatCoins, formatCoinsExact } from "@/lib/format";
 import { TrophyBadge } from "@/components/trophy-badge";
 import { TRACKS, signedTrophies } from "@/lib/trophies";
@@ -58,10 +60,30 @@ function newSessionId(): string {
   return `g${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`;
 }
 
+const NOTE_KEY = "wta-8ball-note";
+
 export default function PlayEightBallPage() {
   const [balance, setBalance] = useState<number | null>(null);
   const [onlineLeft, setOnlineLeft] = useState<number | null>(null);
   const [signedIn, setSignedIn] = useState(true);
+  // The note under the table, closable and remembered per device: on a phone
+  // it took a fifth of the screen on every game.
+  const [noteOpen, setNoteOpen] = useState(true);
+  useEffect(() => {
+    try {
+      if (window.localStorage.getItem(NOTE_KEY) === "closed") setNoteOpen(false);
+    } catch {
+      /* stays open */
+    }
+  }, []);
+  const toggleNote = (open: boolean) => {
+    setNoteOpen(open);
+    try {
+      window.localStorage.setItem(NOTE_KEY, open ? "open" : "closed");
+    } catch {
+      /* for this visit only */
+    }
+  };
   const [claimed, setClaimed] = useState<Claimed | null>(null);
   const [claiming, setClaiming] = useState(false);
   const [stakes, setStakes] = useState<Stakes | null>(null);
@@ -181,22 +203,19 @@ export default function PlayEightBallPage() {
         background: "var(--bg-primary)",
       }}
     >
-      {/* A thin strip rather than the usual chrome: the table needs the room. */}
-      <header
-        className="h-stack between"
-        style={{
-          padding: `calc(var(--space-2) + env(safe-area-inset-top, 0px)) var(--space-4) var(--space-2)`,
-          borderBottom: "1px solid var(--glass-border-color)",
-          gap: "var(--space-3)",
-        }}
-      >
-        <Link
-          href="/games"
-          className="muted"
-          style={{ fontSize: "var(--text-sm)", textDecoration: "none" }}
-        >
-          ← Games
+      {/* A thin strip rather than the usual chrome: the table needs the room.
+          WTA's own colours and mark, so the game sits inside the product
+          rather than looking like a page from somewhere else. */}
+      <header className="wta-game-head">
+        <Link href="/games" className="wta-game-back">
+          ←
         </Link>
+        <span className="wta-game-title">
+          <CrownLogo size={20} />
+          <span>
+            W.T.A <em>8-Ball</em>
+          </span>
+        </span>
 
         <div className="h-stack tight">
           {signedIn ? (
@@ -220,6 +239,11 @@ export default function PlayEightBallPage() {
             <Link href="/login" className="chip warn" style={{ textDecoration: "none" }}>
               sign in to earn coins
             </Link>
+          )}
+          {!noteOpen && (
+            <button type="button" className="wta-game-info" onClick={() => toggleNote(true)} aria-label="How this game pays">
+              i
+            </button>
           )}
         </div>
       </header>
@@ -311,26 +335,27 @@ export default function PlayEightBallPage() {
 
       {/* The game. sandbox is deliberately narrow: it needs scripts and its own
           origin for localStorage, and nothing else. */}
-      <iframe
-        src="/8ball/index.html"
-        title="8-Ball Pool"
-        sandbox="allow-scripts allow-same-origin"
-        style={{
-          flex: 1,
-          width: "100%",
-          border: 0,
-          display: "block",
-          minHeight: "60vh",
-        }}
-      />
+      <div className="wta-game-frame">
+        <iframe
+          src="/8ball/index.html"
+          title="8-Ball Pool"
+          sandbox="allow-scripts allow-same-origin"
+          style={{
+            flex: 1,
+            width: "100%",
+            border: 0,
+            display: "block",
+            minHeight: "60vh",
+          }}
+        />
+      </div>
 
-      <footer
-        style={{
-          padding: `var(--space-2) var(--space-4) calc(var(--space-2) + env(safe-area-inset-bottom, 0px))`,
-          borderTop: "1px solid var(--glass-border-color)",
-        }}
-      >
-        <p className="muted" style={{ fontSize: "var(--text-xs)", textAlign: "center" }}>
+      {noteOpen && (
+      <footer className="wta-game-note">
+        <button type="button" className="wta-game-note-close" onClick={() => toggleNote(false)} aria-label="Close this note">
+          ×
+        </button>
+        <p className="muted" style={{ fontSize: "var(--text-xs)", textAlign: "center", margin: 0 }}>
           Only the winner earns — beat the machine and the coins are yours, lose and
           nothing is paid. Signed-in games against the AI are rated: a win gains trophies,
           a loss costs them, and a game left unfinished counts as a loss. Browser games are worth a fraction of a league night and have
@@ -338,6 +363,7 @@ export default function PlayEightBallPage() {
           withdrawn.
         </p>
       </footer>
+      )}
     </main>
   );
 }

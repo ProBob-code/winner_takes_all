@@ -108,7 +108,7 @@ export type Match = {
   is_draw?: boolean;
   active_player_a_id?: string | null;
   active_player_b_id?: string | null;
-  sport: '8BALL' | 'FOOTBALL';
+  sport: '8BALL' | 'FOOTBALL' | 'TENNIS' | 'BADMINTON' | 'PICKLEBALL' | 'TABLE_TENNIS';
   footballData?: FootballMatchData;
 };
 

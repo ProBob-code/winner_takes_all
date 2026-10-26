@@ -34,7 +34,8 @@
 
 import type { LocalScoreEvent } from "./local-score";
 
-export type VoiceSport = "POOL" | "FOOTBALL";
+/** POOL is 8-ball, RALLY every racket sport (a rally won is a point). */
+export type VoiceSport = "POOL" | "FOOTBALL" | "RALLY";
 
 export interface VoicePlayer {
   id: string;
@@ -449,6 +450,11 @@ function toEvent(
   remove: boolean,
   sport: VoiceSport
 ): { event: LocalScoreEvent } | { problem: string } {
+  if (sport === "RALLY") {
+    // Every racket sport scores the same way: a rally won is a point.
+    if (unit === "POINT" || unit === "BALL" || unit === "GOAL") return { event: remove ? "REMOVE_POINT" : "POINT" };
+    return { problem: `“${unit.toLowerCase()}” is not something this sport scores. Say “point”.` };
+  }
   if (sport === "FOOTBALL") {
     if (unit === "GOAL" || unit === "POINT") return { event: remove ? "REMOVE_GOAL" : "GOAL" };
     return { problem: `“${unit.toLowerCase()}” is not something football scores. Say “goal”.` };
@@ -695,6 +701,8 @@ const EVENT_WORDS: Record<LocalScoreEvent, [string, string]> = {
   REMOVE_BALL: ["ball taken back", "balls taken back"],
   REMOVE_FOUL: ["foul taken back", "fouls taken back"],
   REMOVE_GOAL: ["goal taken back", "goals taken back"],
+  POINT: ["point", "points"],
+  REMOVE_POINT: ["point taken back", "points taken back"],
 };
 
 /** "Asha: 2 balls, 1 foul · Ravi: 1 ball", for the line under the mic. */
@@ -725,6 +733,8 @@ export function inverseOf(type: LocalScoreEvent): LocalScoreEvent | null {
     case "REMOVE_FOUL": return "FOUL";
     case "GOAL": return "REMOVE_GOAL";
     case "REMOVE_GOAL": return "GOAL";
+    case "POINT": return "REMOVE_POINT";
+    case "REMOVE_POINT": return "POINT";
     case "BLACK": return null;
   }
 }

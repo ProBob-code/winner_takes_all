@@ -150,11 +150,13 @@ export interface VoiceScorerProps {
   match: ScoreableMatch;
   players: VoicePlayer[];
   sport: VoiceSport;
+  /** Which racket sport, when `sport` is RALLY: its target decides a game. */
+  rallySport?: string;
   /** Queue one tap, exactly as a button would. Resolves once it is on disk. */
   onScore: (teamId: string, type: LocalScoreEvent) => Promise<void>;
 }
 
-export function VoiceScorer({ match, players, sport, onScore }: VoiceScorerProps) {
+export function VoiceScorer({ match, players, sport, rallySport = "TENNIS", onScore }: VoiceScorerProps) {
   const [browserSupported, setBrowserSupported] = useState(false);
   const [deviceSupported, setDeviceSupported] = useState(false);
   const [source, setSource] = useState<Source>("device");
@@ -238,7 +240,7 @@ export function VoiceScorer({ match, players, sport, onScore }: VoiceScorerProps
           black = event.teamId;
           continue;
         }
-        const result = applyLocalScore(board, event.teamId, event.type);
+        const result = applyLocalScore(board, event.teamId, event.type, sport === "RALLY" ? rallySport : "8BALL");
         if (!result.changed) {
           skipped.push(event);
           continue;
@@ -266,7 +268,7 @@ export function VoiceScorer({ match, players, sport, onScore }: VoiceScorerProps
         setFeedback(null);
       }
     },
-    [nameOf, onScore]
+    [nameOf, onScore, sport, rallySport]
   );
 
   const undoLast = useCallback(async () => {
@@ -279,7 +281,7 @@ export function VoiceScorer({ match, players, sport, onScore }: VoiceScorerProps
     for (const event of [...batch].reverse()) {
       const inverse = inverseOf(event.type);
       if (!inverse) continue;
-      const result = applyLocalScore(board, event.teamId, inverse);
+      const result = applyLocalScore(board, event.teamId, inverse, sport === "RALLY" ? rallySport : "8BALL");
       if (!result.changed) continue;
       board = result.match;
       await onScore(event.teamId, inverse);
@@ -287,7 +289,7 @@ export function VoiceScorer({ match, players, sport, onScore }: VoiceScorerProps
     setLastBatch([]);
     buzz();
     setFeedback({ tone: "info", text: `Taken back: ${describeVoiceEvents(batch, nameOf)}` });
-  }, [nameOf, onScore]);
+  }, [nameOf, onScore, sport, rallySport]);
 
   /** One utterance, from either source. `requireWake` is hands-free mode. */
   const handleUtterance = useCallback(

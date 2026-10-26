@@ -12,7 +12,52 @@ export type TournamentPhase = 'SETUP' | 'GROUP' | 'KNOCKOUT' | 'COMPLETED';
 export type MatchStatus = 'CREATED' | 'LIVE' | 'COMPLETED';
 export type MatchPhase = 'GROUP' | 'SEMI' | 'FINAL';
 export type PoolHouse = 'SOLID' | 'STRIPES';
-export type Sport = '8BALL' | 'FOOTBALL';
+export type Sport = '8BALL' | 'FOOTBALL' | 'TENNIS' | 'BADMINTON' | 'PICKLEBALL' | 'TABLE_TENNIS';
+
+/** Every sport a night, a tournament or the quick arena can run. */
+export const SPORTS: Sport[] = ['8BALL', 'FOOTBALL', 'TENNIS', 'BADMINTON', 'PICKLEBALL', 'TABLE_TENNIS'];
+
+/** The racket sports: one shared structure, rally points to a target. */
+export type RallySport = 'TENNIS' | 'BADMINTON' | 'PICKLEBALL' | 'TABLE_TENNIS';
+
+/**
+ * Rally scoring: every rally is a point to whoever won it, and a match is one
+ * game to `target`, won by `winBy` clear, never past `cap`.
+ *
+ *   Badminton     21, by 2, capped at 30   (BWF)
+ *   Table tennis  11, by 2                 (ITTF)
+ *   Pickleball    11, by 2, rally scoring  (as Major League Pickleball plays)
+ *   Tennis        a match tie-break to 10, by 2 (the deciding-set tie-break)
+ *
+ * One game per match, so a night stays time-boxed the way an 8-ball frame
+ * does. The clock still applies: at time the higher score wins, a level group
+ * match is a draw, and a level knockout match goes to sudden death, where the
+ * next point wins.
+ */
+export const RALLY_RULES: Record<RallySport, { target: number; winBy: number; cap: number | null }> = {
+  TENNIS: { target: 10, winBy: 2, cap: null },
+  BADMINTON: { target: 21, winBy: 2, cap: 30 },
+  PICKLEBALL: { target: 11, winBy: 2, cap: null },
+  TABLE_TENNIS: { target: 11, winBy: 2, cap: null },
+};
+
+export function isRallySport(sport: string): sport is RallySport {
+  return Object.prototype.hasOwnProperty.call(RALLY_RULES, sport);
+}
+
+/** Any stored value read as a sport; anything unknown is 8-ball, as before. */
+export function toSport(raw: unknown): Sport {
+  return SPORTS.includes(raw as Sport) ? (raw as Sport) : '8BALL';
+}
+
+/** Whether a rally score is a finished game, and for whom. */
+export function rallyWinner(a: number, b: number, sport: RallySport): 'A' | 'B' | null {
+  const { target, winBy, cap } = RALLY_RULES[sport];
+  const top = Math.max(a, b);
+  if (cap !== null && top >= cap && a !== b) return a > b ? 'A' : 'B';
+  if (top >= target && Math.abs(a - b) >= winBy) return a > b ? 'A' : 'B';
+  return null;
+}
 
 /**
  * Everything the arena can record. MISTAKE predates FOUL and awards ten points
@@ -20,7 +65,8 @@ export type Sport = '8BALL' | 'FOOTBALL';
  */
 export type ScoreEventType =
   | 'BALL' | 'BLACK' | 'MISTAKE' | 'GOAL'
-  | 'FOUL' | 'REMOVE_BALL' | 'REMOVE_FOUL' | 'REMOVE_GOAL';
+  | 'FOUL' | 'REMOVE_BALL' | 'REMOVE_FOUL' | 'REMOVE_GOAL'
+  | 'POINT' | 'REMOVE_POINT';
 
 /** 8-ball scoring, as Quick Tournament plays it. */
 export const POOL_RULES = {
@@ -156,7 +202,9 @@ export function generateNextMatches(
 export function processScoreUpdate<M extends EngineMatch>(
   match: M,
   scoringTeamId: string,
-  type: ScoreEventType
+  type: ScoreEventType,
+  /** Only POINT reads it: the racket sports end a game at their target. */
+  sport: Sport = '8BALL'
 ): { updatedMatch: M, matchEnded: boolean } {
 
   const updatedMatch = { ...match };
@@ -237,6 +285,28 @@ export function processScoreUpdate<M extends EngineMatch>(
     }
 
     case 'REMOVE_GOAL': {
+      if ((isTeamA ? updatedMatch.score_team_a : updatedMatch.score_team_b) <= 0) return unchanged;
+      addScore(-1);
+      return unchanged;
+    }
+
+    // A rally won. At a racket sport the game ends the moment a side reaches
+    // the target with a clear lead (or the cap); anywhere else POINT means
+    // nothing, so an old or confused client cannot score a pool frame with it.
+    case 'POINT': {
+      if (!isRallySport(sport)) return unchanged;
+      addScore(1);
+      const won = rallyWinner(updatedMatch.score_team_a, updatedMatch.score_team_b, sport);
+      if (won) {
+        updatedMatch.status = 'COMPLETED';
+        updatedMatch.winner_id = won === 'A' ? updatedMatch.team_a_id : updatedMatch.team_b_id;
+        return { updatedMatch, matchEnded: true };
+      }
+      break;
+    }
+
+    case 'REMOVE_POINT': {
+      if (!isRallySport(sport)) return unchanged;
       if ((isTeamA ? updatedMatch.score_team_a : updatedMatch.score_team_b) <= 0) return unchanged;
       addScore(-1);
       return unchanged;
@@ -355,7 +425,8 @@ export interface ResultDelta {
 
 export function resultDeltas(match: EngineMatch, sport: Sport): ResultDelta[] {
   const drawn = match.status === 'COMPLETED' && !match.winner_id;
-  const bonus = drawn && sport !== 'FOOTBALL' ? POOL_RULES.DRAW_BONUS : 0;
+  // The draw bonus is an 8-ball rule; no other sport has one.
+  const bonus = drawn && sport === '8BALL' ? POOL_RULES.DRAW_BONUS : 0;
 
   return [
     { teamId: match.team_a_id, score: match.score_team_a },

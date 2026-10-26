@@ -1,4 +1,6 @@
 "use client";
+import { sportInfo } from "@/lib/sports";
+import { RALLY_RULES } from "@/lib/local-score";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
@@ -177,7 +179,15 @@ export default function TournamentDetailPage() {
     } as Record<string, string>)[tournament.bracketType] || tournament.bracketType;
 
   // The same rules Quick Tournament plays, which the engine now enforces.
-  const rules = isFootball
+  const sportMeta = sportInfo(tournament.sport);
+  const rally = RALLY_RULES[sportMeta.id];
+  const rules = sportMeta.kind === "rally" && rally
+    ? [
+        `Every rally is a point to whoever wins it. A match is one game to ${rally.target}, won by ${rally.winBy} clear${rally.cap ? `, and never past ${rally.cap}` : ""}.`,
+        "The host or the scorer records each point as it is won.",
+        "If the clock runs out, the higher score wins. A level group match is a draw; a level knockout match goes to sudden death, where the next point wins.",
+      ]
+    : isFootball
     ? [
         "Every goal counts one. The higher score when the clock stops wins.",
         "The host records goals live as they happen.",
@@ -227,7 +237,7 @@ export default function TournamentDetailPage() {
               <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap", marginBottom: "0.6rem" }}>
                 <span className={`status-badge ${tournament.status}`}>{tournament.status.toUpperCase()}</span>
                 <span className="status-badge" style={{ background: "rgba(59,130,246,0.12)", color: "var(--team-blue)" }}>
-                  {isFootball ? "FOOTBALL" : "8-BALL"}
+                  {sportInfo(tournament.sport).label.toUpperCase()}
                 </span>
                 <span className="status-badge" style={{ background: "var(--glass-bg)", color: "var(--text-muted)" }}>
                   {formatLabel}
@@ -381,6 +391,7 @@ export default function TournamentDetailPage() {
             tournamentName={tournament.name}
             isHost={!!isHost}
             isFootball={isFootball}
+            sport={tournament.sport}
             phase={engineState.phase}
             teams={engineState.teams}
             matches={engineState.matches}
@@ -424,7 +435,7 @@ export default function TournamentDetailPage() {
           }}
         >
           <div className="glass-morphism" style={{ padding: "1.75rem" }}>
-            <h2 className="section-heading">{isFootball ? "Football rules" : "8-Ball rules"}</h2>
+            <h2 className="section-heading">{sportInfo(tournament.sport).label} rules</h2>
             <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "0.8rem" }}>
               {rules.map((r) => (
                 <li key={r} style={{ display: "flex", gap: "10px", alignItems: "flex-start", fontSize: "0.88rem", lineHeight: 1.5 }}>

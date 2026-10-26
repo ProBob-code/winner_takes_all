@@ -8,6 +8,7 @@
  * whether latecomers may enter.
  */
 
+import { SPORTS } from "@/lib/sports";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { getApiUrl } from "@/lib/api-config";
@@ -157,8 +158,11 @@ export default function HostSeriesForm() {
             value={form.sport}
             onChange={(e) => set({ sport: e.target.value })}
           >
-            <option value="8BALL">🎱 8-Ball Pool</option>
-            <option value="FOOTBALL">⚽ Football</option>
+            {SPORTS.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.icon} {s.label}
+              </option>
+            ))}
           </select>
         </div>
         <div>

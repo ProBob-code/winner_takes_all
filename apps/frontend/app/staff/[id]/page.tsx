@@ -54,7 +54,8 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { backendFetch } from "@/lib/backend";
 import { enqueueWrite, startOutbox, subscribeToOutbox, pendingWrites } from "@/lib/outbox";
-import { projectPending, type LocalScoreEvent, type PendingTap } from "@/lib/local-score";
+import { projectPending, RALLY_RULES, type LocalScoreEvent, type PendingTap } from "@/lib/local-score";
+import { sportInfo } from "@/lib/sports";
 import { FrameConfirm, type FrameConfirmation } from "@/components/frame-confirm";
 import { VoiceScorer } from "@/components/voice-scorer";
 
@@ -210,7 +211,7 @@ export default function StaffModePage() {
    */
   const projection = useMemo(() => {
     if (!serverMatch) return null;
-    return projectPending(serverMatch as any, queued);
+    return projectPending(serverMatch as any, queued, state?.sport ?? "8BALL");
   }, [serverMatch, queued]);
 
   const liveMatch = (projection?.match as Match | undefined) ?? serverMatch;
@@ -255,6 +256,10 @@ export default function StaffModePage() {
   }, [liveMatch, tick]);
 
   const isFootball = state?.sport === "FOOTBALL";
+  // Tennis, badminton, pickleball, table tennis: rally points to a target.
+  const sport = sportInfo(state?.sport);
+  const isRally = sport.kind === "rally";
+  const rallyRules = isRally ? RALLY_RULES[sport.id] : null;
 
   /**
    * Score a tap.
@@ -341,7 +346,12 @@ export default function StaffModePage() {
           <div className="staff-meta">
             {/* Counted, not read. Seven pips fill as the balls go down, so the
                 state of the frame is legible from across a dark room. */}
-            {!isFootball && (
+            {isRally && rallyRules && (
+              <span className="staff-fouls">
+                first to {rallyRules.target}, win by {rallyRules.winBy}
+              </span>
+            )}
+            {!isFootball && !isRally && (
               <div
                 className="staff-pips"
                 aria-label={`${balls} of ${BALLS_PER_SIDE} balls potted`}
@@ -364,7 +374,26 @@ export default function StaffModePage() {
           </div>
         </div>
 
-        {isFootball ? (
+        {isRally ? (
+          <>
+            <button
+              type="button"
+              className="staff-btn big"
+              onClick={() => void score(teamId, "POINT")}
+            >
+              POINT
+              <span className="staff-btn-note">rally won</span>
+            </button>
+            <button
+              type="button"
+              className="staff-btn ghost"
+              onClick={() => void score(teamId, "REMOVE_POINT")}
+              disabled={scoreValue <= 0}
+            >
+              Undo point
+            </button>
+          </>
+        ) : isFootball ? (
           <>
             <button
               type="button"
@@ -436,7 +465,7 @@ export default function StaffModePage() {
           </div>
           <div className="staff-where">
             {liveMatch
-              ? `Frame ${frameNumber}${queue.length > 0 ? ` · ${queue.length} to come` : " · last one drawn"}`
+              ? `${sport.kind === "pool" ? "Frame" : "Match"} ${frameNumber}${queue.length > 0 ? ` · ${queue.length} to come` : " · last one drawn"}`
               : state.phase === "COMPLETED"
                 ? "The night is finished"
                 : nextMatch
@@ -463,7 +492,8 @@ export default function StaffModePage() {
             { id: liveMatch.team_a_id, name: teamName(liveMatch.team_a_id) },
             { id: liveMatch.team_b_id, name: teamName(liveMatch.team_b_id) },
           ]}
-          sport={isFootball ? "FOOTBALL" : "POOL"}
+          sport={isFootball ? "FOOTBALL" : isRally ? "RALLY" : "POOL"}
+          rallySport={sport.id}
           onScore={score}
         />
       )}

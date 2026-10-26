@@ -2,6 +2,7 @@
 
 export const dynamic = "force-dynamic";
 
+import { sportInfo } from "@/lib/sports";
 import Link from "next/link";
 import { formatCoins } from "@/lib/format";
 import { useEffect, useState } from "react";
@@ -197,7 +198,7 @@ export default function TournamentsPage() {
                                 className="status-badge"
                                 style={{ background: "rgba(59,130,246,0.12)", color: "var(--team-blue)" }}
                               >
-                                {t.sport === "FOOTBALL" ? "⚽ FOOTBALL" : "🎱 8-BALL"}
+                                {`${sportInfo(t.sport).icon} ${sportInfo(t.sport).label.toUpperCase()}`}
                               </span>
                               <span
                                 className="status-badge"
@@ -263,7 +264,7 @@ export default function TournamentsPage() {
                           <div className="past-head">
                             <span className="status-badge completed">COMPLETED</span>
                             <span className="past-meta">
-                              {t.sport === "FOOTBALL" ? "⚽ FOOTBALL" : "🎱 8-BALL"} · {t.joinedPlayers} played
+                              {`${sportInfo(t.sport).icon} ${sportInfo(t.sport).label.toUpperCase()}`} · {t.joinedPlayers} played
                               {t.completedAt ? ` · ${new Date(t.completedAt).toLocaleDateString()}` : ""}
                             </span>
                           </div>

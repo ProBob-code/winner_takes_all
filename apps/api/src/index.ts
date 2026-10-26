@@ -966,8 +966,14 @@ app.post("/api/tournaments/:id/join", async (c) => {
   if (!tournament) return c.json({ ok: false, message: "Tournament not found" }, 404);
 
   // A tournament created before stakes were switched off still carries its fee.
-  // Nobody may be charged for it now.
-  if (tournament.entry_fee_cents > 0 && !stakesEnabled(c.env)) return stakesWithdrawn(c);
+  // Nobody may be charged for it now, and nobody should be shut out of it
+  // either: this used to answer 410, so a tournament the page showed as
+  // "Entry: Free" could not be joined at all. The fee is cleared on the spot
+  // and the join goes ahead free, exactly as a tournament created today.
+  if (tournament.entry_fee_cents > 0 && !stakesEnabled(c.env)) {
+    await store.waiveEntryFee(tournament.id);
+    tournament.entry_fee_cents = 0;
+  }
 
   if (tournament.password && !timingSafeEqual(tournament.password, body.password ?? "")) {
     return c.json({ ok: false, message: "Incorrect tournament password" }, 403);
@@ -1889,7 +1895,7 @@ type EngineTeamRow = Awaited<ReturnType<D1Store["getEngineTeams"]>>[number];
 type EngineMatchRow = Awaited<ReturnType<D1Store["getEngineMatches"]>>[number];
 
 function engineSport(tournament: TournamentRecord): Engine.Sport {
-  return tournament.sport === "FOOTBALL" ? "FOOTBALL" : "8BALL";
+  return Engine.toSport(tournament.sport);
 }
 
 /**
@@ -2192,7 +2198,7 @@ async function awardFrameCoins(
       // football has no equivalent.
       const isTeamA = teamId === match.team_a_id;
       const clearance =
-        tournament.sport !== "FOOTBALL" &&
+        engineSport(tournament) === "8BALL" &&
         match.winner_id === teamId &&
         (isTeamA ? match.balls_potted_a : match.balls_potted_b) >= 7 &&
         (isTeamA ? match.black_potted_a : match.black_potted_b);
@@ -3305,7 +3311,7 @@ app.post("/api/engine/matches/:id/score", async (c) => {
   let endedBy: "SCORE" | "TIME" | null = timed.matchEnded ? "TIME" : null;
 
   if (!timed.matchEnded) {
-    const scored = Engine.processScoreUpdate(timed.updatedMatch, body.teamId, body.type);
+    const scored = Engine.processScoreUpdate(timed.updatedMatch, body.teamId, body.type, engineSport(tournament));
     finalMatch = scored.updatedMatch;
     if (scored.matchEnded) endedBy = "SCORE";
   }
@@ -4295,9 +4301,15 @@ app.post("/api/join/:code", async (c) => {
   const tournament = await store.getTournament(record.tournament_id);
   if (!tournament) return c.json({ ok: false, message: "That tournament no longer exists." }, 404);
 
-  // Belt and braces. Entry fees are already clamped to zero while stakes are
-  // off, but a code must never be the thing that admits someone to a paid
-  // tournament: they scanned a poster, they did not agree to a charge.
+  // A fee left over from before stakes were switched off: waived, as on the
+  // join route, rather than shutting the night to everyone who scans.
+  if (tournament.entry_fee_cents > 0 && !stakesEnabled(c.env)) {
+    await store.waiveEntryFee(tournament.id);
+    tournament.entry_fee_cents = 0;
+  }
+
+  // Belt and braces. A code must never be the thing that admits someone to a
+  // paid tournament: they scanned a poster, they did not agree to a charge.
   if (tournament.entry_fee_cents > 0) {
     return c.json(
       { ok: false, message: "This tournament is not free to enter, so it cannot be joined by code." },
@@ -4316,6 +4328,14 @@ app.post("/api/join/:code", async (c) => {
 
   const existing = await store.getEngineTeams(tournament.id);
   const wanted = body.name.trim();
+
+  // A signed-in player who scans twice keeps the one seat they have, rather
+  // than playing against themselves under a second name.
+  const signedIn = c.get("user");
+  const mine = signedIn ? existing.find((t) => t.user_id === signedIn.id) : undefined;
+  if (mine) {
+    return c.json({ ok: true, tournamentId: tournament.id, teamId: mine.id, alreadySeated: true, name: mine.name });
+  }
   if (existing.some((t) => t.name.trim().toLowerCase() === wanted.toLowerCase())) {
     return c.json(
       { ok: false, message: "Someone is already playing under that name. Try another." },

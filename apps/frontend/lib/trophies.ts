@@ -21,6 +21,10 @@ export const TRACKS: Array<{ id: string; label: string }> = [
   { id: "overall", label: "Overall" },
   { id: "offline:8BALL", label: "Pool" },
   { id: "offline:FOOTBALL", label: "Football" },
+  { id: "offline:TENNIS", label: "Tennis" },
+  { id: "offline:BADMINTON", label: "Badminton" },
+  { id: "offline:PICKLEBALL", label: "Pickleball" },
+  { id: "offline:TABLE_TENNIS", label: "Table tennis" },
   { id: "online:8BALL", label: "Pool online" },
 ];
 

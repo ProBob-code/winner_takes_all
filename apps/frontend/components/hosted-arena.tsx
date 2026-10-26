@@ -14,6 +14,8 @@
  * plus the live camera feeds once the host has put the tournament on air.
  */
 
+import { sportInfo } from "@/lib/sports";
+import { RALLY_RULES } from "@/lib/local-score";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { formatCoins } from "@/lib/format";
 import { createPortal } from "react-dom";
@@ -75,7 +77,8 @@ export interface ArenaMatch {
 
 export type ArenaScoreEvent =
   | "BALL" | "BLACK" | "GOAL" | "FOUL"
-  | "REMOVE_BALL" | "REMOVE_FOUL" | "REMOVE_GOAL";
+  | "REMOVE_BALL" | "REMOVE_FOUL" | "REMOVE_GOAL"
+  | "POINT" | "REMOVE_POINT";
 
 /** What a finished tournament paid, and to whom. */
 export interface TournamentResult {
@@ -102,6 +105,8 @@ interface HostedArenaProps {
   tournamentName: string;
   isHost: boolean;
   isFootball: boolean;
+  /** The tournament's sport; tennis, badminton, pickleball and table tennis score rally points. */
+  sport?: string;
   /** The tournament's engine phase: GROUP, KNOCKOUT or COMPLETED. */
   phase: string;
   teams: ArenaTeam[];
@@ -172,6 +177,7 @@ export function HostedArena({
   tournamentName,
   isHost,
   isFootball,
+  sport = isFootball ? "FOOTBALL" : "8BALL",
   phase,
   teams,
   matches,
@@ -404,6 +410,9 @@ export function HostedArena({
    * total_score is points at pool — ten a ball, thirty the black, a hundred if
    * the black goes down early — and goals at football.
    */
+  const info = sportInfo(sport);
+  const isRally = info.kind === "rally";
+  const rally = isRally ? RALLY_RULES[info.id] : null;
   const scoreHeading = isFootball ? "Goals" : "Points";
   const championId = concluded ? finalMatch?.winner_id ?? null : null;
   const champion = championId ? getTeamName(championId) : null;
@@ -764,7 +773,7 @@ export function HostedArena({
         <div className="arena-meta">
           <h2 className="glow-text">{tournamentName}</h2>
           <div className="arena-badge">
-            ARENA {isFootball ? "FOOTBALL" : "8-BALL"} • {inKnockout ? "KNOCKOUT" : "GROUP"} • {teams.length} TEAMS •{" "}
+            ARENA {info.label.toUpperCase()} • {inKnockout ? "KNOCKOUT" : "GROUP"} • {teams.length} TEAMS •{" "}
             {played.length}/{matches.length} PLAYED
           </div>
         </div>
@@ -948,7 +957,45 @@ export function HostedArena({
                 </div>
               )}
 
-              {isFootball ? (
+              {isRally ? (
+                <>
+                  <FootballScoreboard
+                    teamAName={getTeamName(liveMatch.team_a_id)}
+                    teamBName={getTeamName(liveMatch.team_b_id)}
+                    scoreA={liveMatch.score_team_a}
+                    scoreB={liveMatch.score_team_b}
+                    time={liveMatch.sudden_death ? "NEXT POINT WINS" : formatClock(remaining)}
+                    status="LIVE"
+                  />
+                  {rally && (
+                    <p className="muted" style={{ textAlign: "center", marginTop: "0.75rem", fontSize: "0.85rem" }}>
+                      {info.icon} First to {rally.target}, win by {rally.winBy}
+                      {rally.cap ? ` (capped at ${rally.cap})` : ""}
+                    </p>
+                  )}
+                  {isHost && (
+                    <div style={{ display: "flex", justifyContent: "center", gap: "1rem", marginTop: "1.25rem", flexWrap: "wrap" }}>
+                      {[liveMatch.team_a_id, liveMatch.team_b_id].map((teamId) => (
+                        <div key={teamId} style={{ display: "flex", gap: "6px" }}>
+                          <button
+                            className="button button-gold"
+                            onClick={() => recordScore(liveMatch.id, teamId, "POINT")}
+                          >
+                            + POINT {getTeamName(teamId)}
+                          </button>
+                          <button
+                            className="button button-secondary"
+                            onClick={() => recordScore(liveMatch.id, teamId, "REMOVE_POINT")}
+                            title="Take back the last point"
+                          >
+                            −
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              ) : isFootball ? (
                 <>
                   <FootballScoreboard
                     teamAName={getTeamName(liveMatch.team_a_id)}
@@ -1227,7 +1274,9 @@ export function HostedArena({
             <strong>{scoreHeading}</strong>{" "}
             {isFootball
               ? "goals scored"
-              : "ten a ball, thirty for the black, a hundred if the black goes down early"}
+              : isRally
+                ? "points won in each game"
+                : "ten a ball, thirty for the black, a hundred if the black goes down early"}
             , used only to split players level on wins. A place marked = is shared.
           </p>
         </div>

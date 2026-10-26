@@ -18,7 +18,7 @@
  * Mirrored by apps/frontend/lib/trophies.ts for the arena names and badges.
  */
 
-export type Sport = "8BALL" | "FOOTBALL";
+export type Sport = "8BALL" | "FOOTBALL" | "TENNIS" | "BADMINTON" | "PICKLEBALL" | "TABLE_TENNIS";
 
 export interface TrophyTrack {
   id: string;
@@ -33,6 +33,10 @@ export const TROPHY_TRACKS: TrophyTrack[] = [
   { id: "overall", label: "Overall" },
   { id: "offline:8BALL", label: "Pool" },
   { id: "offline:FOOTBALL", label: "Football" },
+  { id: "offline:TENNIS", label: "Tennis" },
+  { id: "offline:BADMINTON", label: "Badminton" },
+  { id: "offline:PICKLEBALL", label: "Pickleball" },
+  { id: "offline:TABLE_TENNIS", label: "Table tennis" },
   { id: "online:8BALL", label: "Pool online" },
 ];
 
