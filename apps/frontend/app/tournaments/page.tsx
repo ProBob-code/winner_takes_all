@@ -8,6 +8,7 @@ import { formatCoins } from "@/lib/format";
 import { useEffect, useState } from "react";
 import { getApiUrl } from "@/lib/api-config";
 import { QuickTournament } from "@/components/quick-tournament";
+import { CoinMark } from "@/components/coin-mark";
 
 type TournamentsResponse = {
   ok: boolean;
@@ -75,7 +76,15 @@ export default function TournamentsPage() {
   // status, so this is matched either way.
   const isFinished = (t: any) => String(t.status || "").toLowerCase() === "completed";
   const live = tournaments.filter((t: any) => !isFinished(t));
-  const past = tournaments.filter(isFinished);
+  // Newest night first: the record reads like a results page, not an archive.
+  const finishedAt = (t: any) => Date.parse(t.completedAt || t.result?.decidedAt || "") || 0;
+  const past = tournaments.filter(isFinished).sort((a: any, b: any) => finishedAt(b) - finishedAt(a));
+
+  const prizeOf = (t: any) => Number(t.result?.prize?.amount ?? t.prizePool?.amount ?? 0);
+  const paidOut = past.reduce((sum: number, t: any) => sum + prizeOf(t), 0);
+  const champions = new Set(
+    past.flatMap((t: any) => (t.result?.winners || []).map((w: any) => w.userId || w.name)),
+  ).size;
 
   if (loading) {
     return (
@@ -137,8 +146,12 @@ export default function TournamentsPage() {
               </Link>
             </div>
             {activeTab === 'arena' && (
-              <Link href={isLoggedIn ? "/tournaments/create" : "/login"} className="button button-gold btn-glow">
-                + Host Arena
+              <Link href={isLoggedIn ? "/tournaments/create" : "/login"} className="host-cta">
+                <span className="host-cta-plus" aria-hidden="true">+</span>
+                <span className="host-cta-text">
+                  <span className="host-cta-label">Host Arena</span>
+                  <span className="host-cta-sub">Run your own night</span>
+                </span>
               </Link>
             )}
           </div>
@@ -243,51 +256,93 @@ export default function TournamentsPage() {
               </div>
             )}
 
-            {/* PAST MATCHES — finished tournaments, with who took the night. */}
+            {/* PAST MATCHES — finished tournaments, with who took the night.
+                The newest sits on the gold card; the rest read as a results
+                list under it. */}
             {past.length > 0 && (
-              <section className="arena-section slide-in" style={{ marginTop: "3rem" }}>
+              <section className="arena-section slide-in" style={{ marginTop: "3.5rem" }}>
                 <div className="section-header">
-                  <h2 className="section-title">Past Matches</h2>
+                  <h2 className="section-title">Hall of Champions</h2>
                   <div className="section-line"></div>
                 </div>
+
+                <div className="hall-stats">
+                  <div className="hall-stat">
+                    <span className="hall-stat-value">{past.length}</span>
+                    <span className="hall-stat-label">{past.length === 1 ? "Night played" : "Nights played"}</span>
+                  </div>
+                  <div className="hall-stat">
+                    <span className="hall-stat-value">{champions}</span>
+                    <span className="hall-stat-label">{champions === 1 ? "Champion crowned" : "Champions crowned"}</span>
+                  </div>
+                  <div className="hall-stat">
+                    <span className="hall-stat-value">
+                      <CoinMark size={22} />
+                      {formatCoins(paidOut)}
+                    </span>
+                    <span className="hall-stat-label">Coins won</span>
+                  </div>
+                </div>
+
                 <div className="past-list">
-                  {past.map((t: any) => {
+                  {past.map((t: any, i: number) => {
                     const winners: any[] = t.result?.winners || [];
-                    const shared = (t.result?.splitWays ?? 1) > 1;
+                    const splitWays = t.result?.splitWays ?? 1;
+                    const shared = splitWays > 1;
+                    const prize = prizeOf(t);
+                    const pot = Number(t.result?.pot?.amount ?? 0);
+                    const when = finishedAt(t) ? new Date(finishedAt(t)) : null;
+                    const sport = sportInfo(t.sport);
+                    const decidedBy =
+                      t.result?.decidedBy === "STANDINGS" ? "Top of the table"
+                      : t.result?.decidedBy === "FINAL" ? "Won the final"
+                      : null;
+
                     return (
                       <Link
                         key={t.id}
                         href={isLoggedIn ? `/tournaments/${t.id}` : "/login"}
-                        className="past-card"
+                        className={`past-card ${i === 0 ? "is-latest" : ""}`}
                       >
+                        <div className="past-date" aria-label={when ? when.toDateString() : "Date unknown"}>
+                          <span className="past-date-day">{when ? when.getDate() : "—"}</span>
+                          <span className="past-date-month">
+                            {when ? when.toLocaleDateString(undefined, { month: "short" }).toUpperCase() : ""}
+                          </span>
+                        </div>
+
                         <div className="past-main">
                           <div className="past-head">
-                            <span className="status-badge completed">COMPLETED</span>
-                            <span className="past-meta">
-                              {`${sportInfo(t.sport).icon} ${sportInfo(t.sport).label.toUpperCase()}`} · {t.joinedPlayers} played
-                              {t.completedAt ? ` · ${new Date(t.completedAt).toLocaleDateString()}` : ""}
-                            </span>
+                            {i === 0 && <span className="past-chip latest">LATEST</span>}
+                            <span className="past-chip">{`${sport.icon} ${sport.label.toUpperCase()}`}</span>
+                            <span className="past-chip">{t.tournamentType === "offline" ? "📍 OFFLINE" : "💻 ONLINE"}</span>
+                            <span className="past-chip">{t.joinedPlayers} PLAYED</span>
                           </div>
                           <h3 className="past-title">{t.name}</h3>
-                          <div className="past-winner">
-                            {winners.length > 0 ? (
-                              <>
-                                🏆 <strong>{winners.map((w) => w.name).join(" & ")}</strong>
-                                {shared ? ` shared the title ${t.result.splitWays} ways` : " took the night"}
-                              </>
-                            ) : (
-                              <span className="muted">Finished — prize not settled yet</span>
-                            )}
-                          </div>
+                          {winners.length > 0 ? (
+                            <div className="past-winner">
+                              <span className="past-crown" aria-hidden="true">👑</span>
+                              <span className="past-winner-name">{winners.map((w) => w.name).join(" & ")}</span>
+                              <span className="past-winner-how">
+                                {shared ? `shared the title ${splitWays} ways` : decidedBy ?? "took the night"}
+                              </span>
+                            </div>
+                          ) : (
+                            <div className="past-winner muted">Finished. Prize not settled yet.</div>
+                          )}
                         </div>
+
                         <div className="past-prize">
-                          <span className="past-prize-label">PRIZE POT</span>
-                          <span className="past-prize-value">
-                            {formatCoins(
-                              Number(t.result?.prize?.amount ?? t.prizePool?.amount ?? 0)
-                            )}
-                          </span>
-                          {shared && <span className="past-prize-split">split {t.result.splitWays} ways</span>}
+                          <span className="past-prize-label">{shared ? "EACH WON" : "WON"}</span>
+                          {prize > 0 ? (
+                            <span className="past-prize-value">
+                              <CoinMark size={24} />
+                              {formatCoins(prize)}
+                            </span>
+                          ) : (
+                            <span className="past-prize-value glory">Glory</span>
+                          )}
+                          {pot > prize && <span className="past-prize-split">of a {formatCoins(pot)} pot</span>}
                         </div>
                       </Link>
                     );
@@ -418,36 +473,163 @@ export default function TournamentsPage() {
 
         .empty-icon-large { font-size: 4rem; margin-bottom: 1.5rem; opacity: 0.3; }
 
-        /* Past matches: a record, so it reads as a list rather than an offer. */
-        .past-list { display: flex; flex-direction: column; gap: 12px; }
-        .past-card {
+        /* Host Arena: the page's one call to action, cut like the cards below
+           it -- gold sticker, red ink, hard shadow -- and never allowed to
+           wrap, which is what used to fold it into a round blob. */
+        .header-actions :global(.host-cta) {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.75rem;
+          flex-shrink: 0;
+          white-space: nowrap;
+          padding: 0.6rem 1.25rem 0.6rem 0.6rem;
+          border-radius: 16px;
+          background: var(--gradient-fill);
+          color: var(--on-gold);
+          border: 2px solid var(--on-gold);
+          box-shadow: 4px 4px 0 var(--on-gold);
+          text-decoration: none;
+          transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+        .header-actions :global(.host-cta:hover) { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 var(--on-gold); color: var(--on-gold); }
+        .header-actions :global(.host-cta:active) { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--on-gold); }
+        .header-actions :global(.host-cta:focus-visible) { outline: 3px solid var(--text-primary); outline-offset: 3px; }
+        .host-cta-plus {
+          display: grid;
+          place-items: center;
+          width: 36px;
+          height: 36px;
+          border-radius: 11px;
+          background: var(--on-gold);
+          color: var(--gold-fill);
+          font-size: 1.5rem;
+          font-weight: 900;
+          line-height: 1;
+          transition: transform 0.25s ease;
+        }
+        .header-actions :global(.host-cta:hover) .host-cta-plus { transform: rotate(90deg); }
+        .host-cta-text { display: flex; flex-direction: column; line-height: 1.1; }
+        .host-cta-label { font-size: 0.95rem; font-weight: 900; letter-spacing: 0.02em; text-transform: uppercase; }
+        .host-cta-sub { font-size: 0.68rem; font-weight: 700; opacity: 0.8; }
+
+        /* Hall of Champions: a record, so it reads as a results list rather
+           than an offer. The global card rules give each row its sticker. */
+        .hall-stats {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 1rem;
+          margin-bottom: 1.75rem;
+        }
+        .hall-stat {
           display: flex;
-          justify-content: space-between;
+          flex-direction: column;
+          gap: 4px;
+          padding: 1rem 1.25rem;
+          border-radius: 16px;
+          border: 2px dashed var(--glass-border-color);
+        }
+        .hall-stat-value {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 1.6rem;
+          font-weight: 900;
+          line-height: 1;
+          color: var(--gold);
+          font-variant-numeric: tabular-nums;
+        }
+        .hall-stat-label { font-size: 0.65rem; font-weight: 900; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-muted); }
+
+        .past-list { display: flex; flex-direction: column; gap: 16px; }
+        .past-list :global(.past-card) {
+          display: grid;
+          grid-template-columns: auto minmax(0, 1fr) auto;
           align-items: center;
           gap: 1.5rem;
           padding: 1.25rem 1.5rem;
-          border-radius: 16px;
-          background: rgba(255, 255, 255, 0.02);
-          border: 1px solid rgba(255, 255, 255, 0.05);
           text-decoration: none;
           color: inherit;
-          transition: all 0.3s ease;
         }
-        .past-card:hover { background: rgba(255,255,255,0.04); border-color: var(--gold-subtle); }
+        .past-date {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          width: 64px;
+          height: 68px;
+          border-radius: 14px;
+          border: 2px solid var(--glass-border-color);
+          background: var(--glass-bg-hover);
+        }
+        .past-date-day { font-size: 1.6rem; font-weight: 900; line-height: 1; font-variant-numeric: tabular-nums; }
+        .past-date-month { font-size: 0.62rem; font-weight: 900; letter-spacing: 1.5px; color: var(--wta-red); margin-top: 3px; }
+
         .past-main { min-width: 0; }
-        .past-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 6px; }
-        .status-badge.completed { background: rgba(148, 163, 184, 0.12); color: var(--text-muted); }
-        .past-meta { font-size: 0.68rem; font-weight: 700; color: var(--text-muted); letter-spacing: 0.5px; }
-        .past-title { font-size: 1.05rem; font-weight: 800; margin: 0 0 4px; }
-        .past-winner { font-size: 0.85rem; color: var(--text-secondary); }
-        .past-prize { text-align: right; white-space: nowrap; }
-        .past-prize-label { display: block; font-size: 0.55rem; font-weight: 900; letter-spacing: 1px; color: var(--text-muted); }
-        .past-prize-value { font-size: 1.15rem; font-weight: 900; color: var(--gold); }
-        .past-prize-split { display: block; font-size: 0.6rem; font-weight: 700; color: var(--text-muted); }
+        .past-head { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+        .past-chip {
+          font-size: 0.6rem;
+          font-weight: 900;
+          letter-spacing: 1px;
+          padding: 3px 8px;
+          border-radius: 7px;
+          background: var(--glass-bg-hover);
+          color: var(--text-muted);
+        }
+        .past-chip.latest { background: var(--wta-red); color: #fff; }
+        .past-title { font-size: 0.85rem; font-weight: 800; margin: 0 0 4px; color: var(--text-secondary); overflow-wrap: anywhere; }
+        .past-winner { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0.5rem; font-size: 0.85rem; color: var(--text-secondary); }
+        .past-crown { font-size: 1.15rem; align-self: center; }
+        .past-winner-name { font-size: 1.4rem; font-weight: 900; line-height: 1.1; color: var(--text-primary); overflow-wrap: anywhere; }
+        .past-winner-how { font-size: 0.75rem; font-weight: 700; color: var(--text-muted); }
+
+        .past-prize { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; white-space: nowrap; }
+        .past-prize-label { font-size: 0.58rem; font-weight: 900; letter-spacing: 1.5px; color: var(--text-muted); }
+        .past-prize-value {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 1.6rem;
+          font-weight: 900;
+          line-height: 1;
+          color: var(--gold);
+          font-variant-numeric: tabular-nums;
+        }
+        .past-prize-value.glory { font-size: 1.1rem; letter-spacing: 1px; text-transform: uppercase; color: var(--text-secondary); }
+        .past-prize-split { font-size: 0.65rem; font-weight: 700; color: var(--text-muted); }
+
+        /* The latest night is the gold card, inked in red like the CTA. */
+        .past-list :global(.past-card.is-latest) {
+          background: var(--gradient-fill);
+          color: var(--on-gold);
+          border-color: var(--on-gold);
+          box-shadow: 7px 7px 0 var(--on-gold);
+          padding-top: 1.6rem;
+          padding-bottom: 1.6rem;
+        }
+        .past-list :global(.past-card.is-latest:hover) { border-color: var(--on-gold); box-shadow: 11px 11px 0 var(--on-gold); }
+        .past-list :global(.past-card.is-latest::before) { display: none; }
+        .past-list :global(.past-card.is-latest) .past-date { border-color: var(--on-gold); background: var(--on-gold); color: var(--gold-fill); }
+        .past-list :global(.past-card.is-latest) .past-date-month { color: var(--gold-fill); }
+        .past-list :global(.past-card.is-latest) .past-chip { background: color-mix(in oklab, var(--on-gold) 14%, transparent); color: var(--on-gold); }
+        .past-list :global(.past-card.is-latest) .past-chip.latest { background: var(--on-gold); color: var(--gold-fill); }
+        .past-list :global(.past-card.is-latest) .past-title,
+        .past-list :global(.past-card.is-latest) .past-winner,
+        .past-list :global(.past-card.is-latest) .past-winner-how,
+        .past-list :global(.past-card.is-latest) .past-prize-label,
+        .past-list :global(.past-card.is-latest) .past-prize-split,
+        .past-list :global(.past-card.is-latest) .past-prize-value { color: var(--on-gold); }
+        .past-list :global(.past-card.is-latest) .past-winner-name { font-size: 1.9rem; color: var(--on-gold); }
 
         @media (max-width: 640px) {
-          .past-card { flex-direction: column; align-items: flex-start; gap: 0.75rem; }
-          .past-prize { text-align: left; }
+          .hall-stats { gap: 0.5rem; }
+          .hall-stat { padding: 0.75rem; }
+          .hall-stat-value { font-size: 1.2rem; }
+          .hall-stat-label { font-size: 0.55rem; letter-spacing: 1px; }
+          .past-list :global(.past-card) { grid-template-columns: auto minmax(0, 1fr); gap: 1rem; padding: 1.1rem; }
+          .past-date { width: 52px; height: 56px; }
+          .past-date-day { font-size: 1.3rem; }
+          .past-prize { grid-column: 1 / -1; flex-direction: row; align-items: center; justify-content: space-between; }
+          .past-winner-name, .past-list :global(.past-card.is-latest) .past-winner-name { font-size: 1.25rem; }
         }
 
         @media (max-width: 768px) {
@@ -460,6 +642,7 @@ export default function TournamentsPage() {
           .card-content { padding: 1.25rem; }
           .tournament-title { font-size: 1.1rem; }
           .card-footer { margin-top: 1.5rem; }
+          .header-actions :global(.host-cta) { width: 100%; justify-content: center; }
         }
       `}</style>
     </main>
