@@ -90,8 +90,9 @@ export default function TournamentsPage() {
     return (
       <main className="page">
         <div className="shell">
+          <h1 className="sr-only">Tournaments</h1>
           <div className="empty-state slide-in">
-            <div className="empty-icon loading-spin">🎮</div>
+            <div className="empty-icon loading-spin" aria-hidden="true">🎮</div>
             <h3>Loading tournaments...</h3>
           </div>
         </div>

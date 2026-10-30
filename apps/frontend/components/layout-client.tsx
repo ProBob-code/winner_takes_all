@@ -64,12 +64,14 @@ export function LayoutClient({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="app-container">
+      {/* First thing a keyboard reaches: past the sidebar's links to the page itself. */}
+      <a href="#content" className="skip-link">Skip to content</a>
       <Sidebar user={user} />
       
       <div className="main-content">
         <Topbar user={user} />
         
-        <div className="page-content" style={{ flex: 1, position: "relative" }}>
+        <div id="content" tabIndex={-1} className="page-content" style={{ flex: 1, position: "relative", outline: "none" }}>
           {children}
         </div>
 

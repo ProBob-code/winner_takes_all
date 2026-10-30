@@ -146,8 +146,9 @@ export default function ScreeningPage() {
     return (
       <main className="page animate-in">
         <div className="shell" style={{ maxWidth: '1200px' }}>
+          <h1 className="sr-only">Live screening</h1>
           <div className="empty-state">
-            <div className="empty-icon loading-spin">📺</div>
+            <div className="empty-icon loading-spin" aria-hidden="true">📺</div>
             <h3 className="glow-text">INITIALIZING MULTIPLEX BROADCAST...</h3>
             <p className="muted mt-4">Tuning into all active spectator stadium feeds</p>
           </div>

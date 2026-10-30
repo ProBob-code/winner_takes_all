@@ -16,7 +16,7 @@ const CHECKOUT_SRC = "https://checkout.razorpay.com/v1/checkout.js";
 /**
  * Make sure Razorpay's checkout is actually loaded.
  *
- * The script is requested in the page head with `async`, so it may not have
+ * The script is added when the button mounts, so it may not have
  * arrived by the time someone clicks — and if an ad blocker or a strict
  * network drops it, it never will. Waiting for it, and loading it again if it
  * is missing, turns "please wait a moment" into either a checkout or an

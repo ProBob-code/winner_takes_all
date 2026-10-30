@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef } from "react";
 import Link from "next/link";
+import { HOME_FAQ } from "@/lib/home-faq";
 
 export function LandingPage() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -304,7 +305,7 @@ export function LandingPage() {
 
       <main className="landing-main" style={{ padding: "120px 6% 60px", textAlign: "center", position: "relative", zIndex: 2 }}>
         <section className="hero" style={{ minHeight: "80vh", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" }}>
-          <div className="hero-chip" style={{ background: "color-mix(in oklab, var(--accent) 10%, transparent)", border: "1px solid color-mix(in oklab, var(--accent) 20%, transparent)", padding: "8px 16px", borderRadius: "9999px", fontSize: "0.85rem", fontWeight: 700, color: "var(--accent)", marginBottom: "2rem" }}>For pool rooms, clubs and bars</div>
+          <div className="hero-chip" style={{ background: "color-mix(in oklab, var(--accent) 10%, transparent)", border: "1px solid color-mix(in oklab, var(--accent) 20%, transparent)", padding: "8px 16px", borderRadius: "9999px", fontSize: "0.85rem", fontWeight: 700, color: "var(--accent)", marginBottom: "2rem" }}>Tournament software for pool rooms, clubs and bars</div>
           <h1 className="hero-title" style={{ fontSize: "clamp(3rem, 8vw, 6rem)", fontWeight: 900, lineHeight: 0.9, letterSpacing: "-2px", marginBottom: "2.5rem" }}>
             RUN THE NIGHT.<br />
             <span className="gradient-text">CROWN THE WINNER.</span>
@@ -359,6 +360,45 @@ export function LandingPage() {
                     <h3>Nothing to settle</h3>
                     <p className="landing-dim">Players earn WTA coins for frames played and won. No entry fee, no pot, nothing to cash out.</p>
                 </div>
+            </div>
+        </section>
+
+        <section className="section reveal" style={{ marginTop: "120px" }}>
+            <h2 style={{ fontSize: "3rem", fontWeight: 800, marginBottom: "1rem" }}>WHO RUNS A NIGHT ON IT</h2>
+            <p className="muted" style={{ marginBottom: "4rem", maxWidth: "700px", marginLeft: "auto", marginRight: "auto", lineHeight: 1.6 }}>Any room with a table, a screen and a crowd that likes to win.</p>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(260px, 100%), 1fr))", gap: "2rem", textAlign: "left" }}>
+                <div className="card-3d" style={{ padding: "2.5rem" }}>
+                    <h3>Pool rooms</h3>
+                    <p className="landing-dim" style={{ lineHeight: 1.6 }}>A weekly 8-ball knockout on your quietest night: eight players, best of one frame, finished in about two hours with the bracket on the wall the whole time.</p>
+                </div>
+                <div className="card-3d" style={{ padding: "2.5rem" }}>
+                    <h3>Bars and pubs</h3>
+                    <p className="landing-dim" style={{ lineHeight: 1.6 }}>A reason for regulars to arrive at eight and stay past ten. The prize is a bar tab, which comes back to your till, and the result lands in the group chat that night.</p>
+                </div>
+                <div className="card-3d" style={{ padding: "2.5rem" }}>
+                    <h3>Clubs and societies</h3>
+                    <p className="landing-dim" style={{ lineHeight: 1.6 }}>Run a series across several nights and the standings carry from one to the next, so a season ends with a champion everyone saw coming.</p>
+                </div>
+                <div className="card-3d" style={{ padding: "2.5rem" }}>
+                    <h3>Gaming cafés</h3>
+                    <p className="landing-dim" style={{ lineHeight: 1.6 }}>Football nights with a clock, a steady scoreboard and rankings that follow each player from one night to the next.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="faq" className="section reveal" style={{ marginTop: "120px" }}>
+            <h2 style={{ fontSize: "3rem", fontWeight: 800, marginBottom: "4rem" }}>QUESTIONS HOSTS ASK</h2>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(420px, 100%), 1fr))", gap: "1.5rem", textAlign: "left", maxWidth: "1100px", margin: "0 auto" }}>
+                {HOME_FAQ.map(({ q, a }) => (
+                    <div key={q} className="card-3d" style={{ padding: "2rem 2.5rem" }}>
+                        <h3 style={{ fontSize: "1.15rem", marginBottom: "0.75rem" }}>{q}</h3>
+                        <p className="landing-dim" style={{ lineHeight: 1.6, margin: 0 }}>{a}</p>
+                    </div>
+                ))}
+            </div>
+            <div className="hero-buttons" style={{ display: "flex", gap: "1.5rem", justifyContent: "center", marginTop: "4rem" }}>
+                <Link href="/run" style={{ background: "var(--gradient-fill)", color: "var(--on-gold)", padding: "1.25rem 2.5rem", borderRadius: "16px", textDecoration: "none", fontWeight: 800, fontSize: "1.1rem" }}>START A NIGHT →</Link>
+                <Link href="/playbook" style={{ background: "var(--landing-card)", border: "1px solid var(--landing-card-line)", color: "var(--landing-ink)", padding: "1.25rem 2.5rem", borderRadius: "16px", textDecoration: "none", fontWeight: 800, fontSize: "1.1rem" }}>READ THE HOST PLAYBOOK</Link>
             </div>
         </section>
       </main>

@@ -8,6 +8,7 @@
     "/robots.txt",
     "/sw.js",
     "/og-image.jpg",
+    "/apple-touch-icon.png",
     "/assets/*",
     "/8ball/*",
     "/sounds/*"

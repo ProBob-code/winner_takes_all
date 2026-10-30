@@ -80,8 +80,9 @@ export default function LeaderboardPage() {
     return (
       <main className="page">
         <div className="shell">
+          <h1 className="sr-only">Rankings</h1>
           <div className="empty-state slide-in">
-            <div className="empty-icon loading-spin">🏆</div>
+            <div className="empty-icon loading-spin" aria-hidden="true">🏆</div>
             <h3>Loading leaderboard...</h3>
           </div>
         </div>
@@ -94,7 +95,7 @@ export default function LeaderboardPage() {
       <main className="page">
         <div className="shell">
           <div className="panel page-card">
-            <h2>Leaderboard</h2>
+            <h1>Rankings</h1>
             <p className="muted">Something went wrong. Error: {error}</p>
           </div>
         </div>

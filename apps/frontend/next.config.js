@@ -1,5 +1,19 @@
 /** @type {import('next').NextConfig} */
+// Sent with every response. The CSP is limited to what cannot break a page --
+// who may frame us, <base> and plugins -- because a script/style allowlist would
+// have to track Razorpay, jsDelivr's ONNX runtime and Next's inline scripts.
+// Camera and microphone stay ours: broadcast and voice scoring use them.
+const SECURITY_HEADERS = [
+  { key: "Content-Security-Policy", value: "frame-ancestors 'self'; base-uri 'self'; object-src 'none'; upgrade-insecure-requests" },
+  { key: "X-Frame-Options", value: "SAMEORIGIN" },
+  { key: "X-Content-Type-Options", value: "nosniff" },
+  { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+  { key: "Permissions-Policy", value: "camera=(self), microphone=(self), geolocation=(), browsing-topics=()" },
+  { key: "Strict-Transport-Security", value: "max-age=31536000" },
+];
+
 const nextConfig = {
+  poweredByHeader: false,
   env: {
     // Stamped into the page so a screenshot says which build it came from.
     // Three rounds of "the mobile fix isn't live" were a tab showing a render
@@ -29,6 +43,7 @@ const nextConfig = {
   },
   async headers() {
     return [
+      { source: "/:path*", headers: SECURITY_HEADERS },
       {
         // Next serves prerendered documents with s-maxage=31536000. Assets are
         // content-hashed, so a document cached for a year keeps asking for the
