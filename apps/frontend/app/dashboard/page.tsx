@@ -30,6 +30,7 @@ import { useRouter } from "next/navigation";
 import { getApiUrl } from "@/lib/api-config";
 import { backendFetch } from "@/lib/backend";
 import { CoinMark } from "@/components/coin-mark";
+import { ProofResults } from "@/components/proof-results";
 import { formatCoins, formatCoinsExact } from "@/lib/format";
 
 interface Coins {
@@ -216,6 +217,11 @@ export default function DashboardPage() {
           )}
         </section>
 
+        {/* Results still locking, and how today's games were proven. */}
+        <div style={{ marginTop: "var(--space-5)" }}>
+          <ProofResults />
+        </div>
+
         {/* ── The one action a host opens this page to take ── */}
         <div className="auto-grid" style={{ marginTop: "var(--space-5)" }}>
           <Link href="/run" className="action-card is-primary shimmer">
@@ -226,6 +232,17 @@ export default function DashboardPage() {
             <span className="title">Run a night</span>
             <span className="muted" style={{ fontSize: "var(--text-sm)" }}>
               Pick a game, pick how many are playing, go.
+            </span>
+          </Link>
+
+          <Link href="/code" className="action-card">
+            <span className="glyph" aria-hidden="true">🔢</span>
+            <span className="chip" style={{ alignSelf: "flex-start" }}>
+              Playing now?
+            </span>
+            <span className="title">Enter a game code</span>
+            <span className="muted" style={{ fontSize: "var(--text-sm)" }}>
+              Type the code on the scorer&apos;s screen so your game counts as verified.
             </span>
           </Link>
 

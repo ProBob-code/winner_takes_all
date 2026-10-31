@@ -66,6 +66,8 @@ import {
 } from "./lib/billing";
 import { shareText, whatsappShareUrl, type ShareKind } from "./lib/share-text";
 import { planFrameConfirmation } from "./lib/frame-confirmation";
+import * as Proof from "./lib/proof";
+import type { MatchProofRow } from "./lib/d1-store";
 import {
   COIN_AWARDS,
   COIN_RULES,
@@ -294,6 +296,8 @@ for (const family of [
   "/api/shop",
   "/api/shop/*",
   "/api/nights/*",
+  // Proof of Play's game codes, check-ins and results.
+  "/api/proof/*",
 ]) {
   app.use(family, async (c, next) => {
     try {
@@ -533,7 +537,7 @@ async function collectionPointsMap(store: D1Store, userIds: string[]): Promise<M
  * the coin ledger are added by the owner's route alone.
  */
 async function playerCard(store: D1Store, userId: string) {
-  const [stats, coins, counts, avatarRaw, record, trophies, owned, loadout] = await Promise.all([
+  const [stats, coins, counts, avatarRaw, record, trophies, owned, loadout, proven] = await Promise.all([
     store.getUserMatchStats(userId),
     store.getCoinBalance(userId).catch(() => null),
     store.coinReasonCounts(userId).catch(() => ({} as Record<string, number>)),
@@ -542,6 +546,7 @@ async function playerCard(store: D1Store, userId: string) {
     trophyStanding(store, userId),
     store.getUnlocks(userId).catch(() => [] as string[]),
     store.getLoadout(userId).catch(() => ({ borderId: null, showcase: [] as string[], emoteDeck: [] as string[] })),
+    store.verifiedGames(userId).catch(() => ({ verified: 0, partly: 0 })),
   ]);
   const lifetime = coins?.lifetime ?? 0;
   const played = stats.wins + stats.losses;
@@ -560,6 +565,8 @@ async function playerCard(store: D1Store, userId: string) {
     },
     collection: { owned: owned.length, points: collectionPointsFor(owned) },
     trophies,
+    // Offline games proven by Proof of Play (lib/proof.ts).
+    proof: proven,
     // Listed field by field rather than spread, so a figure added to
     // getUserMatchStats later (it already carries payout earnings in cents)
     // never reaches the public profile by accident.
@@ -2120,7 +2127,9 @@ async function settleTournament(
 
   // Whoever took the night earns for it. Guarded on the tournament id, so a
   // tournament settled twice crowns the same people once.
-  await awardNightCoins(c, tournament, result.winners.map((w) => w.userId));
+  // Paid once every game of the night has settled its proof, which is
+  // usually 15 minutes after the final. See payNightWhenProven.
+  await payNightWhenProven(store, tournament);
 
   // The tournament is over, so it stops being something to watch or film.
   await setEngineArenaLive(c, tournament, false);
@@ -2173,12 +2182,14 @@ async function setEngineArenaLive(
  * award is not worth failing a league night over.
  */
 async function awardFrameCoins(
-  c: Context<AppContext>,
+  store: D1Store,
   tournament: TournamentRecord,
-  match: EngineMatchRow
+  match: EngineMatchRow,
+  // How well the game was proven (lib/proof.ts). A game from before Proof of
+  // Play, or one being paid again, defaults to paying in full as it always did.
+  tier: Proof.ProofTier = "VERIFIED"
 ): Promise<void> {
   try {
-    const store = c.get("store");
 
     // A bracket of one is not a game. Anything larger is.
     const competitors = await store.countCompetitors(tournament.id);
@@ -2224,7 +2235,8 @@ async function awardFrameCoins(
       }
 
       const earnedToday = await store.coinsEarnedToday(userId);
-      const { granted } = applyDailyCap(wanted, earnedToday);
+      const proven = wanted.filter((award) => Proof.keepsCoinAward(tier, award.reason));
+      const { granted } = applyDailyCap(proven, earnedToday);
 
       for (const award of granted) {
         await store.awardCoins({
@@ -2270,15 +2282,18 @@ async function awardFrameCoins(
  * is logged and the night carries on.
  */
 async function settleFrameTrophies(
-  c: Context<AppContext>,
+  store: D1Store,
   tournament: TournamentRecord,
-  match: EngineMatchRow
+  match: EngineMatchRow,
+  tier: Proof.ProofTier = "VERIFIED"
 ): Promise<void> {
   try {
     // A draw moves nobody, and an undecided frame has no result yet.
     if (!match.winner_id) return;
+    // An unproven game is practice: it never moves a trophy.
+    const proofWeight = Proof.trophyWeight(tier);
+    if (proofWeight === 0) return;
 
-    const store = c.get("store");
     const competitors = await store.countCompetitors(tournament.id);
     if (competitors < MIN_PLAYERS_FOR_COINS) return;
 
@@ -2312,7 +2327,7 @@ async function settleFrameTrophies(
         const mine = standing.get(track)!.get(me.user_id) ?? 0;
         const theirs = isGuest ? mine : standing.get(track)!.get(them.user_id!) ?? 0;
         const already = await store.trophyGamesToday(me.user_id, track, opponentKey);
-        const weight = (isGuest ? GUEST_WEIGHT : 1) * pairWeight(already);
+        const weight = (isGuest ? GUEST_WEIGHT : 1) * pairWeight(already) * proofWeight;
         if (weight === 0) continue;
 
         let delta = trophyDelta({ mine, theirs, won, weight });
@@ -2450,23 +2465,23 @@ async function awardSeasonCoins(
 
 /** Pay the coins for taking the night, to whoever won it. */
 async function awardNightCoins(
-  c: Context<AppContext>,
+  store: D1Store,
   tournament: TournamentRecord,
-  winnerUserIds: Array<string | null>
+  winners: Array<{ userId: string | null; share: number }>
 ): Promise<void> {
   try {
-    const store = c.get("store");
     const competitors = await store.countCompetitors(tournament.id);
     if (competitors < MIN_PLAYERS_FOR_COINS) return;
 
-    for (const userId of winnerUserIds) {
-      if (!userId) continue;
+    for (const { userId, share } of winners) {
+      if (!userId || share <= 0) continue;
       for (const award of awardsForNight(tournament.name, competitors)) {
         await store.awardCoins({
           userId,
           reason: award.reason,
-          amount: award.amount,
-          description: award.description,
+          amount: Math.round(award.amount * share),
+          description:
+            share < 1 ? `${award.description} (half: most games not verified)` : award.description,
           referenceType: "tournament",
           referenceId: tournament.id,
         });
@@ -2474,6 +2489,154 @@ async function awardNightCoins(
     }
   } catch (err) {
     console.error("Could not award coins for a night:", err);
+  }
+}
+
+// ── Proof of Play (lib/proof.ts) ──
+
+/** Full time: open the game's result to objection, and lock it 15 minutes on. */
+async function openProof(store: D1Store, tournament: TournamentRecord, match: EngineMatchRow): Promise<void> {
+  try {
+    const now = nowSeconds();
+    await store.finishProof({
+      matchId: match.id,
+      tournamentId: tournament.id,
+      winnerTeamId: match.winner_id ?? null,
+      finishedAt: now,
+      lockAt: now + Proof.LOCK_SECONDS,
+    });
+  } catch (err) {
+    // The table has the result. A proof that could not be opened only means
+    // the game pays nothing, which is the safe way to fail.
+    console.error("Could not open a game's proof:", err);
+  }
+}
+
+/** What a game's proof adds up to, from its check-ins, clock and venue. */
+async function assessMatch(
+  store: D1Store,
+  tournament: TournamentRecord,
+  match: EngineMatchRow,
+  proof: MatchProofRow
+): Promise<Proof.ProofVerdict> {
+  const [teams, checkins] = await Promise.all([
+    store.getEngineTeams(tournament.id),
+    store.getCheckins(match.id),
+  ]);
+  const side = (teamId: string): Proof.ProofSide => {
+    const team = teams.find((t) => t.id === teamId);
+    const userId = team?.user_id ?? null;
+    // Only the account on the seat counts as that side checking in.
+    const ci = checkins.find((x) => x.team_id === teamId && x.user_id === userId && x.checked_in_at > 0);
+    const fix = ci && ci.lat !== null && ci.lng !== null
+      ? { lat: ci.lat, lng: ci.lng, acc: ci.acc ?? 0 }
+      : null;
+    return { teamId, userId, checkedIn: !!ci, fix };
+  };
+  const sport = engineSport(tournament);
+  const scored = (match.score_team_a ?? 0) + (match.score_team_b ?? 0);
+  return Proof.assessProof({
+    sport,
+    sides: [side(match.team_a_id), side(match.team_b_id)],
+    scorerFix:
+      proof.scorer_lat !== null && proof.scorer_lng !== null
+        ? { lat: proof.scorer_lat, lng: proof.scorer_lng, acc: proof.scorer_acc ?? 0 }
+        : null,
+    venueNight: !!tournament.venue_id,
+    durationSeconds:
+      match.start_time && proof.finished_at ? Math.max(0, proof.finished_at - match.start_time) : null,
+    // Tennis keeps games in the score; a game is at least four points.
+    points: sport === "TENNIS" ? scored * 4 : scored,
+  });
+}
+
+/**
+ * Pay one game whose result has locked, or void it. The close is a claim, so
+ * two requests settling the same game pay it once.
+ */
+async function settleProof(store: D1Store, proof: MatchProofRow): Promise<void> {
+  const now = nowSeconds();
+  const [tournament, match] = await Promise.all([
+    store.getTournament(proof.tournament_id),
+    store.getEngineMatch(proof.match_id),
+  ]);
+  if (!tournament || !match) {
+    await store.closeProof({ matchId: proof.match_id, from: [proof.status], to: "VOID", tier: null, reasons: ["missing"], now });
+    return;
+  }
+
+  // A dispute the host ruled void, or one nobody ruled on within the day.
+  if (proof.status === "DISPUTED" && proof.ruling !== "STANDS") {
+    const reason = proof.ruling === "VOID" ? "ruled_void" : "dispute_expired";
+    if (await store.closeProof({ matchId: proof.match_id, from: ["DISPUTED"], to: "VOID", tier: null, reasons: [reason], now })) {
+      await payNightWhenProven(store, tournament);
+    }
+    return;
+  }
+
+  const verdict = await assessMatch(store, tournament, match, proof);
+  const claimed = await store.closeProof({
+    matchId: proof.match_id,
+    from: [proof.status],
+    to: "PAID",
+    tier: verdict.tier,
+    reasons: verdict.reasons,
+    now,
+  });
+  if (!claimed) return;
+
+  await awardFrameCoins(store, tournament, match, verdict.tier);
+  await settleFrameTrophies(store, tournament, match, verdict.tier);
+  await payNightWhenProven(store, tournament);
+}
+
+/** Pay every game whose result has locked. Cheap when there is nothing due. */
+async function settleDueProofs(store: D1Store, tournamentId?: string): Promise<void> {
+  try {
+    const now = nowSeconds();
+    const due = await store.dueProofs(now, now - Proof.DISPUTE_VOID_SECONDS, tournamentId);
+    for (const proof of due) {
+      try {
+        await settleProof(store, proof);
+      } catch (err) {
+        console.error(`Could not settle the proof of ${proof.match_id}:`, err);
+      }
+    }
+  } catch (err) {
+    console.error("Could not look for proofs to settle:", err);
+  }
+}
+
+/**
+ * The night-win coins, once every game of the night has settled. A champion
+ * whose games were mostly verified gets all of it, mostly at least partly
+ * verified half, and otherwise none (Proof.nightWinShare). Idempotent on the
+ * tournament, so calling it after every settled game pays once.
+ */
+async function payNightWhenProven(store: D1Store, tournament: TournamentRecord): Promise<void> {
+  try {
+    const fresh = await store.getTournament(tournament.id);
+    const result = (fresh?.bracket_state as any)?.result as TournamentResult | undefined;
+    if (!fresh || fresh.status !== "completed" || !result) return;
+
+    const proofs = await store.proofsForTournament(tournament.id);
+    // Waits on results still locking or disputed. A game abandoned mid-play
+    // (still LIVE when the night closed) never finished and holds nothing up.
+    if (proofs.some((p) => p.status === "OPEN" || p.status === "DISPUTED")) return;
+
+    const matches = await store.getEngineMatches(tournament.id);
+    const winners = result.winners.map((w) => {
+      const played = new Set(
+        matches.filter((m) => m.team_a_id === w.teamId || m.team_b_id === w.teamId).map((m) => m.id)
+      );
+      const tiers = proofs
+        .filter((p) => played.has(p.match_id))
+        .map((p) => (p.status === "PAID" ? (p.tier as Proof.ProofTier) : "PRACTICE"));
+      return { userId: w.userId, share: Proof.nightWinShare(tiers) };
+    });
+    await awardNightCoins(store, fresh, winners);
+  } catch (err) {
+    console.error("Could not pay a night once proven:", err);
   }
 }
 
@@ -2538,11 +2701,11 @@ async function recordEngineResult(
     await store.addEngineTeamResult(delta.teamId, delta);
   }
 
-  // The same moment the table counts the frame, the players earn for it. Both
-  // are guarded against paying twice, so a re-settled frame changes neither.
-  await awardFrameCoins(c, tournament, match);
-  // And their trophies move, on the same guard.
-  await settleFrameTrophies(c, tournament, match);
+  // The table counts the frame now. What it pays waits for its proof: the
+  // result is open to the loser's objection for 15 minutes, then coins and
+  // trophies are paid at the tier it earned (settleProof). Guarded, so a
+  // re-settled frame opens nothing twice.
+  await openProof(store, tournament, match);
 
   // Winning the grand final ends the tournament: it closes, and the pot is
   // paid out, without the host having to do anything.
@@ -2675,6 +2838,9 @@ app.get("/api/engine/tournaments/:id/state", async (c) => {
   const settled = await settleExpiredMatches(c, tournament, matches);
   const released = await releaseHeldFrames(c, tournament, matches);
   if (settled || released) teams = await store.getEngineTeams(tournamentId);
+  // Results whose 15 minutes are up are paid on the next look at the night.
+  await settleDueProofs(store, tournamentId);
+  const proofs = await store.proofsForTournament(tournamentId).catch(() => [] as MatchProofRow[]);
 
   // A tournament whose final was won before prizes were paid out at all — or
   // one whose payout was interrupted — never had its pot settled. The final
@@ -2733,6 +2899,15 @@ app.get("/api/engine/tournaments/:id/state", async (c) => {
     })),
     joinCode: joinCode?.code ?? null,
     joinUrl: joinCode ? `${publicOrigin(c.env)}/join/${joinCode.code}` : null,
+    // How each game was proven. Never the code, and never a location.
+    proofs: proofs.map((pr) => ({
+      matchId: pr.match_id,
+      status: pr.status,
+      tier: pr.tier,
+      lockAt: pr.lock_at,
+      disputedTeamId: pr.disputed_team_id,
+      ruling: pr.ruling,
+    })),
     matchesPerTeam: tournament.max_matches_per_team || 2,
     // Clocks are counted down in the browser against start_time, which is
     // server time; this lets a client with a skewed clock correct for it.
@@ -2800,8 +2975,14 @@ app.post("/api/engine/tournaments/:id/claim-seat", async (c) => {
     )
     .sort((a, b) => (a.match_order ?? 0) - (b.match_order ?? 0));
   for (const match of matches) {
-    await awardFrameCoins(c, tournament, match);
-    await settleFrameTrophies(c, tournament, match);
+    // A game with a proof was played under Proof of Play, and this account
+    // never checked into it: practice. One still open will be paid by its
+    // proof when it locks. Older games pay as they always did.
+    const proof = await store.getProof(match.id).catch(() => null);
+    if (proof && proof.status !== "PAID") continue;
+    const tier: Proof.ProofTier = proof ? "PRACTICE" : "VERIFIED";
+    await awardFrameCoins(store, tournament, match, tier);
+    await settleFrameTrophies(store, tournament, match, tier);
   }
 
   // The night itself, if this seat took it and nobody's account was there.
@@ -2814,7 +2995,7 @@ app.post("/api/engine/tournaments/:id/claim-seat", async (c) => {
       winner.userId = user.id;
       const sole = result.winners.length === 1 ? user.id : null;
       await store.setTournamentWinnerAccount(tournament.id, sole, { ...(tournament.bracket_state as any), result });
-      await awardNightCoins(c, tournament, [user.id]);
+      await payNightWhenProven(store, tournament);
     }
   }
 
@@ -2827,6 +3008,284 @@ app.post("/api/engine/tournaments/:id/claim-seat", async (c) => {
     wonNight,
     coinsPaid: Math.max(0, after.lifetime - before.lifetime),
   });
+});
+
+// ── Proof of Play routes (lib/proof.ts) ──
+
+/** A location a phone sent, if it sent a usable one. */
+function readFix(v: any): Proof.Fix | null {
+  if (!v || typeof v !== "object") return null;
+  const fix = { lat: Number(v.lat), lng: Number(v.lng), acc: Number(v.acc) };
+  return Proof.isValidFix(fix) ? { ...fix, acc: Math.min(fix.acc, 5000) } : null;
+}
+
+/**
+ * The code on the scorer's screen for the game that is on. Called every few
+ * seconds while it shows; a new code replaces one about to expire. A scorer
+ * signed in as one of the players checks that side in by showing it.
+ */
+app.post("/api/proof/matches/:id/code", async (c) => {
+  const store = c.get("store");
+  const match = await store.getEngineMatch(c.req.param("id"));
+  if (!match) return c.json({ ok: false, message: "Match not found" }, 404);
+  const access = await requireTournamentManager(c, match.tournament_id);
+  if ("error" in access) return access.error;
+  const user = requireUser(c)!;
+
+  if (match.status !== "LIVE") {
+    return c.json({ ok: false, message: "A code is only shown while the game is on." }, 409);
+  }
+
+  const body: any = await readJson(c).catch(() => ({}));
+  const fix = readFix(body?.fix);
+  const now = nowSeconds();
+
+  let proof = await store.ensureLiveProof(match.id, match.tournament_id, now);
+  // Replace a code with under 15 seconds left, so nobody reads one that dies
+  // while they type it.
+  if (!proof.code || (proof.code_expires_at ?? 0) < now + 15) {
+    for (let attempt = 0; attempt < 4; attempt++) {
+      const code = Proof.generateCode((n) => crypto.getRandomValues(new Uint8Array(n)));
+      if (await store.setProofCode(match.id, code, now + Proof.CODE_TTL_SECONDS, now)) break;
+    }
+    proof = (await store.getProof(match.id))!;
+  }
+  if (fix) await store.setScorerFix(match.id, fix, now);
+
+  const teams = await store.getEngineTeams(match.tournament_id);
+  for (const teamId of [match.team_a_id, match.team_b_id]) {
+    const team = teams.find((t) => t.id === teamId);
+    if (team?.user_id && team.user_id === user.id) {
+      await store.upsertCheckin({ matchId: match.id, teamId, userId: user.id, now, fix });
+    }
+  }
+
+  const checkins = await store.getCheckins(match.id);
+  return c.json({
+    ok: true,
+    code: proof.code,
+    display: proof.code ? Proof.formatCode(proof.code) : null,
+    expiresAt: proof.code_expires_at,
+    serverTime: now,
+    venueNight: !!access.tournament.venue_id,
+    sides: [match.team_a_id, match.team_b_id].map((teamId) => {
+      const team = teams.find((t) => t.id === teamId);
+      const ci = checkins.find((x) => x.team_id === teamId && x.user_id === team?.user_id && x.checked_in_at > 0);
+      return {
+        teamId,
+        name: team?.name ?? "",
+        hasAccount: !!team?.user_id,
+        checkedIn: !!ci,
+        located: ci ? ci.lat !== null : false,
+      };
+    }),
+  });
+});
+
+/** A player types the code from the scorer's screen on their own phone. */
+app.post("/api/proof/checkin", async (c) => {
+  const user = requireUser(c);
+  if (!user) return c.json({ ok: false, message: "Sign in to check in to your game." }, 401);
+
+  const limited = await checkRateLimit(c.env.SESSIONS, `proof-checkin:${user.id}`, 10, 600);
+  if (!limited.allowed) {
+    return c.json({ ok: false, message: "Too many tries. Wait a few minutes and type the code on the scorer's screen." }, 429);
+  }
+
+  const store = c.get("store");
+  const body: any = await readJson(c).catch(() => ({}));
+  const code = Proof.normalizeCode(body?.code);
+  if (!code) return c.json({ ok: false, message: "A game code is six letters and numbers, like K7M-Q2P." }, 400);
+
+  const now = nowSeconds();
+  const proof = await store.findProofByCode(code, now, Proof.CHECKIN_GRACE_SECONDS);
+  if (!proof) {
+    return c.json({ ok: false, message: "That code isn't on any game right now. Codes change every 2 minutes, so check the scorer's screen." }, 404);
+  }
+
+  const [match, tournament, teams] = await Promise.all([
+    store.getEngineMatch(proof.match_id),
+    store.getTournament(proof.tournament_id),
+    store.getEngineTeams(proof.tournament_id),
+  ]);
+  if (!match || !tournament) return c.json({ ok: false, message: "That game no longer exists." }, 404);
+
+  const mine = [match.team_a_id, match.team_b_id]
+    .map((id) => teams.find((t) => t.id === id))
+    .find((t) => t?.user_id === user.id);
+  if (!mine) {
+    return c.json({
+      ok: false,
+      message: "Your account isn't on either side of this game. Ask the host to seat you, or join the night with its QR code first.",
+    }, 403);
+  }
+
+  const elsewhere = await store.liveCheckinElsewhere(user.id, match.id);
+  if (elsewhere) {
+    return c.json({ ok: false, message: "You're already checked in to another game that's still on." }, 409);
+  }
+
+  const fix = readFix(body?.fix);
+  await store.upsertCheckin({ matchId: match.id, teamId: mine.id, userId: user.id, now, fix });
+
+  const other = teams.find((t) => t.id === (mine.id === match.team_a_id ? match.team_b_id : match.team_a_id));
+  return c.json({
+    ok: true,
+    game: {
+      matchId: match.id,
+      tournamentId: tournament.id,
+      tournamentName: tournament.name,
+      sport: engineSport(tournament),
+      you: mine.name,
+      opponent: other?.name ?? "",
+      opponentHasAccount: !!other?.user_id,
+    },
+    located: !!fix,
+  });
+});
+
+/** This player's results waiting to lock, and the ones that settled today. */
+app.get("/api/proof/mine", async (c) => {
+  const user = requireUser(c);
+  if (!user) return c.json({ ok: false, message: "Authentication required" }, 401);
+  const store = c.get("store");
+
+  await settleDueProofs(store);
+  const now = nowSeconds();
+  const [rows, proven] = await Promise.all([
+    store.proofsForPlayer(user.id, now - 24 * 60 * 60),
+    store.verifiedGames(user.id),
+  ]);
+
+  const games = rows.map((r: any) => {
+    const mySide = r.team_a_user === user.id ? r.team_a_id : r.team_b_id;
+    const mayObject =
+      Proof.disputingTeams(r.team_a_id, r.team_b_id, r.winner_team_id).includes(mySide);
+    return {
+      matchId: r.match_id,
+      tournamentId: r.tournament_id,
+      tournamentName: r.tournament_name,
+      sport: r.sport,
+      teamA: { id: r.team_a_id, name: r.team_a_name, score: r.score_team_a },
+      teamB: { id: r.team_b_id, name: r.team_b_name, score: r.score_team_b },
+      winnerTeamId: r.winner_team_id,
+      mySide,
+      status: r.status,
+      tier: r.tier,
+      reasons: (() => { try { return JSON.parse(r.reasons || "[]"); } catch { return []; } })(),
+      lockAt: r.lock_at,
+      canObject: mayObject && r.status === "OPEN" && (r.lock_at ?? 0) > now,
+      disputedByMe: r.disputed_by === user.id,
+      ruling: r.ruling,
+    };
+  });
+  return c.json({ ok: true, serverTime: now, games, proof: proven });
+});
+
+/** "Looks right": the side that could object agrees, and the result locks now. */
+app.post("/api/proof/matches/:id/confirm", async (c) => {
+  const user = requireUser(c);
+  if (!user) return c.json({ ok: false, message: "Authentication required" }, 401);
+  const store = c.get("store");
+  const now = nowSeconds();
+
+  const proof = await store.getProof(c.req.param("id"));
+  const match = proof ? await store.getEngineMatch(proof.match_id) : null;
+  if (!proof || !match) return c.json({ ok: false, message: "Game not found" }, 404);
+  if (proof.status !== "OPEN") return c.json({ ok: true, status: proof.status });
+
+  const teams = await store.getEngineTeams(proof.tournament_id);
+  const mine = [match.team_a_id, match.team_b_id].find(
+    (id) => teams.find((t) => t.id === id)?.user_id === user.id
+  );
+  if (!mine) return c.json({ ok: false, message: "You didn't play in this game." }, 403);
+
+  // Agreement only. It never counts as having typed the code at the table.
+  await store.recordAgreement(match.id, mine, user.id, now);
+
+  // Locks once everyone who could object has agreed. Only accounts can.
+  const objectors = Proof.disputingTeams(match.team_a_id, match.team_b_id, proof.winner_team_id)
+    .filter((id) => !!teams.find((t) => t.id === id)?.user_id);
+  const checkins = await store.getCheckins(match.id);
+  const allAgreed = objectors.every((id) => checkins.some((x) => x.team_id === id && x.confirmed_at));
+  if (allAgreed) {
+    await store.lockProofNow(match.id, now);
+    const locked = await store.getProof(match.id);
+    if (locked) await settleProof(store, locked);
+  }
+  const after = await store.getProof(match.id);
+  return c.json({ ok: true, status: after?.status ?? proof.status, tier: after?.tier ?? null });
+});
+
+/** "Something's wrong": the loser holds the result for the host to rule on. */
+app.post("/api/proof/matches/:id/dispute", async (c) => {
+  const user = requireUser(c);
+  if (!user) return c.json({ ok: false, message: "Authentication required" }, 401);
+  const store = c.get("store");
+  const now = nowSeconds();
+
+  const proof = await store.getProof(c.req.param("id"));
+  const match = proof ? await store.getEngineMatch(proof.match_id) : null;
+  if (!proof || !match) return c.json({ ok: false, message: "Game not found" }, 404);
+
+  const teams = await store.getEngineTeams(proof.tournament_id);
+  const mine = [match.team_a_id, match.team_b_id].find(
+    (id) => teams.find((t) => t.id === id)?.user_id === user.id
+  );
+  if (!mine) return c.json({ ok: false, message: "You didn't play in this game." }, 403);
+  if (!Proof.disputingTeams(match.team_a_id, match.team_b_id, proof.winner_team_id).includes(mine)) {
+    return c.json({ ok: false, message: "Only the side that lost can object to a result." }, 403);
+  }
+
+  const rejected = await store.rejectedDisputes(user.id, now - 7 * 24 * 60 * 60);
+  if (rejected >= Proof.MAX_REJECTED_DISPUTES) {
+    return c.json({
+      ok: false,
+      message: "Hosts upheld your last few objections, so you can't object to results this week. Talk to the host.",
+    }, 403);
+  }
+
+  if (!(await store.disputeProof(match.id, mine, user.id, now))) {
+    return c.json({ ok: false, message: "This result has already locked." }, 409);
+  }
+  return c.json({ ok: true, status: "DISPUTED" });
+});
+
+/**
+ * The host rules on a disputed result: it stands (and pays) or it is void.
+ * A host who played in the game cannot rule on it; it voids after a day.
+ */
+app.post("/api/proof/matches/:id/rule", async (c) => {
+  const store = c.get("store");
+  const proof = await store.getProof(c.req.param("id"));
+  const match = proof ? await store.getEngineMatch(proof.match_id) : null;
+  if (!proof || !match) return c.json({ ok: false, message: "Game not found" }, 404);
+
+  const access = await requireTournamentManager(c, proof.tournament_id);
+  if ("error" in access) return access.error;
+  const user = requireUser(c)!;
+
+  const body: any = await readJson(c).catch(() => ({}));
+  const ruling = body?.ruling === "STANDS" ? "STANDS" : body?.ruling === "VOID" ? "VOID" : null;
+  if (!ruling) return c.json({ ok: false, message: "Rule that the result stands, or that it is void." }, 400);
+
+  const teams = await store.getEngineTeams(proof.tournament_id);
+  const played = [match.team_a_id, match.team_b_id].some(
+    (id) => teams.find((t) => t.id === id)?.user_id === user.id
+  );
+  if (played) {
+    return c.json({
+      ok: false,
+      message: "You played in this game, so you can't rule on it. If nobody else does, it's void after 24 hours.",
+    }, 403);
+  }
+
+  if (!(await store.ruleOnProof(match.id, ruling, user.id, nowSeconds()))) {
+    return c.json({ ok: false, message: "This game isn't waiting on a ruling." }, 409);
+  }
+  const ruled = await store.getProof(match.id);
+  if (ruled) await settleProof(store, ruled);
+  return c.json({ ok: true, ruling });
 });
 
 app.post("/api/engine/tournaments/:id/add-team", async (c) => {
@@ -5617,6 +6076,10 @@ export default {
   fetch: app.fetch,
   async scheduled(_event: unknown, env: Env, ctx: { waitUntil(p: Promise<unknown>): void }) {
     ctx.waitUntil(openDueSeriesWeeks(env));
+    // Results nobody has looked at since they locked, and disputes left a day.
+    ctx.waitUntil(
+      settleDueProofs(new D1Store(env.DB)).catch((err) => console.error("Could not settle proofs:", err))
+    );
   },
 };
 

@@ -292,6 +292,12 @@ export default function CoinsPage() {
             Small coins for every match you play and win. The champion of the night takes
             the majority — and losing never costs you a coin.
           </p>
+          <p className="muted" style={{ marginTop: "var(--space-2)", maxWidth: "40rem" }}>
+            Offline games pay in full when they&apos;re <strong>verified</strong>: both players type the
+            code on the scorer&apos;s screen at <Link href="/code">/code</Link>, at the table. Without
+            location a game is partly verified (no win bonus, half the trophies), and a game against a
+            walk-in counts as practice. Results lock 15 minutes after full time, and pay then.
+          </p>
 
           <div className="flip-grid wta-deal" style={{ marginTop: "var(--space-5)" }}>
             {EARN_LABELS.filter((e) => rules?.awards?.[e.key]).map((e, i) => {

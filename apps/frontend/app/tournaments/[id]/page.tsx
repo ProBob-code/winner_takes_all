@@ -10,6 +10,7 @@ import { ShareTournament } from "@/components/share-tournament";
 import { DeleteTournamentDialog } from "@/components/delete-tournament-dialog";
 import { HostedArena, type ArenaMatch, type ArenaTeam } from "@/components/hosted-arena";
 import { ClaimSeat } from "@/components/claim-seat";
+import { ProofResults } from "@/components/proof-results";
 import { NightEmoteBar, NightEmoteBubbles } from "@/components/night-emotes";
 import "@/components/progression.css";
 import "@/components/tournament-engine.css";
@@ -386,6 +387,26 @@ export default function TournamentDetailPage() {
             <NightEmoteBubbles tournamentId={id} />
           </>
         )}
+
+        {/* Proof of Play: a seated player whose game is on is asked for the
+            code on the scorer's screen, and sees their results lock. */}
+        {hasStarted && engineState && (() => {
+          const mySeat = engineState.teams.find((t: any) => t.user_id && t.user_id === profileData?.user?.id);
+          if (!mySeat) return null;
+          const playing = (engineState.matches ?? []).some(
+            (m: any) => m.status === "LIVE" && (m.team_a_id === mySeat.id || m.team_b_id === mySeat.id)
+          );
+          return (
+            <>
+              {playing && (
+                <Link href="/code" className="proof-callout">
+                  <strong>You&apos;re on.</strong> Type the game code from the scorer&apos;s screen so this game counts as verified →
+                </Link>
+              )}
+              <ProofResults title="Your games tonight" />
+            </>
+          );
+        })()}
 
         {hasStarted && engineState && (
           <HostedArena

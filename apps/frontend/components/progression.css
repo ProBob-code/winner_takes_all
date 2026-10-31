@@ -880,3 +880,170 @@
 .av-preview svg {
   max-width: 100%;
 }
+
+/* ── Proof of Play ── */
+
+.pp-proof-line {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-top: 0.3rem;
+  font-size: var(--text-sm, 0.875rem);
+}
+
+/* The code on the scorer's screen: read across a table. */
+.proof-code {
+  border: 1px solid var(--gold);
+  background: var(--gold-subtle);
+  border-radius: var(--radius-sm);
+  padding: var(--space-3);
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+}
+.proof-code-top { display: flex; justify-content: space-between; align-items: center; gap: var(--space-2); }
+.proof-code-kicker {
+  font-size: var(--text-xs, 0.75rem);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--gold);
+  font-weight: 800;
+}
+.proof-code-hide {
+  background: none;
+  border: 0;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: var(--text-sm, 0.875rem);
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+}
+.proof-code-value {
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: clamp(2.2rem, 11vw, 3.6rem);
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-align: center;
+  line-height: 1.05;
+  color: var(--text-primary, inherit);
+}
+.proof-code-how, .proof-code-note { margin: 0; font-size: var(--text-sm, 0.875rem); text-align: center; overflow-wrap: anywhere; }
+.proof-code-note { color: var(--text-muted); }
+.proof-code-sides { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.3rem; }
+.proof-code-sides li {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-size: var(--text-sm, 0.875rem);
+  min-width: 0;
+}
+.proof-code-sides li.in .proof-code-mark { color: var(--green); }
+.proof-code-mark { width: 1.1em; text-align: center; font-weight: 900; flex-shrink: 0; }
+.proof-code-name { font-weight: 700; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.proof-code-locate { display: flex; gap: 0.5rem; align-items: center; font-size: var(--text-xs, 0.75rem); color: var(--text-muted); }
+.proof-code-mini {
+  align-self: center;
+  border: 1px solid var(--gold);
+  background: var(--gold-subtle);
+  color: inherit;
+  border-radius: var(--radius-full);
+  padding: 0.4rem 1rem;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.proof-dispute {
+  border: 1px solid var(--red);
+  background: var(--red-subtle);
+  border-radius: var(--radius-sm);
+  padding: var(--space-3);
+  display: grid;
+  gap: var(--space-2);
+}
+.proof-dispute p { margin: 0; }
+.proof-dispute-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: var(--space-2); }
+.proof-dispute-actions .staff-btn { min-height: 56px; }
+
+/* /code */
+.proof-page { max-width: 34rem; display: grid; gap: var(--space-4); }
+.proof-page-title { margin: 0; font-size: var(--text-3xl); font-weight: 900; letter-spacing: -0.02em; }
+.proof-page > p { margin: 0; }
+.proof-form { display: grid; gap: var(--space-3); }
+.proof-form-label { font-size: var(--text-xs, 0.75rem); text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-muted); font-weight: 800; }
+.proof-input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: clamp(2rem, 10vw, 2.8rem);
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-align: center;
+  text-transform: uppercase;
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--radius-sm);
+  border: 2px solid var(--border-color);
+  background: var(--bg-inset);
+  color: inherit;
+}
+.proof-input:focus { outline: none; border-color: var(--gold); }
+.proof-locate { display: flex; gap: 0.6rem; align-items: flex-start; font-size: var(--text-sm, 0.875rem); color: var(--text-muted); }
+.proof-locate input { margin-top: 0.2rem; flex-shrink: 0; }
+.proof-submit { width: 100%; min-height: 3.25rem; }
+.proof-error { margin: 0; color: var(--red-light, var(--red)); font-size: var(--text-sm, 0.875rem); }
+.proof-done {
+  border: 1px solid var(--green);
+  background: var(--green-subtle);
+  border-radius: var(--radius-sm);
+  padding: var(--space-3);
+  display: grid;
+  gap: var(--space-2);
+  justify-items: start;
+}
+.proof-done p { margin: 0; }
+
+/* A player's results, locking or settled. */
+.proof-results { display: grid; gap: var(--space-2); min-width: 0; margin-bottom: var(--space-4); }
+.proof-results-title { margin: 0; font-size: var(--text-lg); font-weight: 800; }
+.proof-results-error { margin: 0; color: var(--red-light, var(--red)); font-size: var(--text-sm, 0.875rem); }
+.proof-card {
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  border-radius: var(--radius-sm);
+  padding: var(--space-3);
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+}
+.proof-card.open { border-color: var(--gold); }
+.proof-card.disputed { border-color: var(--red); }
+.proof-card-head { display: flex; justify-content: space-between; align-items: center; gap: var(--space-2); min-width: 0; }
+.proof-card-night { font-size: var(--text-xs, 0.75rem); color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.proof-tier { font-size: var(--text-xs, 0.75rem); font-weight: 800; white-space: nowrap; }
+.proof-tier.verified { color: var(--green); }
+.proof-tier.partly { color: var(--gold); }
+.proof-tier.practice, .proof-tier.void { color: var(--text-muted); }
+.proof-card-score {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-2);
+}
+.proof-card-score span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.proof-card-score span:last-child { text-align: right; }
+.proof-card-score span.me { font-weight: 800; }
+.proof-card-score strong { font-size: var(--text-lg); font-variant-numeric: tabular-nums; }
+.proof-card-line { margin: 0; font-size: var(--text-sm, 0.875rem); }
+.proof-card-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: var(--space-2); }
+
+.proof-callout {
+  display: block;
+  margin-bottom: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--gold);
+  background: var(--gold-subtle);
+  border-radius: var(--radius-sm);
+  color: inherit;
+  text-decoration: none;
+}

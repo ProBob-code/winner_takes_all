@@ -279,6 +279,44 @@ export interface ArenaRecord {
   pin: string | null; owner_id: string | null; updated_at: string;
 }
 
+/** A game's Proof of Play record (lib/proof.ts). */
+export interface MatchProofRow {
+  match_id: string;
+  tournament_id: string;
+  code: string | null;
+  code_expires_at: number | null;
+  prev_code: string | null;
+  prev_expires_at: number | null;
+  scorer_lat: number | null;
+  scorer_lng: number | null;
+  scorer_acc: number | null;
+  status: "LIVE" | "OPEN" | "DISPUTED" | "PAID" | "VOID";
+  tier: string | null;
+  reasons: string | null;
+  winner_team_id: string | null;
+  finished_at: number | null;
+  lock_at: number | null;
+  disputed_team_id: string | null;
+  disputed_by: string | null;
+  disputed_at: number | null;
+  ruling: "STANDS" | "VOID" | null;
+  ruled_by: string | null;
+  ruled_at: number | null;
+  created_at: number;
+  updated_at: number;
+}
+
+export interface MatchCheckinRow {
+  match_id: string;
+  team_id: string;
+  user_id: string;
+  checked_in_at: number;
+  lat: number | null;
+  lng: number | null;
+  acc: number | null;
+  confirmed_at: number | null;
+}
+
 export class InsufficientFundsError extends Error {
   constructor() { super("Insufficient wallet balance"); }
 }
@@ -2604,5 +2642,291 @@ export class D1Store {
       `SELECT COUNT(*) AS n FROM engine_teams WHERE tournament_id = ?`
     ).bind(tournamentId).first<any>();
     return r?.n ?? 0;
+  }
+
+  // ── Proof of Play (lib/proof.ts) ──
+
+  async getProof(matchId: string): Promise<MatchProofRow | null> {
+    try {
+      return (await this.db.prepare(`SELECT * FROM match_proofs WHERE match_id = ?`)
+        .bind(matchId).first<MatchProofRow>()) ?? null;
+    } catch (err) {
+      if (isMissingTableError(err)) return null;
+      throw err;
+    }
+  }
+
+  /** The proof for a game that is on, created the first time it is asked for. */
+  async ensureLiveProof(matchId: string, tournamentId: string, now: number): Promise<MatchProofRow> {
+    await this.db.prepare(
+      `INSERT OR IGNORE INTO match_proofs (match_id, tournament_id, status, created_at, updated_at)
+       VALUES (?, ?, 'LIVE', ?, ?)`
+    ).bind(matchId, tournamentId, now, now).run();
+    return (await this.getProof(matchId))!;
+  }
+
+  /** Put a new code on the scorer's screen. False if another game holds it. */
+  async setProofCode(matchId: string, code: string, expiresAt: number, now: number): Promise<boolean> {
+    const clash = await this.db.prepare(
+      `SELECT match_id FROM match_proofs WHERE code = ? AND code_expires_at >= ? AND match_id != ?`
+    ).bind(code, now, matchId).first<any>();
+    if (clash) return false;
+    await this.db.prepare(
+      // The code being replaced still works for half a minute, for whoever
+      // was halfway through typing it.
+      `UPDATE match_proofs SET prev_code = code, prev_expires_at = ?, code = ?, code_expires_at = ?, updated_at = ?
+       WHERE match_id = ?`
+    ).bind(now + 30, code, expiresAt, now, matchId).run();
+    return true;
+  }
+
+  async setScorerFix(matchId: string, fix: { lat: number; lng: number; acc: number }, now: number): Promise<void> {
+    await this.db.prepare(
+      `UPDATE match_proofs SET scorer_lat = ?, scorer_lng = ?, scorer_acc = ?, updated_at = ?
+       WHERE match_id = ? AND status IN ('LIVE', 'OPEN')`
+    ).bind(fix.lat, fix.lng, fix.acc, now, matchId).run();
+  }
+
+  /** The game a typed code belongs to, while it can still be checked into. */
+  async findProofByCode(code: string, now: number, graceSeconds: number): Promise<MatchProofRow | null> {
+    try {
+      return (await this.db.prepare(
+        `SELECT * FROM match_proofs
+         WHERE ((code = ? AND code_expires_at >= ?) OR (prev_code = ? AND prev_expires_at >= ?))
+           AND (status = 'LIVE' OR (status = 'OPEN' AND finished_at >= ?))
+         LIMIT 1`
+      ).bind(code, now, code, now, now - graceSeconds).first<MatchProofRow>()) ?? null;
+    } catch (err) {
+      if (isMissingTableError(err)) return null;
+      throw err;
+    }
+  }
+
+  /**
+   * Check a side in. Typing the code again only refreshes the location; the
+   * side stays checked in by whoever did it first.
+   */
+  async upsertCheckin(args: {
+    matchId: string; teamId: string; userId: string; now: number;
+    fix: { lat: number; lng: number; acc: number } | null;
+  }): Promise<void> {
+    const f = args.fix;
+    await this.db.prepare(
+      `INSERT INTO match_checkins (match_id, team_id, user_id, checked_in_at, lat, lng, acc)
+       VALUES (?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT(match_id, team_id) DO UPDATE SET
+         checked_in_at = CASE WHEN checked_in_at = 0 THEN excluded.checked_in_at ELSE checked_in_at END,
+         lat = COALESCE(excluded.lat, lat),
+         lng = COALESCE(excluded.lng, lng),
+         acc = COALESCE(excluded.acc, acc)
+       WHERE user_id = excluded.user_id`
+    ).bind(args.matchId, args.teamId, args.userId, args.now, f?.lat ?? null, f?.lng ?? null, f?.acc ?? null).run();
+  }
+
+  async getCheckins(matchId: string): Promise<MatchCheckinRow[]> {
+    try {
+      const { results } = await this.db.prepare(
+        `SELECT * FROM match_checkins WHERE match_id = ?`
+      ).bind(matchId).all<MatchCheckinRow>();
+      return results;
+    } catch (err) {
+      if (isMissingTableError(err)) return [];
+      throw err;
+    }
+  }
+
+  /** Another game this player is checked into that is still on. */
+  async liveCheckinElsewhere(userId: string, matchId: string): Promise<string | null> {
+    const r = await this.db.prepare(
+      `SELECT c.match_id FROM match_checkins c
+       JOIN match_proofs p ON p.match_id = c.match_id
+       WHERE c.user_id = ? AND c.match_id != ? AND p.status = 'LIVE' AND c.checked_in_at > 0
+       LIMIT 1`
+    ).bind(userId, matchId).first<any>();
+    return r?.match_id ?? null;
+  }
+
+  /** Full time: the result is open for objection until `lockAt`. */
+  async finishProof(args: {
+    matchId: string; tournamentId: string; winnerTeamId: string | null;
+    finishedAt: number; lockAt: number;
+  }): Promise<void> {
+    await this.db.prepare(
+      `INSERT INTO match_proofs (match_id, tournament_id, status, winner_team_id, finished_at, lock_at, created_at, updated_at)
+       VALUES (?, ?, 'OPEN', ?, ?, ?, ?, ?)
+       ON CONFLICT(match_id) DO UPDATE SET
+         status = 'OPEN',
+         winner_team_id = excluded.winner_team_id,
+         finished_at = excluded.finished_at,
+         lock_at = excluded.lock_at,
+         updated_at = excluded.updated_at
+       WHERE status = 'LIVE'`
+    ).bind(
+      args.matchId, args.tournamentId, args.winnerTeamId, args.finishedAt, args.lockAt,
+      args.finishedAt, args.finishedAt
+    ).run();
+  }
+
+  /** Results whose window has closed, and disputes nobody ruled on in time. */
+  async dueProofs(now: number, disputeVoidBefore: number, tournamentId?: string, limit = 25): Promise<MatchProofRow[]> {
+    try {
+      const where = tournamentId ? `AND tournament_id = ?` : ``;
+      const stmt = this.db.prepare(
+        `SELECT * FROM match_proofs
+         WHERE ((status = 'OPEN' AND lock_at <= ?)
+             OR (status = 'DISPUTED' AND (ruling IS NOT NULL OR disputed_at <= ?))) ${where}
+         ORDER BY lock_at ASC LIMIT ?`
+      );
+      const { results } = await (tournamentId
+        ? stmt.bind(now, disputeVoidBefore, tournamentId, limit)
+        : stmt.bind(now, disputeVoidBefore, limit)
+      ).all<MatchProofRow>();
+      return results;
+    } catch (err) {
+      if (isMissingTableError(err)) return [];
+      throw err;
+    }
+  }
+
+  /**
+   * Close a proof as paid or void. The status guard makes it a claim: of two
+   * requests settling the same game, only one gets true and pays.
+   */
+  async closeProof(args: {
+    matchId: string; from: string[]; to: "PAID" | "VOID";
+    tier: string | null; reasons: string[]; now: number;
+  }): Promise<boolean> {
+    const marks = args.from.map(() => "?").join(", ");
+    const r = await this.db.prepare(
+      `UPDATE match_proofs SET status = ?, tier = ?, reasons = ?, code = NULL, prev_code = NULL,
+         scorer_lat = NULL, scorer_lng = NULL, scorer_acc = NULL, updated_at = ?
+       WHERE match_id = ? AND status IN (${marks})`
+    ).bind(args.to, args.tier, JSON.stringify(args.reasons), args.now, args.matchId, ...args.from).run();
+    if ((r.meta?.changes ?? 0) === 0) return false;
+    // The coordinates have done their job. Only the verdict is kept.
+    await this.db.prepare(
+      `UPDATE match_checkins SET lat = NULL, lng = NULL, acc = NULL WHERE match_id = ?`
+    ).bind(args.matchId).run();
+    return true;
+  }
+
+  async disputeProof(matchId: string, teamId: string, userId: string, now: number): Promise<boolean> {
+    const r = await this.db.prepare(
+      `UPDATE match_proofs SET status = 'DISPUTED', disputed_team_id = ?, disputed_by = ?,
+         disputed_at = ?, updated_at = ?
+       WHERE match_id = ? AND status = 'OPEN' AND lock_at > ?`
+    ).bind(teamId, userId, now, now, matchId, now).run();
+    return (r.meta?.changes ?? 0) > 0;
+  }
+
+  /**
+   * "Looks right": the side agrees with the result. A side that never typed
+   * the code gets a row with checked_in_at 0, which records the agreement
+   * and is never read as having been at the table.
+   */
+  async recordAgreement(matchId: string, teamId: string, userId: string, now: number): Promise<void> {
+    await this.db.prepare(
+      `INSERT INTO match_checkins (match_id, team_id, user_id, checked_in_at, confirmed_at)
+       VALUES (?, ?, ?, 0, ?)
+       ON CONFLICT(match_id, team_id) DO UPDATE SET confirmed_at = excluded.confirmed_at
+       WHERE user_id = excluded.user_id`
+    ).bind(matchId, teamId, userId, now).run();
+  }
+
+  async lockProofNow(matchId: string, now: number): Promise<void> {
+    await this.db.prepare(
+      `UPDATE match_proofs SET lock_at = ?, updated_at = ? WHERE match_id = ? AND status = 'OPEN'`
+    ).bind(now, now, matchId).run();
+  }
+
+  async ruleOnProof(matchId: string, ruling: "STANDS" | "VOID", hostId: string, now: number): Promise<boolean> {
+    const r = await this.db.prepare(
+      `UPDATE match_proofs SET ruling = ?, ruled_by = ?, ruled_at = ?, updated_at = ?
+       WHERE match_id = ? AND status = 'DISPUTED' AND ruling IS NULL`
+    ).bind(ruling, hostId, now, now, matchId).run();
+    return (r.meta?.changes ?? 0) > 0;
+  }
+
+  /** Disputes a host ruled against this player since `since`. */
+  async rejectedDisputes(userId: string, since: number): Promise<number> {
+    try {
+      const r = await this.db.prepare(
+        `SELECT COUNT(*) AS n FROM match_proofs
+         WHERE disputed_by = ? AND ruling = 'STANDS' AND ruled_at >= ?`
+      ).bind(userId, since).first<any>();
+      return Number(r?.n) || 0;
+    } catch (err) {
+      if (isMissingTableError(err)) return 0;
+      throw err;
+    }
+  }
+
+  async proofsForTournament(tournamentId: string): Promise<MatchProofRow[]> {
+    try {
+      const { results } = await this.db.prepare(
+        `SELECT * FROM match_proofs WHERE tournament_id = ?`
+      ).bind(tournamentId).all<MatchProofRow>();
+      return results;
+    } catch (err) {
+      if (isMissingTableError(err)) return [];
+      throw err;
+    }
+  }
+
+  async checkinsForTournament(tournamentId: string): Promise<MatchCheckinRow[]> {
+    try {
+      const { results } = await this.db.prepare(
+        `SELECT c.* FROM match_checkins c JOIN match_proofs p ON p.match_id = c.match_id
+         WHERE p.tournament_id = ?`
+      ).bind(tournamentId).all<MatchCheckinRow>();
+      return results;
+    } catch (err) {
+      if (isMissingTableError(err)) return [];
+      throw err;
+    }
+  }
+
+  /**
+   * This player's games with a result still to lock or to be ruled on, and
+   * the ones that settled since `since`, newest first.
+   */
+  async proofsForPlayer(userId: string, since: number): Promise<any[]> {
+    try {
+      const { results } = await this.db.prepare(
+        `SELECT p.*, m.team_a_id, m.team_b_id, m.score_team_a, m.score_team_b,
+                ta.name AS team_a_name, tb.name AS team_b_name, ta.user_id AS team_a_user, tb.user_id AS team_b_user,
+                t.name AS tournament_name, t.sport AS sport
+         FROM match_proofs p
+         JOIN engine_matches m ON m.id = p.match_id
+         JOIN engine_teams ta ON ta.id = m.team_a_id
+         JOIN engine_teams tb ON tb.id = m.team_b_id
+         JOIN tournaments t ON t.id = p.tournament_id
+         WHERE (ta.user_id = ? OR tb.user_id = ?)
+           AND p.status != 'LIVE'
+           AND (p.status IN ('OPEN', 'DISPUTED') OR p.updated_at >= ?)
+         ORDER BY p.finished_at DESC LIMIT 20`
+      ).bind(userId, userId, since).all<any>();
+      return results;
+    } catch (err) {
+      if (isMissingTableError(err)) return [];
+      throw err;
+    }
+  }
+
+  /** How this player's settled games were proven. */
+  async verifiedGames(userId: string): Promise<{ verified: number; partly: number }> {
+    try {
+      const r = await this.db.prepare(
+        `SELECT
+           SUM(CASE WHEN p.tier = 'VERIFIED' THEN 1 ELSE 0 END) AS verified,
+           SUM(CASE WHEN p.tier = 'PARTLY' THEN 1 ELSE 0 END) AS partly
+         FROM match_checkins c JOIN match_proofs p ON p.match_id = c.match_id
+         WHERE c.user_id = ? AND c.checked_in_at > 0 AND p.status = 'PAID'`
+      ).bind(userId).first<any>();
+      return { verified: Number(r?.verified) || 0, partly: Number(r?.partly) || 0 };
+    } catch (err) {
+      if (isMissingTableError(err)) return { verified: 0, partly: 0 };
+      throw err;
+    }
   }
 }

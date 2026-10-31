@@ -96,8 +96,12 @@ export function AuthForm({ mode }: AuthFormProps) {
         return;
       }
 
+      // Back to where they were sent from (e.g. /code mid-game), but only a
+      // path on this site: "//evil.example" is a different site.
+      const next = new URLSearchParams(window.location.search).get("next");
+      const safeNext = next && next.startsWith("/") && !next.startsWith("//") && !next.startsWith("/\\") ? next : null;
       startTransition(() => {
-        window.location.href = "/dashboard";
+        window.location.href = safeNext ?? "/dashboard";
       });
     } catch {
       setError("Could not reach the server. Please try again.");

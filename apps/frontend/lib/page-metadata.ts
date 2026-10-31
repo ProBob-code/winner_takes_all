@@ -19,6 +19,7 @@ export const PUBLIC_PAGES: Record<string, { title: string; description: string }
   "/games": { title: "Games", description: "The games you can run nights for on Winner Takes All, including 8-ball pool and football." },
   "/coins": { title: "WTA Coins", description: "How players earn WTA Coins for frames played and won. Coins are a record of play with no cash value." },
   "/shop": { title: "Shop", description: "The Winner Takes All shop." },
+  "/code": { title: "Game code", description: "Check in to the game you're playing with the code on the scorer's screen, so it counts as verified." },
   "/contact": { title: "Contact", description: "Get in touch with the Winner Takes All team about hosting nights at your venue." },
   "/terms": { title: "Terms & Conditions", description: "The terms for using Winner Takes All." },
   "/privacy": { title: "Privacy Policy", description: "How Winner Takes All collects, uses and protects your data." },

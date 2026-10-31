@@ -38,6 +38,8 @@ export interface PlayerCardData {
   /** What they have on show from the shop. Absent against an older API. */
   loadout?: { borderId: string | null; showcase: string[]; emoteDeck: string[] };
   collection?: { owned: number; points: number };
+  /** Offline games proven by Proof of Play. Absent against an older API. */
+  proof?: { verified: number; partly: number };
   stats: {
     played: number;
     wins: number;
@@ -100,6 +102,16 @@ export function PlayerHero({ player, own }: { player: PlayerCardData; own: boole
             <TrophyBadge trophies={overall.trophies} arenaId={overall.arena.id} size={28} />
             <strong>{overall.trophies.toLocaleString("en-IN")}</strong>
             <span className="muted">trophies · {overall.arena.name}</span>
+          </div>
+        )}
+        {player.proof && player.proof.verified + player.proof.partly > 0 && (
+          <div className="pp-proof-line" title="Offline games both players checked in to with the game code">
+            <span aria-hidden>✅</span>
+            <strong>{player.proof.verified.toLocaleString("en-IN")}</strong>
+            <span className="muted">
+              verified game{player.proof.verified === 1 ? "" : "s"}
+              {player.proof.partly > 0 ? ` · ${player.proof.partly} partly` : ""}
+            </span>
           </div>
         )}
         <div className="pp-xp">

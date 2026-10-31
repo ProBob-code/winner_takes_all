@@ -59,6 +59,7 @@ import { RacketCallBanner, tennisGameScore } from "@/components/racket-call";
 import { sportInfo } from "@/lib/sports";
 import { FrameConfirm, type FrameConfirmation } from "@/components/frame-confirm";
 import { VoiceScorer } from "@/components/voice-scorer";
+import { ProofCode } from "@/components/proof-code";
 
 interface Team {
   id: string;
@@ -101,6 +102,14 @@ interface State {
   confirmations?: FrameConfirmation[];
   joinCode?: string | null;
   serverTime?: number;
+  /** How each finished game was proven (Proof of Play). */
+  proofs?: Array<{
+    matchId: string;
+    status: "LIVE" | "OPEN" | "DISPUTED" | "PAID" | "VOID";
+    tier: string | null;
+    disputedTeamId: string | null;
+    ruling: string | null;
+  }>;
 }
 
 const nowSeconds = () => Math.floor(Date.now() / 1000);
@@ -528,6 +537,43 @@ export default function StaffModePage() {
       </header>
 
       {error && <div className="staff-error">{error}</div>}
+
+      {/* Proof of Play: the code each player types on their own phone. */}
+      {liveMatch && <ProofCode matchId={liveMatch.id} />}
+
+      {/* A result the loser objected to waits on the host's word. */}
+      {(state.proofs ?? [])
+        .filter((p) => p.status === "DISPUTED" && !p.ruling)
+        .map((p) => {
+          const m = state.matches.find((x) => x.id === p.matchId);
+          if (!m) return null;
+          return (
+            <section key={p.matchId} className="proof-dispute">
+              <p>
+                <strong>{teamName(p.disputedTeamId ?? "")}</strong> objected to {teamName(m.team_a_id)}{" "}
+                {m.score_team_a}–{m.score_team_b} {teamName(m.team_b_id)}. It pays nothing until you rule.
+              </p>
+              <div className="proof-dispute-actions">
+                <button
+                  type="button"
+                  className="staff-btn"
+                  disabled={working}
+                  onClick={() => void command(`/proof/matches/${p.matchId}/rule`, { ruling: "STANDS" })}
+                >
+                  The result stands
+                </button>
+                <button
+                  type="button"
+                  className="staff-btn ghost"
+                  disabled={working}
+                  onClick={() => void command(`/proof/matches/${p.matchId}/rule`, { ruling: "VOID" })}
+                >
+                  Void the game
+                </button>
+              </div>
+            </section>
+          );
+        })}
 
       {/* Voice: the same taps as the buttons, for a scorer with a cue or a
           drink in hand. Spoken taps go through the same outbox. */}

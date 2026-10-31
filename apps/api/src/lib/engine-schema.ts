@@ -23,7 +23,7 @@
  * 0007_series.sql, 0009_engine_houses.sql, 0010_wallet_description.sql,
  * 0011_payouts_and_bonus.sql, 0012_venues_offline_and_billing.sql,
  * 0013_wta_coins.sql, 0014_player_loadout.sql, 0015_trophies.sql, 0016_shop.sql and
- * 0017_night_emotes.sql;
+ * 0017_night_emotes.sql and 0018_proof_of_play.sql;
  * apps/api/migrations/rehearse.py and
  * rehearse_bootstrap.py check the SQL runs.
  */
@@ -327,6 +327,49 @@ const CREATE_STATEMENTS = [
   )`,
   `CREATE INDEX IF NOT EXISTS idx_night_emotes_recent ON night_emotes(tournament_id, created_at)`,
   `CREATE INDEX IF NOT EXISTS idx_night_emotes_user ON night_emotes(user_id, tournament_id, created_at)`,
+  // Proof of Play (lib/proof.ts): one row per offline game, from the first
+  // code shown to the payout, and one per side that checked in with the code.
+  `CREATE TABLE IF NOT EXISTS match_proofs (
+    match_id TEXT PRIMARY KEY,
+    tournament_id TEXT NOT NULL,
+    code TEXT,
+    code_expires_at INTEGER,
+    prev_code TEXT,
+    prev_expires_at INTEGER,
+    scorer_lat REAL,
+    scorer_lng REAL,
+    scorer_acc REAL,
+    status TEXT NOT NULL DEFAULT 'LIVE',
+    tier TEXT,
+    reasons TEXT,
+    winner_team_id TEXT,
+    finished_at INTEGER,
+    lock_at INTEGER,
+    disputed_team_id TEXT,
+    disputed_by TEXT,
+    disputed_at INTEGER,
+    ruling TEXT,
+    ruled_by TEXT,
+    ruled_at INTEGER,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_match_proofs_code ON match_proofs(code)`,
+  `CREATE INDEX IF NOT EXISTS idx_match_proofs_prev_code ON match_proofs(prev_code)`,
+  `CREATE INDEX IF NOT EXISTS idx_match_proofs_tournament ON match_proofs(tournament_id, status)`,
+  `CREATE INDEX IF NOT EXISTS idx_match_proofs_due ON match_proofs(status, lock_at)`,
+  `CREATE TABLE IF NOT EXISTS match_checkins (
+    match_id TEXT NOT NULL,
+    team_id TEXT NOT NULL,
+    user_id TEXT NOT NULL,
+    checked_in_at INTEGER NOT NULL,
+    lat REAL,
+    lng REAL,
+    acc REAL,
+    confirmed_at INTEGER,
+    PRIMARY KEY (match_id, team_id)
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_match_checkins_user ON match_checkins(user_id, checked_in_at)`,
 ];
 
 /**
