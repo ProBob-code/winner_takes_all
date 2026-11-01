@@ -1047,3 +1047,18 @@
   color: inherit;
   text-decoration: none;
 }
+
+/* The site styles every input full width; a checkbox beside its words must
+   not be, or the words are squeezed into a sliver at the edge. */
+.proof-locate input[type="checkbox"],
+.proof-code-locate input[type="checkbox"] {
+  width: 1.15rem;
+  height: 1.15rem;
+  min-width: 0;
+  flex: 0 0 auto;
+  margin: 0.15rem 0 0;
+  padding: 0;
+  accent-color: var(--gold);
+}
+.proof-locate > span { flex: 1 1 auto; min-width: 0; }
+.proof-code-locate { justify-content: center; text-align: left; }
