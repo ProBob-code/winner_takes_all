@@ -8,6 +8,7 @@ import { readBackendJson, backendFetch } from "@/lib/backend";
 import { JoinTournamentButton } from "@/components/join-tournament-button";
 import { ShareTournament } from "@/components/share-tournament";
 import { DeleteTournamentDialog } from "@/components/delete-tournament-dialog";
+import { EditTournamentDialog } from "@/components/edit-tournament-dialog";
 import { HostedArena, type ArenaMatch, type ArenaTeam } from "@/components/hosted-arena";
 import { ClaimSeat } from "@/components/claim-seat";
 import { ProofResults } from "@/components/proof-results";
@@ -277,6 +278,28 @@ export default function TournamentDetailPage() {
                 Hosted by <strong style={{ color: "var(--text)" }}>{hostName || "the organiser"}</strong>
                 {isHost && <span style={{ color: "var(--gold)", fontWeight: 800 }}> &middot; that is you</span>}
               </p>
+
+              {/* The host's own controls, where the host looks first. A
+                  finished night has paid out, so it stays as it was. */}
+              {isHost && !isClosed && (
+                <div style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap", marginTop: "0.9rem" }}>
+                  <EditTournamentDialog
+                    tournament={{
+                      id: tournament.id,
+                      name: tournament.name,
+                      maxPlayers: tournament.maxPlayers,
+                      joinedPlayers: tournament.joinedPlayers ?? participants.length,
+                      sport: tournament.sport,
+                      bracketType: tournament.bracketType,
+                      tournamentType: tournament.tournamentType,
+                      isPrivate: !!tournament.isPrivate,
+                      status: tournament.status,
+                    }}
+                    onSaved={fetchTournamentData}
+                  />
+                  <DeleteTournamentDialog tournamentId={id} tournamentName={tournament.name} />
+                </div>
+              )}
             </div>
 
             {/* What the winner receives is the headline, not the pool. Once
@@ -602,18 +625,12 @@ export default function TournamentDetailPage() {
           )}
         </div>
 
-        {/* RESET BUTTON (Host Only) — a finished tournament has paid its prize
-            out, so it stays on the record and cannot be deleted. */}
-        {isHost && (
-          <div style={{ marginTop: '4rem', textAlign: 'center' }}>
-            {isClosed ? (
-              <p className="muted" style={{ fontSize: '0.8rem' }}>
-                This tournament is finished and its prize has been paid, so it stays on the record.
-              </p>
-            ) : (
-              <DeleteTournamentDialog tournamentId={id} tournamentName={tournament.name} />
-            )}
-          </div>
+        {/* Edit and delete sit in the header; a finished night says why
+            they are gone. */}
+        {isHost && isClosed && (
+          <p className="muted" style={{ marginTop: '4rem', textAlign: 'center', fontSize: '0.8rem' }}>
+            This tournament is finished and its prize has been paid, so it stays on the record.
+          </p>
         )}
       </div>
     </main>

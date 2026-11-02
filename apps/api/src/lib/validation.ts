@@ -103,6 +103,19 @@ export const createTournamentSchema = z.object({
   requireFrameConfirmation: z.boolean().default(false),
 });
 
+/**
+ * What a host may change after creating a night. Every field is optional:
+ * what is left out stays as it was. A password of "" or null makes it public.
+ */
+export const editTournamentSchema = z.object({
+  name: z.string().trim().min(2).max(80).optional(),
+  maxPlayers: z.coerce.number().int().min(2).max(128).optional(),
+  tournamentType: z.enum(["online", "offline"]).optional(),
+  sport: z.enum(["8BALL", "FOOTBALL", "TENNIS", "BADMINTON", "PICKLEBALL", "TABLE_TENNIS"]).optional(),
+  bracketType: z.enum(["single_elimination", "double_elimination", "round_robin", "group_knockout"]).optional(),
+  password: z.string().max(64).nullable().optional(),
+});
+
 // ── Weekly series ──
 
 export const createSeriesSchema = z.object({

@@ -897,6 +897,18 @@ export class D1Store {
     ).bind(winnerUserId, JSON.stringify(state), new Date().toISOString(), id).run();
   }
 
+  /** A host's edits to a night: only the columns given are written. */
+  async updateTournamentDetails(id: string, fields: Partial<Record<
+    "name" | "max_players" | "tournament_type" | "sport" | "bracket_type" | "password",
+    string | number | null
+  >>): Promise<void> {
+    const entries = Object.entries(fields).filter(([, v]) => v !== undefined);
+    if (entries.length === 0) return;
+    const sets = entries.map(([k]) => `${k} = ?`);
+    await this.db.prepare(`UPDATE tournaments SET ${sets.join(", ")}, updated_at = ? WHERE id = ?`)
+      .bind(...entries.map(([, v]) => v), new Date().toISOString(), id).run();
+  }
+
   async updateTournamentBracketState(id: string, state: any): Promise<void> {
     await this.db.prepare(
       `UPDATE tournaments SET bracket_state = ?, updated_at = ? WHERE id = ?`
@@ -913,14 +925,25 @@ export class D1Store {
    * as both.
    */
   async deleteTournament(id: string): Promise<void> {
-    // Children first, so a foreign key never blocks the parent.
-    for (const table of ["engine_matchups", "engine_matches", "engine_teams", "matches", "participants"]) {
+    // Children first, so a foreign key never blocks the parent. What hangs
+    // off a game (score taps, confirmations, check-ins) goes before the games.
+    const run = async (sql: string) => {
       try {
-        await this.db.prepare(`DELETE FROM ${table} WHERE tournament_id = ?`).bind(id).run();
+        await this.db.prepare(sql).bind(id).run();
       } catch (err) {
         // A database without the engine tables has nothing to clean up there.
         if (!isMissingTableError(err)) throw err;
       }
+    };
+    const games = `SELECT id FROM engine_matches WHERE tournament_id = ?`;
+    for (const table of ["engine_score_events", "engine_frame_confirmations", "match_checkins"]) {
+      await run(`DELETE FROM ${table} WHERE match_id IN (${games})`);
+    }
+    for (const table of [
+      "match_proofs", "night_emotes", "tournament_join_codes", "notifications",
+      "engine_matchups", "engine_matches", "engine_teams", "matches", "participants",
+    ]) {
+      await run(`DELETE FROM ${table} WHERE tournament_id = ?`);
     }
 
     await this.db.prepare(`DELETE FROM tournaments WHERE id = ?`).bind(id).run();

@@ -29,6 +29,7 @@ import { WhatsappPush } from "./whatsapp-push";
 import { FrameConfirm, type FrameConfirmation } from "./frame-confirm";
 import { rankStandings, placeStandings, anythingCounted } from "@/lib/standings";
 import { NightLinks } from "./night-links";
+import { VoiceScorer } from "./voice-scorer";
 import { enqueueWrite, startOutbox, subscribeToOutbox, pendingWrites } from "@/lib/outbox";
 import { projectPending, type LocalScoreEvent, type PendingTap } from "@/lib/local-score";
 import type { Match, Team } from "./football-match-engine";
@@ -1054,6 +1055,22 @@ export function HostedArena({
                     if (isHost) setActiveTeam(matchId, teamId);
                   }}
                 />
+              )}
+
+              {/* Voice: the same taps as the buttons, through the same outbox. */}
+              {isHost && (
+                <div style={{ width: "100%", marginTop: "1rem" }}>
+                  <VoiceScorer
+                    match={liveMatch}
+                    players={[
+                      { id: liveMatch.team_a_id, name: getTeamName(liveMatch.team_a_id) },
+                      { id: liveMatch.team_b_id, name: getTeamName(liveMatch.team_b_id) },
+                    ]}
+                    sport={isFootball ? "FOOTBALL" : isRally ? "RALLY" : "POOL"}
+                    rallySport={info.id}
+                    onScore={(teamId, type) => recordScore(liveMatch.id, teamId, type)}
+                  />
+                </div>
               )}
 
               {published && (

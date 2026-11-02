@@ -140,6 +140,7 @@ import {
   verifyPaymentSchema,
   transferSchema,
   createTournamentSchema,
+  editTournamentSchema,
   createSeriesSchema,
   joinTournamentSchema,
   submitScoreSchema,
@@ -210,7 +211,7 @@ app.use("/api/*", async (c, next) => {
 app.use("/api/*", async (c, next) => {
   const handler = cors({
     origin: allowedOrigins(c.env),
-    allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowHeaders: ["Content-Type", "Authorization"],
     credentials: true,
   });
@@ -1826,6 +1827,52 @@ app.post("/api/series/:id/end", async (c) => {
   await awardSeasonCoins(c, series);
 
   return c.json({ ok: true });
+});
+
+/**
+ * Edit a tournament. Only the host who created it, or an admin.
+ *
+ * The name can change until the night is finished. Everything that shapes
+ * the draw (sport, format, size, where it is played, the password) can only
+ * change before it starts: once the fixtures exist, they were drawn for the
+ * night as it was. The entry fee never changes here; people have paid it.
+ */
+app.patch("/api/tournaments/:id", async (c) => {
+  const user = requireUser(c);
+  if (!user) return c.json({ ok: false, message: "Authentication required" }, 401);
+
+  const store = c.get("store");
+  const tournament = await store.getTournament(c.req.param("id"));
+  if (!tournament) return c.json({ ok: false, message: "Tournament not found" }, 404);
+  if (tournament.host_id !== user.id && user.role !== "admin") {
+    return c.json({ ok: false, message: "Only the host who created this tournament can edit it" }, 403);
+  }
+  if (String(tournament.status).toLowerCase() === "completed") {
+    return c.json({ ok: false, message: "A finished tournament stays as it was played." }, 409);
+  }
+
+  const body = parseBody(editTournamentSchema, await readJson(c));
+  const { name, ...shape } = body;
+  const changesShape = Object.values(shape).some((v) => v !== undefined);
+  if (changesShape && tournament.status !== "open") {
+    return c.json({ ok: false, message: "Once the night has started only its name can change." }, 409);
+  }
+  const joined = tournament.participant_ids.length;
+  if (body.maxPlayers !== undefined && body.maxPlayers < joined) {
+    return c.json({ ok: false, message: `${joined} have already joined, so the limit cannot go below ${joined}.` }, 409);
+  }
+
+  await store.updateTournamentDetails(tournament.id, {
+    name,
+    max_players: body.maxPlayers,
+    tournament_type: body.tournamentType,
+    sport: body.sport,
+    bracket_type: body.bracketType,
+    password: body.password === undefined ? undefined : body.password?.trim() || null,
+  });
+
+  const updated = await store.getTournament(tournament.id);
+  return c.json({ ok: true, tournament: serializeTournament(updated!) });
 });
 
 /**

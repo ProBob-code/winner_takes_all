@@ -10,6 +10,8 @@ import { FootballTeamPod, ScorersList, FootballScoreboard, FootballPossessionPit
 import { FootballMatchEngine } from "./football-match-engine";
 import { PoolMatchEngine } from "./pool-match-engine";
 import { BroadcastCode } from "@/components/broadcast-code";
+import { VoiceScorer } from "@/components/voice-scorer";
+import type { LocalScoreEvent } from "@/lib/local-score";
 import "@/components/tournament-engine.css";
 
 type Player = {
@@ -878,7 +880,7 @@ export function QuickTournament() {
   };
 
   const updateScore = (matchId: string, teamId: string, type: 'BALL' | 'BLACK' | 'FOUL' | 'REMOVE_BALL' | 'REMOVE_FOUL' | 'POINT' | 'REMOVE_POINT') => {
-    setMatches(matches.map(m => {
+    setMatches(prev => prev.map(m => {
       if (m.id !== matchId || m.status !== 'LIVE') return m;
       const nm = { ...m };
       const isA = m.team_a_id === teamId;
@@ -1086,6 +1088,51 @@ export function QuickTournament() {
         subs: []
       } : undefined
     } : m));
+  };
+
+  /**
+   * A goal by voice. Football keeps its score as the scored attempts, so a
+   * spoken goal is one more of those for the team (credited to the team, as
+   * nobody said who), and taking one back removes that team's latest.
+   */
+  const voiceGoal = (matchId: string, teamId: string, remove: boolean) => {
+    setMatches(prev => prev.map(m => {
+      if (m.id !== matchId || m.status !== 'LIVE') return m;
+      const fd = m.footballData || { goals: [], cards: [], possession_a: 50, possession_b: 50, passing_a: 80, passing_b: 80, timerSeconds: 0, half: 1 as const };
+      let attempts = [...(fd.attempts || [])];
+      if (remove) {
+        const last = attempts.map(a => a.teamId === teamId && a.outcome === 'SCORED').lastIndexOf(true);
+        if (last < 0) return m;
+        attempts.splice(last, 1);
+      } else {
+        const halfSeconds = Math.floor(m.duration / 2);
+        const minute = Math.floor(((fd.half === 2 ? halfSeconds : 0) + (fd.timerSeconds || 0)) / 60) + 1;
+        attempts = [...attempts, {
+          id: `att_${Date.now()}`,
+          teamId,
+          playerId: '',
+          playerName: getTeamName(teamId),
+          minute,
+          outcome: 'SCORED' as const,
+        }];
+      }
+      const scored = attempts.filter(a => a.outcome === 'SCORED');
+      return {
+        ...m,
+        score_team_a: scored.filter(a => a.teamId === m.team_a_id).length,
+        score_team_b: scored.filter(a => a.teamId === m.team_b_id).length,
+        footballData: {
+          ...fd,
+          attempts,
+          goals: scored.map(a => ({ id: `goal_${a.id}`, scorerId: a.playerId, scorerName: a.playerName, minute: a.minute, teamId: a.teamId })),
+        },
+      };
+    }));
+  };
+
+  const voiceScore = (matchId: string, teamId: string, type: LocalScoreEvent) => {
+    if (type === 'GOAL' || type === 'REMOVE_GOAL') voiceGoal(matchId, teamId, type === 'REMOVE_GOAL');
+    else updateScore(matchId, teamId, type);
   };
 
   const addGoal = () => {
@@ -2233,6 +2280,22 @@ export function QuickTournament() {
                     setMatches(prev => prev.map(m => m.id === matchId ? { ...m, active_team_id: teamId } : m));
                   }}
                 />
+              )}
+
+              {/* Voice: the same taps as the buttons above. */}
+              {!isLocked && (
+                <div style={{ width: '100%', marginTop: '1rem' }}>
+                  <VoiceScorer
+                    match={{ ...liveMatch, sudden_death: false }}
+                    players={[
+                      { id: liveMatch.team_a_id, name: getTeamName(liveMatch.team_a_id) },
+                      { id: liveMatch.team_b_id, name: getTeamName(liveMatch.team_b_id) },
+                    ]}
+                    sport={liveMatch.sport === 'FOOTBALL' ? 'FOOTBALL' : isRallySport(liveMatch.sport) ? 'RALLY' : 'POOL'}
+                    rallySport={liveMatch.sport}
+                    onScore={async (teamId, type) => voiceScore(liveMatch.id, teamId, type)}
+                  />
+                </div>
               )}
 
               {createdMatches.length > 0 ? (
