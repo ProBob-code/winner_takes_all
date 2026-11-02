@@ -3,6 +3,7 @@
 import React, { useEffect, useRef } from "react";
 import Link from "next/link";
 import { HOME_FAQ } from "@/lib/home-faq";
+import { HeroBalls } from "@/components/hero-balls";
 
 export function LandingPage() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -304,7 +305,8 @@ export function LandingPage() {
       <div ref={glowRef} className="mouse-glow" style={{ position: "fixed", width: "600px", height: "600px", background: "radial-gradient(circle, color-mix(in oklab, var(--accent) 8%, transparent), transparent 70%)", borderRadius: "50%", pointerEvents: "none", zIndex: 999, transform: "translate(-50%, -50%)", opacity: 0 }}></div>
 
       <main className="landing-main" style={{ padding: "120px 6% 60px", textAlign: "center", position: "relative", zIndex: 2 }}>
-        <section className="hero" style={{ minHeight: "80vh", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" }}>
+        <section className="hero" style={{ minHeight: "80vh", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", position: "relative" }}>
+          <HeroBalls />
           <div className="hero-chip" style={{ background: "color-mix(in oklab, var(--accent) 10%, transparent)", border: "1px solid color-mix(in oklab, var(--accent) 20%, transparent)", padding: "8px 16px", borderRadius: "9999px", fontSize: "0.85rem", fontWeight: 700, color: "var(--accent)", marginBottom: "2rem" }}>Tournament software for pool rooms, clubs and bars</div>
           <h1 className="hero-title" style={{ fontSize: "clamp(3rem, 8vw, 6rem)", fontWeight: 900, lineHeight: 0.9, letterSpacing: "-2px", marginBottom: "2.5rem" }}>
             RUN THE NIGHT.<br />
