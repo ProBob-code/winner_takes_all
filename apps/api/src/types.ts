@@ -26,6 +26,11 @@ export interface Env {
 
   // Non-secret config
   /**
+   * OAuth client ID for Sign in with Google. Public (the browser sees it), so
+   * it may live in [vars]; unset hides the Google button.
+   */
+  GOOGLE_CLIENT_ID?: string;
+  /**
    * Whether this deployment may take stakes: entry fees, top-ups, pooled pots
    * and the rake on them.
    *

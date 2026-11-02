@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import type { FormEvent } from "react";
 import { useMemo, useState, useTransition } from "react";
 import { getApiUrl } from "@/lib/api-config";
+import { GoogleButton } from "@/components/google-button";
 
 type AuthFormProps = {
   mode: "login" | "signup";
@@ -66,6 +67,16 @@ export function AuthForm({ mode }: AuthFormProps) {
     ? emailLooksValid && passwordLongEnough
     : email.length > 0 && password.length > 0;
 
+  // Back to where they were sent from (e.g. /code mid-game), but only a
+  // path on this site: "//evil.example" is a different site.
+  function goNext() {
+    const next = new URLSearchParams(window.location.search).get("next");
+    const safeNext = next && next.startsWith("/") && !next.startsWith("//") && !next.startsWith("/\\") ? next : null;
+    startTransition(() => {
+      window.location.href = safeNext ?? "/dashboard";
+    });
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
@@ -96,13 +107,7 @@ export function AuthForm({ mode }: AuthFormProps) {
         return;
       }
 
-      // Back to where they were sent from (e.g. /code mid-game), but only a
-      // path on this site: "//evil.example" is a different site.
-      const next = new URLSearchParams(window.location.search).get("next");
-      const safeNext = next && next.startsWith("/") && !next.startsWith("//") && !next.startsWith("/\\") ? next : null;
-      startTransition(() => {
-        window.location.href = safeNext ?? "/dashboard";
-      });
+      goNext();
     } catch {
       setError("Could not reach the server. Please try again.");
     } finally {
@@ -146,6 +151,8 @@ export function AuthForm({ mode }: AuthFormProps) {
           🪙 Earn WTA Coins every time you play
         </div>
       )}
+
+      <GoogleButton mode={mode} onSignedIn={goNext} onError={setError} />
 
       <div>
         <label htmlFor="auth-email">Email</label>

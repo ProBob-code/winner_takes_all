@@ -24,7 +24,8 @@ import {
   buildLogoutCookies,
   parseCookies,
 } from "./lib/kv-sessions";
-import { hashPassword, verifyPassword, createId, sha256Hex, timingSafeEqual } from "./lib/crypto";
+import { hashPassword, verifyPassword, createId, sha256Hex, timingSafeEqual, randomHex } from "./lib/crypto";
+import { verifyGoogleIdToken, GoogleTokenError } from "./lib/google";
 import { createRazorpayOrder, verifyPaymentSignature, verifyWebhookSignature } from "./lib/razorpay";
 import {
   signBroadcastToken,
@@ -466,6 +467,72 @@ app.post("/api/auth/login", async (c) => {
 
   return c.json({ ok: true, user: serializeUser(user) });
 });
+
+/** The Google client ID, for the button. Null hides it. */
+app.get("/api/auth/google/config", (c) =>
+  c.json({ ok: true, clientId: (c.env.GOOGLE_CLIENT_ID ?? "").trim() || null })
+);
+
+/**
+ * Sign in or sign up with Google, one route for both: a verified Google email
+ * that already has an account logs into it, and one that does not gets a new
+ * account. The new account's password is random and never shown, so it can
+ * only be reached through Google until an admin resets it.
+ */
+app.post("/api/auth/google", async (c) => {
+  const limited = await rateLimit(c, "google", 20, 300);
+  if (limited) return limited;
+
+  const clientId = (c.env.GOOGLE_CLIENT_ID ?? "").trim();
+  if (!clientId) return c.json({ ok: false, message: "Google sign-in is not set up" }, 503);
+
+  const body = (await readJson(c)) as { credential?: unknown };
+  if (typeof body?.credential !== "string" || body.credential.length > 4096) {
+    return c.json({ ok: false, message: "Missing Google credential" }, 400);
+  }
+
+  let who;
+  try {
+    who = await verifyGoogleIdToken(body.credential, clientId);
+  } catch (err) {
+    if (err instanceof GoogleTokenError) {
+      return c.json({ ok: false, message: "Google sign-in could not be verified. Please try again." }, 401);
+    }
+    throw err;
+  }
+
+  const store = c.get("store");
+  let user = await store.getUserByEmail(who.email);
+  let created = false;
+  if (!user) {
+    const SIGNUP_BONUS_RUPEES = 1000;
+    const name = who.name ?? displayNameFromEmail(who.email);
+    user = await store.createUserWithBonus(
+      name,
+      who.email,
+      await hashPassword(randomHex(32)),
+      allowedSignupBonusCents(c.env, SIGNUP_BONUS_RUPEES)
+    );
+    created = true;
+  }
+
+  const tokens = await createSessionTokens(c.env.SESSIONS, user.id);
+  const [access, refresh] = buildSessionCookies(tokens);
+  c.header("Set-Cookie", access, { append: true });
+  c.header("Set-Cookie", refresh, { append: true });
+
+  return c.json({ ok: true, created, user: serializeUser(user) }, created ? 201 : 200);
+});
+
+/** "ava.chen@x.com" becomes "Ava Chen", as the signup form does. */
+function displayNameFromEmail(email: string): string {
+  const words = (email.split("@")[0] ?? "")
+    .split(/[._\-+\d]+/)
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
+  const name = words.join(" ").trim();
+  return name.length >= 2 ? name.slice(0, 50) : "Player";
+}
 
 app.post("/api/auth/refresh", async (c) => {
   // Try body or cookie
