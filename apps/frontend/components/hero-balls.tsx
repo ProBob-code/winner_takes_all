@@ -219,7 +219,7 @@ export function HeroBalls() {
       x + size > block.l && x < block.r && y + size > block.t && y < block.b;
 
     bodies.current = KINDS.map(() => {
-      const size = small ? rand(30, 42) : rand(48, 72);
+      const size = small ? rand(28, 40) : rand(48, 72);
       const dir = rand(0, Math.PI * 2);
       const speed = still ? 0 : rand(CRUISE * 0.6, CRUISE * 1.3);
       // Somewhere clear of the words.
@@ -428,7 +428,7 @@ export function HeroBalls() {
         /* On a phone the words fill the width, so the balls fly above and
            below them: room above the chip, where it is seen first. */
         @media (max-width: 640px) {
-          .hero { padding-top: 9rem; padding-bottom: 3rem; }
+          .hero { padding-top: 7.5rem; padding-bottom: 2.5rem; }
         }
         .hero a, .hero button:not(.hero-ball) { pointer-events: auto; }
       `}</style>

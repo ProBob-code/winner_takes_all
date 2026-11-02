@@ -292,14 +292,29 @@ export function LandingPage() {
           pointer-events: none;
         }
 
+        .desc-short { display: none; }
         @media (max-width: 768px) {
-          .landing-main { padding: 80px 1.5rem 40px !important; }
-          .hero-buttons { flex-direction: column; width: 100%; gap: 1rem !important; }
-          .hero-buttons a { width: 100%; text-align: center; padding: 1rem !important; }
-          .hero-chip { margin-bottom: 1.5rem !important; font-size: 0.75rem !important; }
-          .hero-title { margin-bottom: 1.5rem !important; }
-          .hero-desc { font-size: 1rem !important; margin-bottom: 2.5rem !important; }
-          .hero-perks { flex-direction: column; align-items: center; gap: 0.5rem !important; }
+          .landing-main { padding: 72px 1.25rem 40px !important; }
+          .hero { min-height: 0 !important; }
+          .hero-chip { margin-bottom: 1.1rem !important; font-size: 0.72rem !important; padding: 6px 12px !important; }
+          /* Two lines, each on one line: sized to the screen. (globals.css
+             has older !important rules for these; .hero outranks them.) */
+          .hero .hero-title { font-size: min(9.4vw, 3rem) !important; line-height: 1 !important; letter-spacing: -1px !important; margin-bottom: 1rem !important; white-space: nowrap; }
+          .hero-desc { font-size: 1rem !important; line-height: 1.5 !important; margin-bottom: 1.5rem !important; max-width: 24rem !important; }
+          .desc-long { display: none; }
+          .desc-short { display: inline; }
+          /* Side by side: both buttons in sight above the bottom bar. */
+          .hero .hero-buttons { flex-direction: row !important; width: 100% !important; max-width: 26rem; gap: 0.75rem !important; }
+          .hero .hero-buttons a { flex: 1 1 0; width: auto !important; min-width: 0; text-align: center; padding: 0.95rem 0.5rem !important; font-size: 0.95rem !important; border-radius: 14px !important; white-space: nowrap; }
+          .hero-perks { margin-top: 1.1rem; gap: 0.4rem !important; max-width: 26rem; }
+          .hero-perks li {
+            font-size: 0.74rem; padding: 0.3rem 0.65rem; border-radius: 9999px;
+            background: var(--landing-card); border: 1px solid var(--landing-card-line);
+          }
+        }
+        @media (max-width: 359px) {
+          .hero .hero-buttons { flex-direction: column !important; }
+          .hero .hero-buttons a { width: 100% !important; }
         }
       `}</style>
 
@@ -319,7 +334,10 @@ export function LandingPage() {
             PLAY THE NIGHT.<br />
             <span className="gradient-text">TAKE THE CROWN.</span>
           </h1>
-          <p className="hero-desc" style={{ maxWidth: "700px", fontSize: "1.2rem", marginBottom: "3.5rem", lineHeight: 1.6 }}>Pool, football, tennis, badminton, pickleball and table tennis — every game you play counts. Win to climb your trophy ladder, earn WTA Coins every game, and unlock frames, emotes and artifacts to show off. Free to play, always.</p>
+          <p className="hero-desc" style={{ maxWidth: "700px", fontSize: "1.2rem", marginBottom: "3.5rem", lineHeight: 1.6 }}>
+            <span className="desc-long">Pool, football, tennis, badminton, pickleball and table tennis — every game you play counts. Win to climb your trophy ladder, earn WTA Coins every game, and unlock frames, emotes and artifacts to show off. Free to play, always.</span>
+            <span className="desc-short">Six sports. Every game counts. Climb the trophy ladder, earn coins and unlock gear to show off. Free, always.</span>
+          </p>
           <div className="hero-buttons" style={{ display: "flex", gap: "1.5rem" }}>
             <Link href="/tournaments" style={{ background: "var(--gradient-fill)", color: "var(--on-gold)", padding: "1.25rem 2.5rem", borderRadius: "16px", textDecoration: "none", fontWeight: 800, fontSize: "1.1rem" }}>FIND A GAME →</Link>
             <Link href="/run" style={{ background: "var(--landing-card)", border: "1px solid var(--landing-card-line)", color: "var(--landing-ink)", padding: "1.25rem 2.5rem", borderRadius: "16px", textDecoration: "none", fontWeight: 800, fontSize: "1.1rem" }}>HOST A NIGHT</Link>
