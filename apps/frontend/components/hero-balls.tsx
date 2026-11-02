@@ -4,7 +4,8 @@
  * Sports balls drifting through the homepage hero, as if in space.
  *
  * Each one floats on its own slow course, spinning, and bounces off the
- * hero's edges. Tap or click one and it is kicked off on a new course with a
+ * hero's edges and off the words: the headline, description and buttons are
+ * a solid block the balls never cross, so the text always reads clearly. Tap or click one and it is kicked off on a new course with a
  * burst of speed that eases back to a drift. Homepage hero only.
  *
  * Positions are written straight to each element's transform every frame, so
@@ -193,19 +194,44 @@ export function HeroBalls() {
     let h = field.clientHeight;
     const small = w < 640;
 
-    // Spread them out: one per cell of a loose grid, jittered.
-    const count = KINDS.length;
-    const cols = small ? 3 : 5;
-    bodies.current = KINDS.map((_, i) => {
-      const size = small ? rand(34, 50) : rand(48, 76);
-      const col = i % cols;
-      const row = Math.floor(i / cols);
-      const rows = Math.ceil(count / cols);
+    // The words: one box around everything in the hero but the balls, a
+    // little larger, measured against the field. Remeasured when anything
+    // resizes (web fonts arriving change the headline's size).
+    const PAD = small ? 8 : 14;
+    let block = { l: 0, t: 0, r: 0, b: 0 };
+    function measure() {
+      const hero = field!.parentElement;
+      if (!hero) return;
+      const f = field!.getBoundingClientRect();
+      let l = Infinity, t = Infinity, r = -Infinity, b = -Infinity;
+      for (const child of Array.from(hero.children)) {
+        if (child === field || child.tagName === "STYLE") continue;
+        const rc = child.getBoundingClientRect();
+        if (rc.width === 0 || rc.height === 0) continue;
+        l = Math.min(l, rc.left); t = Math.min(t, rc.top); r = Math.max(r, rc.right); b = Math.max(b, rc.bottom);
+      }
+      if (l === Infinity) return;
+      block = { l: l - f.left - PAD, t: t - f.top - PAD, r: r - f.left + PAD, b: b - f.top + PAD };
+    }
+    measure();
+
+    const overlapsBlock = (x: number, y: number, size: number) =>
+      x + size > block.l && x < block.r && y + size > block.t && y < block.b;
+
+    bodies.current = KINDS.map(() => {
+      const size = small ? rand(30, 42) : rand(48, 72);
       const dir = rand(0, Math.PI * 2);
       const speed = still ? 0 : rand(CRUISE * 0.6, CRUISE * 1.3);
+      // Somewhere clear of the words.
+      let x = 0, y = 0;
+      for (let tries = 0; tries < 80; tries++) {
+        x = rand(0, Math.max(1, w - size));
+        y = rand(0, Math.max(1, h - size));
+        if (!overlapsBlock(x, y, size)) break;
+      }
       return {
-        x: ((col + rand(0.15, 0.85)) / cols) * (w - size),
-        y: ((row + rand(0.15, 0.85)) / rows) * (h - size),
+        x,
+        y,
         vx: Math.cos(dir) * speed,
         vy: Math.sin(dir) * speed,
         angle: rand(0, 360),
@@ -218,6 +244,64 @@ export function HeroBalls() {
       const el = ballRefs.current[i];
       if (el) { el.style.width = `${b.size}px`; el.style.height = `${b.size}px`; }
     });
+
+    /** A ball against the words: pushed back out, and bounced like off a wall. */
+    function bounceOffBlock(b: Body) {
+      const r = b.size / 2;
+      const cx = b.x + r, cy = b.y + r;
+      const px = Math.max(block.l, Math.min(cx, block.r));
+      const py = Math.max(block.t, Math.min(cy, block.b));
+      let dx = cx - px, dy = cy - py;
+      const d = Math.hypot(dx, dy);
+      if (d >= r) return;
+      let nx: number, ny: number;
+      if (d === 0) {
+        // Centre inside the block (a resize moved the words onto it): out by
+        // the nearest side.
+        const gaps = [cx - block.l, block.r - cx, cy - block.t, block.b - cy];
+        const m = gaps.indexOf(Math.min(...gaps));
+        nx = m === 0 ? -1 : m === 1 ? 1 : 0;
+        ny = m === 2 ? -1 : m === 3 ? 1 : 0;
+        const edgeX = m === 0 ? block.l : m === 1 ? block.r : cx;
+        const edgeY = m === 2 ? block.t : m === 3 ? block.b : cy;
+        dx = 0; dy = 0;
+        b.x = edgeX + nx * r - r;
+        b.y = edgeY + ny * r - r;
+      } else {
+        nx = dx / d; ny = dy / d;
+        b.x = px + nx * r - r;
+        b.y = py + ny * r - r;
+      }
+      const vn = b.vx * nx + b.vy * ny;
+      if (vn < 0) { b.vx -= 2 * vn * nx; b.vy -= 2 * vn * ny; }
+    }
+
+    /** Balls bounce off each other like balls: equal mass, elastic. */
+    function collide() {
+      const list = bodies.current;
+      for (let i = 0; i < list.length; i++) {
+        for (let j = i + 1; j < list.length; j++) {
+          const a = list[i], c = list[j];
+          const ra = a.size / 2, rc = c.size / 2;
+          const dx = (c.x + rc) - (a.x + ra), dy = (c.y + rc) - (a.y + ra);
+          const d = Math.hypot(dx, dy), min = (ra + rc) * 0.92;
+          if (d === 0 || d >= min) continue;
+          const nx = dx / d, ny = dy / d;
+          // Apart, half each.
+          const push = (min - d) / 2;
+          a.x -= nx * push; a.y -= ny * push;
+          c.x += nx * push; c.y += ny * push;
+          // Swap the speed along the line between them, if closing.
+          const rel = (a.vx - c.vx) * nx + (a.vy - c.vy) * ny;
+          if (rel <= 0) continue;
+          a.vx -= rel * nx; a.vy -= rel * ny;
+          c.vx += rel * nx; c.vy += rel * ny;
+          a.spin = -a.spin; c.spin = -c.spin;
+          // A ball at rest that is hit (reduced motion) is now moving.
+          a.pop = Math.max(a.pop, 0.01); c.pop = Math.max(c.pop, 0.01);
+        }
+      }
+    }
 
     let raf = 0;
     let last = performance.now();
@@ -246,12 +330,14 @@ export function HeroBalls() {
         if (b.y < 0) { b.y = 0; b.vy = Math.abs(b.vy); }
         if (b.x > w - b.size) { b.x = w - b.size; b.vx = -Math.abs(b.vx); }
         if (b.y > h - b.size) { b.y = h - b.size; b.vy = -Math.abs(b.vy); }
+        bounceOffBlock(b);
         if (Math.hypot(b.vx, b.vy) > 0.5 || b.pop > 0) moving = true;
         const el = ballRefs.current[i];
         if (el) {
           el.style.transform = `translate3d(${b.x}px, ${b.y}px, 0) rotate(${b.angle}deg) scale(${1 + b.pop * 0.25})`;
         }
       });
+      collide();
       if (visible && !document.hidden && (moving || !still)) raf = requestAnimationFrame(frame);
       else running = false;
     }
@@ -269,8 +355,11 @@ export function HeroBalls() {
     const onResize = () => {
       w = field.clientWidth;
       h = field.clientHeight;
+      measure();
       start();
     };
+    const ro = new ResizeObserver(onResize);
+    if (field.parentElement) ro.observe(field.parentElement);
     const io = new IntersectionObserver(([entry]) => {
       visible = entry.isIntersecting;
       if (visible) start();
@@ -294,6 +383,7 @@ export function HeroBalls() {
     return () => {
       cancelAnimationFrame(raf);
       io.disconnect();
+      ro.disconnect();
       window.removeEventListener("resize", onResize);
       document.removeEventListener("visibilitychange", onVisibility);
     };
@@ -306,7 +396,7 @@ export function HeroBalls() {
       <style>{`
         .hero-balls {
           position: absolute;
-          inset: 0;
+          inset: -56px 0 0 0;
           z-index: 0;
           overflow: hidden;
           pointer-events: none;
@@ -335,6 +425,11 @@ export function HeroBalls() {
         /* The hero's words sit over the balls but let a click through to
            them; only its buttons and links still take the click. */
         .hero > :not(.hero-balls) { position: relative; z-index: 1; pointer-events: none; }
+        /* On a phone the words fill the width, so the balls fly above and
+           below them: room above the chip, where it is seen first. */
+        @media (max-width: 640px) {
+          .hero { padding-top: 9rem; padding-bottom: 3rem; }
+        }
         .hero a, .hero button:not(.hero-ball) { pointer-events: auto; }
       `}</style>
       {KINDS.map((k, i) => (

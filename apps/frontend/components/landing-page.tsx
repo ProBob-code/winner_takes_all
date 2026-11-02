@@ -201,6 +201,12 @@ export function LandingPage() {
         }
 
         .landing-wrapper { background: var(--landing-bg); color: var(--landing-ink); }
+        .hero-perks {
+          list-style: none; margin: 2rem 0 0; padding: 0;
+          display: flex; flex-wrap: wrap; justify-content: center; gap: 0.75rem 1.75rem;
+          font-size: 0.95rem; font-weight: 600; color: var(--landing-ink); opacity: 0.85;
+        }
+        .hero-perks li { display: flex; align-items: center; gap: 0.45rem; }
         .landing-wrapper .muted,
         .landing-wrapper .hero-desc,
         .landing-wrapper .landing-dim { color: var(--landing-dim); }
@@ -293,6 +299,7 @@ export function LandingPage() {
           .hero-chip { margin-bottom: 1.5rem !important; font-size: 0.75rem !important; }
           .hero-title { margin-bottom: 1.5rem !important; }
           .hero-desc { font-size: 1rem !important; margin-bottom: 2.5rem !important; }
+          .hero-perks { flex-direction: column; align-items: center; gap: 0.5rem !important; }
         }
       `}</style>
 
@@ -307,16 +314,21 @@ export function LandingPage() {
       <main className="landing-main" style={{ padding: "120px 6% 60px", textAlign: "center", position: "relative", zIndex: 2 }}>
         <section className="hero" style={{ minHeight: "80vh", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", position: "relative" }}>
           <HeroBalls />
-          <div className="hero-chip" style={{ background: "color-mix(in oklab, var(--accent) 10%, transparent)", border: "1px solid color-mix(in oklab, var(--accent) 20%, transparent)", padding: "8px 16px", borderRadius: "9999px", fontSize: "0.85rem", fontWeight: 700, color: "var(--accent)", marginBottom: "2rem" }}>Tournament software for pool rooms, clubs and bars</div>
+          <div className="hero-chip" style={{ background: "color-mix(in oklab, var(--accent) 10%, transparent)", border: "1px solid color-mix(in oklab, var(--accent) 20%, transparent)", padding: "8px 16px", borderRadius: "9999px", fontSize: "0.85rem", fontWeight: 700, color: "var(--accent)", marginBottom: "2rem" }}>Real tables. Real rivals. Real bragging rights.</div>
           <h1 className="hero-title" style={{ fontSize: "clamp(3rem, 8vw, 6rem)", fontWeight: 900, lineHeight: 0.9, letterSpacing: "-2px", marginBottom: "2.5rem" }}>
-            RUN THE NIGHT.<br />
-            <span className="gradient-text">CROWN THE WINNER.</span>
+            PLAY THE NIGHT.<br />
+            <span className="gradient-text">TAKE THE CROWN.</span>
           </h1>
-          <p className="hero-desc" style={{ maxWidth: "700px", fontSize: "1.2rem", marginBottom: "3.5rem", lineHeight: 1.6 }}>Brackets, scoring and a live table for 8-ball and football nights. Set up in a minute, scored from the phone in your hand, on the wall for the room to see — and in the group chat before the next frame is racked. Free to enter, always.</p>
+          <p className="hero-desc" style={{ maxWidth: "700px", fontSize: "1.2rem", marginBottom: "3.5rem", lineHeight: 1.6 }}>Pool, football, tennis, badminton, pickleball and table tennis — every game you play counts. Win to climb your trophy ladder, earn WTA Coins every game, and unlock frames, emotes and artifacts to show off. Free to play, always.</p>
           <div className="hero-buttons" style={{ display: "flex", gap: "1.5rem" }}>
-            <Link href="/run" style={{ background: "var(--gradient-fill)", color: "var(--on-gold)", padding: "1.25rem 2.5rem", borderRadius: "16px", textDecoration: "none", fontWeight: 800, fontSize: "1.1rem" }}>START A NIGHT →</Link>
-            <Link href="#how-it-works" style={{ background: "var(--landing-card)", border: "1px solid var(--landing-card-line)", color: "var(--landing-ink)", padding: "1.25rem 2.5rem", borderRadius: "16px", textDecoration: "none", fontWeight: 800, fontSize: "1.1rem" }}>SEE HOW IT RUNS</Link>
+            <Link href="/tournaments" style={{ background: "var(--gradient-fill)", color: "var(--on-gold)", padding: "1.25rem 2.5rem", borderRadius: "16px", textDecoration: "none", fontWeight: 800, fontSize: "1.1rem" }}>FIND A GAME →</Link>
+            <Link href="/run" style={{ background: "var(--landing-card)", border: "1px solid var(--landing-card-line)", color: "var(--landing-ink)", padding: "1.25rem 2.5rem", borderRadius: "16px", textDecoration: "none", fontWeight: 800, fontSize: "1.1rem" }}>HOST A NIGHT</Link>
           </div>
+          <ul className="hero-perks">
+            <li><span aria-hidden>🏆</span> A trophy ladder for every sport</li>
+            <li><span aria-hidden>🪙</span> Coins every game you play</li>
+            <li><span aria-hidden>✅</span> Wins verified at the table</li>
+          </ul>
         </section>
 
         <section id="how-it-works" className="section reveal" style={{ marginTop: "120px" }}>
