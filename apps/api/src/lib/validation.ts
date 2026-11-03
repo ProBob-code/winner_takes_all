@@ -301,12 +301,13 @@ export const quickSetupSchema = z.object({
    * cannot play more opponents than have turned up.
    */
   matchesPerTeam: z.coerce.number().int().min(1).max(10).default(2),
-  /** Names, if the host has them. Blanks are filled with Player 1..n. */
+  /** Names, if the host has them. Only these are seated; other spots stay open to join. */
   players: z.array(z.string().trim().max(50)).max(64).optional(),
   venueId: z.string().trim().max(64).nullish(),
   /**
-   * Whether the host is playing as well as running it. Takes the first seat
-   * under their account, so the coins their own frames earn reach them.
+   * No longer used: the host is never seated automatically, and joins their
+   * own night by Join or the door code. Still accepted so older clients that
+   * send it are not rejected.
    */
   hostPlaying: z.boolean().default(true),
   /** Hold each frame until both players agree it. */

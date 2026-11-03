@@ -197,8 +197,8 @@ export default function RunNightPage() {
     setBusy(true);
     setError(null);
     try {
-      // Blank lines are dropped rather than seated as empty players; the API
-      // fills any remaining slot with "Player n".
+      // Blank lines are dropped. Only these names are seated; every other spot
+      // stays open for real players to join by the button or the door code.
       const players = namesText
         .split("\n")
         .map((line) => line.trim())
@@ -263,9 +263,20 @@ export default function RunNightPage() {
             {ready.finished
               ? "The results are on the full controls page."
               : ready.teams
-                ? `${ready.teams} playing, first frames drawn. Open these on the right screens.`
-                : "Open these on the right screens."}
+                ? `${ready.teams} seated so far; everyone else joins with the code at the door. Open these on the right screens.`
+                : "No one is seated yet: players join with the code at the door. Open these on the right screens."}
           </p>
+
+          {/* The host is not seated automatically. Playing too? Join like anyone else. */}
+          {!ready.finished && ready.joinCode && (
+            <div className="panel h-stack" style={{ marginTop: "var(--space-4)", gap: "var(--space-3)", flexWrap: "wrap", alignItems: "center" }}>
+              <span style={{ flex: 1, minWidth: "14rem" }}>
+                <strong>Playing tonight too?</strong>{" "}
+                <span className="muted">You&apos;re not on the board until you join, same as everyone else.</span>
+              </span>
+              <a className="button button-sm" href={`/join/${ready.joinCode}`}>Join this night</a>
+            </div>
+          )}
 
           {/* Dealt as three cards: the wall, the scorer, the door. */}
           <div className="auto-grid" style={{ marginTop: "var(--space-6)", gap: "1.75rem" }}>
@@ -490,7 +501,7 @@ export default function RunNightPage() {
                   style={{ marginTop: "var(--space-2)" }}
                 />
                 <span className="hint">
-                  Leave any out and they will be seated as Player 1, Player 2 and so on.
+                  Only these names are seated. Every other spot stays open for players to join with the code at the door. Playing yourself? Join after you set it up.
                 </span>
               </>
             )}

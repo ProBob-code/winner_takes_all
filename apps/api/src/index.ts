@@ -93,7 +93,6 @@ import {
 } from "./lib/coins";
 import { levelInfo } from "./lib/progression";
 import { checkAvatar, parseStoredAvatar } from "./lib/avatar";
-import { hostSeatIndex } from "./lib/seating";
 import {
   CATALOGUE,
   EMOTE_DECK_SIZE,
@@ -1030,6 +1029,51 @@ app.post("/api/tournaments/create", async (c) => {
 });
 
 /**
+ * Give a player who has just sat down their next game, if anyone is free.
+ *
+ * Nights now start with only the people who are actually there, and fill as
+ * players join, so a new seat is paired against whoever is free: no game
+ * pending, still short of the night's frames each, and not already met. The
+ * longest-waiting (fewest games, earliest seated) goes first. With nobody
+ * free, the player waits and the next arrival is paired with them.
+ *
+ * Engine.generateNextMatches is not used here: it counts games played, not
+ * games already drawn, so calling it per arrival double-booked players who
+ * were waiting on a game.
+ */
+async function pairArrival(store: D1Store, tournament: TournamentRecord, teamId: string): Promise<void> {
+  if (tournament.status !== "GROUP") return;
+  const limit = tournament.max_matches_per_team || 2;
+  const [teams, matches] = await Promise.all([
+    store.getEngineTeams(tournament.id),
+    store.getEngineMatches(tournament.id),
+  ]);
+  const me = teams.find((t) => t.id === teamId);
+  if (!me) return;
+
+  const pending = (id: string) =>
+    matches.some((m) => (m.team_a_id === id || m.team_b_id === id) && m.status !== "COMPLETED");
+  const games = (id: string) => matches.filter((m) => m.team_a_id === id || m.team_b_id === id).length;
+  const met = (a: string, b: string) =>
+    matches.some((m) => (m.team_a_id === a && m.team_b_id === b) || (m.team_a_id === b && m.team_b_id === a));
+
+  if (pending(me.id) || games(me.id) >= limit) return;
+  const opponent = teams
+    .filter((t) => t.id !== me.id && !pending(t.id) && games(t.id) < limit && !met(t.id, me.id))
+    .sort((a, b) => games(a.id) - games(b.id))[0];
+  if (!opponent) return;
+
+  const match = await store.createEngineMatch(tournament.id, {
+    phase: "GROUP",
+    team_a_id: opponent.id,
+    team_b_id: me.id,
+    status: "CREATED",
+    explanation: `${me.name} sat down and ${opponent.name} was free.`,
+  });
+  await store.createEngineMatchup(tournament.id, match.team_a_id, match.team_b_id, match.id);
+}
+
+/**
  * Join a night that is already running, from the tournament page.
  *
  * In order: the account already has a seat (say so); an empty seat the host
@@ -1060,6 +1104,7 @@ async function seatInRunningNight(
     (t) => !t.user_id && t.name.trim().toLowerCase() === wanted.toLowerCase() && !hasPlayed(t.id)
   );
   if (named && (await store.linkEngineTeam(named.id, user.id))) {
+    await pairArrival(store, tournament, named.id);
     return c.json({ ok: true, teamId: named.id, message: `You're in, on ${named.name}'s seat.` });
   }
 
@@ -1082,20 +1127,7 @@ async function seatInRunningNight(
   for (let n = 2; taken.has(name.toLowerCase()); n++) name = `${wanted || "Player"} ${n}`;
 
   const team = await store.createEngineTeam(tournament.id, name, user.id);
-
-  // Paired against whoever is waiting, exactly as a door-code arrival is.
-  if (matches.length > 0) {
-    const [allTeams, matchups] = await Promise.all([
-      store.getEngineTeams(tournament.id),
-      store.getEngineMatchups(tournament.id),
-    ]);
-    const limit = tournament.max_matches_per_team || 2;
-    const { matches: nextMatches } = Engine.generateNextMatches(allTeams, matchups, "GROUP", limit);
-    for (const nm of nextMatches.filter((m) => m.team_a_id === team.id || m.team_b_id === team.id)) {
-      const match = await store.createEngineMatch(tournament.id, nm);
-      await store.createEngineMatchup(tournament.id, match.team_a_id, match.team_b_id, match.id);
-    }
-  }
+  await pairArrival(store, tournament, team.id);
 
   return c.json({ ok: true, teamId: team.id, message: `You're in, as ${team.name}.` });
 }
@@ -3499,23 +3531,8 @@ app.post("/api/engine/tournaments/:id/add-team", async (c) => {
     body.name || `Team ${Math.floor(Math.random() * 1000)}`
   );
 
-  // Run a generation pass so the newcomer gets matched if anyone is waiting.
-  const [allTeams, matchups, matches] = await Promise.all([
-    store.getEngineTeams(tournamentId),
-    store.getEngineMatchups(tournamentId),
-    store.getEngineMatches(tournamentId),
-  ]);
-
-  if (matches.length > 0) {
-    const limit = tournament.max_matches_per_team || 2;
-    const { matches: nextMatches } = Engine.generateNextMatches(allTeams, matchups, "GROUP", limit);
-
-    const relevantMatches = nextMatches.filter((m) => m.team_a_id === team.id || m.team_b_id === team.id);
-    for (const nm of relevantMatches) {
-      const match = await store.createEngineMatch(tournamentId, nm);
-      await store.createEngineMatchup(tournamentId, match.team_a_id, match.team_b_id, match.id);
-    }
-  }
+  // The newcomer is paired with whoever is free, as every other arrival is.
+  await pairArrival(store, tournament, team.id);
 
   return c.json({ ok: true, team });
 });
@@ -4756,14 +4773,16 @@ app.post("/api/engine/quick-setup", async (c) => {
     return c.json({ ok: false, message: "You cannot host for that venue." }, 403);
   }
 
-  // Names if the host had them, Player n for the rest. A blank in the middle
-  // of the list is filled rather than dropped, so the count the host asked for
-  // is the count that gets seated.
-  const supplied = body.players ?? [];
+  // Only the names the host typed are seated. Every other spot stays open for
+  // a real player to take, by the Join button or the door code. Seats used to
+  // be filled with "Player 1..n", which left the night full of placeholders
+  // and turned every real player away.
   const names: string[] = [];
-  for (let i = 0; i < body.size; i++) {
-    const given = (supplied[i] ?? "").trim();
-    names.push(given || `Player ${i + 1}`);
+  for (const raw of body.players ?? []) {
+    const given = raw.trim();
+    if (given && names.length < body.size && !names.some((n) => n.toLowerCase() === given.toLowerCase())) {
+      names.push(given);
+    }
   }
 
   // You cannot be drawn against more opponents than have turned up, so what
@@ -4784,42 +4803,18 @@ app.post("/api/engine/quick-setup", async (c) => {
     maxMatchesPerTeam: matchesPerTeam,
   });
 
-  // The host's account goes on the host's own seat: the one with their name,
-  // or a blank first line left for them (lib/seating.ts). It used to go on
-  // the first seat whatever was typed there, which once paid the host for
-  // another player's frames and left their own night win with no account.
-  // A host whose name is not on the list claims their seat afterwards.
-  const hostSeat = hostSeatIndex(names, supplied, user.name, body.hostPlaying);
-  for (let i = 0; i < names.length; i++) {
-    const seatIsHost = hostSeat === i;
-    await store.createEngineTeam(
-      tournament.id,
-      seatIsHost && !(supplied[i] ?? "").trim() ? user.name : names[i],
-      seatIsHost ? user.id : null
-    );
-  }
-
-  const teams = await store.getEngineTeams(tournament.id);
+  // Nobody's account is put on a seat here, the host's included. The host
+  // joins their own night like anyone else (Join, or the door code); a seat
+  // typed under their name becomes theirs when they do.
+  for (const n of names) await store.createEngineTeam(tournament.id, n, null);
   await store.updateTournamentStatus(tournament.id, "GROUP");
+  tournament.status = "GROUP";
 
-  // Draw the opening fixtures, exactly as the start route does, so the
-  // schedule exists the moment the page opens.
-  const limit = tournament.max_matches_per_team || matchesPerTeam;
-  const { matches: nextMatches, byeTeamId } = Engine.generateNextMatches(teams, [], "GROUP", limit);
-  for (const mData of nextMatches) {
-    const match = await store.createEngineMatch(tournament.id, mData);
-    await store.createEngineMatchup(tournament.id, match.team_a_id, match.team_b_id, match.id);
-  }
-  if (byeTeamId) {
-    const team = teams.find((t) => t.id === byeTeamId);
-    if (team) {
-      await store.updateEngineTeam(byeTeamId, {
-        matches_played: team.matches_played + 1,
-        group_points: team.group_points + 1,
-        bye_assigned: true,
-      });
-    }
-  }
+  // Pair whoever was typed in, two by two; an odd one out waits for the first
+  // arrival rather than taking a bye on a night that is still filling.
+  for (const t of await store.getEngineTeams(tournament.id)) await pairArrival(store, tournament, t.id);
+  const teams = await store.getEngineTeams(tournament.id);
+  const drawn = await store.getEngineMatches(tournament.id);
 
   // A code on the screen from the start, so anyone who walks in later can join
   // without the host going looking for the button.
@@ -4829,7 +4824,7 @@ app.post("/api/engine/quick-setup", async (c) => {
     ok: true,
     tournamentId: tournament.id,
     teams: teams.length,
-    matches: nextMatches.length,
+    matches: drawn.length,
     matchesPerTeam,
     joinCode: code,
     joinUrl: `${publicOrigin(c.env)}/join/${code}`,
@@ -4978,11 +4973,6 @@ app.post("/api/join/:code", async (c) => {
     return c.json({ ok: false, message: "This tournament is no longer taking entries." }, 409);
   }
 
-  const seated = await store.countEngineTeams(tournament.id);
-  if (seated >= tournament.max_players) {
-    return c.json({ ok: false, message: "This tournament is full." }, 409);
-  }
-
   const existing = await store.getEngineTeams(tournament.id);
   const wanted = body.name.trim();
 
@@ -4993,6 +4983,28 @@ app.post("/api/join/:code", async (c) => {
   if (mine) {
     return c.json({ ok: true, tournamentId: tournament.id, teamId: mine.id, alreadySeated: true, name: mine.name });
   }
+
+  // A signed-in player whose name the host typed in takes that seat, if no
+  // account has it and nothing has been played on it yet. This is how a host
+  // who typed their own name joins their own night.
+  if (signedIn) {
+    const games = await store.getEngineMatches(tournament.id);
+    const typed = existing.find(
+      (t) =>
+        !t.user_id &&
+        t.name.trim().toLowerCase() === wanted.toLowerCase() &&
+        !games.some((m) => (m.team_a_id === t.id || m.team_b_id === t.id) && m.status === "COMPLETED")
+    );
+    if (typed && (await store.linkEngineTeam(typed.id, signedIn.id))) {
+      await pairArrival(store, tournament, typed.id);
+      return c.json({ ok: true, tournamentId: tournament.id, teamId: typed.id, name: typed.name });
+    }
+  }
+
+  if (existing.length >= tournament.max_players) {
+    return c.json({ ok: false, message: "This tournament is full." }, 409);
+  }
+
   if (existing.some((t) => t.name.trim().toLowerCase() === wanted.toLowerCase())) {
     return c.json(
       { ok: false, message: "Someone is already playing under that name. Try another." },
@@ -5007,23 +5019,10 @@ app.post("/api/join/:code", async (c) => {
     ? await store.createEngineTeam(tournament.id, wanted, user.id)
     : await store.createGuestEngineTeam(tournament.id, wanted);
 
-  // Mid-tournament arrivals get matched against whoever is waiting, exactly as
-  // the add-team route does.
-  if (tournament.status === "GROUP") {
-    const [allTeams, matchups, matches] = await Promise.all([
-      store.getEngineTeams(tournament.id),
-      store.getEngineMatchups(tournament.id),
-      store.getEngineMatches(tournament.id),
-    ]);
-    if (matches.length > 0) {
-      const limit = tournament.max_matches_per_team || 2;
-      const { matches: nextMatches } = Engine.generateNextMatches(allTeams, matchups, "GROUP", limit);
-      for (const nm of nextMatches.filter((m) => m.team_a_id === team.id || m.team_b_id === team.id)) {
-        const match = await store.createEngineMatch(tournament.id, nm);
-        await store.createEngineMatchup(tournament.id, match.team_a_id, match.team_b_id, match.id);
-      }
-    }
-  }
+  // Paired against whoever is free; with nobody free they wait for the next
+  // arrival. A night starts with only the people already there, so this is how
+  // it fills up.
+  await pairArrival(store, tournament, team.id);
 
   return c.json({
     ok: true,
