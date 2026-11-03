@@ -1,11 +1,13 @@
 import "./globals.css";
 import { Suspense } from "react";
-import { Inter, Outfit } from "next/font/google";
+import { Inter, Montserrat, Outfit } from "next/font/google";
 import { LayoutClient } from "@/components/layout-client";
 import { Metadata } from "next";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit" });
+// The homepage hero's headline face: heavy italic caps.
+const montserrat = Montserrat({ subsets: ["latin"], weight: ["600", "700", "800", "900"], style: ["normal", "italic"], variable: "--font-montserrat" });
 
 // Pinch-zoom stays on: blocking it fails WCAG 1.4.4 for anyone who needs larger text.
 export const viewport = {
@@ -54,7 +56,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${inter.variable} ${outfit.variable}`}>
+    <html lang="en" className={`${inter.variable} ${outfit.variable} ${montserrat.variable}`}>
       <head>
         <link rel="icon" href="data:image/svg+xml,<svg width='32' height='32' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'><path d='M2 19L5 7L10 12L12 5L14 12L19 7L22 19H2Z' fill='%23FFD700'/></svg>" />
         {/* Razorpay's checkout is loaded by components/payment-button.tsx when a payment button mounts. */}

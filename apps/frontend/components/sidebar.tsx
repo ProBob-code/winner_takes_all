@@ -9,6 +9,7 @@ import { SidebarEffects } from "./sidebar-effects";
 import { getApiUrl } from "@/lib/api-config";
 import { ConfirmModal } from "./confirm-modal";
 import { CrownLogo, WordmarkShort } from "./brand-mark";
+import { PhIcon } from "./ph-icon";
 
 export function Sidebar({ user: initialUser }: { user: any }) {
   const pathname = usePathname();
@@ -143,7 +144,7 @@ export function Sidebar({ user: initialUser }: { user: any }) {
                 title={isCollapsed && !isOpen ? item.label : ""}
                 onClick={() => setIsOpen(false)}
               >
-                <span className="sidebar-icon">{item.icon}</span>
+                <span className="sidebar-icon" style={{ display: "inline-flex" }}><PhIcon name={item.icon} color={item.color} size={26} /></span>
                 {(!isCollapsed || isOpen) && <span className="brand-text">{item.label}</span>}
               </Link>
             );

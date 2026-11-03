@@ -17,6 +17,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { navFor, isActivePath, type NavItem } from "@/lib/nav";
+import { PhIcon } from "@/components/ph-icon";
 
 export function MobileNav({ user }: { user: any }) {
   const pathname = usePathname();
@@ -46,7 +47,7 @@ export function MobileNav({ user }: { user: any }) {
       href={item.href as any}
       className={`mobile-nav-link ${isActivePath(pathname, item.href) ? "active" : ""}`}
     >
-      <span className="mobile-nav-icon">{item.icon}</span>
+      <span className="mobile-nav-icon" style={{ display: "inline-flex" }}><PhIcon name={item.barIcon ?? item.icon} color={item.color} size={24} /></span>
       <span className="mobile-nav-label">{item.short ?? item.label}</span>
     </Link>
   );
@@ -71,7 +72,7 @@ export function MobileNav({ user }: { user: any }) {
               className={`mobile-sheet-link ${isActivePath(pathname, item.href) ? "active" : ""}`}
               tabIndex={sheetOpen ? 0 : -1}
             >
-              <span className="mobile-sheet-icon">{item.icon}</span>
+              <span className="mobile-sheet-icon" style={{ display: "inline-flex" }}><PhIcon name={item.icon} color={item.color} size={22} /></span>
               <span>{item.label}</span>
             </Link>
           ))}

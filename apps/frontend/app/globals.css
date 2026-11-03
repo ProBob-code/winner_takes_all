@@ -1096,6 +1096,14 @@ a:hover {
   gap: 1.5rem;
 }
 
+/* Light mode: Sign Up wears the W.T.A crimson, like the homepage's main button. */
+:root:not([data-theme="dark"]) .topbar a.button,
+:root:not([data-theme="dark"]) .topbar a.button:hover {
+  color: #fff;
+  background: linear-gradient(180deg, #b8152f 0%, #7c0b1d 100%);
+  box-shadow: 0 4px 14px rgba(140, 15, 35, 0.3);
+}
+
 
 
 /* ── Desktop UI Refinements ── */

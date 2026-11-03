@@ -3,6 +3,7 @@
 import React, { useEffect, useRef } from "react";
 import Link from "next/link";
 import { HOME_FAQ } from "@/lib/home-faq";
+import { GoatHero } from "@/components/goat-hero";
 
 export function LandingPage() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -200,12 +201,6 @@ export function LandingPage() {
         }
 
         .landing-wrapper { background: var(--landing-bg); color: var(--landing-ink); }
-        .hero-perks {
-          list-style: none; margin: 2rem 0 0; padding: 0;
-          display: flex; flex-wrap: wrap; justify-content: center; gap: 0.75rem 1.75rem;
-          font-size: 0.95rem; font-weight: 600; color: var(--landing-ink); opacity: 0.85;
-        }
-        .hero-perks li { display: flex; align-items: center; gap: 0.45rem; }
         .landing-wrapper .muted,
         .landing-wrapper .hero-desc,
         .landing-wrapper .landing-dim { color: var(--landing-dim); }
@@ -256,15 +251,6 @@ export function LandingPage() {
         .reveal { opacity: 0; transform: translateY(30px); transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1); }
         .reveal.active { opacity: 1; transform: translateY(0); }
 
-        .gradient-text {
-          background: linear-gradient(135deg, var(--accent), var(--accent), var(--accent));
-          background-size: 200% auto;
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          animation: gradientFlow 4s linear infinite;
-        }
-        @keyframes gradientFlow { to { background-position: 200% center; } }
-
         .card-3d {
           background: var(--landing-card);
           border: 1px solid var(--landing-card-line);
@@ -291,29 +277,11 @@ export function LandingPage() {
           pointer-events: none;
         }
 
-        .desc-short { display: none; }
         @media (max-width: 768px) {
-          .landing-main { padding: 72px 1.25rem 40px !important; }
-          .hero { min-height: 0 !important; }
-          .hero-chip { margin-bottom: 1.1rem !important; font-size: 0.72rem !important; padding: 6px 12px !important; }
-          /* Two lines, each on one line: sized to the screen. (globals.css
-             has older !important rules for these; .hero outranks them.) */
-          .hero .hero-title { font-size: min(9.4vw, 3rem) !important; line-height: 1 !important; letter-spacing: -1px !important; margin-bottom: 1rem !important; white-space: nowrap; }
-          .hero-desc { font-size: 1rem !important; line-height: 1.5 !important; margin-bottom: 1.5rem !important; max-width: 24rem !important; }
-          .desc-long { display: none; }
-          .desc-short { display: inline; }
-          /* Side by side: both buttons in sight above the bottom bar. */
-          .hero .hero-buttons { flex-direction: row !important; width: 100% !important; max-width: 26rem; gap: 0.75rem !important; }
-          .hero .hero-buttons a { flex: 1 1 0; width: auto !important; min-width: 0; text-align: center; padding: 0.95rem 0.5rem !important; font-size: 0.95rem !important; border-radius: 14px !important; white-space: nowrap; }
-          .hero-perks { margin-top: 1.1rem; gap: 0.4rem !important; max-width: 26rem; }
-          .hero-perks li {
-            font-size: 0.74rem; padding: 0.3rem 0.65rem; border-radius: 9999px;
-            background: var(--landing-card); border: 1px solid var(--landing-card-line);
-          }
-        }
-        @media (max-width: 359px) {
-          .hero .hero-buttons { flex-direction: column !important; }
-          .hero .hero-buttons a { width: 100% !important; }
+          /* The hero runs edge to edge: undo the page gutter the layout adds on
+             phones, and give the sections below it their own. */
+          .landing-wrapper { margin: -0.75rem -0.75rem 0; }
+          .landing-main { padding: 8px 16px 40px !important; }
         }
       `}</style>
 
@@ -325,28 +293,9 @@ export function LandingPage() {
       <div className="landing-bg-glow"></div>
       <div ref={glowRef} className="mouse-glow" style={{ position: "fixed", width: "600px", height: "600px", background: "radial-gradient(circle, color-mix(in oklab, var(--accent) 8%, transparent), transparent 70%)", borderRadius: "50%", pointerEvents: "none", zIndex: 999, transform: "translate(-50%, -50%)", opacity: 0 }}></div>
 
-      <main className="landing-main" style={{ padding: "120px 6% 60px", textAlign: "center", position: "relative", zIndex: 2 }}>
-        <section className="hero" style={{ minHeight: "80vh", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", position: "relative" }}>
-          <div className="hero-chip" style={{ background: "color-mix(in oklab, var(--accent) 10%, transparent)", border: "1px solid color-mix(in oklab, var(--accent) 20%, transparent)", padding: "8px 16px", borderRadius: "9999px", fontSize: "0.85rem", fontWeight: 700, color: "var(--accent)", marginBottom: "2rem" }}>Real tables. Real rivals. Real bragging rights.</div>
-          <h1 className="hero-title" style={{ fontSize: "clamp(3rem, 8vw, 6rem)", fontWeight: 900, lineHeight: 0.9, letterSpacing: "-2px", marginBottom: "2.5rem" }}>
-            PLAY THE NIGHT.<br />
-            <span className="gradient-text">TAKE THE CROWN.</span>
-          </h1>
-          <p className="hero-desc" style={{ maxWidth: "700px", fontSize: "1.2rem", marginBottom: "3.5rem", lineHeight: 1.6 }}>
-            <span className="desc-long">Pool, football, tennis, badminton, pickleball and table tennis — every game you play counts. Win to climb your trophy ladder, earn WTA Coins every game, and unlock frames, emotes and artifacts to show off. Free to play, always.</span>
-            <span className="desc-short">Six sports. Every game counts. Climb the trophy ladder, earn coins and unlock gear to show off. Free, always.</span>
-          </p>
-          <div className="hero-buttons" style={{ display: "flex", gap: "1.5rem" }}>
-            <Link href="/tournaments" style={{ background: "var(--gradient-fill)", color: "var(--on-gold)", padding: "1.25rem 2.5rem", borderRadius: "16px", textDecoration: "none", fontWeight: 800, fontSize: "1.1rem" }}>FIND A GAME →</Link>
-            <Link href="/run" style={{ background: "var(--landing-card)", border: "1px solid var(--landing-card-line)", color: "var(--landing-ink)", padding: "1.25rem 2.5rem", borderRadius: "16px", textDecoration: "none", fontWeight: 800, fontSize: "1.1rem" }}>HOST A NIGHT</Link>
-          </div>
-          <ul className="hero-perks">
-            <li><span aria-hidden>🏆</span> A trophy ladder for every sport</li>
-            <li><span aria-hidden>🪙</span> Coins every game you play</li>
-            <li><span aria-hidden>✅</span> Wins verified at the table</li>
-          </ul>
-        </section>
+      <GoatHero />
 
+      <main className="landing-main" style={{ padding: "20px 4% 60px", textAlign: "center", position: "relative", zIndex: 2 }}>
         <section id="how-it-works" className="section reveal" style={{ marginTop: "120px" }}>
             <h2 style={{ fontSize: "3rem", fontWeight: 800, marginBottom: "1rem" }}>HOW A NIGHT RUNS</h2>
             <p className="muted" style={{ marginBottom: "4rem" }}>Three steps, about a minute.</p>
