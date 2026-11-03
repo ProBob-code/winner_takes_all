@@ -6374,3 +6374,24 @@ select optgroup {
   color: var(--text-primary);
 }
 [data-theme="dark"] select { color-scheme: dark; }
+
+/* ── API activity bar ──
+   A thin shimmering line across the top while any API call is in flight
+   (components/api-activity.tsx). Fades in and out rather than popping. */
+.api-activity {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  z-index: 20000;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  background: linear-gradient(90deg, transparent 0%, var(--gold) 20%, var(--accent) 50%, var(--gold) 80%, transparent 100%);
+  background-size: 200% 100%;
+  animation: wtaSkeleton 1.1s linear infinite;
+  box-shadow: 0 0 10px color-mix(in oklab, var(--gold) 60%, transparent);
+}
+.api-activity.is-busy { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { .api-activity { animation: none; } }

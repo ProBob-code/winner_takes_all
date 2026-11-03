@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { PageSkeleton } from "@/components/skeleton";
 
 /**
  * The old stand-alone "Stadium Arena Manager".
@@ -22,8 +23,6 @@ export default function TournamentEnginePage() {
   }, [id, router]);
 
   return (
-    <main className="page">
-      <div className="shell">Opening the arena…</div>
-    </main>
+    <PageSkeleton variant="detail" label="Opening the arena" />
   );
 }

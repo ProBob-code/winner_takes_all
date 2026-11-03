@@ -26,6 +26,7 @@ import { backendFetch } from "@/lib/backend";
 import { CoinMark } from "@/components/coin-mark";
 import { FlipCard } from "@/components/flip-card";
 import { formatCoins, formatCoinsExact } from "@/lib/format";
+import { PageSkeleton } from "@/components/skeleton";
 
 interface Me {
   balance: number;
@@ -168,9 +169,9 @@ export default function CoinsPage() {
         </div>
 
         {loading ? (
-          <p className="muted" style={{ marginTop: "var(--space-6)" }}>
-            Counting your coins…
-          </p>
+          <div style={{ marginTop: "var(--space-6)" }}>
+            <PageSkeleton variant="list" bare label="Counting your coins" />
+          </div>
         ) : !signedIn ? (
           <div className="panel v-stack" style={{ marginTop: "var(--space-5)" }}>
             <h2 style={{ fontSize: "var(--text-xl)", fontWeight: 800 }}>

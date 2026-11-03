@@ -17,6 +17,7 @@ import "@/components/progression.css";
 import "@/components/tournament-engine.css";
 import { formatCoins } from "@/lib/format";
 import { useCoinSchedule, championCoins } from "@/lib/coin-schedule";
+import { PageSkeleton } from "@/components/skeleton";
 
 // --- Types ---
 
@@ -131,7 +132,7 @@ export default function TournamentDetailPage() {
 
   if (error) return <div className="page"><div className="shell">Error loading tournament</div></div>;
   // A first read that was overtaken by a newer one leaves nothing to show yet.
-  if (loading || !data) return <div className="page"><div className="shell">Loading...</div></div>;
+  if (loading || !data) return <PageSkeleton variant="detail" label="Loading the tournament" />;
   
   const { responses, id } = data;
   const tournamentRes = responses[0];

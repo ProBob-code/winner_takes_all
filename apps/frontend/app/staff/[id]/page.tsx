@@ -60,6 +60,7 @@ import { sportInfo } from "@/lib/sports";
 import { FrameConfirm, type FrameConfirmation } from "@/components/frame-confirm";
 import { VoiceScorer } from "@/components/voice-scorer";
 import { ProofCode } from "@/components/proof-code";
+import { PageSkeleton } from "@/components/skeleton";
 
 interface Team {
   id: string;
@@ -361,9 +362,13 @@ export default function StaffModePage() {
   if (!state) {
     return (
       <main className="staff">
-        <div style={{ margin: "auto", textAlign: "center" }} className="muted">
-          {error ?? "Opening staff mode…"}
-        </div>
+        {error ? (
+          <div style={{ margin: "auto", textAlign: "center" }} className="muted">{error}</div>
+        ) : (
+          <div style={{ width: "100%", maxWidth: 560, margin: "auto", padding: 16 }}>
+            <PageSkeleton variant="form" bare label="Opening staff mode" />
+          </div>
+        )}
       </main>
     );
   }

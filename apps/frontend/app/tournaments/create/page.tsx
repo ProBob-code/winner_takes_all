@@ -4,6 +4,7 @@ import HostTournamentForm from "@/components/host-form";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getApiUrl } from "@/lib/api-config";
+import { PageSkeleton } from "@/components/skeleton";
 
 
 export default function CreateTournamentPage() {
@@ -25,7 +26,7 @@ export default function CreateTournamentPage() {
     check();
   }, []);
 
-  if (isAuthenticated === null) return <div>Checking auth...</div>;
+  if (isAuthenticated === null) return <PageSkeleton variant="form" label="Checking you're signed in" />;
   if (!isAuthenticated) return null;
 
   return (

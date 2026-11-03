@@ -6,6 +6,7 @@ import { getApiUrl, readJsonResponse } from "@/lib/api-config";
 import Link from "next/link";
 import { LiveFeedViewer } from "@/components/live-feed-viewer";
 import { BroadcastCode } from "@/components/broadcast-code";
+import { PageSkeleton } from "@/components/skeleton";
 import "@/components/tournament-engine.css";
 
 export default function ScreeningPage() {
@@ -147,11 +148,7 @@ export default function ScreeningPage() {
       <main className="page animate-in">
         <div className="shell" style={{ maxWidth: '1200px' }}>
           <h1 className="sr-only">Live screening</h1>
-          <div className="empty-state">
-            <div className="empty-icon loading-spin" aria-hidden="true">📺</div>
-            <h3 className="glow-text">INITIALIZING MULTIPLEX BROADCAST...</h3>
-            <p className="muted mt-4">Tuning into all active spectator stadium feeds</p>
-          </div>
+          <PageSkeleton variant="cards" bare label="Finding the games on now" />
         </div>
       </main>
     );

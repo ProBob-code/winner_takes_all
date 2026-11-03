@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 import { getApiUrl } from "@/lib/api-config";
 import { QuickTournament } from "@/components/quick-tournament";
 import { CoinMark } from "@/components/coin-mark";
+import { PageSkeleton } from "@/components/skeleton";
 
 type TournamentsResponse = {
   ok: boolean;
@@ -91,10 +92,7 @@ export default function TournamentsPage() {
       <main className="page">
         <div className="shell">
           <h1 className="sr-only">Tournaments</h1>
-          <div className="empty-state slide-in">
-            <div className="empty-icon loading-spin" aria-hidden="true">🎮</div>
-            <h3>Loading tournaments...</h3>
-          </div>
+          <PageSkeleton variant="cards" bare label="Loading tournaments" />
         </div>
       </main>
     );

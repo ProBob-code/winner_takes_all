@@ -7,6 +7,7 @@ import { formatMoney } from "@/lib/format";
 import { PayoutButton } from "@/components/payout-button";
 import { useRouter } from "next/navigation";
 import { getApiUrl } from "@/lib/api-config";
+import { PageSkeleton } from "@/components/skeleton";
 
 const TX_LABELS: Record<string, { label: string; icon: string; color: string; bg: string }> = {
   deposit: { label: "Account Top-up", icon: "💳", color: "var(--green-light)", bg: "var(--green-subtle)" },
@@ -87,9 +88,7 @@ export default function WalletPage() {
 
   if (loading) {
     return (
-      <main className="page" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div className="status-main">SYNCING ACCOUNT...</div>
-      </main>
+      <PageSkeleton variant="detail" label="Loading your wallet" />
     );
   }
 

@@ -16,6 +16,7 @@ import { formatCoins } from "@/lib/format";
 import { CoinMark } from "@/components/coin-mark";
 import { ItemArt } from "@/components/shop-art";
 import { KIND_LABEL, RARITY_COLOUR, type ItemKind, type Rarity } from "@/lib/shop";
+import { SkeletonCards } from "@/components/skeleton";
 import "@/components/progression.css";
 
 interface Item {
@@ -217,6 +218,7 @@ export default function ShopPage() {
         </header>
 
         {failed && <p className="muted">Could not load the shop. Try again in a moment.</p>}
+        {!data && !failed && <SkeletonCards cards={8} min={200} />}
         {data && !data.open && (
           <p className="pp-card">The shop is closed on this deployment.</p>
         )}

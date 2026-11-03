@@ -9,6 +9,7 @@ import { FootballMatchEngine } from "@/components/football-match-engine";
 import { PoolMatchEngine } from "@/components/pool-match-engine";
 import { LiveFeedViewer } from "@/components/live-feed-viewer";
 import { BroadcastCode } from "@/components/broadcast-code";
+import { PageSkeleton } from "@/components/skeleton";
 import "@/components/tournament-engine.css";
 
 interface ArenaState {
@@ -108,15 +109,7 @@ export function ArenaClient({ id }: { id: string }) {
     }
   }, [arena?.state?.matches, lastVictoryId, currentTime]);
 
-  if (loading) return (
-    <div className="setup-view slide-in">
-      <div className="setup-card glass-morphism" style={{ textAlign: 'center', padding: '4rem' }}>
-        <div className="live-pulse" style={{ margin: '0 auto 1.5rem', width: '20px', height: '20px' }}></div>
-        <div className="glow-text">INITIALIZING ARENA STREAM...</div>
-        <p className="muted mt-4">Connecting to Stadium Arena network</p>
-      </div>
-    </div>
-  );
+  if (loading) return <PageSkeleton variant="cards" label="Opening the arena" />;
 
   if (!arena || !arena.state) return (
     <div className="setup-view slide-in">

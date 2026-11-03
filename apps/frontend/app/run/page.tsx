@@ -28,6 +28,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { backendFetch } from "@/lib/backend";
+import { PageSkeleton } from "@/components/skeleton";
 
 const SIZES = [4, 8, 16, 32];
 
@@ -341,7 +342,7 @@ export default function RunNightPage() {
     return (
       <main className="page">
         <div className="shell" style={{ maxWidth: "40rem" }}>
-          <p className="muted">Bringing your night back…</p>
+          <PageSkeleton variant="form" bare label="Bringing your night back" />
         </div>
       </main>
     );

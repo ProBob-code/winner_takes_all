@@ -25,6 +25,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { backendFetch } from "@/lib/backend";
+import { PageSkeleton } from "@/components/skeleton";
 
 interface Activity {
   tournaments: number;
@@ -127,11 +128,7 @@ export default function ChainDashboardPage() {
 
   if (!data) {
     return (
-      <main className="page">
-        <div className="shell">
-          <p className="muted">Reading the chain…</p>
-        </div>
-      </main>
+      <PageSkeleton variant="detail" label="Reading the chain" />
     );
   }
 

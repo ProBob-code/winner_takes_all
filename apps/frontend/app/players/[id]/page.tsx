@@ -17,6 +17,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { backendFetch } from "@/lib/backend";
 import { PlayerHero, PlayerShowcase, PlayerStats, PlayerTrophies, type PlayerCardData } from "@/components/player-profile";
+import { PageSkeleton } from "@/components/skeleton";
 
 export default function PlayerPage() {
   const params = useParams<{ id: string }>();
@@ -48,7 +49,7 @@ export default function PlayerPage() {
   return (
     <main className="page">
       <div className="shell pp">
-        {state === "loading" && <p className="muted">Loading…</p>}
+        {state === "loading" && <PageSkeleton variant="profile" bare label="Loading the player" />}
         {state === "missing" && (
           <section className="pp-card">
             <h2>No player by that ID</h2>

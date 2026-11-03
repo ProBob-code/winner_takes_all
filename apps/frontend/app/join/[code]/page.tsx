@@ -24,6 +24,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { backendFetch } from "@/lib/backend";
+import { PageSkeleton } from "@/components/skeleton";
 
 interface JoinInfo {
   tournamentId: string;
@@ -114,7 +115,7 @@ export default function JoinByCodePage() {
     return (
       <main className="join-page">
         <div className="join-card">
-          <p className="muted">Checking that code…</p>
+          <PageSkeleton variant="form" bare label="Checking that code" />
         </div>
       </main>
     );

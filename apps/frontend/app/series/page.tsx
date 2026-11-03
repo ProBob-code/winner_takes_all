@@ -4,6 +4,7 @@ import { sportInfo } from "@/lib/sports";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { readBackendJson } from "@/lib/backend";
+import { PageSkeleton } from "@/components/skeleton";
 
 interface SeriesSummary {
   id: string;
@@ -78,7 +79,7 @@ export default function SeriesListPage() {
           </div>
         )}
 
-        {series === null && !error && <p className="muted">Loading…</p>}
+        {series === null && !error && <PageSkeleton variant="list" bare label="Loading series" />}
 
         {series !== null && series.length === 0 && (
           <div className="empty-state slide-in">

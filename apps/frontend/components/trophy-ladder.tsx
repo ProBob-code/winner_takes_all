@@ -13,6 +13,7 @@ import { Avatar } from "@/components/avatar";
 import { TrophyBadge } from "@/components/trophy-badge";
 import type { AvatarConfig } from "@/lib/avatar";
 import { TRACKS } from "@/lib/trophies";
+import { SkeletonRows } from "@/components/skeleton";
 import "@/components/progression.css";
 
 interface Leader {
@@ -76,7 +77,7 @@ export function TrophyLadder({ meId }: { meId?: string | null }) {
       {failed ? (
         <p className="muted">Could not load this ladder. Try again in a moment.</p>
       ) : leaders === null ? (
-        <p className="muted">Loading…</p>
+        <SkeletonRows rows={5} />
       ) : leaders.length === 0 ? (
         <p className="muted">
           Nobody is on this ladder yet. Win a rated game and you are the first. Every

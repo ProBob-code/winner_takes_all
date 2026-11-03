@@ -15,6 +15,7 @@ import { backendFetch } from "@/lib/backend";
 import { formatCoins } from "@/lib/format";
 import { PlayerHero, PlayerShowcase, PlayerStats, PlayerTrophies, type PlayerCardData } from "@/components/player-profile";
 import { COINS_AWARDED_EVENT } from "@/components/coin-toast";
+import { PageSkeleton } from "@/components/skeleton";
 
 interface OwnProfile extends PlayerCardData {
   email: string;
@@ -103,11 +104,7 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <main className="page">
-        <div className="shell">
-          <p className="muted">Loading your profile…</p>
-        </div>
-      </main>
+      <PageSkeleton variant="profile" label="Loading your profile" />
     );
   }
 

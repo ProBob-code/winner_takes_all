@@ -8,6 +8,7 @@ import { getApiUrl } from "@/lib/api-config";
 import { Avatar } from "@/components/avatar";
 import { TrophyLadder } from "@/components/trophy-ladder";
 import type { AvatarConfig } from "@/lib/avatar";
+import { PageSkeleton } from "@/components/skeleton";
 
 type LeaderboardEntry = {
   userId: string;
@@ -81,10 +82,7 @@ export default function LeaderboardPage() {
       <main className="page">
         <div className="shell">
           <h1 className="sr-only">Rankings</h1>
-          <div className="empty-state slide-in">
-            <div className="empty-icon loading-spin" aria-hidden="true">🏆</div>
-            <h3>Loading leaderboard...</h3>
-          </div>
+          <PageSkeleton variant="list" bare label="Loading the rankings" />
         </div>
       </main>
     );

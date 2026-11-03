@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { backendFetch } from "@/lib/backend";
 import { formatMoney } from "@/lib/format";
+import { PageSkeleton } from "@/components/skeleton";
 
 type Tab =
   | "overview"
@@ -115,14 +116,7 @@ export default function AdminPage() {
 
   if (loading) {
     return (
-      <main className="page">
-        <div className="shell">
-          <div className="empty-state slide-in">
-            <div className="empty-icon loading-spin">🛡️</div>
-            <h3>Opening the control room…</h3>
-          </div>
-        </div>
-      </main>
+      <PageSkeleton variant="detail" label="Opening the control room" />
     );
   }
 

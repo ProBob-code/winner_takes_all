@@ -23,6 +23,7 @@ import {
   type AvatarConfig,
 } from "@/lib/avatar";
 import type { LevelInfo } from "@/lib/progression";
+import { PageSkeleton } from "@/components/skeleton";
 import "@/components/progression.css";
 
 /** Layers whose options are colours: shown as swatches, not faces. */
@@ -104,7 +105,7 @@ export default function AvatarEditorPage() {
     return (
       <main className="page">
         <div className="shell">
-          <p className={error ? "av-error" : "muted"}>{error ?? "Loading your avatar…"}</p>
+          {error ? <p className="av-error">{error}</p> : <PageSkeleton variant="profile" bare label="Loading your avatar" />}
         </div>
       </main>
     );

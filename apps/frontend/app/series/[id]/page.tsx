@@ -12,6 +12,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { readBackendJson, backendFetch } from "@/lib/backend";
+import { PageSkeleton } from "@/components/skeleton";
 
 interface Series {
   id: string;
@@ -167,9 +168,7 @@ export default function SeriesDetailPage() {
 
   if (!series) {
     return (
-      <main className="page">
-        <div className="shell"><p className="muted">Loading…</p></div>
-      </main>
+      <PageSkeleton variant="detail" label="Loading the series" />
     );
   }
 

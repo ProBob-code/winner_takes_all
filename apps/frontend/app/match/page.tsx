@@ -4,6 +4,7 @@ import { TeamPod, VSCore } from "@/components/match-components";
 import { readBackendJson } from "@/lib/backend";
 import { GameRoom } from "@/components/game-room";
 import { OfflineTracker } from "@/components/offline-tracker";
+import { PageSkeleton } from "@/components/skeleton";
 
 type MatchResponse = {
   ok: boolean;
@@ -69,7 +70,7 @@ export default function MatchPage() {
     load();
   }, []);
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) return <PageSkeleton variant="detail" label="Loading the match" />;
   if (error || !data) return <div>{error || "Not found"}</div>;
 
   const { matchData, profileData, id } = data;
@@ -118,7 +119,7 @@ export default function MatchPage() {
     fetchTournament();
   }, [match.tournamentId]);
 
-  if (isOffline === null) return <div>Loading tournament details...</div>;
+  if (isOffline === null) return <PageSkeleton variant="detail" bare label="Loading the tournament" />;
 
   // Completed match view
   if (match.status === "completed" || match.scoresApproved) {

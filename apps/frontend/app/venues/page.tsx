@@ -25,6 +25,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { backendFetch } from "@/lib/backend";
+import { PageSkeleton } from "@/components/skeleton";
 
 interface Venue {
   id: string;
@@ -196,7 +197,7 @@ export default function VenuesPage() {
         )}
 
         {loading ? (
-          <p className="muted">Reading your venues…</p>
+          <PageSkeleton variant="list" bare label="Reading your venues" />
         ) : venues.length === 0 ? (
           <div className="panel v-stack">
             <h2 style={{ fontSize: "var(--text-xl)", fontWeight: 700 }}>No venues yet</h2>
