@@ -61,6 +61,17 @@ export default function CodePage() {
         return;
       }
       if (!res.ok || !body?.ok) {
+        // The night's door code (on the big screen, "3 · The door") is six
+        // characters too, and people type it here. If it is one, go and join.
+        if (res.status === 404) {
+          const door = code.replace(/[^A-Z0-9]/gi, "").toUpperCase();
+          const join = await backendFetch(`/join/${door}`).catch(() => null);
+          const joinBody: any = join ? await join.json().catch(() => null) : null;
+          if (join?.ok && joinBody?.ok) {
+            window.location.href = `/join/${door}`;
+            return;
+          }
+        }
         setError(body?.message ?? "That didn't go through. Try again.");
         return;
       }

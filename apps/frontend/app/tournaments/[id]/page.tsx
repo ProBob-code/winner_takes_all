@@ -148,6 +148,10 @@ export default function TournamentDetailPage() {
   const participants: any[] =
     responses[2].status === "fulfilled" ? responses[2].value.payload?.participants || [] : [];
   const hasStarted = !!engineState && engineState.phase !== "open" && engineState.phase !== "SETUP";
+  // Once a night is in the arena its seats are engine teams, typed-in names and
+  // walk-ins included, not account entries; those are what fill it.
+  const seatCount = hasStarted ? engineState!.teams.length : tournament.joinedPlayers;
+  const iAmSeated = !!engineState?.teams.some((t: any) => t.user_id && t.user_id === profileData?.user?.id);
 
   const hostEntry = participants.find((p) => p.userId === tournament.hostId);
   const hostName = hostEntry?.name || hostEntry?.teamName || null;
@@ -359,7 +363,7 @@ export default function TournamentDetailPage() {
               ...(championPrize !== null
                 ? [{ label: "CHAMPION", value: `${formatCoins(championPrize)} coins`, gold: true }]
                 : []),
-              { label: "PLAYERS", value: `${tournament.joinedPlayers}/${tournament.maxPlayers}` },
+              { label: "PLAYERS", value: `${seatCount}/${tournament.maxPlayers}` },
               { label: "TEAM SIZE", value: tournament.teamSize > 1 ? `${tournament.teamSize} a side` : "Solo" },
               { label: "PLAYED", value: tournament.tournamentType === "offline" ? "Offline" : "Online" },
             ].map((f: { label: string; value: string; gold?: boolean }) => (
@@ -372,7 +376,9 @@ export default function TournamentDetailPage() {
 
           <div className="cta-row" style={{ marginTop: "2rem", display: "flex", gap: "1rem" }}>
             {/* A finished tournament takes no more entries. */}
-            {!isClosed && <JoinTournamentButton tournamentId={id} isPrivate={tournament.isPrivate} />}
+            {!isClosed && !iAmSeated && (
+              <JoinTournamentButton tournamentId={id} isPrivate={tournament.isPrivate} onJoined={() => void fetchTournamentData()} />
+            )}
             <ShareTournament tournamentId={id} tournamentName={tournament.name} />
           </div>
         </div>

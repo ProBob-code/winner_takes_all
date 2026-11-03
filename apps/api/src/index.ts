@@ -1029,6 +1029,77 @@ app.post("/api/tournaments/create", async (c) => {
   return c.json({ ok: true, tournament: serializeTournament(tournament) });
 });
 
+/**
+ * Join a night that is already running, from the tournament page.
+ *
+ * In order: the account already has a seat (say so); an empty seat the host
+ * typed in under this player's name, with nothing played on it yet, becomes
+ * theirs; otherwise, while there is room and the night is still in its group
+ * stage, a seat is made for them and they are paired like any late arrival.
+ * A seat that has already played games is left to the host's claim-seat
+ * route, which pays what that seat earned.
+ */
+async function seatInRunningNight(
+  c: Context<AppContext>,
+  tournament: TournamentRecord,
+  user: { id: string; name: string }
+): Promise<Response> {
+  const store = c.get("store");
+  const teams = await store.getEngineTeams(tournament.id);
+
+  const mine = teams.find((t) => t.user_id === user.id);
+  if (mine) {
+    return c.json({ ok: true, alreadySeated: true, teamId: mine.id, message: `You're already in, as ${mine.name}.` });
+  }
+
+  const matches = await store.getEngineMatches(tournament.id);
+  const hasPlayed = (teamId: string) =>
+    matches.some((m) => (m.team_a_id === teamId || m.team_b_id === teamId) && m.status === "COMPLETED");
+  const wanted = (user.name || "").trim();
+  const named = teams.find(
+    (t) => !t.user_id && t.name.trim().toLowerCase() === wanted.toLowerCase() && !hasPlayed(t.id)
+  );
+  if (named && (await store.linkEngineTeam(named.id, user.id))) {
+    return c.json({ ok: true, teamId: named.id, message: `You're in, on ${named.name}'s seat.` });
+  }
+
+  if (tournament.status !== "GROUP") {
+    return c.json({ ok: false, message: "This night is into its knockouts, so it can't take new players." }, 409);
+  }
+  if (teams.length >= tournament.max_players) {
+    return c.json(
+      {
+        ok: false,
+        message: `All ${tournament.max_players} seats are taken. Ask the host to add a seat, or to give you yours.`,
+      },
+      409
+    );
+  }
+
+  // A unique name on the board: "Bob", then "Bob 2" if a Bob is already playing.
+  const taken = new Set(teams.map((t) => t.name.trim().toLowerCase()));
+  let name = wanted || "Player";
+  for (let n = 2; taken.has(name.toLowerCase()); n++) name = `${wanted || "Player"} ${n}`;
+
+  const team = await store.createEngineTeam(tournament.id, name, user.id);
+
+  // Paired against whoever is waiting, exactly as a door-code arrival is.
+  if (matches.length > 0) {
+    const [allTeams, matchups] = await Promise.all([
+      store.getEngineTeams(tournament.id),
+      store.getEngineMatchups(tournament.id),
+    ]);
+    const limit = tournament.max_matches_per_team || 2;
+    const { matches: nextMatches } = Engine.generateNextMatches(allTeams, matchups, "GROUP", limit);
+    for (const nm of nextMatches.filter((m) => m.team_a_id === team.id || m.team_b_id === team.id)) {
+      const match = await store.createEngineMatch(tournament.id, nm);
+      await store.createEngineMatchup(tournament.id, match.team_a_id, match.team_b_id, match.id);
+    }
+  }
+
+  return c.json({ ok: true, teamId: team.id, message: `You're in, as ${team.name}.` });
+}
+
 app.post("/api/tournaments/:id/join", async (c) => {
   const user = requireUser(c);
   if (!user) return c.json({ ok: false, message: "Authentication required" }, 401);
@@ -1067,6 +1138,14 @@ app.post("/api/tournaments/:id/join", async (c) => {
       );
     }
     if (series) await store.addSeriesMember(series.id, user.id);
+  }
+
+  // A night already running in the arena (a hosted night starts in GROUP the
+  // moment it is set up) seats the player in the arena itself, the same way
+  // the door code does. Sending it to joinTournament answered "not open for
+  // new entries" to everyone who pressed Join on a night that was on.
+  if (tournament.status === "GROUP" || tournament.status === "KNOCKOUT") {
+    return seatInRunningNight(c, tournament, user);
   }
 
   try {

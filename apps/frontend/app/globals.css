@@ -6364,3 +6364,13 @@ main .action-card.is-primary::before { display: none; }
   text-decoration: none;
 }
 .skip-link:focus { top: 1rem; }
+
+/* A <select>'s open list is drawn by the browser: options inherit the field's
+   white text in dark mode but keep a pale system background, so "Manager" on
+   the venue's add-someone list was white on cream. Give the list the theme. */
+select option,
+select optgroup {
+  background-color: var(--bg-card);
+  color: var(--text-primary);
+}
+[data-theme="dark"] select { color-scheme: dark; }

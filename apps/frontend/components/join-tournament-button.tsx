@@ -8,11 +8,14 @@ import { getApiUrl } from "@/lib/api-config";
 type JoinTournamentButtonProps = {
   tournamentId: string;
   isPrivate: boolean;
+  /** Called after a successful join, so a page that loads its data in the browser can reload it. */
+  onJoined?: () => void;
 };
 
 export function JoinTournamentButton({
   tournamentId,
-  isPrivate
+  isPrivate,
+  onJoined
 }: JoinTournamentButtonProps) {
   const router = useRouter();
   const [message, setMessage] = useState<string | null>(null);
@@ -53,8 +56,9 @@ export function JoinTournamentButton({
       return;
     }
 
-    setMessage("Tournament entry confirmed.");
+    setMessage(body.message ?? "Tournament entry confirmed.");
     setShowPasswordPrompt(false);
+    onJoined?.();
     startTransition(() => {
       router.refresh();
     });
