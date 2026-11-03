@@ -1,0 +1,42 @@
+# Kept identical to apps/frontend/_headers. This copy is the one that reaches
+# the deploy: everything in public/ lands at the site root.
+# Cloudflare Pages applies these to asset responses. Paired with the headers()
+# block in next.config.js, which covers the worker-rendered ones: documents
+# revalidate, content-hashed assets do not.
+/*
+  Cache-Control: public, max-age=0, must-revalidate
+  Content-Security-Policy: frame-ancestors 'self'; base-uri 'self'; object-src 'none'; upgrade-insecure-requests
+  X-Frame-Options: SAMEORIGIN
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(self), microphone=(self), geolocation=(self), browsing-topics=()
+  Strict-Transport-Security: max-age=31536000
+
+# When several rules match, Pages applies the "/*" Cache-Control as well, and
+# it won: hashed scripts went out as max-age=0 and every visit re-checked all
+# of them. "! Cache-Control" drops the header the catch-all set first.
+/_next/static/*
+  ! Cache-Control
+  Cache-Control: public, max-age=31536000, immutable
+
+# Art, sounds and the pool game's engine change rarely and are not hashed: a
+# day fresh, then a week of serving the old copy while a new one is fetched.
+/goat/*
+  ! Cache-Control
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+/sounds/*
+  ! Cache-Control
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+/assets/*
+  ! Cache-Control
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+/8ball/assets/*
+  ! Cache-Control
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+/8ball/html5games/*
+  ! Cache-Control
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
