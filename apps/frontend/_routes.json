@@ -10,6 +10,7 @@
     "/og-image.jpg",
     "/apple-touch-icon.png",
     "/assets/*",
+    "/goat/*",
     "/8ball/*",
     "/sounds/*"
   ]
