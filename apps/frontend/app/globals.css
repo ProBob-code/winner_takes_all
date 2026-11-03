@@ -6395,3 +6395,18 @@ select optgroup {
 }
 .api-activity.is-busy { opacity: 1; }
 @media (prefers-reduced-motion: reduce) { .api-activity { animation: none; } }
+
+/* ── Paged card: a table that turns pages inside a fixed card ── */
+.paged-card { margin-top: var(--space-7); padding: var(--space-5); }
+.paged-card-head h2 { font-size: var(--text-2xl); font-weight: 800; }
+.paged-card-head p { margin-top: var(--space-2); }
+.paged-card-body { margin-top: var(--space-4); }
+.paged-card-body td { height: 49px; }
+.paged-card-filler td { border-bottom-color: transparent !important; }
+.paged-card-foot {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--space-3);
+  flex-wrap: wrap; margin-top: var(--space-4); font-size: var(--text-sm);
+}
+.paged-card-nav { display: flex; align-items: center; gap: var(--space-3); }
+.paged-card-nav .button-secondary { padding: 0.4rem 0.9rem; font-size: var(--text-sm); }
+.paged-card-nav .button-secondary:disabled { opacity: 0.4; cursor: default; }

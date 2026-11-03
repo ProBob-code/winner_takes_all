@@ -27,6 +27,7 @@ import { CoinMark } from "@/components/coin-mark";
 import { FlipCard } from "@/components/flip-card";
 import { formatCoins, formatCoinsExact } from "@/lib/format";
 import { PageSkeleton } from "@/components/skeleton";
+import { PagedCard } from "@/components/paged-card";
 
 interface Me {
   balance: number;
@@ -101,25 +102,25 @@ export default function CoinsPage() {
   const [signedIn, setSignedIn] = useState(true);
   const [loading, setLoading] = useState(true);
 
+  // Everything at once: the four reads used to go out one after another, so
+  // the page waited for the slowest chain of them rather than the slowest one.
   const load = useCallback(async () => {
+    const json = (res: Response) => res.json().catch(() => ({}));
     try {
-      const [rulesRes, boardRes] = await Promise.all([
-        backendFetch("/coins/rules"),
-        backendFetch("/coins/leaderboard"),
+      const [r, b, meRes, ledgerRes] = await Promise.all([
+        backendFetch("/coins/rules").then(json).catch(() => ({})),
+        backendFetch("/coins/leaderboard").then(json).catch(() => ({})),
+        backendFetch("/coins/me").catch(() => null),
+        backendFetch("/coins/ledger?limit=200").catch(() => null),
       ]);
-      const r: any = await rulesRes.json().catch(() => ({}));
-      if (r?.ok) setRules(r);
-      const b: any = await boardRes.json().catch(() => ({}));
-      if (b?.ok) setLeaders(b.leaders ?? []);
-
-      const meRes = await backendFetch("/coins/me");
-      if (meRes.status === 401) {
+      if ((r as any)?.ok) setRules(r as any);
+      if ((b as any)?.ok) setLeaders((b as any).leaders ?? []);
+      if (meRes?.status === 401) {
         setSignedIn(false);
-      } else {
-        const m: any = await meRes.json().catch(() => ({}));
+      } else if (meRes) {
+        const m: any = await json(meRes);
         if (m?.ok) setMe(m);
-        const ledgerRes = await backendFetch("/coins/ledger?limit=40");
-        const l: any = await ledgerRes.json().catch(() => ({}));
+        const l: any = ledgerRes ? await json(ledgerRes) : null;
         if (l?.ok) setEntries(l.entries ?? []);
       }
     } catch {
@@ -337,79 +338,52 @@ export default function CoinsPage() {
         </section>
 
         {entries.length > 0 && (
-          <section style={{ marginTop: "var(--space-7)" }}>
-            <h2 style={{ fontSize: "var(--text-2xl)", fontWeight: 800 }}>Where yours came from</h2>
-            <p className="muted" style={{ marginTop: "var(--space-2)" }}>
-              Every coin, and what it was for. Check the arithmetic yourself.
-            </p>
-            <div className="table-scroll" style={{ marginTop: "var(--space-4)" }}>
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>What</th>
-                    <th>When</th>
-                    <th style={{ textAlign: "right" }}>Coins</th>
-                    <th style={{ textAlign: "right" }}>Balance</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {entries.map((e) => (
-                    <tr key={e.id}>
-                      <td>{e.description ?? e.reason}</td>
-                      <td className="muted">
-                        {new Date(e.at).toLocaleDateString("en-IN", {
-                          day: "numeric",
-                          month: "short",
-                        })}
-                      </td>
-                      <td style={{ textAlign: "right", color: "var(--gold)", fontWeight: 700 }}>
-                        {e.amount < 0 ? `−${exact(-e.amount)}` : `+${exact(e.amount)}`}
-                      </td>
-                      <td style={{ textAlign: "right" }} className="muted">
-                        {exact(e.balanceAfter)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </section>
+          <PagedCard
+            title="Where yours came from"
+            subtitle="Every coin, and what it was for. Check the arithmetic yourself."
+            ariaLabel="Your coin history"
+            columns={[
+              { label: "What" },
+              { label: "When" },
+              { label: "Coins", align: "right" },
+              { label: "Balance", align: "right" },
+            ]}
+            rows={entries.map((e) => ({
+              key: e.id,
+              cells: [
+                e.description ?? e.reason,
+                <span key="d" className="muted">
+                  {new Date(e.at).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+                </span>,
+                <span key="a" style={{ color: "var(--gold)", fontWeight: 700 }}>
+                  {e.amount < 0 ? `−${exact(-e.amount)}` : `+${exact(e.amount)}`}
+                </span>,
+                <span key="b" className="muted">{exact(e.balanceAfter)}</span>,
+              ],
+            }))}
+          />
         )}
 
-        <section style={{ marginTop: "var(--space-7)" }}>
-          <h2 style={{ fontSize: "var(--text-2xl)", fontWeight: 800 }}>Most coins</h2>
-          <div className="table-scroll" style={{ marginTop: "var(--space-4)" }}>
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Player</th>
-                  <th>Title</th>
-                  <th style={{ textAlign: "right" }}>Coins</th>
-                </tr>
-              </thead>
-              <tbody>
-                {leaders.map((l) => (
-                  <tr key={l.userId}>
-                    <td className="muted">{l.rank}</td>
-                    <td style={{ overflowWrap: "anywhere" }}>{l.name}</td>
-                    <td>
-                      <span className="chip">{l.title}</span>
-                    </td>
-                    <td style={{ textAlign: "right", fontWeight: 700 }}>{coins(l.balance)}</td>
-                  </tr>
-                ))}
-                {leaders.length === 0 && (
-                  <tr>
-                    <td colSpan={4} className="muted">
-                      Nobody has earned a coin yet. Be first.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </section>
+        <PagedCard
+          title="Most coins"
+          ariaLabel="Players with the most coins"
+          columns={[
+            { label: "#" },
+            { label: "Player" },
+            { label: "Title" },
+            { label: "Coins", align: "right" },
+          ]}
+          empty="Nobody has earned a coin yet. Be first."
+          rows={leaders.map((l) => ({
+            key: l.userId,
+            cells: [
+              <span key="r" className="muted">{l.rank}</span>,
+              <span key="n" style={{ overflowWrap: "anywhere" }}>{l.name}</span>,
+              <span key="t" className="chip">{l.title}</span>,
+              <strong key="c">{coins(l.balance)}</strong>,
+            ],
+          }))}
+        />
 
         <div className="h-stack" style={{ marginTop: "var(--space-7)" }}>
           <Link className="button" href="/run" style={{ textDecoration: "none" }}>

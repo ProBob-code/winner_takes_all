@@ -36,17 +36,17 @@ const GOATS: Record<Key, { sport: string; name: string; nick: string; stats: { v
 };
 
 const PHOTOS: Partial<Record<Key, [string, string]>> = {
-  football: ["/goat/goat-messi.webp", "center 13%"],
-  pool: ["/goat/goat-reyes.webp", "center 36%"],
-  badminton: ["/goat/goat-lindan.webp", "center 2%"],
-  tabletennis: ["/goat/goat-malong.webp", "center 30%"],
-  pickleball: ["/goat/goat-johns.webp", "center 0%"],
-  tennis: ["/goat/goat-djokovic.webp", "center 39%"],
+  football: ["/goat/goat-messi.webp?v=2", "center 13%"],
+  pool: ["/goat/goat-reyes.webp?v=2", "center 36%"],
+  badminton: ["/goat/goat-lindan.webp?v=2", "center 2%"],
+  tabletennis: ["/goat/goat-malong.webp?v=2", "center 30%"],
+  pickleball: ["/goat/goat-johns.webp?v=2", "center 0%"],
+  tennis: ["/goat/goat-djokovic.webp?v=2", "center 39%"],
 };
 
 const ART: Record<Theme, { hero: string; mTop: string; mBot: string }> = {
-  dark: { hero: "/goat/hero-bg.webp", mTop: "/goat/m-top.webp", mBot: "/goat/m-bottom.webp" },
-  light: { hero: "/goat/hero-bg-light.webp", mTop: "/goat/m-top-light.webp", mBot: "/goat/m-bottom-light.webp" },
+  dark: { hero: "/goat/hero-bg.webp?v=2", mTop: "/goat/m-top.webp?v=2", mBot: "/goat/m-bottom.webp?v=2" },
+  light: { hero: "/goat/hero-bg-light.webp?v=2", mTop: "/goat/m-top-light.webp?v=2", mBot: "/goat/m-bottom-light.webp?v=2" },
 };
 
 // Hotspots and card placements, in percent of the stage, as drawn in the design.

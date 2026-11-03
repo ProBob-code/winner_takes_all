@@ -31,11 +31,34 @@
   // Nothing to report to when the game is opened directly rather than hosted.
   if (window.parent === window) return;
 
+  // Per-game state. The game builds a fresh playState.gameInfo for every rack
+  // it starts (a rematch, or back to the menu and play again), so a change of
+  // object is a new game. This used to report once per page load and then
+  // stop watching, so only the first game of a visit ever paid: win the
+  // second and nothing was claimed.
+  var current = null;
   var startedAt = Date.now();
   var reported = false;
   var started = false;
   var lastShotNum = 0;
   var shots = 0;
+
+  function newGame(gi) {
+    current = gi;
+    startedAt = Date.now();
+    reported = false;
+    started = false;
+    lastShotNum = typeof gi.shotNum === "number" ? gi.shotNum : 0;
+    shots = 0;
+  }
+
+  function tutorial() {
+    try {
+      return !!(window.projectInfo && window.projectInfo.tutorial);
+    } catch (err) {
+      return false;
+    }
+  }
 
   function state() {
     try {
@@ -89,14 +112,15 @@
     }
   }
 
-  var poll = setInterval(function () {
+  setInterval(function () {
     var gi = state();
     if (!gi) return;
+    if (gi !== current) newGame(gi);
 
     countShots(gi);
 
     // A practice table has no opponent and no result worth paying for.
-    if (gi.mode === "practice" || gi.trial === 1) return;
+    if (gi.mode === "practice" || gi.trial === 1 || tutorial()) return;
 
     // The first sight of a real game in progress: tell the host, so a game
     // against the AI is on record before anyone knows how it will end. One
@@ -109,8 +133,8 @@
 
     if (!gi.gameOver || reported) return;
 
+    // Keep polling: the next game is a new object and a new claim.
     reported = true;
-    clearInterval(poll);
 
     var m = mode();
     send({
