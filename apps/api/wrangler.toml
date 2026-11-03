@@ -38,6 +38,9 @@ ALLOWED_ORIGINS = "https://winnertakesall.live,https://www.winnertakesall.live,h
 REALTIME_API_BASE = "https://rtc.live.cloudflare.com/v1"
 # Origin used to build the scannable broadcast URL placed in match QR codes.
 PUBLIC_APP_ORIGIN = "https://winnertakesall.live"
+# Sign in with Google. A client ID is public (the browser sees it), unlike
+# the client secret, which this app never uses.
+GOOGLE_CLIENT_ID = "712377550396-0ne3rpia1ec07jbdboscfk7kd0cf3a5t.apps.googleusercontent.com"
 
 # Opens the next week of every active series once its date has passed. Hourly
 # rather than daily so a season set to open at 20:00 does so the same evening;
