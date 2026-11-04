@@ -1,60 +1,14 @@
-# 🎱 8Ball Pool - HTML5 Game
+# W.T.A Eight Ball
 
-A **classic 8-ball pool game** built using **HTML5, JavaScript, and CSS**. Play solo, challenge an AI opponent, or compete with a friend in this realistic and interactive billiards experience.
+`index.html` is the **WTA Eight Ball** design, used as-is: the look, physics, AI, trash talk, cat reactions, combos and felts. It runs on `support.js`, the design runtime, which loads React and Babel from unpkg. The pictures it bundles are in `assets/`.
 
-## 🌟 Features
+## What was added to the design
 
-- 🎮 **Single & Multiplayer Mode** – Play against AI or a second player.
-- 🏆 **Smooth Gameplay** – Realistic ball physics using HTML5 Canvas.
-- 🎨 **Customizable Tables & Balls** – Personalize the game to your liking.
-- 🔊 **Sound Effects** – Enjoy realistic pool sounds.
-- 🎯 **Cue Ball Aiming Guide** – Helps players aim their shots.
-
-## 🚀 Demo
-
-🔗 **[Play Now](https://8-ball-pool-html-5.vercel.app/)**
-
-## 📸 Screenshots
-
-![8Ball Pool](https://github.com/user-attachments/assets/e869d275-fe94-49cc-b7c6-d46978a1daed)
-
-## 🛠️ Tech Stack
-
-- **HTML5** (Canvas API)
-- **JavaScript** (Game logic & physics)
-- **CSS3** (UI styling)
-
-## 🔧 Installation
-
-1. Clone the repository:
-
-   ```bash
-   git clone https://github.com/yourusername/8Ball-Pool-HTML5.git
-   ```
-
-2. Navigate into the project directory:
-
-   ```bash
-   cd 8Ball-Pool-HTML5
-   ```
-
-3. Open index.html in your browser.
-
-## 🎮 How to Play
-
-- **Objective:** Pocket all your designated balls (solid/striped) and finish with the 8-ball.
-- **Controls:**
-  - Drag and aim with the mouse.
-  - Release to shoot.
-
-## 📜 License
-
-This project is licensed under the **MIT License**.
-
-## 📬 Contact
-
-For suggestions or contributions, reach out at [afzalimdad9@gmail.com](mailto:afzalimdad9@gmail.com) or create an issue.
-
----
-
-✨ *Enjoy playing pool in your browser!* 🎱
+- **Host messages:** it reports `game_start` and `game_over` to the page (`{ wtaCoins: true, ... }`) for coins and trophies. Mode 1 is vs System, 2 is vs Player and 3 is online.
+- **Back to games:** posts `exit`.
+- **vs Online:** real players, using the `PoolRooms` Durable Object in `apps/api`.
+  - The game opens `/api/pool/lobby`, then `/api/pool/table/<uuid>`.
+  - The shooter sends `aim`, `shot` and then `settled` with the resulting table.
+  - The other screen replays the shot, then snaps to `settled`.
+  - Both screens send `result`. The server decides, and the coin claim reads that verdict.
+- **Config from the page:** the page sends `{ wtaHost: true, type: "config", apiBase, signedIn, name }`.

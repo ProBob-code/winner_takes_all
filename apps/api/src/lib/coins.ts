@@ -381,8 +381,10 @@ export function awardsForNight(tournamentName?: string, competitors = MIN_PLAYER
  */
 export function awardsForOnlineGame(args: {
   won: boolean;
-  /** 1 = vs AI, 2 = two players on one device. */
-  mode: 1 | 2;
+  /** 1 = vs AI, 2 = two players on one device, 3 = online vs a real player. */
+  mode: 1 | 2 | 3;
+  /** Online only: who was beaten. */
+  opponentName?: string;
   /** The AI's difficulty, 1 upwards. Ignored outside AI mode. */
   aiRating?: number;
 }): CoinAward[] {
@@ -391,7 +393,9 @@ export function awardsForOnlineGame(args: {
   // A modest step per difficulty — one whole coin unit a level, so beating the
   // hardest AI is worth about half as much again as beating the easiest rather
   // than several times more. Kept in whole units like every other figure here.
-  const difficulty = args.mode === 1 ? Math.min(Math.max(args.aiRating ?? 1, 1), 3) : 1;
+  // A real opponent, refereed by the server, is worth the top AI level.
+  const difficulty =
+    args.mode === 1 ? Math.min(Math.max(args.aiRating ?? 1, 1), 3) : args.mode === 3 ? 3 : 1;
   const bonus = (difficulty - 1) * COIN_UNIT;
 
   return [
@@ -401,7 +405,9 @@ export function awardsForOnlineGame(args: {
       description:
         args.mode === 1
           ? `Beat the AI${difficulty > 1 ? ` (level ${difficulty})` : ""}`
-          : "Won a game",
+          : args.mode === 3
+            ? `Beat ${args.opponentName || "a player"} online`
+            : "Won a game",
     },
   ];
 }

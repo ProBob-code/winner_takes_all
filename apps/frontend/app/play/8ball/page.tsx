@@ -6,10 +6,12 @@ export const dynamic = "force-dynamic";
 /**
  * The 8-ball game, hosted so that finishing one earns WTA Coins.
  *
- * The game itself is an untouched third-party Phaser build in /public/8ball.
- * Rather than patching it, it runs in a frame and a small reporter
- * (public/8ball/wta-coins.js) posts the result out when the game ends. This
- * page listens, claims the coins, and shows what was earned.
+ * The game is WTA's own, in /public/8ball (physics, rules, AI and the online
+ * client; see its README). It runs in a frame and posts the result out when a
+ * game ends. This page listens, claims the coins, and shows what was earned.
+ *
+ * It also tells the frame where the API is and whether the player is signed
+ * in, which the online mode needs to open its socket.
  *
  * WHY THE AWARDS ARE SMALL, SAID ON THE PAGE
  * A browser result is reported by the player's own device and cannot be
@@ -21,7 +23,7 @@ export const dynamic = "force-dynamic";
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { backendFetch } from "@/lib/backend";
+import { backendFetch, getApiBaseUrl } from "@/lib/backend";
 import { CoinMark } from "@/components/coin-mark";
 import { CrownLogo } from "@/components/brand-mark";
 import "@/components/progression.css";
@@ -66,6 +68,8 @@ export default function PlayEightBallPage() {
   const [balance, setBalance] = useState<number | null>(null);
   const [onlineLeft, setOnlineLeft] = useState<number | null>(null);
   const [signedIn, setSignedIn] = useState(true);
+  const [playerName, setPlayerName] = useState<string | null>(null);
+  const frameRef = useRef<HTMLIFrameElement>(null);
   // The note under the table, closable and remembered per device: on a phone
   // it took a fifth of the screen on every game.
   const [noteOpen, setNoteOpen] = useState(true);
@@ -110,6 +114,40 @@ export default function PlayEightBallPage() {
     void loadBalance();
   }, [loadBalance]);
 
+  // The name shown on the online table.
+  useEffect(() => {
+    if (!signedIn) return;
+    backendFetch("/user/profile")
+      .then((r) => r.json())
+      .then((p: any) => {
+        if (p?.ok && p.user?.name) setPlayerName(String(p.user.name));
+      })
+      .catch(() => {
+        /* the table shows "You" */
+      });
+  }, [signedIn]);
+
+  // What the game needs from the page: where the API is, and who is playing.
+  const sendConfig = useCallback(() => {
+    try {
+      frameRef.current?.contentWindow?.postMessage(
+        {
+          wtaHost: true,
+          type: "config",
+          apiBase: getApiBaseUrl() || null,
+          signedIn,
+          name: playerName,
+        },
+        window.location.origin
+      );
+    } catch {
+      /* the frame is not up yet; it asks again with "ready" */
+    }
+  }, [signedIn, playerName]);
+  useEffect(() => {
+    sendConfig();
+  }, [sendConfig]);
+
   useEffect(() => {
     const onMessage = async (event: MessageEvent) => {
       // Only this origin's frame may claim coins.
@@ -119,6 +157,11 @@ export default function PlayEightBallPage() {
 
       if (data.type === "exit") {
         window.location.href = "/games";
+        return;
+      }
+
+      if (data.type === "ready") {
+        sendConfig();
         return;
       }
 
@@ -152,19 +195,29 @@ export default function PlayEightBallPage() {
 
       setClaiming(true);
       try {
-        const res = await backendFetch("/coins/claim-online", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            sessionId: sessionRef.current,
-            mode: data.mode === 1 ? 1 : 2,
-            won: !!data.won,
-            aiRating: data.aiRating,
-            seconds: data.seconds,
-            shots: data.shots,
-          }),
-        });
-        const payload: any = await res.json().catch(() => ({}));
+        const mode = data.mode === 1 ? 1 : data.mode === 3 ? 3 : 2;
+        const claim = () =>
+          backendFetch("/coins/claim-online", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              sessionId: sessionRef.current,
+              mode,
+              tableId: mode === 3 ? String(data.tableId || "") : undefined,
+              won: !!data.won,
+              aiRating: data.aiRating,
+              seconds: Math.max(0, Math.round(Number(data.seconds) || 0)),
+              shots: Math.max(0, Math.round(Number(data.shots) || 0)),
+            }),
+          });
+        let res = await claim();
+        let payload: any = await res.json().catch(() => ({}));
+        // Online, the table may still be hearing from the other screen.
+        for (let i = 0; mode === 3 && payload?.pending && i < 6; i++) {
+          await new Promise((r) => setTimeout(r, 1500));
+          res = await claim();
+          payload = await res.json().catch(() => ({}));
+        }
         if (payload?.ok) {
           setClaimed(payload);
           if (typeof payload.balance === "number") setBalance(payload.balance);
@@ -190,7 +243,7 @@ export default function PlayEightBallPage() {
 
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
-  }, [signedIn]);
+  }, [signedIn, sendConfig]);
 
   return (
     <main
@@ -203,50 +256,6 @@ export default function PlayEightBallPage() {
         background: "var(--bg-primary)",
       }}
     >
-      {/* A thin strip rather than the usual chrome: the table needs the room.
-          WTA's own colours and mark, so the game sits inside the product
-          rather than looking like a page from somewhere else. */}
-      <header className="wta-game-head">
-        <Link href="/games" className="wta-game-back">
-          ←
-        </Link>
-        <span className="wta-game-title">
-          <CrownLogo size={20} />
-          <span>
-            W.T.A <em>8-Ball</em>
-          </span>
-        </span>
-
-        <div className="h-stack tight">
-          {signedIn ? (
-            <>
-              <CoinMark size={22} />
-              <strong style={{ fontSize: "var(--text-sm)" }}>
-                {balance === null ? "…" : formatCoins(balance)}
-              </strong>
-              {stakes && (
-                <span className="chip gold" title="A rated game against the AI. Leaving it unfinished counts as a loss.">
-                  🏆 {signedTrophies(stakes.win)} / {signedTrophies(stakes.loss)}
-                </span>
-              )}
-              {onlineLeft !== null && (
-                <span className="chip" title="What browser play can still earn today">
-                  {formatCoins(onlineLeft)} left today
-                </span>
-              )}
-            </>
-          ) : (
-            <Link href="/login" className="chip warn" style={{ textDecoration: "none" }}>
-              sign in to earn coins
-            </Link>
-          )}
-          {!noteOpen && (
-            <button type="button" className="wta-game-info" onClick={() => toggleNote(true)} aria-label="How this game pays">
-              i
-            </button>
-          )}
-        </div>
-      </header>
 
       {/* ── The result, over the table ──
           This used to be a strip above the iframe, which put it in a different
@@ -333,37 +342,19 @@ export default function PlayEightBallPage() {
         </div>
       )}
 
-      {/* The game. sandbox is deliberately narrow: it needs scripts and its own
-          origin for localStorage, and nothing else. */}
-      <div className="wta-game-frame">
+      {/* The game, full screen: the design has its own header, menu and
+          coin display, so the page adds no chrome around it. sandbox is
+          deliberately narrow: scripts and its own origin, nothing else. */}
+      <div style={{ position: "fixed", inset: 0, display: "flex", background: "#070504" }}>
         <iframe
-          src="/8ball/index.html"
-          title="8-Ball Pool"
+          ref={frameRef}
+          src="/8ball/index.html?v=5"
+          title="WTA Eight Ball"
           sandbox="allow-scripts allow-same-origin"
-          style={{
-            flex: 1,
-            width: "100%",
-            border: 0,
-            display: "block",
-            minHeight: "60vh",
-          }}
+          allow="autoplay"
+          style={{ flex: 1, width: "100%", height: "100%", border: 0, display: "block" }}
         />
       </div>
-
-      {noteOpen && (
-      <footer className="wta-game-note">
-        <button type="button" className="wta-game-note-close" onClick={() => toggleNote(false)} aria-label="Close this note">
-          ×
-        </button>
-        <p className="muted" style={{ fontSize: "var(--text-xs)", textAlign: "center", margin: 0 }}>
-          Only the winner earns — beat the machine and the coins are yours, lose and
-          nothing is paid. Signed-in games against the AI are rated: a win gains trophies,
-          a loss costs them, and a game left unfinished counts as a loss. Browser games are worth a fraction of a league fight and have
-          their own daily limit. WTA Coins have no cash value and cannot be bought or
-          withdrawn.
-        </p>
-      </footer>
-      )}
     </main>
   );
 }

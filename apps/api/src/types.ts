@@ -14,6 +14,9 @@ export interface Env {
   // frequent and would exhaust the daily KV write budget.
   MATCH_FEEDS: DurableObjectNamespace;
 
+  // Online 8-ball: the matchmaking lobby and one instance per table.
+  POOL_ROOMS: DurableObjectNamespace;
+
   // Secrets (set via `wrangler secret put`, never in wrangler.toml [vars])
   RAZORPAY_KEY_ID?: string;
   RAZORPAY_KEY_SECRET?: string;

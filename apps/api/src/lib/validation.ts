@@ -382,8 +382,10 @@ export const claimOnlineGameSchema = z.object({
    * claimed exactly once however many times the message arrives.
    */
   sessionId: z.string().trim().min(8).max(64),
-  /** 1 = against the AI, 2 = two players on one device. */
-  mode: z.union([z.literal(1), z.literal(2)]),
+  /** 1 = against the AI, 2 = two players on one device, 3 = online vs a real player. */
+  mode: z.union([z.literal(1), z.literal(2), z.literal(3)]),
+  /** Online games only: the table the server refereed. */
+  tableId: z.string().trim().max(64).optional(),
   won: z.boolean(),
   /** The AI's difficulty as the game had it set. Ignored outside AI mode. */
   aiRating: z.coerce.number().int().min(1).max(5).optional(),

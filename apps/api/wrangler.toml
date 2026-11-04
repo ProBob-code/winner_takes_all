@@ -27,6 +27,16 @@ class_name = "MatchFeeds"
 tag = "v1-match-feeds"
 new_sqlite_classes = ["MatchFeeds"]
 
+# Online 8-ball. "lobby" pairs players; "table:<uuid>" relays one game and
+# decides its result, which the API reads before paying anything.
+[[durable_objects.bindings]]
+name = "POOL_ROOMS"
+class_name = "PoolRooms"
+
+[[migrations]]
+tag = "v2-pool-rooms"
+new_sqlite_classes = ["PoolRooms"]
+
 [[kv_namespaces]]
 binding = "SESSIONS"
 id = "788ab68ad9454e4ea7f2519b32792722"

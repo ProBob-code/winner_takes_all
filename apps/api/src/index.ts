@@ -47,6 +47,7 @@ import {
   type RealtimeConfig,
 } from "./lib/realtime";
 import { authMiddleware, requireUser, requireAdmin, serializeUser, extractAccessToken } from "./middleware/auth";
+import { handlePoolSocket, isPoolSocket, poolVerdict, type PoolVerdict } from "./lib/pool";
 import { centsToMoney, payoutFeeCents, PAYOUT_FEE_PERCENT } from "./lib/money";
 import {
   stakesEnabled,
@@ -2614,6 +2615,53 @@ async function settleOnlineTrophies(
       referenceId: game.id,
     });
     if (after !== null) moved.push({ track, delta: applied.delta, trophies: after });
+  }
+  return moved;
+}
+
+/**
+ * Moves both players' trophies for a refereed online game, whichever of them
+ * claims first. Keyed on the table, so the second claim moves nothing.
+ * Returns what moved for `viewerId`.
+ */
+async function settlePoolTrophies(
+  store: D1Store,
+  verdict: PoolVerdict,
+  viewerId: string
+): Promise<Array<{ track: string; delta: number; trophies: number }>> {
+  const moved: Array<{ track: string; delta: number; trophies: number }> = [];
+  if (verdict.winnerSeat === null || verdict.players.length !== 2) return moved;
+  const ids = verdict.players.map((p) => p.userId);
+  for (const [track, weight] of [
+    [onlineTrack("8BALL"), 1],
+    [OVERALL, ONLINE_OVERALL_WEIGHT],
+  ] as const) {
+    const now = await store.trophiesOn(track, ids);
+    for (let seat = 0; seat < 2; seat++) {
+      const me = ids[seat];
+      const them = ids[1 - seat];
+      const won = verdict.winnerSeat === seat;
+      const mine = now.get(me) ?? 0;
+      const theirs = now.get(them) ?? 0;
+      const opponentKey = `user:${them}`;
+      // Two friends trading wins all night: full, then half, then nothing.
+      const already = await store.trophyGamesToday(me, track, opponentKey).catch(() => 0);
+      let delta = trophyDelta({ mine, theirs, won, weight: weight * pairWeight(already) });
+      const gained = await store.trophyGainsToday(me, track, "user:").catch(() => 0);
+      delta = capGain(delta, gained, ONLINE_DAILY_GAIN * weight);
+      const applied = applyTrophies(mine, delta);
+      const after = await store.recordTrophies({
+        userId: me,
+        track,
+        delta: applied.delta,
+        floor: applied.floor,
+        won,
+        opponentKey,
+        referenceType: "pool_game",
+        referenceId: verdict.tableId,
+      });
+      if (after !== null && me === viewerId) moved.push({ track, delta: applied.delta, trophies: after });
+    }
   }
   return moved;
 }
@@ -5869,13 +5917,53 @@ app.post("/api/coins/claim-online", async (c) => {
 
   const store = c.get("store");
   const body = parseBody(claimOnlineGameSchema, await readJson(c));
-  const tooShort = body.seconds < MIN_ONLINE_SECONDS || body.shots < MIN_ONLINE_SHOTS;
+
+  // Online against a real player: the result is the table's, not the page's.
+  // The table (a Durable Object) heard both screens and decided; see
+  // durable-objects/pool-rooms.ts. What the page says about who won is ignored.
+  let won = body.won;
+  let seconds = body.seconds;
+  let shots = body.shots;
+  let referenceId = body.sessionId;
+  let opponentName: string | undefined;
+  let verdict: PoolVerdict | null = null;
+  let seat = -1;
+  if (body.mode === 3) {
+    verdict = body.tableId ? await poolVerdict(c.env, body.tableId).catch(() => null) : null;
+    if (!verdict) return c.json({ ok: false, message: "That online game could not be found." }, 404);
+    seat = verdict.players.findIndex((p) => p.userId === user.id);
+    if (seat < 0) return c.json({ ok: false, message: "That game belongs to someone else." }, 403);
+    if (verdict.status === "playing") {
+      return c.json({ ok: true, pending: true, awarded: 0, awards: [], message: "Waiting for the table to confirm the result…" });
+    }
+    if (verdict.status !== "finished" || verdict.winnerSeat === null) {
+      return c.json({
+        ok: true,
+        awarded: 0,
+        awards: [],
+        message:
+          verdict.status === "disputed"
+            ? "The two screens disagreed about that result, so it did not count."
+            : "That game ended without a result.",
+      });
+    }
+    won = verdict.winnerSeat === seat;
+    seconds = verdict.seconds;
+    shots = verdict.shots;
+    referenceId = `pool:${verdict.tableId}`;
+    opponentName = verdict.players[1 - seat]?.name;
+  }
+
+  const tooShort = seconds < MIN_ONLINE_SECONDS || shots < MIN_ONLINE_SHOTS;
 
   // Trophies first, and whatever happens to the coins: a game the server saw
   // start is settled exactly once, here or as abandoned. A loss always counts;
   // a "win" too short to have been played closes the game without moving
   // anything, the same judgement the coins make.
   let trophies: Array<{ track: string; delta: number; trophies: number }> = [];
+  if (body.mode === 3 && verdict && !tooShort) {
+    trophies = await settlePoolTrophies(store, verdict, user.id).catch(() => []);
+  }
   if (body.mode === 1) {
     const game = await store.getOnlineGame(body.sessionId).catch(() => null);
     if (game && game.user_id === user.id) {
@@ -5914,9 +6002,10 @@ app.post("/api/coins/claim-online", async (c) => {
   }
 
   const wanted = awardsForOnlineGame({
-    won: body.won,
+    won,
     mode: body.mode,
     aiRating: body.aiRating,
+    opponentName,
   });
 
   // Two ceilings apply: the online-only one and the overall daily cap.
@@ -5933,7 +6022,10 @@ app.post("/api/coins/claim-online", async (c) => {
       awarded: 0,
       awards: [],
       lost: true,
-      message: "The machine took that one. Only the winner keeps the coins.",
+      message:
+        body.mode === 3
+          ? `${opponentName || "Your opponent"} took that one. Only the winner keeps the coins.`
+          : "The machine took that one. Only the winner keeps the coins.",
     });
   }
 
@@ -5944,10 +6036,11 @@ app.post("/api/coins/claim-online", async (c) => {
       reason: award.reason,
       amount: award.amount,
       description: award.description,
-      // Keyed on the session the page minted, so the same finished game
-      // cannot be claimed twice however many times the message arrives.
+      // Keyed on the session the page minted (or the table, online), so the
+      // same finished game cannot be claimed twice however many times the
+      // message arrives.
       referenceType: "online_game",
-      referenceId: body.sessionId,
+      referenceId,
     });
     if (applied !== null) paid.push(award);
   }
@@ -6265,7 +6358,11 @@ async function openDueSeriesWeeks(env: Env): Promise<{ opened: number; failed: n
 }
 
 export default {
-  fetch: app.fetch,
+  fetch(request: Request, env: Env, ctx: ExecutionContext) {
+    // Online 8-ball sockets go straight to their Durable Object; see lib/pool.ts.
+    if (isPoolSocket(request)) return handlePoolSocket(request, env, allowedOrigins(env));
+    return app.fetch(request, env, ctx);
+  },
   async scheduled(_event: unknown, env: Env, ctx: { waitUntil(p: Promise<unknown>): void }) {
     ctx.waitUntil(openDueSeriesWeeks(env));
     // Results nobody has looked at since they locked, and disputes left a day.
@@ -6278,3 +6375,4 @@ export default {
 // The Durable Object class must be exported from the Worker entry point for
 // the MATCH_FEEDS binding to resolve.
 export { MatchFeeds } from "./durable-objects/match-feeds";
+export { PoolRooms } from "./durable-objects/pool-rooms";
