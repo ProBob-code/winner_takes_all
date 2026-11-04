@@ -35,7 +35,7 @@ export interface NavItem {
 /** Signed in. */
 export const MEMBER_NAV: NavItem[] = [
   { label: "Dashboard", short: "Home", href: "/dashboard", icon: "squares-four-duotone", color: "#2ecf5a", primary: true },
-  { label: "Run a Night", short: "Run", href: "/run", icon: "lightning-duotone", color: "#ffc93c", primary: true },
+  { label: "Run a Fight", short: "Run", href: "/run", icon: "lightning-duotone", color: "#ffc93c", primary: true },
   { label: "Tournaments", short: "Play", href: "/tournaments", icon: "game-controller-duotone", color: "#8b7bff", primary: true },
   { label: "WTA Coins", short: "Coins", href: "/coins", icon: "crown-simple-fill", color: "#ffb21f", barIcon: "coin-fill", primary: true },
   { label: "Shop", short: "Shop", href: "/shop", icon: "shopping-bag-duotone", color: "#3fa0ff" },

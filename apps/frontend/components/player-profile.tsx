@@ -178,8 +178,8 @@ export function PlayerStats({ player }: { player: PlayerCardData }) {
     ["Frames played", String(s.played)],
     ["Frames won", String(s.wins)],
     ["Win rate", s.played > 0 ? `${s.winRate}%` : "—"],
-    ["Nights won", String(s.nightsWon)],
-    ["Nights played", String(s.nightsPlayed)],
+    ["Fights won", String(s.nightsWon)],
+    ["Fights played", String(s.nightsPlayed)],
     ["Clearances", String(s.clearances)],
   ];
   if (s.seasonsWon > 0) tiles.push(["Seasons won", String(s.seasonsWon)]);

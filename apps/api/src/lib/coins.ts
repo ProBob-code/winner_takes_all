@@ -229,8 +229,8 @@ export function awardsForStreak(nights: number, venueName?: string): CoinAward[]
       reason: "STREAK",
       amount: COIN_AWARDS.STREAK,
       description: venueName
-        ? `${nights} nights running at ${venueName}`
-        : `${nights} league nights running`,
+        ? `${nights} fights running at ${venueName}`
+        : `${nights} league fights running`,
     },
   ];
 }
@@ -360,7 +360,7 @@ export function awardsForNight(tournamentName?: string, competitors = MIN_PLAYER
       amount: nightWinAmount(competitors),
       description: tournamentName
         ? `Won ${tournamentName} (${Math.max(MIN_PLAYERS_FOR_COINS, competitors)} players)`
-        : "Won the night",
+        : "Won the fight",
     },
   ];
 }

@@ -329,7 +329,7 @@ export default function TournamentDetailPage() {
                           the night" over a seat typed in by name promised coins
                           that went nowhere. */}
                       {result.winners.some((w: any) => w.userId)
-                        ? `${formatCoins(championPrize)} WTA Coins for the night`
+                        ? `${formatCoins(championPrize)} WTA Coins for the fight`
                         : "No WTA account on this seat, so no coins were paid"}
                     </div>
                   )}
@@ -536,7 +536,7 @@ export default function TournamentDetailPage() {
                     borderTop: "1px solid var(--glass-border-color)",
                   }}
                 >
-                  <span style={{ fontWeight: 900 }}>Win the night</span>
+                  <span style={{ fontWeight: 900 }}>Win the fight</span>
                   <span style={{ fontWeight: 900, color: "var(--gold)", fontVariantNumeric: "tabular-nums", fontSize: "1.2rem" }}>
                     +{formatCoins(championPrize ?? 0)}
                   </span>
@@ -544,7 +544,7 @@ export default function TournamentDetailPage() {
 
                 <p className="muted" style={{ fontSize: "0.74rem", marginTop: "0.9rem", lineHeight: 1.5 }}>
                   {coinSchedule.perPlayer
-                    ? `${formatCoins(coinSchedule.nightWon)} for every player in the night, so the champion takes more than everyone else combined. `
+                    ? `${formatCoins(coinSchedule.nightWon)} for every player in the fight, so the champion takes more than everyone else combined. `
                     : ""}
                   Coins are free to earn and have no cash value: they cannot be bought,
                   withdrawn or staked, and losing never costs any.

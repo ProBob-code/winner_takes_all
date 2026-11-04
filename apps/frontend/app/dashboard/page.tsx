@@ -129,7 +129,7 @@ export default function DashboardPage() {
           <section className="panel" style={{ padding: "var(--space-7)", textAlign: "center" }}>
             <h1 style={{ fontSize: "var(--text-3xl)", fontWeight: 900 }}>Enter the arena</h1>
             <p className="muted" style={{ margin: "var(--space-3) 0 var(--space-6)" }}>
-              {error ?? "Sign in to see your coins and your nights."}
+              {error ?? "Sign in to see your coins and your fights."}
             </p>
             <div className="h-stack" style={{ justifyContent: "center" }}>
               <Link className="button" href="/login" style={{ textDecoration: "none" }}>
@@ -229,7 +229,7 @@ export default function DashboardPage() {
             <span className="chip gold" style={{ alignSelf: "flex-start" }}>
               60 seconds
             </span>
-            <span className="title">Run a night</span>
+            <span className="title">Run a fight</span>
             <span className="muted" style={{ fontSize: "var(--text-sm)" }}>
               Pick a game, pick how many are playing, go.
             </span>
@@ -308,7 +308,7 @@ export default function DashboardPage() {
               <div className="auto-grid narrow">
                 <div className="stat">
                   <div className="stat-value">{wins}</div>
-                  <div className="stat-label">nights won</div>
+                  <div className="stat-label">fights won</div>
                 </div>
                 <div className="stat">
                   <div className="stat-value">{coins ? formatCoins(coins.lifetime) : "—"}</div>
@@ -324,7 +324,7 @@ export default function DashboardPage() {
             </section>
 
             <section className="panel" style={{ padding: "var(--space-5)" }}>
-              <h2 style={{ fontSize: "var(--text-lg)", fontWeight: 800 }}>No league night yet?</h2>
+              <h2 style={{ fontSize: "var(--text-lg)", fontWeight: 800 }}>No league fight yet?</h2>
               <p className="muted" style={{ fontSize: "var(--text-sm)", margin: "var(--space-2) 0 var(--space-4)" }}>
                 The guide to starting one from nothing. Free, and it works on paper.
               </p>

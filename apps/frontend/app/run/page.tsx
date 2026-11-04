@@ -111,7 +111,7 @@ export default function RunNightPage() {
         const res = await backendFetch(`/tournaments/${encodeURIComponent(id)}`);
         const payload: any = await res.json().catch(() => ({}));
         if (!res.ok || !payload?.tournament) {
-          setError("That night could not be found. It may have been deleted.");
+          setError("That fight could not be found. It may have been deleted.");
           router.replace("/run");
           return;
         }
@@ -140,7 +140,7 @@ export default function RunNightPage() {
           finished: t.status === "COMPLETED" || !!t.completedAt,
         });
       } catch {
-        setError("Could not reach the server to load that night. Refresh to try again.");
+        setError("Could not reach the server to load that fight. Refresh to try again.");
       } finally {
         setRestoring(false);
       }
@@ -256,7 +256,7 @@ export default function RunNightPage() {
               margin: "var(--space-3) 0 var(--space-2)",
             }}
           >
-            {ready.finished ? "This night has finished." : "The night is running."}
+            {ready.finished ? "This fight has finished." : "The fight is running."}
           </h1>
           <p className="muted">
             {ready.name ? <strong style={{ color: "var(--text-primary)" }}>{ready.name}. </strong> : null}
@@ -274,7 +274,7 @@ export default function RunNightPage() {
                 <strong>Playing tonight too?</strong>{" "}
                 <span className="muted">You&apos;re not on the board until you join, same as everyone else.</span>
               </span>
-              <a className="button button-sm" href={`/join/${ready.joinCode}`}>Join this night</a>
+              <a className="button button-sm" href={`/join/${ready.joinCode}`}>Join this fight</a>
             </div>
           )}
 
@@ -353,7 +353,7 @@ export default function RunNightPage() {
     return (
       <main className="page">
         <div className="shell" style={{ maxWidth: "40rem" }}>
-          <PageSkeleton variant="form" bare label="Bringing your night back" />
+          <PageSkeleton variant="form" bare label="Bringing your fight back" />
         </div>
       </main>
     );
@@ -362,14 +362,14 @@ export default function RunNightPage() {
   return (
     <main className="page">
       <div className="shell" style={{ maxWidth: "40rem" }}>
-        <h1 style={{ fontSize: "var(--text-3xl)", fontWeight: 900 }}>Run a night</h1>
+        <h1 style={{ fontSize: "var(--text-3xl)", fontWeight: 900 }}>Run a fight</h1>
         <p className="muted" style={{ marginTop: "var(--space-2)" }}>
           Three questions, then it is live. Free to enter, as every tournament here is.
         </p>
 
         {openNights.length > 0 && (
           <section className="panel" style={{ marginTop: "var(--space-5)" }}>
-            <h2 style={{ fontSize: "var(--text-lg)", fontWeight: 800 }}>Your nights in progress</h2>
+            <h2 style={{ fontSize: "var(--text-lg)", fontWeight: 800 }}>Your fights in progress</h2>
             <p className="muted" style={{ fontSize: "var(--text-sm)", margin: "var(--space-1) 0 var(--space-3)" }}>
               Pick one up where you left it.
             </p>
@@ -519,7 +519,7 @@ export default function RunNightPage() {
               <br />
               <span className="muted" style={{ fontSize: "var(--text-sm)" }}>
                 The result waits for both players to agree before it counts. Turn this on
-                for a night where the table matters.
+                for a fight where the table matters.
               </span>
             </span>
           </label>
@@ -533,7 +533,7 @@ export default function RunNightPage() {
             disabled={busy}
             style={{ minHeight: "56px", fontSize: "var(--text-lg)" }}
           >
-            {busy ? "Setting it up…" : "Start the night"}
+            {busy ? "Setting it up…" : "Start the fight"}
           </button>
         </div>
       </div>

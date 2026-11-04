@@ -268,7 +268,7 @@ export default function DisplayPage() {
   const statusLine = liveMatch
     ? `${phaseLabel(liveMatch.phase)} · being played now`
     : state.phase === "COMPLETED"
-      ? "Night finished"
+      ? "Fight finished"
       : nextMatch
         ? `${phaseLabel(nextMatch.phase)} · next on the table`
         : "Waiting for the host to draw the next round";
@@ -289,7 +289,7 @@ export default function DisplayPage() {
       <NightEmoteBubbles tournamentId={tournamentId} size="big" />
       <header className="display-head">
         <div style={{ minWidth: 0 }}>
-          <div className="display-title">{name || "League night"}</div>
+          <div className="display-title">{name || "League fight"}</div>
           <div className="display-status">
             {statusLine}
             {liveMatch?.sudden_death && <span className="display-sudden"> · sudden death</span>}
@@ -352,8 +352,8 @@ export default function DisplayPage() {
             <div className="display-idle">
               {state.phase === "COMPLETED"
                 ? ranked[0] && counted
-                  ? `${ranked[0].name} wins the night`
-                  : "Night finished"
+                  ? `${ranked[0].name} wins the fight`
+                  : "Fight finished"
                 : nextMatch
                   ? `${teamName(nextMatch.team_a_id)} v ${teamName(nextMatch.team_b_id)}`
                   : "No frame on the table"}

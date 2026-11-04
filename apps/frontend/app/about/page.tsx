@@ -27,9 +27,9 @@ const FOR_PLAYERS = [
 ];
 
 const PROMISES = [
-  { title: "Free, always", body: "No entry fees, no pot, nothing to cash out. Any prize at a night comes from the venue running it." },
+  { title: "Free, always", body: "No entry fees, no pot, nothing to cash out. Any prize at a fight comes from the venue running it." },
   { title: "Coins are for bragging", body: "WTA Coins have no cash value. They can't be bought, withdrawn, transferred or bet." },
-  { title: "Built for real rooms", body: "Bad wifi, a crowded bar, a walk-in with no account: W.T.A was built for the night as it really goes." },
+  { title: "Built for real rooms", body: "Bad wifi, a crowded bar, a walk-in with no account: W.T.A was built for the fight as it really goes." },
 ];
 
 export default function AboutPage() {
@@ -41,11 +41,11 @@ export default function AboutPage() {
             Real tables. Real rivals. Real bragging rights.
           </div>
           <h1 style={{ fontSize: "clamp(2.6rem, 7vw, 4.8rem)", fontWeight: 950, lineHeight: 0.95, letterSpacing: "-2px", marginBottom: "1.5rem", textTransform: "uppercase", fontStyle: "italic" }}>
-            Play the night.<br />
+            Play the fight.<br />
             <span style={{ background: "var(--gradient-fill)", WebkitBackgroundClip: "text", backgroundClip: "text", WebkitTextFillColor: "transparent" }}>Take the crown.</span>
           </h1>
           <p className="muted" style={{ maxWidth: "640px", margin: "0 auto", fontSize: "1.15rem", lineHeight: 1.65 }}>
-            Winner Takes All (W.T.A) runs game nights for the places that host them — pool rooms, clubs, bars and gaming
+            Winner Takes All (W.T.A) runs game fights for the places that host them — pool rooms, clubs, bars and gaming
             cafés — and gives every player a record worth playing for.
           </p>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", justifyContent: "center", marginTop: "1.75rem" }}>
@@ -56,7 +56,7 @@ export default function AboutPage() {
         </header>
 
         <section style={{ marginBottom: "4.5rem" }}>
-          <h2 style={{ fontSize: "1.9rem", fontWeight: 900, marginBottom: "1.5rem", textAlign: "center" }}>How a night runs</h2>
+          <h2 style={{ fontSize: "1.9rem", fontWeight: 900, marginBottom: "1.5rem", textAlign: "center" }}>How a fight runs</h2>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(260px, 100%), 1fr))", gap: "1.25rem" }}>
             {HOW.map((h) => (
               <div key={h.n} className="panel" style={{ padding: "2rem", position: "relative", overflow: "hidden" }}>
@@ -84,7 +84,7 @@ export default function AboutPage() {
           <h2 style={{ fontSize: "1.6rem", fontWeight: 900, marginBottom: "1rem" }}>Who&apos;s behind it</h2>
           <p className="muted" style={{ lineHeight: 1.8, margin: 0 }}>
             W.T.A is built by <strong style={{ color: "var(--text-primary)" }}>ProBob</strong>, a developer from Bangalore who
-            works in AI and trading systems, and who wanted a league night where the draw, the scoring and the table keep
+            works in AI and trading systems, and who wanted a league fight where the draw, the scoring and the table keep
             themselves, so the people running the room can get back to the room.
           </p>
         </section>
@@ -104,7 +104,7 @@ export default function AboutPage() {
         <section style={{ textAlign: "center" }}>
           <div style={{ display: "flex", gap: "1rem", justifyContent: "center", flexWrap: "wrap" }}>
             <Link href="/tournaments" style={{ background: "var(--gradient-fill)", color: "var(--on-gold)", padding: "1rem 2rem", borderRadius: "14px", textDecoration: "none", fontWeight: 800 }}>FIND A GAME →</Link>
-            <Link href="/run" className="panel" style={{ padding: "1rem 2rem", borderRadius: "14px", textDecoration: "none", fontWeight: 800, color: "var(--text-primary)" }}>HOST A NIGHT</Link>
+            <Link href="/run" className="panel" style={{ padding: "1rem 2rem", borderRadius: "14px", textDecoration: "none", fontWeight: 800, color: "var(--text-primary)" }}>HOST A FIGHT</Link>
           </div>
           <p className="muted" style={{ marginTop: "1.5rem" }}>
             Running a venue, or want W.T.A at yours? <Link href="/contact">Get in touch</Link>.

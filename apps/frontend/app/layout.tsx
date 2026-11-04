@@ -20,20 +20,20 @@ export const viewport = {
 // mark every page a copy of the homepage. Pages set their own (lib/page-metadata.ts).
 export const metadata: Metadata = {
   title: {
-    default: "Winner Takes All | Pool & football tournament nights",
+    default: "Winner Takes All | Pool & football tournament fights",
     template: "%s | Winner Takes All",
   },
-  description: "Run 8-ball and football tournament nights at your pool room, club or bar. Brackets, scoring and a live table on the wall. Free to enter.",
+  description: "Run 8-ball and football tournament fights at your pool room, club or bar. Brackets, scoring and a live table on the wall. Free to enter.",
   openGraph: {
-    title: "Winner Takes All: run the night, crown the winner",
-    description: "Brackets, scoring and a live table for 8-ball and football nights. Set up in a minute, free to enter.",
+    title: "Winner Takes All: run the fight, crown the winner",
+    description: "Brackets, scoring and a live table for 8-ball and football fights. Set up in a minute, free to enter.",
     siteName: "Winner Takes All",
     images: [
       {
         url: "https://winnertakesall.live/og-image.jpg",
         width: 1200,
         height: 630,
-        alt: "Winner Takes All — league nights for pool rooms, clubs and bars",
+        alt: "Winner Takes All — league fights for pool rooms, clubs and bars",
         type: "image/jpeg",
       },
     ],
@@ -42,8 +42,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Winner Takes All: pool and football tournament nights",
-    description: "Brackets, scoring and a live table for pool and football nights. Free to enter.",
+    title: "Winner Takes All: pool and football tournament fights",
+    description: "Brackets, scoring and a live table for pool and football fights. Free to enter.",
     images: ["https://winnertakesall.live/og-image.jpg"],
   },
   icons: { apple: "/apple-touch-icon.png" },

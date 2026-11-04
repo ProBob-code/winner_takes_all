@@ -203,13 +203,13 @@ export function GoatHero() {
             >
               <PhIcon name="crown-simple-bold" size="100%" />
             </button>
-            <span className="gh-l1">Play the night.</span>
+            <span className="gh-l1">Play the fight.</span>
             <span className="gh-l2">Take the crown.</span>
           </h1>
           <p className="gh-desc">{COPY}</p>
           <div className="gh-btns">
             <Link href="/tournaments" className="gh-btn gh-btn-1">FIND A GAME →</Link>
-            <Link href="/run" className="gh-btn gh-btn-2">HOST A NIGHT</Link>
+            <Link href="/run" className="gh-btn gh-btn-2">HOST A FIGHT</Link>
           </div>
         </div>
 
@@ -266,7 +266,7 @@ export function GoatHero() {
         <div className="gh-mcopy">
           <div className="gh-chip">Real tables. Real rivals. Real bragging rights.</div>
           <div className="gh-mtitle" role="heading" aria-level={1}>
-            <span className="gh-l1">Play the night.</span>
+            <span className="gh-l1">Play the fight.</span>
             <span className="gh-l2">Take the<br />crown.</span>
             <button type="button" className="gh-crown" aria-label="W.T.A. Champion" onClick={() => tap("wta")}>
               <PhIcon name="crown-simple-bold" size="100%" />
@@ -275,7 +275,7 @@ export function GoatHero() {
           <p className="gh-desc">{COPY}</p>
           <div className="gh-btns">
             <Link href="/tournaments" className="gh-btn gh-btn-1">FIND A GAME →</Link>
-            <Link href="/run" className="gh-btn gh-btn-2">HOST A NIGHT</Link>
+            <Link href="/run" className="gh-btn gh-btn-2">HOST A FIGHT</Link>
           </div>
         </div>
 

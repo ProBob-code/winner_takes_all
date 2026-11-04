@@ -128,7 +128,7 @@ export default function ProfilePage() {
             </div>
             {ledger.length === 0 ? (
               <p className="muted" style={{ fontSize: "var(--text-sm)" }}>
-                Nothing yet. Every frame you play at a night earns coins, win or lose.
+                Nothing yet. Every frame you play at a fight earns coins, win or lose.
               </p>
             ) : (
               <div className="pp-rows">

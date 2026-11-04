@@ -123,7 +123,7 @@ export default function HostSeriesForm() {
           style={inputStyle}
           value={form.name}
           onChange={(e) => set({ name: e.target.value })}
-          placeholder="Monday Night League"
+          placeholder="Monday Fight League"
           required
           minLength={2}
           maxLength={80}

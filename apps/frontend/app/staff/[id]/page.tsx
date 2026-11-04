@@ -527,7 +527,7 @@ export default function StaffModePage() {
             {liveMatch
               ? `${sport.kind === "pool" ? "Frame" : "Match"} ${frameNumber}${queue.length > 0 ? ` · ${queue.length} to come` : " · last one drawn"}`
               : state.phase === "COMPLETED"
-                ? "The night is finished"
+                ? "The fight is finished"
                 : nextMatch
                   ? "Nothing on the table yet"
                   : "Nothing drawn"}
@@ -665,7 +665,7 @@ export default function StaffModePage() {
             ) : (
               <>
                 <p className="staff-hint">
-                  Everyone drawn has played. Draw another round, or move the night into the
+                  Everyone drawn has played. Draw another round, or move the fight into the
                   knockout.
                 </p>
                 <button

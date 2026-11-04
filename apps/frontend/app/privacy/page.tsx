@@ -8,7 +8,7 @@ const sections: LegalSection[] = [
     body: (
       <p>
         Winner Takes All (&quot;W.T.A&quot;, &quot;we&quot;) runs winnertakesall.live, software for hosting and playing
-        game nights. This policy explains what we collect when you use it, why, who else sees it, and what you can do
+        game fights. This policy explains what we collect when you use it, why, who else sees it, and what you can do
         about it.
       </p>
     ),
@@ -20,8 +20,8 @@ const sections: LegalSection[] = [
       <>
         <p><strong>Your account.</strong> Your name, email address and a password, which we store only as a one-way hash we can&apos;t read back. If you sign in with Google, we receive your name, email address and Google account ID from Google, and no password.</p>
         <p><strong>Your profile.</strong> Your avatar, which you build from parts (we never ask for or store a photo of you), the items you own and wear, your WTA Coins, trophies, level and game record.</p>
-        <p><strong>Your games.</strong> The nights you host or join, scores, results, and Proof of Play check-ins (which game, and when).</p>
-        <p><strong>Walk-ins.</strong> If you join a night by code without an account, we store only the name you type, on that night.</p>
+        <p><strong>Your games.</strong> The fights you host or join, scores, results, and Proof of Play check-ins (which game, and when).</p>
+        <p><strong>Walk-ins.</strong> If you join a fight by code without an account, we store only the name you type, on that fight.</p>
         <p><strong>Venues.</strong> A venue&apos;s name and details, the email addresses of the staff and managers its owner adds, and the note of which group chat results go to. We don&apos;t collect phone numbers.</p>
         <p><strong>Technical data.</strong> Your IP address, used briefly to limit abuse such as repeated sign-in attempts, and a session cookie that keeps you signed in. Your device keeps a few things locally: your light or dark setting, and scores entered while offline until they are sent.</p>
         <p>We don&apos;t use advertising trackers or sell analytics about you.</p>
@@ -67,7 +67,7 @@ const sections: LegalSection[] = [
     body: (
       <ul>
         <li>to run your account and sign you in;</li>
-        <li>to run nights: draws, scoring, tables, the big screen and the join code;</li>
+        <li>to run fights: draws, scoring, tables, the big screen and the join code;</li>
         <li>to verify results, award coins and trophies, and keep rankings fair;</li>
         <li>to stop cheating, abuse and attacks on the service;</li>
         <li>to answer you when you contact us, and to fix what breaks.</li>
@@ -82,8 +82,8 @@ const sections: LegalSection[] = [
         <p>W.T.A is about playing in front of people, so some things are public by design:</p>
         <ul>
           <li>your name, avatar, level, trophies and record on your player profile and the rankings;</li>
-          <li>names, scores and the table for any night you play in, including on the venue&apos;s big screen;</li>
-          <li>the emotes you send during a night.</li>
+          <li>names, scores and the table for any fight you play in, including on the venue&apos;s big screen;</li>
+          <li>the emotes you send during a fight.</li>
         </ul>
         <p>Your email address is never shown to other players. A venue&apos;s owner can see the emails of the staff they added.</p>
       </>
@@ -99,7 +99,7 @@ const sections: LegalSection[] = [
           <li><strong>Cloudflare</strong>, which hosts W.T.A, its database and live streams;</li>
           <li><strong>Google</strong>, if you choose to sign in with Google;</li>
           <li><strong>Razorpay</strong>, only to return balances left in the old wallet;</li>
-          <li><strong>hosts and venues</strong>, who see the names and results of the nights they run;</li>
+          <li><strong>hosts and venues</strong>, who see the names and results of the fights they run;</li>
           <li><strong>the authorities</strong>, when the law requires it.</li>
         </ul>
       </>
@@ -112,7 +112,7 @@ const sections: LegalSection[] = [
       <p>
         We keep your account and game history while your account is open, so your record and rankings stay intact.
         Check-in locations are deleted when a result locks, and streams are never stored. When you ask us to delete your
-        account, we remove your personal details. Results of nights other people played in may remain, without your name
+        account, we remove your personal details. Results of fights other people played in may remain, without your name
         attached.
       </p>
     ),

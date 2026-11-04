@@ -127,7 +127,7 @@ export default function VenuesPage() {
           <div style={{ minWidth: 0 }}>
             <h1 style={{ fontSize: "var(--text-3xl)", fontWeight: 900 }}>Venues</h1>
             <p className="muted" style={{ marginTop: "var(--space-2)" }}>
-              Every room you run nights in. Tournaments, staff and billing belong to a
+              Every room you run fights in. Tournaments, staff and billing belong to a
               venue.
             </p>
           </div>
@@ -203,10 +203,10 @@ export default function VenuesPage() {
             <h2 style={{ fontSize: "var(--text-xl)", fontWeight: 700 }}>No venues yet</h2>
             <p className="muted">
               A venue is a room you run tournaments in. Adding one lets you put staff on
-              it, keep its nights together and see how busy it actually is.
+              it, keep its fights together and see how busy it actually is.
             </p>
             <p className="muted" style={{ fontSize: "var(--text-sm)" }}>
-              You do not need a venue to run a night — <Link href="/run">run one now</Link>{" "}
+              You do not need a venue to run a fight — <Link href="/run">run one now</Link>{" "}
               and attach it later.
             </p>
           </div>

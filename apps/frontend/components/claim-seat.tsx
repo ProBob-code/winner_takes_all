@@ -56,12 +56,12 @@ export function ClaimSeat({
         setMessage({ tone: "error", text: data?.message || "That did not go through. Try again." });
         return;
       }
-      const parts = [`You are ${data.seatName} in this night.`];
+      const parts = [`You are ${data.seatName} in this fight.`];
       if (data.coinsPaid > 0) {
         parts.push(
           `Paid ${formatCoins(data.coinsPaid)} WTA Coins` +
             (data.framesCounted ? ` for ${data.framesCounted} frame${data.framesCounted === 1 ? "" : "s"}` : "") +
-            (data.wonNight ? " and the night" : "") +
+            (data.wonNight ? " and the fight" : "") +
             "."
         );
       }
@@ -80,9 +80,9 @@ export function ClaimSeat({
       aria-label="Claim your seat"
       style={{ padding: "1.25rem 1.5rem", marginBottom: "1.5rem", border: "1px solid var(--gold-subtle)" }}
     >
-      <strong style={{ display: "block", marginBottom: "0.35rem" }}>Playing in this night? Claim your seat.</strong>
+      <strong style={{ display: "block", marginBottom: "0.35rem" }}>Playing in this fight? Claim your seat.</strong>
       <p className="muted" style={{ fontSize: "0.85rem", margin: "0 0 0.85rem" }}>
-        Your account is not on any seat here, so your frames, trophies and any night win pay nobody. Pick
+        Your account is not on any seat here, so your frames, trophies and any fight win pay nobody. Pick
         your seat and everything it has already earned is paid to you, once.
       </p>
       <div style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap", alignItems: "center" }}>

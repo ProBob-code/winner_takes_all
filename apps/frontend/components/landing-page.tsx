@@ -297,7 +297,7 @@ export function LandingPage() {
 
       <main className="landing-main" style={{ padding: "20px 4% 60px", textAlign: "center", position: "relative", zIndex: 2 }}>
         <section id="how-it-works" className="section reveal" style={{ marginTop: "120px" }}>
-            <h2 style={{ fontSize: "3rem", fontWeight: 800, marginBottom: "1rem" }}>HOW A NIGHT RUNS</h2>
+            <h2 style={{ fontSize: "3rem", fontWeight: 800, marginBottom: "1rem" }}>HOW A FIGHT RUNS</h2>
             <p className="muted" style={{ marginBottom: "4rem" }}>Three steps, about a minute.</p>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(300px, 100%), 1fr))", gap: "2.5rem", position: "relative" }}>
                 <div className="card-3d" style={{ padding: "4rem 3rem", position: "relative", overflow: "hidden" }}>
@@ -316,7 +316,7 @@ export function LandingPage() {
                     <div className="landing-step-number">03</div>
                     <div style={{ background: "linear-gradient(135deg, var(--gold), var(--team-blue))", width: "60px", height: "60px", borderRadius: "16px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.5rem", marginBottom: "2rem", boxShadow: "0 0 20px rgba(16, 185, 129, 0.4)" }}>🏆</div>
                     <h3 style={{ fontSize: "1.5rem", marginBottom: "1rem" }}>Show the room</h3>
-                    <p className="landing-dim" style={{ lineHeight: 1.6 }}>The table updates on any spare screen as frames finish, and the whole night goes to the group chat in one tap.</p>
+                    <p className="landing-dim" style={{ lineHeight: 1.6 }}>The table updates on any spare screen as frames finish, and the whole fight goes to the group chat in one tap.</p>
                 </div>
             </div>
         </section>
@@ -343,24 +343,24 @@ export function LandingPage() {
         </section>
 
         <section className="section reveal" style={{ marginTop: "120px" }}>
-            <h2 style={{ fontSize: "3rem", fontWeight: 800, marginBottom: "1rem" }}>WHO RUNS A NIGHT ON IT</h2>
+            <h2 style={{ fontSize: "3rem", fontWeight: 800, marginBottom: "1rem" }}>WHO RUNS A FIGHT ON IT</h2>
             <p className="muted" style={{ marginBottom: "4rem", maxWidth: "700px", marginLeft: "auto", marginRight: "auto", lineHeight: 1.6 }}>Any room with a table, a screen and a crowd that likes to win.</p>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(260px, 100%), 1fr))", gap: "2rem", textAlign: "left" }}>
                 <div className="card-3d" style={{ padding: "2.5rem" }}>
                     <h3>Pool rooms</h3>
-                    <p className="landing-dim" style={{ lineHeight: 1.6 }}>A weekly 8-ball knockout on your quietest night: eight players, best of one frame, finished in about two hours with the bracket on the wall the whole time.</p>
+                    <p className="landing-dim" style={{ lineHeight: 1.6 }}>A weekly 8-ball knockout on your quietest fight: eight players, best of one frame, finished in about two hours with the bracket on the wall the whole time.</p>
                 </div>
                 <div className="card-3d" style={{ padding: "2.5rem" }}>
                     <h3>Bars and pubs</h3>
-                    <p className="landing-dim" style={{ lineHeight: 1.6 }}>A reason for regulars to arrive at eight and stay past ten. The prize is a bar tab, which comes back to your till, and the result lands in the group chat that night.</p>
+                    <p className="landing-dim" style={{ lineHeight: 1.6 }}>A reason for regulars to arrive at eight and stay past ten. The prize is a bar tab, which comes back to your till, and the result lands in the group chat that fight.</p>
                 </div>
                 <div className="card-3d" style={{ padding: "2.5rem" }}>
                     <h3>Clubs and societies</h3>
-                    <p className="landing-dim" style={{ lineHeight: 1.6 }}>Run a series across several nights and the standings carry from one to the next, so a season ends with a champion everyone saw coming.</p>
+                    <p className="landing-dim" style={{ lineHeight: 1.6 }}>Run a series across several fights and the standings carry from one to the next, so a season ends with a champion everyone saw coming.</p>
                 </div>
                 <div className="card-3d" style={{ padding: "2.5rem" }}>
                     <h3>Gaming cafés</h3>
-                    <p className="landing-dim" style={{ lineHeight: 1.6 }}>Football nights with a clock, a steady scoreboard and rankings that follow each player from one night to the next.</p>
+                    <p className="landing-dim" style={{ lineHeight: 1.6 }}>Football fights with a clock, a steady scoreboard and rankings that follow each player from one fight to the next.</p>
                 </div>
             </div>
         </section>
@@ -376,7 +376,7 @@ export function LandingPage() {
                 ))}
             </div>
             <div className="hero-buttons" style={{ display: "flex", gap: "1.5rem", justifyContent: "center", marginTop: "4rem" }}>
-                <Link href="/run" style={{ background: "var(--gradient-fill)", color: "var(--on-gold)", padding: "1.25rem 2.5rem", borderRadius: "16px", textDecoration: "none", fontWeight: 800, fontSize: "1.1rem" }}>START A NIGHT →</Link>
+                <Link href="/run" style={{ background: "var(--gradient-fill)", color: "var(--on-gold)", padding: "1.25rem 2.5rem", borderRadius: "16px", textDecoration: "none", fontWeight: 800, fontSize: "1.1rem" }}>START A FIGHT →</Link>
                 <Link href="/playbook" style={{ background: "var(--landing-card)", border: "1px solid var(--landing-card-line)", color: "var(--landing-ink)", padding: "1.25rem 2.5rem", borderRadius: "16px", textDecoration: "none", fontWeight: 800, fontSize: "1.1rem" }}>READ THE HOST PLAYBOOK</Link>
             </div>
         </section>

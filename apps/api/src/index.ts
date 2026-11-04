@@ -1109,7 +1109,7 @@ async function seatInRunningNight(
   }
 
   if (tournament.status !== "GROUP") {
-    return c.json({ ok: false, message: "This night is into its knockouts, so it can't take new players." }, 409);
+    return c.json({ ok: false, message: "This fight is into its knockouts, so it can't take new players." }, 409);
   }
   if (teams.length >= tournament.max_players) {
     return c.json(
@@ -1966,7 +1966,7 @@ app.patch("/api/tournaments/:id", async (c) => {
   const { name, ...shape } = body;
   const changesShape = Object.values(shape).some((v) => v !== undefined);
   if (changesShape && tournament.status !== "open") {
-    return c.json({ ok: false, message: "Once the night has started only its name can change." }, 409);
+    return c.json({ ok: false, message: "Once the fight has started only its name can change." }, 409);
   }
   const joined = tournament.participant_ids.length;
   if (body.maxPlayers !== undefined && body.maxPlayers < joined) {
@@ -2713,7 +2713,7 @@ async function awardNightCoins(
       }
     }
   } catch (err) {
-    console.error("Could not award coins for a night:", err);
+    console.error("Could not award coins for a fight:", err);
   }
 }
 
@@ -2861,7 +2861,7 @@ async function payNightWhenProven(store: D1Store, tournament: TournamentRecord):
     });
     await awardNightCoins(store, fresh, winners);
   } catch (err) {
-    console.error("Could not pay a night once proven:", err);
+    console.error("Could not pay a fight once proven:", err);
   }
 }
 
@@ -3170,12 +3170,12 @@ app.post("/api/engine/tournaments/:id/claim-seat", async (c) => {
 
   const teams = await store.getEngineTeams(tournamentId);
   const seat = teams.find((t) => t.id === teamId);
-  if (!seat) return c.json({ ok: false, message: "That seat is not in this night." }, 404);
+  if (!seat) return c.json({ ok: false, message: "That seat is not in this fight." }, 404);
 
   const mine = teams.find((t) => t.user_id === user.id);
   if (mine && mine.id !== seat.id) {
     return c.json(
-      { ok: false, message: `Your account is already on ${mine.name}'s seat in this night.` },
+      { ok: false, message: `Your account is already on ${mine.name}'s seat in this fight.` },
       409
     );
   }
@@ -3341,7 +3341,7 @@ app.post("/api/proof/checkin", async (c) => {
   if (!mine) {
     return c.json({
       ok: false,
-      message: "Your account isn't on either side of this game. Ask the host to seat you, or join the night with its QR code first.",
+      message: "Your account isn't on either side of this game. Ask the host to seat you, or join the fight with its QR code first.",
     }, 403);
   }
 
@@ -5909,7 +5909,7 @@ app.post("/api/coins/claim-online", async (c) => {
       awards: [],
       cappedOut: true,
       message:
-        "You have earned all the coins browser play gives today. Play a league night — a night at a venue is worth far more.",
+        "You have earned all the coins browser play gives today. Play a league fight — a fight at a venue is worth far more.",
     });
   }
 
@@ -6159,12 +6159,12 @@ app.post("/api/nights/:id/emotes", async (c) => {
   const store = c.get("store");
   const tournamentId = c.req.param("id");
   const tournament = await store.getTournament(tournamentId);
-  if (!tournament) return c.json({ ok: false, message: "No such night." }, 404);
-  if (tournament.status === "completed") return c.json({ ok: false, message: "This night is over." }, 410);
+  if (!tournament) return c.json({ ok: false, message: "No such fight." }, 404);
+  if (tournament.status === "completed") return c.json({ ok: false, message: "This fight is over." }, 410);
 
   const teams = await store.getEngineTeams(tournamentId);
   const seat = teams.find((t) => t.user_id === user.id);
-  if (!seat) return c.json({ ok: false, message: "Only players at this night can send emotes." }, 403);
+  if (!seat) return c.json({ ok: false, message: "Only players at this fight can send emotes." }, 403);
 
   const body = (await readJson(c).catch(() => ({}))) as { emoteId?: unknown };
   const emoteId = typeof body?.emoteId === "string" ? body.emoteId : "";
@@ -6175,7 +6175,7 @@ app.post("/api/nights/:id/emotes", async (c) => {
 
   const history = await store.emoteHistory(user.id, tournamentId);
   if (history.count >= EMOTES_PER_NIGHT) {
-    return c.json({ ok: false, message: "That's plenty of emotes for one night." }, 429);
+    return c.json({ ok: false, message: "That's plenty of emotes for one fight." }, 429);
   }
   if (history.last && Date.now() - Date.parse(history.last) < EMOTE_COOLDOWN_SECONDS * 1000) {
     return c.json({ ok: false, message: "One at a time." }, 429);

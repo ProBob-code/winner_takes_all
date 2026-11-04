@@ -139,7 +139,7 @@ export function ProofCode({ matchId }: { matchId: string }) {
       </ul>
       {walkIn && (
         <p className="proof-code-note">
-          A game against a walk-in counts as practice: no trophies. They can sign up and join the night to make it count.
+          A game against a walk-in counts as practice: no trophies. They can sign up and join the fight to make it count.
         </p>
       )}
       <label className="proof-code-locate">

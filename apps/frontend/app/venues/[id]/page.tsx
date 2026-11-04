@@ -136,7 +136,7 @@ export default function VenueDetailPage() {
         return;
       }
       setStaffEmail("");
-      setNotice(`${payload.name || "They"} can now run nights here.`);
+      setNotice(`${payload.name || "They"} can now run fights here.`);
       await load();
     } catch {
       setError("Could not reach the server.");
@@ -237,7 +237,7 @@ export default function VenueDetailPage() {
             </div>
           </div>
           <Link className="button" href="/run" style={{ textDecoration: "none" }}>
-            Run a night
+            Run a fight
           </Link>
         </div>
 
@@ -247,7 +247,7 @@ export default function VenueDetailPage() {
           <div className="auto-grid narrow" style={{ marginBottom: "var(--space-6)" }}>
             <div className="stat">
               <div className="stat-value">{activity.tournaments}</div>
-              <div className="stat-label">nights run</div>
+              <div className="stat-label">fights run</div>
             </div>
             <div className="stat">
               <div className="stat-value">{activity.matches}</div>
@@ -261,7 +261,7 @@ export default function VenueDetailPage() {
               <div className="stat-value" style={{ fontSize: "var(--text-xl)" }}>
                 {whenever(activity.lastNightAt)}
               </div>
-              <div className="stat-label">last night</div>
+              <div className="stat-label">last fight</div>
             </div>
           </div>
         )}
@@ -305,7 +305,7 @@ export default function VenueDetailPage() {
         {mayAdminister && (
           <div className="panel v-stack" style={{ marginTop: "var(--space-5)" }}>
             <div>
-              <h2 style={{ fontSize: "var(--text-lg)", fontWeight: 700 }}>Who can run a night</h2>
+              <h2 style={{ fontSize: "var(--text-lg)", fontWeight: 700 }}>Who can run a fight</h2>
               <p className="muted" style={{ fontSize: "var(--text-sm)" }}>
                 Staff get staff mode and nothing else — no settings, no deleting, no
                 billing. Six of the twenty venues we spoke to said this was the thing

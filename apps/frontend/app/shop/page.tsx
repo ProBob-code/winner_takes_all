@@ -224,7 +224,7 @@ export default function ShopPage() {
         )}
         {data && !data.signedIn && (
           <p className="pp-card">
-            <Link href="/login">Sign in</Link> to buy. Coins come from playing: every frame at a night pays,
+            <Link href="/login">Sign in</Link> to buy. Coins come from playing: every frame at a fight pays,
             win or lose.
           </p>
         )}

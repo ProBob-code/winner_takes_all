@@ -148,9 +148,9 @@ export default function CodePage() {
                 ? `${done.opponent} has no WTA account, so this game counts as practice.`
                 : done.located
                   ? "When your opponent checks in too, the game is verified."
-                  : "Without location this game can be partly verified at most, unless it's at a venue's night."}
+                  : "Without location this game can be partly verified at most, unless it's at a venue's fight."}
             </p>
-            <Link className="button-secondary" href={`/tournaments/${done.tournamentId}`}>Back to the night</Link>
+            <Link className="button-secondary" href={`/tournaments/${done.tournamentId}`}>Back to the fight</Link>
           </div>
         )}
 

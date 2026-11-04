@@ -65,7 +65,7 @@ interface Overview {
 
 /** How long since this site last ran anything, and whether that is a worry. */
 function quietFor(iso: string | null): { label: string; tone: "good" | "warn" | "bad" } {
-  if (!iso) return { label: "never run a night", tone: "bad" };
+  if (!iso) return { label: "never run a fight", tone: "bad" };
   const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
   if (days <= 7) return { label: days <= 1 ? "ran today" : `${days} days ago`, tone: "good" };
   // A fortnight without a night, for a venue paying for a weekly league, means
@@ -175,7 +175,7 @@ export default function ChainDashboardPage() {
           </div>
           <div className="stat">
             <div className="stat-value">{totals.nights}</div>
-            <div className="stat-label">nights run</div>
+            <div className="stat-label">fights run</div>
           </div>
           <div className="stat">
             <div className="stat-value">{totals.frames}</div>
@@ -195,7 +195,7 @@ export default function ChainDashboardPage() {
             style={{ marginBottom: "var(--space-5)", borderColor: "rgba(220,38,38,0.4)" }}
           >
             <strong>
-              {quiet.length} {quiet.length === 1 ? "site has" : "sites have"} not run a night
+              {quiet.length} {quiet.length === 1 ? "site has" : "sites have"} not run a fight
               in over a week.
             </strong>
             <p className="muted" style={{ fontSize: "var(--text-sm)", marginTop: "var(--space-2)" }}>
@@ -215,10 +215,10 @@ export default function ChainDashboardPage() {
               <thead>
                 <tr>
                   <th>Site</th>
-                  <th>Nights</th>
+                  <th>Fights</th>
                   <th>Frames</th>
                   <th>Players</th>
-                  <th>Last night</th>
+                  <th>Last fight</th>
                 </tr>
               </thead>
               <tbody>

@@ -80,7 +80,7 @@ export function NightLinks({ tournamentId, joinCode, isHost, onIssued }: NightLi
   return (
     <div className="panel v-stack" style={{ marginBottom: "var(--space-4)" }}>
       <div>
-        <h3 style={{ fontSize: "var(--text-lg)", fontWeight: 700 }}>Running the night</h3>
+        <h3 style={{ fontSize: "var(--text-lg)", fontWeight: 700 }}>Running the fight</h3>
         <p className="muted" style={{ fontSize: "var(--text-sm)" }}>
           Open these on the right screens. Staff mode keeps scoring with no connection.
         </p>

@@ -30,7 +30,7 @@ const WEEKS = [
     kicker: "Before you start",
     title: "Four decisions, made once",
     points: [
-      "Pick your second-quietest night — not the deadest one, and never move it afterwards. “League night is Thursday” is a sentence your regulars can repeat to someone else.",
+      "Pick your second-quietest fight — not the deadest one, and never move it afterwards. “League fight is Thursday” is a sentence your regulars can repeat to someone else.",
       "Start at 8pm or later. People eat first; a 7pm start means a trickle until 7.40 and a bracket that never fills.",
       "Single elimination, best of one frame, eight players. Seven frames, about two hours, finishes before anyone wants to leave.",
       "Make the prize a bar tab or a trophy — never pooled entry money. Pooling stakes is prohibited under the Online Gaming Act 2025, and a tab comes back to your till anyway.",
@@ -43,7 +43,7 @@ const WEEKS = [
     points: [
       "Walk up to someone already playing pool in your venue and ask them. “We’re starting a knockout on Thursday at eight, free to enter, winner gets a free bar tab — are you in?” Do that twenty times and you have your eight.",
       "Posters tell people something is happening; they do not make anyone commit. Use them to support the asking, not to replace it.",
-      "Six will turn up instead of eight. Run a six-player bracket. The night happening beats the night being tidy.",
+      "Six will turn up instead of eight. Run a six-player bracket. The fight happening beats the fight being tidy.",
     ],
   },
   {
@@ -62,9 +62,9 @@ const WEEKS = [
     kicker: "Weeks three and four",
     title: "Give people a reason to come back after losing",
     points: [
-      "Start a running league table across weeks. 3 points for entering, 1 per frame won, 5 for winning the night. Do not over-engineer it — it exists to give someone knocked out in round one a reason to return.",
+      "Start a running league table across weeks. 3 points for entering, 1 per frame won, 5 for winning the fight. Do not over-engineer it — it exists to give someone knocked out in round one a reason to return.",
       "Give the season an end. Eight weeks, then a champion, then start again. An open-ended table is a table nobody can win; a season has a run-in, and a run-in has drama.",
-      "Watch for the signals it has caught: someone asks the start time without you mentioning it, a player brings a friend, two people who met here play on another night.",
+      "Watch for the signals it has caught: someone asks the start time without you mentioning it, a player brings a friend, two people who met here play on another fight.",
     ],
   },
   {
@@ -81,9 +81,9 @@ const WEEKS = [
 
 const DIAGNOSIS = [
   ["Fewer than four turning up", "Not enough asking", "Back to week one. Twenty people, in person."],
-  ["They come once, not twice", "The night overran, or there was nothing to return for", "Shorten the format. Start the table."],
+  ["They come once, not twice", "The fight overran, or there was nothing to return for", "Shorten the format. Start the table."],
   ["Same four every week", "Too closed", "Ask each of the four to bring one person."],
-  ["Nobody at all", "Wrong night", "Move it once — and only once — then commit again."],
+  ["Nobody at all", "Wrong fight", "Move it once — and only once — then commit again."],
 ];
 
 export default function PlaybookPage() {
@@ -93,7 +93,7 @@ export default function PlaybookPage() {
         {/* The cover. */}
         <header className="wta-card gold guide-hero tilt-l" style={{ marginTop: "var(--space-4)" }}>
           <span className="sticker">Free · no account needed</span>
-          <h1>The league-night playbook</h1>
+          <h1>The league-fight playbook</h1>
           <p>
             How to start a weekly competition in a room that has never had one. Nothing
             here needs Winner Takes All — we would rather you ran a league on paper than
@@ -135,7 +135,7 @@ export default function PlaybookPage() {
               </div>
             </div>
             <p className="muted" style={{ lineHeight: 1.8, fontSize: "var(--text-sm)" }}>
-              A one-off brings people in once and tells you nothing. A weekly night, same
+              A one-off brings people in once and tells you nothing. A weekly fight, same
               day, same time, for six weeks, does something different: by week four people
               arrange their Thursday around it. That is the asset — it survives a bad week,
               a broken table and a staff change. Eight is enough for a bracket, enough for
@@ -255,7 +255,7 @@ export default function PlaybookPage() {
             annoying. That is what the software is for — and not before.
           </p>
           <div className="ticket-actions">
-            <Link className="ink-button" href="/run">Run a night now →</Link>
+            <Link className="ink-button" href="/run">Run a fight now →</Link>
             <Link className="ink-button ghost" href="/coins">What players earn</Link>
           </div>
           <div className="perforation" aria-hidden="true" />

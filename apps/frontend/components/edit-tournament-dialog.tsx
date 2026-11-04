@@ -104,7 +104,7 @@ export function EditTournamentDialog({ tournament, onSaved }: { tournament: Edit
     <div
       role="dialog"
       aria-modal="true"
-      aria-label="Edit night"
+      aria-label="Edit fight"
       onClick={(e) => { if (e.target === e.currentTarget && !saving) setOpen(false); }}
       style={{
         position: "fixed", inset: 0, zIndex: 9999, padding: "1rem",
@@ -120,7 +120,7 @@ export function EditTournamentDialog({ tournament, onSaved }: { tournament: Edit
           display: "flex", flexDirection: "column", gap: "1rem",
         }}
       >
-        <h2 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 900 }}>Edit night</h2>
+        <h2 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 900 }}>Edit fight</h2>
 
         <div>
           <label style={label} htmlFor="edit-name">Name</label>
@@ -182,7 +182,7 @@ export function EditTournamentDialog({ tournament, onSaved }: { tournament: Edit
           </>
         ) : (
           <p className="muted" style={{ fontSize: "0.85rem", margin: 0 }}>
-            The night has started, so the fixtures are drawn: only the name can change now.
+            The fight has started, so the fixtures are drawn: only the name can change now.
           </p>
         )}
 
@@ -216,7 +216,7 @@ export function EditTournamentDialog({ tournament, onSaved }: { tournament: Edit
         style={{ fontWeight: 800, fontSize: "0.85rem", padding: "0.6rem 1.2rem", borderRadius: 12 }}
         onClick={() => { reset(); setOpen(true); }}
       >
-        ✏️ Edit night
+        ✏️ Edit fight
       </button>
       {open && mounted && createPortal(dialog, document.body)}
     </>

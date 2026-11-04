@@ -312,8 +312,8 @@ export default function PlayEightBallPage() {
 
             {claimed.cappedOut && (
               <span className="game-result-note">
-                A night at a venue is worth far more than a day of browser play — that
-                is deliberate. <Link href="/run">Run a league night</Link>.
+                A fight at a venue is worth far more than a day of browser play — that
+                is deliberate. <Link href="/run">Run a league fight</Link>.
               </span>
             )}
 
@@ -358,7 +358,7 @@ export default function PlayEightBallPage() {
         <p className="muted" style={{ fontSize: "var(--text-xs)", textAlign: "center", margin: 0 }}>
           Only the winner earns — beat the machine and the coins are yours, lose and
           nothing is paid. Signed-in games against the AI are rated: a win gains trophies,
-          a loss costs them, and a game left unfinished counts as a loss. Browser games are worth a fraction of a league night and have
+          a loss costs them, and a game left unfinished counts as a loss. Browser games are worth a fraction of a league fight and have
           their own daily limit. WTA Coins have no cash value and cannot be bought or
           withdrawn.
         </p>

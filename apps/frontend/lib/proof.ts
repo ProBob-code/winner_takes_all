@@ -77,7 +77,7 @@ export function reasonText(reason: string): string {
     case "too_fast": return "finished faster than a real game can";
     case "far_apart": return "the phones were far apart";
     case "near": return "both phones at the table";
-    case "venue": return "played at a venue's night";
+    case "venue": return "played at a venue's fight";
     case "no_location": return "no location shared";
     case "ruled_void": return "the host ruled it void";
     case "dispute_expired": return "disputed, and nobody ruled in time";

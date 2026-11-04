@@ -10,7 +10,7 @@ export default function SignupPage() {
   return (
     <AuthShell
       kicker="FREE TO PLAY, ALWAYS"
-      headline={<>Play the night.<span className="auth-accent">Take the crown.</span></>}
+      headline={<>Play the fight.<span className="auth-accent">Take the crown.</span></>}
       switchText="Already have an account?"
       switchHref="/login"
       switchLabel="Log in"

@@ -238,8 +238,8 @@ export default function AdminPage() {
           <div className="panel" style={{ padding: "1.25rem" }}>
             <h3 style={{ marginTop: 0 }}>Venues</h3>
             <p className="muted" style={{ fontSize: "0.85rem", marginTop: "-0.4rem" }}>
-              The customer, after Phase 0. A venue that has stopped running nights is a
-              venue about to cancel, so the last night is the column to read.
+              The customer, after Phase 0. A venue that has stopped running fights is a
+              venue about to cancel, so the last fight is the column to read.
             </p>
             {venues === null ? (
               <p className="muted">Venue figures are unavailable — migration 0012 may not have run.</p>
@@ -248,8 +248,8 @@ export default function AdminPage() {
                 <table className="admin-table">
                   <thead>
                     <tr>
-                      <th>Venue</th><th>Town</th><th>Nights</th><th>Frames</th>
-                      <th>Players</th><th>Last night</th><th>Subscription</th>
+                      <th>Venue</th><th>Town</th><th>Fights</th><th>Frames</th>
+                      <th>Players</th><th>Last fight</th><th>Subscription</th>
                     </tr>
                   </thead>
                   <tbody>

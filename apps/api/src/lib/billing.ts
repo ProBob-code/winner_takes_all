@@ -44,7 +44,7 @@ export const PLANS: Plan[] = [
     chain: false,
     blurb: "A single room. Cancel whenever.",
     features: [
-      "Unlimited league nights and tournaments",
+      "Unlimited league fights and tournaments",
       "Big-screen display and staff mode",
       "Offline scoring that survives the connection dropping",
       "Results and tables pushed to your WhatsApp group",
@@ -64,7 +64,7 @@ export const PLANS: Plan[] = [
     features: [
       "Everything in the monthly plan",
       "Two months free",
-      "Priority support on league nights",
+      "Priority support on league fights",
     ],
   },
   {
@@ -82,7 +82,7 @@ export const PLANS: Plan[] = [
       "Everything in the monthly plan, at every site",
       "One league table spanning all your venues",
       "A single dashboard across the chain",
-      "Per-site activity so you can see which rooms are actually running nights",
+      "Per-site activity so you can see which rooms are actually running fights",
     ],
   },
 ];

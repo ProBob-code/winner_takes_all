@@ -68,14 +68,14 @@ const EARN_LABELS: Array<{ key: string; label: string; note: string }> = [
   // The one award that is not for playing, so it leads: a new account has a
   // balance to look at before its first frame.
   { key: "DAILY_VISIT", label: "Sign in today", note: "A small amount once a day, just for coming back" },
-  { key: "NIGHT_PLAYED", label: "Turn up", note: "Once a night, on your first frame" },
+  { key: "NIGHT_PLAYED", label: "Turn up", note: "Once a fight, on your first frame" },
   { key: "FRAME_PLAYED", label: "Play a match", note: "Win or lose — losing never costs you" },
-  { key: "FRAME_WON", label: "Win a match", note: "A small top-up on top of playing it. The big coins are for winning the night." },
+  { key: "FRAME_WON", label: "Win a match", note: "A small top-up on top of playing it. The big coins are for winning the fight." },
   { key: "CLEARANCE", label: "Clear the table", note: "All seven and the black, one frame" },
-  { key: "NIGHT_WON", label: "Win the night", note: "For every player in the night, so the champion takes more than everyone else combined." },
+  { key: "NIGHT_WON", label: "Win the fight", note: "For every player in the fight, so the champion takes more than everyone else combined." },
   // Counted over the nights the venue actually ran, not calendar weeks — a
   // venue skipping a week does not break anyone's run.
-  { key: "STREAK", label: "Three nights running", note: "Three of a venue's nights in a row" },
+  { key: "STREAK", label: "Three fights running", note: "Three of a venue's fights in a row" },
   { key: "SEASON_WON", label: "Win the season", note: "Top of the table when it ends" },
   // Worth a fraction of the venue awards, and capped separately. The schedule
   // is where the product says league nights matter more than the sofa. Note
@@ -179,8 +179,8 @@ export default function CoinsPage() {
               Sign in to start earning
             </h2>
             <p className="muted">
-              Coins attach to an account, so they survive from one league night to the next.
-              Playing as a walk-in still gets you on the board for the night — it just
+              Coins attach to an account, so they survive from one league fight to the next.
+              Playing as a walk-in still gets you on the board for the fight — it just
               cannot carry over.
             </p>
             <button
@@ -291,7 +291,7 @@ export default function CoinsPage() {
             <h2>How you <em>earn</em></h2>
           </div>
           <p className="muted" style={{ marginTop: "var(--space-2)", maxWidth: "40rem" }}>
-            Small coins for every match you play and win. The champion of the night takes
+            Small coins for every match you play and win. The champion of the fight takes
             the majority — and losing never costs you a coin.
           </p>
           <p className="muted" style={{ marginTop: "var(--space-2)", maxWidth: "40rem" }}>
@@ -387,7 +387,7 @@ export default function CoinsPage() {
 
         <div className="h-stack" style={{ marginTop: "var(--space-7)" }}>
           <Link className="button" href="/run" style={{ textDecoration: "none" }}>
-            Run a night
+            Run a fight
           </Link>
           <Link className="button-secondary" href="/tournaments" style={{ textDecoration: "none" }}>
             Find a tournament

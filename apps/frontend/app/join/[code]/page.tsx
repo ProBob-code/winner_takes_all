@@ -104,7 +104,7 @@ export default function JoinByCodePage() {
           <h1 style={{ fontSize: "var(--text-xl)", fontWeight: 800 }}>That code will not work</h1>
           <p className="muted">{loadError}</p>
           <p className="muted" style={{ fontSize: "var(--text-sm)" }}>
-            Ask whoever is running the night for the code on the screen.
+            Ask whoever is running the fight for the code on the screen.
           </p>
         </div>
       </main>

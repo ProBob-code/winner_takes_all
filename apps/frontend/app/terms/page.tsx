@@ -8,7 +8,7 @@ const sections: LegalSection[] = [
     body: (
       <p>
         These terms cover your use of Winner Takes All (&quot;W.T.A&quot;, &quot;we&quot;, &quot;us&quot;), the website at
-        winnertakesall.live and everything on it. By making an account, hosting a night or joining one, you agree to them.
+        winnertakesall.live and everything on it. By making an account, hosting a fight or joining one, you agree to them.
         If you don&apos;t agree, please don&apos;t use W.T.A.
       </p>
     ),
@@ -19,13 +19,13 @@ const sections: LegalSection[] = [
     body: (
       <>
         <p>
-          W.T.A is software for running game nights at pool rooms, clubs, bars, gaming cafés and anywhere else people play.
+          W.T.A is software for running game fights at pool rooms, clubs, bars, gaming cafés and anywhere else people play.
           It covers pool, football, tennis, badminton, pickleball and table tennis: brackets and groups, scoring on a phone,
           a live table for a spare screen, a join code for walk-ins, series that carry from week to week, trophy ladders and
           player profiles.
         </p>
         <p>
-          We provide the tools. Each night is run by its host, usually at a venue, and the host and venue decide how it is
+          We provide the tools. Each fight is run by its host, usually at a venue, and the host and venue decide how it is
           played, who can take part and whether there is any prize.
         </p>
       </>
@@ -41,7 +41,7 @@ const sections: LegalSection[] = [
           <li>We charge no entry fee to play, and take no part of any prize.</li>
           <li>We do not hold player money or pool prize money.</li>
           <li>
-            Any prize at a night is provided and handed out by the host or venue, not by us, and is their responsibility.
+            Any prize at a fight is provided and handed out by the host or venue, not by us, and is their responsibility.
           </li>
           <li>
             You must not use W.T.A to arrange bets, stakes or wagers on any game, whether in money, coins or anything else.
@@ -68,8 +68,8 @@ const sections: LegalSection[] = [
           <li>You are responsible for what happens under your account. Tell us straight away if you think someone else is using it.</li>
         </ul>
         <p>
-          You can join a night as a walk-in without an account, by scanning its code and typing a name. A walk-in&apos;s results
-          appear on that night&apos;s board but earn no coins or trophies.
+          You can join a fight as a walk-in without an account, by scanning its code and typing a name. A walk-in&apos;s results
+          appear on that fight&apos;s board but earn no coins or trophies.
         </p>
       </>
     ),
@@ -79,7 +79,7 @@ const sections: LegalSection[] = [
     title: "Hosts, venues and staff",
     body: (
       <>
-        <p>If you host a night or run a venue on W.T.A, you are responsible for:</p>
+        <p>If you host a fight or run a venue on W.T.A, you are responsible for:</p>
         <ul>
           <li>running it fairly, and for any prize you offer and its delivery;</li>
           <li>the names you type in for other people, and only adding people who are happy to appear on the board;</li>
@@ -191,7 +191,7 @@ const sections: LegalSection[] = [
           is&quot;. We can&apos;t promise it will always be available or free of errors.
         </p>
         <p>
-          As far as the law allows, we are not responsible for what happens at a venue or a night, for prizes offered by hosts
+          As far as the law allows, we are not responsible for what happens at a venue or a fight, for prizes offered by hosts
           or venues, for disputes between players, or for loss caused by outages or by other people&apos;s content. Nothing
           here limits any right you have that the law says cannot be limited.
         </p>
@@ -230,8 +230,8 @@ export default function TermsPage() {
       effective="3 November 2026"
       summary={
         <ul>
-          <li>W.T.A is free software for running game nights. We take no entry fees, hold no money and pool no prizes.</li>
-          <li>Any prize at a night comes from its host or venue, not from us.</li>
+          <li>W.T.A is free software for running game fights. We take no entry fees, hold no money and pool no prizes.</li>
+          <li>Any prize at a fight comes from its host or venue, not from us.</li>
           <li>WTA Coins have no cash value and can&apos;t be bought, withdrawn, transferred or bet.</li>
           <li>Play fair: fake results lose their trophies and coins, and can lose you your account.</li>
           <li>You must be 18 or over to make an account.</li>

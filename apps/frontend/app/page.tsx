@@ -25,7 +25,7 @@ const structuredData = {
       name: "Winner Takes All",
       url: SITE_URL,
       description:
-        "Brackets, scoring and a live table for 8-ball and football tournament nights at pool rooms, clubs, bars and gaming cafés.",
+        "Brackets, scoring and a live table for 8-ball and football tournament fights at pool rooms, clubs, bars and gaming cafés.",
       applicationCategory: "SportsApplication",
       operatingSystem: "Web",
       image: `${SITE_URL}/og-image.jpg`,
