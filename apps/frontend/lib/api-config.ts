@@ -4,8 +4,19 @@
  * In local dev, it can be empty (relative paths) or a tunnel URL.
  */
 export function getApiUrl(): string {
+  // On the site's own domain the API is api.winnertakesall.live, so its
+  // session cookies are first-party. From workers.dev they were third-party,
+  // and Safari (every browser on an iPhone) drops those: iPhone users were
+  // logged out the moment they logged in. Other hosts (pages.dev previews,
+  // localhost) keep the configured URL.
+  if (typeof window !== "undefined" && /(^|\.)winnertakesall\.live$/.test(window.location.hostname)) {
+    return SITE_API_URL;
+  }
   return process.env.NEXT_PUBLIC_API_URL || "";
 }
+
+/** The Worker's custom domain, on the same site as the pages. */
+export const SITE_API_URL = "https://api.winnertakesall.live";
 
 /** True when NEXT_PUBLIC_API_URL has not been configured for this build. */
 export function isApiConfigured(): boolean {

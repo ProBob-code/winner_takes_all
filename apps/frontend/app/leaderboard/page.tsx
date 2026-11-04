@@ -50,7 +50,7 @@ export default function LeaderboardPage() {
       if (typeof window === "undefined") return;
       try {
         setLoading(true);
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || getApiUrl();
+        const apiUrl = getApiUrl();
 
         // Knowing who is looking lets the board point out their own row.
         try {

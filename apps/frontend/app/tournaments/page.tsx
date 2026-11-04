@@ -46,7 +46,7 @@ export default function TournamentsPage() {
         } catch { /* not logged in */ }
 
         // Fetch tournaments
-        const finalApiUrl = process.env.NEXT_PUBLIC_API_URL || apiUrl;
+        const finalApiUrl = apiUrl;
         const tourRes = await fetch(`${finalApiUrl}/api/tournaments`, { 
           cache: "no-store",
           credentials: "include" 

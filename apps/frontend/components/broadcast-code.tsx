@@ -34,7 +34,7 @@ export function BroadcastCode({ arenaId, matchId, pin, onClose }: Props) {
 
   const issueCode = useCallback(async () => {
     try {
-      const base = process.env.NEXT_PUBLIC_API_URL || getApiUrl();
+      const base = getApiUrl();
       const res = await fetch(`${base}/api/stream/broadcast-token`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },

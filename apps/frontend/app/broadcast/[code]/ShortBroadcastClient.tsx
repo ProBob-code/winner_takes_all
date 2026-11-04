@@ -21,7 +21,7 @@ export function ShortBroadcastClient({ code }: { code: string }) {
 
     (async () => {
       try {
-        const base = process.env.NEXT_PUBLIC_API_URL || getApiUrl();
+        const base = getApiUrl();
         const res = await fetch(
           `${base}/api/stream/broadcast-code/${encodeURIComponent(code)}`,
           { cache: "no-store" }

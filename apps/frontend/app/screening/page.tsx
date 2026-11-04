@@ -20,7 +20,7 @@ export default function ScreeningPage() {
 
   const fetchArenas = async () => {
     try {
-      const finalApiUrl = process.env.NEXT_PUBLIC_API_URL || getApiUrl();
+      const finalApiUrl = getApiUrl();
       const res = await fetch(`${finalApiUrl}/api/public-arenas`, {
         cache: "no-store",
         credentials: "include"

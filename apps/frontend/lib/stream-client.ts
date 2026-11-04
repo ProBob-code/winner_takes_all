@@ -26,7 +26,7 @@ const ICE_SERVERS: RTCIceServer[] = [{ urls: "stun:stun.cloudflare.com:3478" }];
 const SUBSCRIBE_TIMEOUT_MS = 20_000;
 
 function apiBase(): string {
-  return process.env.NEXT_PUBLIC_API_URL || getApiUrl();
+  return getApiUrl();
 }
 
 async function post(path: string, body: unknown): Promise<any> {

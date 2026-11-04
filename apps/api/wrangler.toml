@@ -3,6 +3,14 @@ main = "src/index.ts"
 compatibility_date = "2024-09-01"
 compatibility_flags = ["nodejs_compat"]
 
+# The API on the site's own domain. Session cookies set by workers.dev are
+# third-party to winnertakesall.live, and Safari (every browser on an iPhone)
+# drops those, so iPhone users were logged out the moment they logged in.
+# From api.winnertakesall.live the same cookies are first-party.
+routes = [{ pattern = "api.winnertakesall.live", custom_domain = true }]
+# Kept on as well: pages.dev previews and older pages still call it.
+workers_dev = true
+
 [[d1_databases]]
 binding = "DB"
 database_name = "winner-takes-all-db"

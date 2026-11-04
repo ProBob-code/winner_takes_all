@@ -62,7 +62,7 @@ export default function DashboardPage() {
     if (typeof window === "undefined") return;
     try {
       setLoading(true);
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || getApiUrl();
+      const apiUrl = getApiUrl();
       const profileRes = await fetch(`${apiUrl}/api/user/profile`, {
         cache: "no-store",
         credentials: "include",
