@@ -5001,6 +5001,13 @@ select.form-control option {
   justify-content: center;
   gap: 22px;
   background: oklch(14% 0.012 260);
+  /* The ground is always dark, so the mark always wears the dark theme's
+     colours. The light theme's deeper gold and red go dull on this black. */
+  --accent: #ffd700;
+  --accent-light: #ffe44d;
+  --gold: #ffd700;
+  --gold-light: #ffe44d;
+  --wta-red: #ff2e3b;
   animation: wtaSplashFade 1.6s ease forwards, wtaShake 1.3s ease forwards;
   /* It is leaving in 1.6s; nothing under it should be clickable meanwhile. */
   pointer-events: none;
