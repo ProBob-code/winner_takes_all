@@ -5918,6 +5918,17 @@ app.post("/api/coins/claim-online", async (c) => {
   const store = c.get("store");
   const body = parseBody(claimOnlineGameSchema, await readJson(c));
 
+  // Pass and play on one device is for fun: nothing about it can be checked,
+  // so nothing is written and nothing is paid.
+  if (body.mode === 2) {
+    return c.json({
+      ok: true,
+      awarded: 0,
+      awards: [],
+      message: "Pass and play is just for fun, so it does not earn WTA Coins.",
+    });
+  }
+
   // Online against a real player: the result is the table's, not the page's.
   // The table (a Durable Object) heard both screens and decided; see
   // durable-objects/pool-rooms.ts. What the page says about who won is ignored.
@@ -6094,6 +6105,32 @@ app.post("/api/online/start", async (c) => {
       loss: applyTrophies(mine, trophyDelta({ mine, theirs: aiTrophies(aiRating), won: false })).delta,
     },
     abandonMinutes: ONLINE_ABANDON_MINUTES,
+  });
+});
+
+/**
+ * Who is around for online 8-ball. The game page calls this every half
+ * minute while it is open; the lobby counts the distinct players it has
+ * heard from in the last minute or so, the ones queueing and the ones at a
+ * table. Real counts only: nobody is invented to fill the room.
+ */
+app.post("/api/pool/presence", async (c) => {
+  const user = requireUser(c);
+  if (!user) return c.json({ ok: false, message: "Authentication required" }, 401);
+  const limited = await rateLimit(c, `pool-presence:${user.id}`, 240, 3600);
+  if (limited) return limited;
+  const stub = c.env.POOL_ROOMS.get(c.env.POOL_ROOMS.idFromName("lobby"));
+  const res = await stub.fetch("https://pool/presence", {
+    method: "POST",
+    body: JSON.stringify({ userId: user.id }),
+  });
+  const counts: any = await res.json().catch(() => ({}));
+  c.header("Cache-Control", "no-store");
+  return c.json({
+    ok: true,
+    online: Number(counts.online) || 1,
+    searching: Number(counts.searching) || 0,
+    playing: Number(counts.playing) || 0,
   });
 });
 

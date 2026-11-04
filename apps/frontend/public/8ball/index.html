@@ -17,6 +17,8 @@ a{color:#e2b437;text-decoration:none}a:hover{color:#ffd35a}
 @keyframes cfxPop{0%{transform:scale(.3);opacity:0}10%{transform:scale(1.18);opacity:1}18%{transform:scale(.96)}26%{transform:scale(1)}82%{transform:scale(1);opacity:1}100%{transform:scale(1.06) translateY(-26px);opacity:0}}
 @keyframes cfxRing{0%{transform:scale(.2);opacity:.9}100%{transform:scale(2.4);opacity:0}}
 @keyframes cfxCoin{0%{transform:translateY(14px);opacity:0}25%{transform:translateY(0);opacity:1}80%{opacity:1}100%{transform:translateY(-18px);opacity:0}}
+@keyframes wtaLoad{0%{width:4%}100%{width:100%}}
+@keyframes wtaLoadLoop{0%{width:8%;margin-left:0}50%{width:45%;margin-left:30%}100%{width:8%;margin-left:92%}}
 @keyframes foulFlash{0%{opacity:0}12%{opacity:1}100%{opacity:0}}
 @keyframes foulShake{0%,100%{transform:translateX(0)}15%{transform:translateX(-10px)}30%{transform:translateX(9px)}45%{transform:translateX(-6px)}60%{transform:translateX(4px)}75%{transform:translateX(-2px)}}
 @keyframes catPop{0%{transform:translateY(110%)}14%{transform:translateY(-6%)}22%{transform:translateY(2%)}28%{transform:translateY(0)}84%{transform:translateY(0)}100%{transform:translateY(115%)}}
@@ -35,18 +37,18 @@ a{color:#e2b437;text-decoration:none}a:hover{color:#ffd35a}
 <div style="position:fixed;inset:0;display:flex;flex-direction:column;background:radial-gradient(120% 90% at 50% 45%,#1d150e 0%,#0a0705 62%,#050403 100%);user-select:none;-webkit-user-select:none">
 
   <div style="flex:none;display:flex;align-items:center;gap:8px;padding:10px 12px 6px">
-    <button onClick="{{ openMenu }}" aria-label="Menu" style="all:unset;cursor:pointer;flex:none;width:40px;height:40px;border-radius:11px;background:#15100c;border:1px solid rgba(226,180,55,.35);display:flex;align-items:center;justify-content:center;color:#e2b437"><i class="ph-bold ph-list" style="font-size:20px"></i></button>
+    <button onClick="{{ openMenu }}" aria-label="Menu" style="all:unset;cursor:pointer;flex:none;width:{{ tbS }};height:40px;border-radius:11px;background:#15100c;border:1px solid rgba(226,180,55,.35);display:flex;align-items:center;justify-content:center;color:#e2b437"><i class="ph-bold ph-list" style="font-size:20px"></i></button>
     <div style="flex:1;min-width:0;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px">
       <sc-for list="{{ players }}" as="p" hint-placeholder-count="2">
-        <div style="min-width:0;height:48px;box-sizing:border-box;border-radius:12px;background:linear-gradient(180deg,#1b150f,#120d0a);border:{{ p.border }};box-shadow:{{ p.glow }};display:flex;flex-direction:{{ p.dir }};align-items:center;gap:10px;padding:0 10px;transition:border-color .3s,box-shadow .3s">
-          <div style="flex:none;width:34px;height:34px;border-radius:50%;background:{{ p.avBg }};color:#2a1a06;font-family:Montserrat;font-weight:900;font-size:11px;display:flex;align-items:center;justify-content:center;box-shadow:inset 0 -2px 4px rgba(0,0,0,.25),0 0 0 2px rgba(0,0,0,.35)">{{ p.ini }}</div>
+        <div style="min-width:0;height:48px;box-sizing:border-box;border-radius:12px;background:linear-gradient(180deg,#1b150f,#120d0a);border:{{ p.border }};box-shadow:{{ p.glow }};display:flex;flex-direction:{{ p.dir }};align-items:center;gap:{{ p.gap }};padding:{{ p.pad }};overflow:hidden;transition:border-color .3s,box-shadow .3s">
+          <div style="flex:none;width:{{ p.avS }};height:{{ p.avS }};border-radius:50%;background:{{ p.avBg }};color:#2a1a06;font-family:Montserrat;font-weight:900;font-size:{{ p.avF }};display:flex;align-items:center;justify-content:center;box-shadow:inset 0 -2px 4px rgba(0,0,0,.25),0 0 0 2px rgba(0,0,0,.35)">{{ p.ini }}</div>
           <div style="min-width:0;flex:1;display:flex;flex-direction:column;align-items:{{ p.align }};gap:3px">
             <div style="display:flex;flex-direction:{{ p.dir }};align-items:center;gap:6px;min-width:0;max-width:100%">
-              <span style="font-family:Montserrat;font-weight:800;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.name }}</span>
-              <span style="flex:none;padding:1px 5px;border-radius:4px;background:rgba(226,180,55,.16);color:#e2b437;font-size:9px;font-weight:700;letter-spacing:.06em">{{ p.tag }}</span>
-              <span style="flex:none;display:flex;align-items:center;gap:3px;color:#f2c21b;font-size:10.5px;font-weight:700"><i class="ph-fill ph-coin" style="font-size:12px"></i>{{ p.coins }}</span>
+              <span style="min-width:0;font-family:Montserrat;font-weight:800;font-size:{{ p.nf }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.name }}</span>
+              <span style="flex:none;display:{{ p.td }};padding:1px 5px;border-radius:4px;background:rgba(226,180,55,.16);color:#e2b437;font-size:9px;font-weight:700;letter-spacing:.06em">{{ p.tag }}</span>
+              <span style="flex:none;display:{{ p.cd }};align-items:center;gap:3px;color:#f2c21b;font-size:10.5px;font-weight:700"><i class="ph-fill ph-coin" style="font-size:12px"></i>{{ p.coins }}</span>
             </div>
-            <div style="font-size:9.5px;font-weight:600;letter-spacing:.12em;color:#958a7d;white-space:nowrap">{{ p.status }}</div>
+            <div style="max-width:100%;font-size:{{ p.sf }};font-weight:600;letter-spacing:{{ p.sl }};color:#958a7d;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.status }}</div>
           </div>
           <div style="flex:none;display:{{ p.bd }};gap:3px;flex-direction:{{ p.dir }}">
             <sc-for list="{{ p.balls }}" as="b" hint-placeholder-count="7">
@@ -56,21 +58,22 @@ a{color:#e2b437;text-decoration:none}a:hover{color:#ffd35a}
         </div>
       </sc-for>
     </div>
-    <button onClick="{{ toggleSpin }}" aria-label="Cue ball spin" style="all:unset;cursor:pointer;flex:none;width:40px;height:40px;border-radius:11px;background:#15100c;border:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center">
+    <button onClick="{{ toggleSpin }}" aria-label="Cue ball spin" style="all:unset;cursor:pointer;flex:none;width:{{ tbS }};height:40px;border-radius:11px;background:#15100c;border:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center">
       <div style="position:relative;width:24px;height:24px;border-radius:50%;background:radial-gradient(circle at 36% 30%,#fff,#e9e5dc 40%,#a9a398)">
         <div style="position:absolute;left:{{ spinL }};top:{{ spinT }};width:7px;height:7px;margin:-3.5px 0 0 -3.5px;border-radius:50%;background:#d0241c"></div>
       </div>
     </button>
-    <button onClick="{{ toggleSound }}" aria-label="Sound" style="all:unset;cursor:pointer;flex:none;width:40px;height:40px;border-radius:11px;background:#15100c;border:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;color:#cfc6ba"><i class="ph-fill {{ soundIcon }}" style="font-size:19px"></i></button>
+    <button onClick="{{ toggleSound }}" aria-label="Sound" style="all:unset;cursor:pointer;flex:none;width:{{ tbS }};height:40px;border-radius:11px;background:#15100c;border:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;color:#cfc6ba"><i class="ph-fill {{ soundIcon }}" style="font-size:19px"></i></button>
   </div>
 
   <div style="flex:1;min-height:0;display:flex;position:relative">
     <sc-if value="{{ landscape }}" hint-placeholder-val="{{ true }}">
       <div style="flex:none;width:62px;display:flex;align-items:center;justify-content:center">
-        <div onPointerDown="{{ powDown }}" onPointerMove="{{ powMove }}" onPointerUp="{{ powUp }}" onPointerCancel="{{ powUp }}" style="position:relative;width:38px;height:min(66%,440px);border-radius:19px;background:linear-gradient(90deg,#0b0806,#1b150f 50%,#0b0806);border:1px solid rgba(226,180,55,.28);box-shadow:inset 0 2px 10px rgba(0,0,0,.8);cursor:ns-resize;touch-action:none">
+        <div onPointerDown="{{ powDown }}" onPointerMove="{{ powMove }}" onPointerUp="{{ powUp }}" onPointerCancel="{{ powUp }}" style="position:relative;width:38px;height:min(66%,440px);border-radius:19px;background:linear-gradient(90deg,#0b0806,#1b150f 50%,#0b0806);border:1px solid {{ powBc }};box-shadow:inset 0 2px 10px rgba(0,0,0,.8){{ powSh }};cursor:ns-resize;touch-action:none;transition:border-color .15s,box-shadow .15s">
           <div style="position:absolute;inset:3px;border-radius:16px;background:linear-gradient(0deg,#22c46a,#f2c21b 55%,#ec4a2a);clip-path:inset({{ powInv }} 0 0 0 round 16px);pointer-events:none"></div>
           <div style="position:absolute;inset:3px;border-radius:16px;background:repeating-linear-gradient(0deg,transparent 0 calc(10% - 1px),rgba(0,0,0,.4) calc(10% - 1px) 10%);pointer-events:none"></div>
           <div style="position:absolute;left:50%;bottom:12px;transform:translateX(-50%) rotate(180deg);writing-mode:vertical-rl;font-family:Montserrat;font-weight:800;font-size:9px;letter-spacing:.22em;color:rgba(255,255,255,.45);pointer-events:none">POWER</div>
+          <div style="position:absolute;left:50%;top:-24px;transform:translateX(-50%);font-family:Montserrat;font-weight:900;font-size:12px;color:#f2c21b;opacity:{{ powOp }};transition:opacity .15s;pointer-events:none;white-space:nowrap">{{ powPct }}</div>
         </div>
       </div>
     </sc-if>
@@ -105,9 +108,9 @@ a{color:#e2b437;text-decoration:none}a:hover{color:#ffd35a}
           <div style="font-size:11.5px;color:#a59b8f">{{ sd.next }}</div>
         </div>
         <div style="padding:12px 14px;border-radius:14px;background:#120d0a;border:1px solid rgba(255,255,255,.07);display:flex;flex-direction:column;gap:8px">
-          <div style="font-family:Montserrat;font-weight:800;font-size:10px;letter-spacing:.18em;color:#8d8378">COINS</div>
+          <div style="font-family:Montserrat;font-weight:800;font-size:10px;letter-spacing:.18em;color:#8d8378">COMBO POINTS</div>
           <sc-for list="{{ sd.coinRows }}" as="cr" hint-placeholder-count="2">
-            <div style="display:flex;align-items:center;gap:8px;font-size:12.5px"><span style="flex:1;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ cr.name }}</span><span style="color:#8d8378;font-size:11px">best ×{{ cr.best }}</span><span style="display:flex;align-items:center;gap:3px;color:#f2c21b;font-weight:700"><i class="ph-fill ph-coin"></i>{{ cr.coins }}</span></div>
+            <div style="display:flex;align-items:center;gap:8px;font-size:12.5px"><span style="flex:1;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ cr.name }}</span><span style="color:#8d8378;font-size:11px">best ×{{ cr.best }}</span><span style="display:flex;align-items:center;gap:3px;color:#f2c21b;font-weight:700"><i class="ph-fill ph-star"></i>{{ cr.coins }}</span></div>
           </sc-for>
         </div>
         <div style="padding:12px 14px;border-radius:14px;background:#120d0a;border:1px solid rgba(255,255,255,.07);display:flex;flex-direction:column;gap:7px">
@@ -164,10 +167,11 @@ a{color:#e2b437;text-decoration:none}a:hover{color:#ffd35a}
         <div style="margin-top:4px;font-family:Montserrat;font-weight:800;font-size:11px;letter-spacing:.5em;color:#e2b437;padding-left:.5em">W.T.A</div>
         <div style="margin-top:8px;font-family:Montserrat;font-style:italic;font-weight:900;font-size:44px;line-height:1;letter-spacing:-.01em;background:linear-gradient(180deg,#fff3b0,#f2c21b 50%,#d58a00);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 16px rgba(242,170,0,.35))">EIGHT BALL</div>
         <div style="margin-top:8px;font-size:10.5px;font-weight:600;letter-spacing:.3em;color:#9b9083">WINNER TAKES ALL</div>
+        {{ whoEl }}
         <div style="margin-top:24px;width:100%;display:flex;flex-direction:column;gap:10px">
           <button onClick="{{ playSystem }}" style="all:unset;cursor:pointer;display:flex;align-items:center;gap:14px;padding:12px 14px;border-radius:14px;background:linear-gradient(180deg,#2a1f10,#17110b);border:1.5px solid rgba(226,180,55,.75);box-shadow:0 0 24px rgba(226,180,55,.15)" style-hover="filter:brightness(1.12)">
             <div style="flex:none;width:40px;height:40px;border-radius:11px;background:rgba(226,180,55,.14);display:flex;align-items:center;justify-content:center;color:#f2c21b"><i class="ph-fill ph-robot" style="font-size:20px"></i></div>
-            <div style="flex:1;display:flex;flex-direction:column;gap:3px"><span style="font-family:Montserrat;font-weight:800;font-size:15px">vs System</span><span style="font-size:12px;color:#a59b8f">Beat the machine. Rated, and a win earns coins.</span></div>
+            <div style="flex:1;display:flex;flex-direction:column;gap:3px"><span style="font-family:Montserrat;font-weight:800;font-size:15px">vs System</span><span style="font-size:12px;color:#a59b8f">{{ sysSub }}</span></div>
             <i class="ph-bold ph-caret-right" style="color:#e2b437"></i>
           </button>
           <div style="display:flex;align-items:center;gap:6px;padding:0 4px">
@@ -178,12 +182,12 @@ a{color:#e2b437;text-decoration:none}a:hover{color:#ffd35a}
           </div>
           <button onClick="{{ playPvp }}" style="all:unset;cursor:pointer;display:flex;align-items:center;gap:14px;padding:12px 14px;border-radius:14px;background:#15100c;border:1px solid rgba(255,255,255,.09)" style-hover="border-color:rgba(226,180,55,.5)">
             <div style="flex:none;width:40px;height:40px;border-radius:11px;background:rgba(226,180,55,.1);display:flex;align-items:center;justify-content:center;color:#f2c21b"><i class="ph-fill ph-users" style="font-size:20px"></i></div>
-            <div style="flex:1;display:flex;flex-direction:column;gap:3px"><span style="font-family:Montserrat;font-weight:800;font-size:15px">vs Player</span><span style="font-size:12px;color:#a59b8f">Two players, one device. Pass and play.</span></div>
+            <div style="flex:1;display:flex;flex-direction:column;gap:3px"><span style="font-family:Montserrat;font-weight:800;font-size:15px">vs Player</span><span style="font-size:12px;color:#a59b8f">{{ pvpSub }}</span></div>
             <i class="ph-bold ph-caret-right" style="color:#e2b437"></i>
           </button>
           <button onClick="{{ playOnline }}" style="all:unset;cursor:pointer;display:flex;align-items:center;gap:14px;padding:12px 14px;border-radius:14px;background:#15100c;border:1px solid rgba(255,255,255,.09)" style-hover="border-color:rgba(226,180,55,.5)">
             <div style="flex:none;width:40px;height:40px;border-radius:11px;background:rgba(80,160,255,.12);display:flex;align-items:center;justify-content:center;color:#6fb6ff"><i class="ph-fill ph-globe-hemisphere-west" style="font-size:20px"></i></div>
-            <div style="flex:1;display:flex;flex-direction:column;gap:3px"><span style="font-family:Montserrat;font-weight:800;font-size:15px">vs Online</span><span style="font-size:12px;color:#a59b8f">Real players, live. Win and take the coins.</span></div>
+            <div style="flex:1;display:flex;flex-direction:column;gap:3px"><span style="font-family:Montserrat;font-weight:800;font-size:15px">vs Online</span><span style="font-size:12px;color:#a59b8f">{{ onSub }}</span></div>
             <i class="ph-bold ph-caret-right" style="color:#e2b437"></i>
           </button>
         </div>
@@ -251,7 +255,7 @@ a{color:#e2b437;text-decoration:none}a:hover{color:#ffd35a}
               <span style="flex:1;text-align:left;font-weight:700">{{ rc.name }}</span>
               <span style="color:#a59b8f">{{ rc.count }} combos</span>
               <span style="color:#f2c21b;font-weight:700">Best ×{{ rc.best }}</span>
-              <span style="display:flex;align-items:center;gap:3px;color:#f2c21b;font-weight:700"><i class="ph-fill ph-coin"></i>{{ rc.coins }}</span>
+              <span style="display:flex;align-items:center;gap:3px;color:#f2c21b;font-weight:700"><i class="ph-fill ph-star"></i>{{ rc.coins }} pts</span>
             </div>
           </sc-for>
           <div style="font-size:11px;color:#8d8378;text-align:left">All-time best combo: ×{{ allBest }}</div>
@@ -263,6 +267,7 @@ a{color:#e2b437;text-decoration:none}a:hover{color:#ffd35a}
       </div>
     </div>
   </sc-if>
+  {{ gateFx }}
 </div>
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props="{&quot;felt&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Teal&quot;,&quot;Green&quot;,&quot;Blue&quot;,&quot;Burgundy&quot;,&quot;Neon&quot;],&quot;default&quot;:&quot;Teal&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;showGuide&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;}}">
@@ -357,7 +362,11 @@ class Component extends DCLogic {
   wrapRef=React.createRef(); cvRef=React.createRef();
   g={phase:'menu',mode:null,turn:0,groups:[null,null],balls:[],aim:0,power:0,spin:{x:0,y:0},breaker:0};
 
-  componentDidMount(){this.host={};this.onHost=e=>{if(e.origin!==location.origin)return;const d=e.data;if(d&&d.wtaHost&&d.type==='config')this.host={apiBase:d.apiBase||null,signedIn:!!d.signedIn,name:d.name||null};};window.addEventListener('message',this.onHost);setTimeout(()=>this.hostSend({type:'ready',mode:0}),300);this.blinkT=setInterval(()=>{if(this.g.phase==='aim')this.sync();},450);
+  componentDidMount(){if(window.parent===window)location.replace('/play/8ball');this.host={};this.onHost=e=>{if(e.origin!==location.origin)return;const d=e.data;if(!d||!d.wtaHost)return;
+    if(d.type==='config'){this.host={apiBase:d.apiBase||null,signedIn:!!d.signedIn,name:d.name||null,balance:typeof d.balance==='number'?d.balance:null,ready:true};this.setState({hostV:Date.now()});}
+    else if(d.type==='balance'){if(typeof d.balance==='number')this.host.balance=d.balance;this.sync();}
+    else if(d.type==='presence'){this.onlineN=d.online|0;this.setState({presence:{online:d.online|0,searching:d.searching|0,playing:d.playing|0}});}
+    else if(d.type==='result'){this.setState({result:d});}};window.addEventListener('message',this.onHost);setTimeout(()=>this.hostSend({type:'ready',mode:0}),300);this.blinkT=setInterval(()=>{if(this.g.phase==='aim')this.sync();},450);
     this.rack();this._lastFelt=this.feltName();this.catPool=[];this.localCats=['assets/cats/cat1.gif','assets/cats/cat2.gif','assets/cats/cat3.gif','assets/animals/dog1.jpg','assets/animals/dog2.jpg','assets/animals/dog3.jpg','assets/animals/fox1.jpg','assets/animals/fox2.jpg'].sort(()=>Math.random()-.5);this.localCats.forEach(u=>{const im=new Image();im.src=u;});this.catI=0;for(let i=0;i<2;i++)this.loadCat();
     this.gly=this.makeGlyphs();
     this.ro=new ResizeObserver(()=>this.layout()); this.ro.observe(this.wrapRef.current);
@@ -628,7 +637,14 @@ class Component extends DCLogic {
     if(L>=4)this.noise(1.2+L*.1,.12+L*.02,'bandpass',3200,.5,.45,.2);
     if(L>=5){this.tone(root/2,1.2,.25,'sawtooth',.31);this.tone(root*0.749,1.2,.18,'sawtooth',.31);}}
 
-  names(){const g=this.g;if(g.mode==='online')return g.onNames||['You','Opponent'];if(g.mode==='system')return['You','Machine · '+this.state.level];if(g.mode==='practice')return['You','Practice'];return['Player 1','Player 2'];}
+  names(){return this.namesFor(this.g.mode);}
+  namesFor(mode){const g=this.g,me=this.me();if(mode==='online')return g.onNames||[me,'Opponent'];if(mode==='system')return[me,'Machine · '+this.state.level];if(mode==='practice')return[me,'Practice'];return g.pvpNames||[me,'Player 2'];}
+  me(){return (this.host&&this.host.name)||'You';}
+  mySeat(){const g=this.g;return g.mode==='online'?(g.seat|0):0;}
+  fmtC(n){n=Math.max(0,Math.floor(+n||0));const t=x=>x.replace(/\.0$/,'');if(n>=1e6){const m=n/1e6;return (m<10?t(m.toFixed(1)):Math.round(m))+'M';}if(n>=1e3){const k=n/1e3;return (k<10?t(k.toFixed(1)):Math.round(k))+'K';}return String(n);}
+  winFor(mode){return mode==='system'?(2+this.aiRating())*1000:mode==='online'?5000:0;}
+  loadThen(mode,ms){ms=ms||1700;const nm=this.namesFor(mode);this.setState({menuOpen:false,spinOpen:false,pvpSetup:null,loading:{mode,a:nm[0],b:nm[1],t0:Date.now(),ms}});clearTimeout(this.loadT);this.loadT=setTimeout(()=>{this.setState({loading:null});this.start(mode);},ms);}
+  endLoadSoon(){const L=this.state.loading;clearTimeout(this.loadT);if(!L)return;this.loadT=setTimeout(()=>this.setState({loading:null}),Math.max(0,L.t0+L.ms-Date.now()));}
   human(){const g=this.g;if(g.mode==='online')return g.turn===g.seat;return g.mode!=='system'||g.turn===0;}
   left(grp){return this.g.balls.filter(b=>b.on&&b.n!==0&&b.n!==8&&groupOf(b.n)===grp).length;}
   needCall(){const g=this.g,grp=g.groups[g.turn];return g.mode!=='practice'&&!g.isBreak&&!!grp&&this.left(grp)===0&&g.balls.find(b=>b.n===8).on;}
@@ -735,24 +751,27 @@ class Component extends DCLogic {
     this.netClose();const t0=Date.now();this.waiting=0;
     this.setState({menuOpen:false,spinOpen:false,searching:{title:'Finding an opponent',sub:'Searching · 0s',bot:false}});
     this.searchT=setInterval(()=>{const cur=this.state.searching;if(!cur||this.wsMode!=='lobby')return;const s=Math.round((Date.now()-t0)/1000);
-      this.setState({searching:{...cur,sub:'Searching · '+s+'s'+(this.waiting>1?' · '+this.waiting+' in the queue':''),bot:cur.bot||s>=25}});},500);
+      const on=this.onlineN||0;this.setState({searching:{...cur,sub:'Searching · '+s+'s'+(this.waiting>1?' · '+this.waiting+' in the queue':' · first in the queue')+(on>1?' · '+on+' online':''),bot:cur.bot||s>=25}});},500);
     let ws;try{ws=new WebSocket(this.apiBase().replace(/^http/,'ws')+'/api/pool/lobby');}catch(e){this.searchFail('Online play is not reachable right now');return;}
     this.ws=ws;this.wsMode='lobby';
-    ws.onmessage=e=>{let m;try{m=JSON.parse(e.data);}catch(x){return;}if(m.type==='waiting')this.waiting=m.count||1;else if(m.type==='matched')this.netMatched(m);else if(m.type==='error')this.searchFail(m.message||'Could not join the queue');};
+    ws.onmessage=e=>{let m;try{m=JSON.parse(e.data);}catch(x){return;}if(m.type==='waiting'){this.waiting=m.count||1;if(m.online)this.onlineN=m.online;}else if(m.type==='matched')this.netMatched(m);else if(m.type==='error')this.searchFail(m.message||'Could not join the queue');};
     ws.onclose=ev=>{if(this.ws!==ws||this.wsMode!=='lobby')return;this.searchFail(ev.code===4401?'Sign in to play online':'Lost the connection to the lobby');};
   }
-  searchFail(t){clearInterval(this.searchT);this.ws=null;this.wsMode=null;this.setState({searching:{title:t,sub:'Try again in a moment, or play the machine meanwhile.',bot:true}});}
-  cancelSearch(){this.netClose();this.setState({searching:null,menuOpen:true});}
+  searchFail(t){clearInterval(this.searchT);this.ws=null;this.wsMode=null;this.setState({loading:null,searching:{title:t,sub:'Try again in a moment, or play the machine meanwhile.',bot:true}});}
+  cancelSearch(){this.netClose();clearTimeout(this.loadT);this.setState({searching:null,loading:null,menuOpen:true});}
   netMatched(m){const lobby=this.ws;this.ws=null;this.wsMode=null;clearInterval(this.searchT);if(lobby)try{lobby.close(1000);}catch(e){}
-    this.setState({searching:{title:'Opponent found',sub:((this.host&&this.host.name)||'You')+' vs '+((m.opponent&&m.opponent.name)||'Player'),bot:false}});this.netJoin(m.tableId);}
+    const opp=(m.opponent&&m.opponent.name)||'Player',bt=m.opponent&&typeof m.opponent.trophies==='number'?m.opponent.trophies:null;
+    this.setState({searching:null,menuOpen:false,loading:{mode:'online',online:true,a:this.me(),b:opp,bt,t0:Date.now(),ms:1800}});
+    clearTimeout(this.loadT);this.loadT=setTimeout(()=>{if(this.state.loading&&!(this.g.mode==='online'&&this.g.inGame)){this.netClose();this.setState({loading:null,searching:{title:'Could not reach the table',sub:'Try again in a moment, or play the machine meanwhile.',bot:true}});}},15000);
+    this.netJoin(m.tableId);}
   netJoin(id){let ws;try{ws=new WebSocket(this.apiBase().replace(/^http/,'ws')+'/api/pool/table/'+encodeURIComponent(id));}catch(e){return;}
     this.ws=ws;this.wsMode='table';this.tableId=id;this.inbox=this.inbox||[];
     ws.onmessage=e=>{let m;try{m=JSON.parse(e.data);}catch(x){return;}this.netMsg(m);};
     ws.onclose=()=>{if(this.ws!==ws)return;const g=this.g;if(g.mode==='online'&&g.inGame){this.toast('Connection lost · reconnecting…');this.retry=(this.retry||0)+1;setTimeout(()=>{if(this.ws===ws&&g.inGame)this.netJoin(id);},Math.min(6000,1000*this.retry));}};}
   netMsg(m){const g=this.g;
     if(m.type==='hello'){this.retry=0;const nm=[0,1].map(i=>(m.players&&m.players[i]&&m.players[i].name)||'Player');
-      if(m.finished){if(!(g.mode==='online'&&g.tableId===this.tableId)){this.netClose();this.toast('That game is over');this.setState({searching:null,menuOpen:true});}return;}
-      if(!(g.mode==='online'&&g.tableId===this.tableId)){g.seat=m.seat;g.onNames=nm;g.tableId=this.tableId;g.breaker=0;g.awaitSnap=false;this.inbox=[];this.setState({searching:null});this.start('online');if(m.snapshot)this.applySnap(m.snapshot);}
+      if(m.finished){if(!(g.mode==='online'&&g.tableId===this.tableId)){this.netClose();this.toast('That game is over');clearTimeout(this.loadT);this.setState({searching:null,loading:null,menuOpen:true});}return;}
+      if(!(g.mode==='online'&&g.tableId===this.tableId)){g.seat=m.seat;g.onNames=nm;g.tableId=this.tableId;g.breaker=0;g.awaitSnap=false;this.inbox=[];this.setState({searching:null});this.start('online');if(m.snapshot)this.applySnap(m.snapshot);this.endLoadSoon();}
       else if(m.snapshot&&g.phase!=='moving'){this.inbox=[];this.applySnap(m.snapshot);}
       if(!m.opponentHere)this.toast('Waiting for '+nm[1-m.seat]+' to sit down…');return;}
     if(m.type==='opponent_left'){if(g.inGame)this.toast(g.onNames[1-g.seat]+' dropped · '+(m.grace||45)+'s to come back');return;}
@@ -783,8 +802,8 @@ class Component extends DCLogic {
     setTimeout(()=>this.netClose(),150);}
   hostSend(m){try{if(window.parent!==window)window.parent.postMessage(Object.assign({wtaCoins:true},m),location.origin);}catch(e){}}
   aiRating(){return ({Rookie:1,Pro:2,Legend:3})[this.state.level]||1;}
-  hostStart(mode){const g=this.g;g.shotsN=0;g.t0=Date.now();g.reportedOver=false;if(mode==='system')this.hostSend({type:'game_start',mode:1,aiRating:this.aiRating()});else if(mode==='pvp')this.hostSend({type:'game_start',mode:2});}
-  hostOver(w){const g=this.g;if(g.reportedOver||g.mode==='practice')return;g.reportedOver=true;const me0=g.mode==='online'?g.seat:0;this.hostSend({type:'game_over',mode:g.mode==='system'?1:g.mode==='online'?3:2,tableId:g.tableId,aiRating:this.aiRating(),won:w===me0,winner:w===me0?'p1':'p2',seconds:Math.round((Date.now()-(g.t0||Date.now()))/1000),shots:g.shotsN||0});}
+  hostStart(mode){const g=this.g;g.shotsN=0;g.t0=Date.now();g.reportedOver=false;this.setState({result:null});if(mode==='system')this.hostSend({type:'game_start',mode:1,aiRating:this.aiRating()});else if(mode==='pvp')this.hostSend({type:'game_start',mode:2});}
+  hostOver(w){const g=this.g;if(g.reportedOver||g.mode==='practice')return;g.reportedOver=true;this.setState({result:g.mode==='pvp'?{message:'Pass and play is just for fun, so it does not earn WTA Coins.'}:{pending:true}});const me0=g.mode==='online'?g.seat:0;this.hostSend({type:'game_over',mode:g.mode==='system'?1:g.mode==='online'?3:2,tableId:g.tableId,aiRating:this.aiRating(),won:w===me0,winner:w===me0?'p1':'p2',seconds:Math.round((Date.now()-(g.t0||Date.now()))/1000),shots:g.shotsN||0});}
   finish(w,reason){const g=this.g;if(g.mode==='online'){if(g.shotRemote&&!this.netFinal)return;if(!g.inGame)return;this.netSend({type:'result',winnerSeat:w,reason});if(!g.shotRemote&&!this.netFinal)this.netSend({type:'settled',n:g.shotsN||0,snap:this.snapNow({w,reason})});}this.hostOver(w);{const sys=g.mode==='system';const type=sys?(w===0?'win':'lose'):'win';const subj=sys?0:w;const ln=this.lineFor(type,subj);g.overLine=ln.text;g.overSpeaker=sys?'Machine · '+this.state.level:'Announcer';g.overGif=this.takeGif(sys?(w===0?'angry':'smug'):'hype');g.react=null;
 }
     {const nm=this.names(),hw=g.mode==='system'?w===0:g.mode==='online'?w===g.seat:true;if(hw){this.winJingle();setTimeout(()=>this.speak(g.mode==='pvp'?[nm[w]+' wins!','Winner takes all!']:['You win!','Winner takes all!']),900);}else{this.loseJingle();setTimeout(()=>this.speak(['You lost!','Sheeeesh!']),1500);}}
@@ -825,7 +844,7 @@ class Component extends DCLogic {
     if(g.ballInHand&&Math.hypot(p.x-cue.x,p.y-cue.y)<R*3.4){this.drag='cue';this.off={x:cue.x-p.x,y:cue.y-p.y};}else if(e.pointerType==='mouse'){this.drag='pull';this.p0=p;g.power=0;this.sync();}else{this.drag='aim';this.aimTo(p);}};
   pMove=(e)=>{const g=this.g;if(!this.drag){if(e.pointerType==='mouse'&&this.canShoot()&&!this.powering)this.aimTo(this.toW(e));return;}const p=this.toW(e);
     if(this.drag==='aim')this.aimTo(p);
-    else if(this.drag==='pull'){const pr=(this.p0.x-p.x)*Math.cos(g.aim)+(this.p0.y-p.y)*Math.sin(g.aim);const np=clamp(pr/230,0,1);if(Math.abs(np-g.power)>.004){g.power=np;this.sync();}}
+    else if(this.drag==='pull'){const pr=(this.p0.x-p.x)*Math.cos(g.aim)+(this.p0.y-p.y)*Math.sin(g.aim);const np=clamp(pr/170,0,1);if(Math.abs(np-g.power)>.004){g.power=np;this.sync();}}
     else this.moveCue(p.x+this.off.x,p.y+this.off.y);};
   pUp=()=>{const g=this.g;if(this.drag==='pull'){if(g.power>.03&&this.canShoot())this.shoot(g.power);else{g.power=0;this.sync();}}this.drag=null;};
   aimTo(p){const cue=this.g.balls[0];if(Math.hypot(p.x-cue.x,p.y-cue.y)>R*.6)this.g.aim=Math.atan2(p.y-cue.y,p.x-cue.x);}
@@ -842,17 +861,76 @@ class Component extends DCLogic {
       const blink=active&&Math.floor(Date.now()/450)%2===0;const balls=nums?nums.map(n=>({bg:ballCss(n),op:g.balls.find(b=>b.n===n).on?(blink?'1':'.55'):'.15'})):Array.from({length:7},()=>({bg:'rgba(255,255,255,.07)',op:'1'}));
       const tags=g.mode==='online'?(g.seat===0?['YOU','ONLINE']:['ONLINE','YOU']):g.mode==='system'?['YOU','AI']:g.mode==='practice'?['YOU','—']:['P1','P2'];
       const stt=g.stats&&g.stats[i];if(stt&&stt.streak>=2&&!g.ai)status=`COMBO ×${stt.streak} · `+status;
-      return {coins:stt?stt.coins:0,name:nm[i],tag:tags[i],ini:g.mode==='online'?this.initials(nm[i]):g.mode==='system'?(i?'AI':'YOU'):g.mode==='practice'?(i?'—':'YOU'):('P'+(i+1)),status,balls,bd:narrow?'none':'flex',
+      if(narrow)status=status.replace(' LEFT','').replace('OPEN TABLE','OPEN').replace('LINING UP…','THINKING…').replace('FREE PLAY','FREE').replace('NO RULES','—');
+      const chip=(g.mode!=='pvp'&&i===this.mySeat()&&this.host&&typeof this.host.balance==='number')?this.fmtC(this.host.balance):'';
+      const shortNm=String(nm[i]).startsWith('Machine')?'Machine':String(nm[i]).trim().split(/\s+/)[0];
+      return {coins:chip,cd:chip&&!narrow?'flex':'none',name:narrow?shortNm:nm[i],tag:tags[i],ini:g.mode==='system'&&i?'AI':g.mode==='practice'&&i?'—':this.initials(nm[i]),status,balls,bd:narrow?'none':'flex',avS:narrow?'28px':'34px',avF:narrow?'10px':'11px',gap:narrow?'6px':'10px',pad:narrow?'0 7px':'0 10px',td:narrow?'none':'inline-block',nf:narrow?'12px':'13px',sf:narrow?'8.5px':'9.5px',sl:narrow?'.06em':'.12em',
         border:active?'1.5px solid #e2b437':'1.5px solid rgba(255,255,255,.07)',glow:active?'0 0 0 3px rgba(226,180,55,.1),0 0 26px rgba(226,180,55,.2)':'none',
         avBg:i===0?'radial-gradient(circle at 35% 30%,#fff1a6,#f2c21b 45%,#b98200)':'radial-gradient(circle at 35% 30%,#ffffff,#d9d6cf 45%,#8f8b83)',dir:i===0?'row':'row-reverse',align:i===0?'flex-start':'flex-end'};});
     const human=this.human(),cue=g.balls[0];let hint='';
-    if(g.phase==='aim'&&!st.menuOpen){if(g.ai)hint='Machine is lining up a shot…';else if(this.needCall()&&g.called==null)hint='On the 8 · tap a pocket to call it';else if(g.ballInHand)hint=g.kitchen?'Ball in hand · drag the cue ball behind the line':'Ball in hand · drag the cue ball anywhere';else if(this.drag==='pull')hint=`Power ${Math.round(g.power*100)}% · release to shoot`;else hint=st.portrait?'Drag to aim · slide power to shoot':'Move to aim · click and drag back to shoot';}
+    if(g.phase==='aim'&&!st.menuOpen){if(g.ai)hint='Machine is lining up a shot…';else if(this.needCall()&&g.called==null)hint='On the 8 · tap a pocket to call it';else if(this.drag==='pull')hint=g.power>.03?`Power ${Math.round(g.power*100)}% · release to shoot`:'Pull the mouse back to build power';else if(g.ballInHand)hint=(g.kitchen?'Ball in hand · drag the cue ball behind the line':'Ball in hand · drag the cue ball anywhere')+(st.portrait?'':' · or press away from it and pull back to shoot');else hint=st.portrait?'Drag to aim · slide power to shoot':'Move to aim · press and pull the mouse back for power · release to shoot';}
     const sx=g.spin.x,sy=g.spin.y,spinLabel=Math.hypot(sx,sy)<.12?'Center ball':(Math.abs(sy)>=Math.abs(sx)?(sy>0?'Top spin · follow':'Back spin · draw'):(sx>0?'Right English':'Left English'));
     const spinPos=(e)=>{const r=e.currentTarget.getBoundingClientRect();let x=(e.clientX-r.left-r.width/2)/(r.width/2),y=(e.clientY-r.top-r.height/2)/(r.height/2);const l=Math.hypot(x,y);if(l>.8){x*=.8/l;y*=.8/l;}g.spin={x,y:-y};this.sync();};
-    const pick=(m)=>(e)=>{e&&e.preventDefault&&e.preventDefault();this.initAudio();if(this.g.mode==='online'&&this.g.inGame)this.netResign();if(m==='online'){this.netQueue();return;}this.start(m);};
+    const pick=(m)=>(e)=>{e&&e.preventDefault&&e.preventDefault();this.initAudio();if(!this.host||this.host.signedIn!==true)return;if(this.g.mode==='online'&&this.g.inGame)this.netResign();if(m==='online'){this.netQueue();return;}
+      if(m==='pvp'){let p2='';try{p2=localStorage.getItem('wta8.p2')||'';}catch(x){}const p1=(this.g.pvpNames&&this.g.pvpNames[0])||this.me();this.setState({menuOpen:false,spinOpen:false,pvpSetup:{p1,p2,err:''}});return;}
+      this.loadThen(m,m==='practice'?1000:1700);};
     const w=g.winner,over=g.phase==='over';
     return {
-      wrapRef:this.wrapRef,cvRef:this.cvRef,players,hint,msg:st.msg,
+      wrapRef:this.wrapRef,cvRef:this.cvRef,players,hint,msg:st.msg,tbS:typeof window!=='undefined'&&window.innerWidth<420?'34px':'40px',
+      sysSub:`Rated. Beat ${st.level} for +${this.fmtC(this.winFor('system'))} WTA Coins.`,
+      pvpSub:'Two players, one device. Just for fun, no coins.',
+      onSub:(()=>{const n=(st.presence&&st.presence.online)||0;return (n>1?`● ${n} players online now · `:'Real players, live · ')+`win +${this.fmtC(this.winFor('online'))} WTA Coins`;})(),
+      powBc:(this.drag==='pull'||this.powering)?'#f2c21b':'rgba(226,180,55,.28)',powSh:(this.drag==='pull'||this.powering)?',0 0 18px rgba(242,194,27,.45)':'',
+      powPct:Math.round(g.power*100)+'%',powOp:(this.drag==='pull'||this.powering)&&g.power>.01?'1':'0',
+      whoEl:(()=>{const h=this.host||{};if(!h.ready||h.signedIn!==true)return null;const E=React.createElement;
+        return E('div',{style:{marginTop:14,display:'flex',alignItems:'center',gap:8,padding:'6px 12px 6px 6px',borderRadius:20,background:'rgba(255,255,255,.05)',border:'1px solid rgba(226,180,55,.3)',fontSize:12.5,fontWeight:600,color:'#e8e0d4',maxWidth:'100%',boxSizing:'border-box'}},
+          E('span',{style:{width:24,height:24,borderRadius:'50%',flex:'none',background:'radial-gradient(circle at 35% 30%,#fff1a6,#f2c21b 45%,#b98200)',color:'#2a1a06',fontFamily:'Montserrat',fontWeight:900,fontSize:9,display:'flex',alignItems:'center',justifyContent:'center'}},this.initials(this.me())),
+          E('span',{style:{minWidth:0,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}},'Playing as ',E('b',{style:{color:'#fff'}},this.me())),
+          typeof h.balance==='number'?E('span',{style:{flex:'none',display:'flex',alignItems:'center',gap:3,color:'#f2c21b',fontWeight:700}},E('i',{className:'ph-fill ph-coin'}),this.fmtC(h.balance)):null);})(),
+      gateFx:(()=>{const E=React.createElement,h=this.host||{};
+        const wrap=(kids)=>E('div',{style:{position:'absolute',inset:0,zIndex:40,background:'radial-gradient(ellipse at 50% 35%,#1d150c 0%,#070504 70%)',display:'flex',padding:20,boxSizing:'border-box',overflowY:'auto'}},
+          E('div',{style:{margin:'auto',width:'min(400px,100%)',display:'flex',flexDirection:'column',alignItems:'center',textAlign:'center'}},...kids));
+        const brand=[E('i',{key:'c',className:'ph-fill ph-crown-simple',style:{fontSize:44,color:'#f2c21b',filter:'drop-shadow(0 0 12px rgba(242,194,27,.55))'}}),
+          E('div',{key:'w',style:{marginTop:4,fontFamily:'Montserrat',fontWeight:800,fontSize:11,letterSpacing:'.5em',color:'#e2b437',paddingLeft:'.5em'}},'W.T.A'),
+          E('div',{key:'t',style:{marginTop:8,fontFamily:'Montserrat',fontStyle:'italic',fontWeight:900,fontSize:40,lineHeight:1,background:'linear-gradient(180deg,#fff3b0,#f2c21b 50%,#d58a00)',WebkitBackgroundClip:'text',backgroundClip:'text',color:'transparent',filter:'drop-shadow(0 0 16px rgba(242,170,0,.35))'}},'EIGHT BALL')];
+        const bar=(ms,k)=>E('div',{key:'bar'+(k||''),style:{marginTop:26,width:'100%',height:6,borderRadius:3,background:'rgba(255,255,255,.08)',overflow:'hidden'}},E('div',{style:{height:'100%',borderRadius:3,background:'linear-gradient(90deg,#ffd94d,#ffb200)',boxShadow:'0 0 12px rgba(255,190,40,.6)',animation:ms?`wtaLoad ${ms}ms cubic-bezier(.3,.7,.4,1) forwards`:'wtaLoadLoop 1.3s ease-in-out infinite'}}));
+        const note=(t,k,c)=>E('div',{key:k,style:{marginTop:12,fontSize:12.5,color:c||'#9b9083'}},t);
+        const btn=(label,on,primary,k)=>E('button',{key:k||label,onClick:on,style:{all:'unset',cursor:'pointer',height:46,lineHeight:'46px',borderRadius:12,textAlign:'center',fontFamily:'Montserrat',fontWeight:800,fontSize:14,...(primary?{background:'linear-gradient(180deg,#ffd94d,#ffb200)',color:'#7a1a10'}:{border:'1.5px solid rgba(255,255,255,.25)',color:'#f3eee6',boxSizing:'border-box'})}},label);
+        const top=(path)=>{try{window.top.location.href=path;}catch(x){location.href=path;}};
+        if(!h.ready)return wrap([...brand,bar(0),note('Setting up the table…','n')]);
+        if(h.signedIn!==true)return wrap([...brand,
+          E('div',{key:'h',style:{marginTop:20,fontFamily:'Montserrat',fontWeight:800,fontSize:18}},'Sign in to play'),
+          E('div',{key:'p',style:{marginTop:8,fontSize:13.5,lineHeight:1.5,color:'#bdb2a5'}},'Every game is played on your WTA account: wins pay real WTA Coins, and online opponents see who they are playing.'),
+          E('div',{key:'b',style:{marginTop:22,display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,width:'100%'}},btn('SIGN IN',()=>top('/login?next=/play/8ball'),true),btn('JOIN FREE',()=>top('/signup?next=/play/8ball')))]);
+        const L=st.loading;
+        if(L){const av=(name,gold,robot,k)=>E('div',{key:k,style:{display:'flex',flexDirection:'column',alignItems:'center',gap:8,minWidth:0,flex:1}},
+            E('div',{style:{width:64,height:64,borderRadius:'50%',background:gold?'radial-gradient(circle at 35% 30%,#fff1a6,#f2c21b 45%,#b98200)':'radial-gradient(circle at 35% 30%,#ffffff,#d9d6cf 45%,#8f8b83)',color:'#2a1a06',fontFamily:'Montserrat',fontWeight:900,fontSize:robot?28:20,display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 0 0 3px rgba(0,0,0,.4),0 0 26px rgba(226,180,55,.25)'}},robot?E('i',{className:'ph-fill ph-robot'}):this.initials(name)),
+            E('div',{style:{fontFamily:'Montserrat',fontWeight:800,fontSize:14,maxWidth:'100%',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}},name));
+          const label={system:'VS SYSTEM · '+String(st.level).toUpperCase(),pvp:'PASS AND PLAY',online:'LIVE ONLINE MATCH',practice:'PRACTICE TABLE'}[L.mode]||'';
+          const stake=L.mode==='system'?`Win for +${this.fmtC(this.winFor('system'))} WTA Coins`:L.mode==='online'?`Win for +${this.fmtC(this.winFor('online'))} WTA Coins`+(L.bt>0?` · ${L.b}: ${L.bt} trophies`:''):L.mode==='pvp'?'Just for fun · no WTA Coins':'Free play · no rules, no coins';
+          const tips=['Press anywhere and pull the mouse back: the further you pull, the harder the shot.','Use the spin button to draw the cue ball back or follow through.','Pot two in a row to start a combo.','On the 8, tap a pocket to call it before you shoot.'];
+          return wrap([...brand,
+            E('div',{key:'l',style:{marginTop:10,fontSize:10.5,fontWeight:700,letterSpacing:'.3em',color:'#9b9083'}},label),
+            E('div',{key:'vs',style:{marginTop:24,width:'100%',display:'flex',alignItems:'center',gap:12}},av(L.a,true,false,'a'),L.mode==='practice'?null:E('div',{key:'x',style:{flex:'none',fontFamily:'Montserrat',fontStyle:'italic',fontWeight:900,fontSize:30,color:'#f2c21b',textShadow:'0 0 18px rgba(242,194,27,.5)'}},'VS'),L.mode==='practice'?null:av(L.b,false,L.mode==='system','b')),
+            E('div',{key:'s',style:{marginTop:20,display:'flex',alignItems:'center',gap:8,padding:'7px 14px',borderRadius:20,background:'rgba(242,194,27,.12)',color:'#f2c21b',fontWeight:700,fontSize:13}},E('i',{className:'ph-fill ph-coin'}),stake),
+            bar(L.ms,L.t0),note(L.online?'Connecting to the table…':'Racking the balls…','n'),
+            E('div',{key:'tip',style:{marginTop:6,fontSize:11.5,color:'#6f665c'}},'Tip: '+tips[Math.floor(L.t0/1000)%tips.length])]);}
+        const P=st.pvpSetup;
+        if(P){const set=(k)=>(v)=>this.setState({pvpSetup:{...this.state.pvpSetup,[k]:v,err:''}});
+          const go=()=>{const S=this.state.pvpSetup||P,a=(S.p1||'').trim().slice(0,20)||this.me(),b=(S.p2||'').trim().slice(0,20);
+            if(!b){this.setState({pvpSetup:{...S,err:'Add a name for player 2.'}});return;}
+            if(a.toLowerCase()===b.toLowerCase()){this.setState({pvpSetup:{...S,err:'Pick two different names.'}});return;}
+            try{localStorage.setItem('wta8.p2',b);}catch(x){}this.g.pvpNames=[a,b];this.loadThen('pvp');};
+          const field=(lab,k,ph,auto)=>E('label',{key:k,style:{display:'flex',flexDirection:'column',gap:6,width:'100%',textAlign:'left'}},
+            E('span',{style:{fontSize:10.5,fontWeight:700,letterSpacing:'.16em',color:'#8d8378'}},lab),
+            E('input',{value:P[k]||'',placeholder:ph,maxLength:20,autoFocus:auto,autoComplete:'off',onChange:e=>set(k)(e.target.value),onKeyDown:e=>{if(e.key==='Enter')go();},
+              style:{boxSizing:'border-box',width:'100%',height:46,padding:'0 14px',borderRadius:12,background:'#15100c',border:'1px solid rgba(226,180,55,.4)',outline:'none',color:'#f3eee6',fontFamily:'Inter,system-ui,sans-serif',fontSize:15,fontWeight:600}}));
+          return wrap([...brand,
+            E('div',{key:'l',style:{marginTop:10,fontSize:10.5,fontWeight:700,letterSpacing:'.3em',color:'#9b9083'}},'PASS AND PLAY'),
+            E('div',{key:'f',style:{marginTop:22,width:'100%',display:'flex',flexDirection:'column',gap:14}},field('PLAYER 1','p1','Player 1',false),field('PLAYER 2','p2','Their name',true)),
+            P.err?note(P.err,'e','#ff7a6a'):note('One device, two players. Pass it over after each turn. Just for fun: no WTA Coins.','e'),
+            E('div',{key:'b',style:{marginTop:20,display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,width:'100%'}},btn('START GAME',go,true,'go'),btn('BACK',()=>this.setState({pvpSetup:null,menuOpen:true}),false,'back'))]);}
+        return null;})(),
       landscape:!st.portrait,portrait:st.portrait,powInv:((1-g.power)*100).toFixed(1)+'%',
       soundIcon:st.sound?'ph-speaker-high':'ph-speaker-slash',
       toggleSound:()=>{this.initAudio();this.setState({sound:!st.sound});},
@@ -868,7 +946,7 @@ class Component extends DCLogic {
       menuOpen:st.menuOpen,canResume:!!g.inGame,
       openMenu:()=>{this.setState({menuOpen:true,spinOpen:false});if(g.phase==='over'){g.phase='menu';this.sync();}},
       resume:(e)=>{e.preventDefault();this.setState({menuOpen:false});},
-      searching:!!st.searching,searchTitle:st.searching?st.searching.title:'',searchSub:st.searching?st.searching.sub:'',searchBot:!!(st.searching&&st.searching.bot),searchCols:st.searching&&st.searching.bot?'1fr 1fr':'1fr',cancelSearch:()=>this.cancelSearch(),searchToSystem:()=>{this.netClose();this.setState({searching:null});this.start('system');},
+      searching:!!st.searching,searchTitle:st.searching?st.searching.title:'',searchSub:st.searching?st.searching.sub:'',searchBot:!!(st.searching&&st.searching.bot),searchCols:st.searching&&st.searching.bot?'1fr 1fr':'1fr',cancelSearch:()=>this.cancelSearch(),searchToSystem:()=>{this.netClose();this.setState({searching:null});this.loadThen('system');},
       exitGames:(e)=>{e.preventDefault();if(window.parent!==window)this.hostSend({type:'exit'});else location.href='/games';},playSystem:pick('system'),playPvp:pick('pvp'),playOnline:pick('online'),playPractice:pick('practice'),
       levels:Object.keys(LV).map(n=>({name:n,pick:()=>this.setState({level:n}),bg:st.level===n?'rgba(226,180,55,.18)':'transparent',fg:st.level===n?'#f2c21b':'#a59b8f',bc:st.level===n?'rgba(226,180,55,.6)':'rgba(255,255,255,.1)'})),
       trayPos:st.portrait?'top:6px':'bottom:6px',trays:st.side?[]:(()=>{const neon=!!this.felt().neon;return [['SOLIDS',[1,2,3,4,5,6,7],'40,240,255'],['STRIPES',[9,10,11,12,13,14,15],'255,60,210']].map(([label,ns,gc],i)=>({label,side:i?'right:10px':'left:10px',dir:i?'row-reverse':'row',bc:neon?`rgba(${gc},.7)`:'rgba(226,180,55,.3)',sh:neon?`0 0 14px rgba(${gc},.35)`:'none',lc:neon?`rgb(${gc})`:'#a59b8f',
@@ -881,10 +959,10 @@ class Component extends DCLogic {
         return {shooter:g.inGame||g.phase==='over'?nm[g.turn]+(g.ai?' · thinking':''):'—',streak:k,next:titles[Math.min(k,6)]||'LEGENDARY run',
           segs:Array.from({length:7},(_,i)=>({bg:i<k?(this.felt().neon?'linear-gradient(90deg,#3ff0ff,#ff3fc8)':'linear-gradient(90deg,#ffd94d,#ffb200)'):'rgba(255,255,255,.08)'})),
           coinRows:(g.mode==='practice'?[0]:[0,1]).map(i=>({name:nm[i],coins:g.stats?g.stats[i].coins:0,best:g.stats?g.stats[i].best:0})),
-          log:(g.log||[]).map(l=>({txt:`${l.name} · Combo ×${l.n}`,coins:'+'+l.coins})),noLog:!(g.log&&g.log.length),
+          log:(g.log||[]).map(l=>({txt:`${l.name} · Combo ×${l.n}`,coins:'+'+l.coins+' pts'})),noLog:!(g.log&&g.log.length),
           trays:[['SOLIDS',[1,2,3,4,5,6,7]],['STRIPES',[9,10,11,12,13,14,15]]].map(([label,ns])=>({label,balls:ns.map(n=>{const on=g.balls.length?g.balls.find(b=>b.n===n).on:true;return {bg:on?'rgba(255,255,255,.06)':ballCss(n)};})}))};})(),
       over:over&&!st.menuOpen,overName:over?nm[w]:'',overTitle:g.mode==='practice'?'CLEARS THE TABLE':'TAKES THE CROWN',overReason:over?g.reason:'',
-      coins:over&&g.stats?((g.mode==='system'&&w!==0)?(g.stats[0].coins?`You earned +${g.stats[0].coins} WTA Coins`:''):`${g.mode==='system'?'You earned':nm[w]+' earned'} +${g.stats[w].coins+(g.mode==='practice'?0:25)} WTA Coins`):'',
+      coins:over&&g.mode!=='practice'?(()=>{const r=st.result;if(!r)return '';const tr=r.trophies?' · '+r.trophies:'';if(r.pending)return 'Counting your WTA Coins…';if(r.awarded>0)return `+${this.fmtC(r.awarded)} WTA Coins added`+(typeof r.balance==='number'?` · balance ${this.fmtC(r.balance)}`:'')+tr;return (r.message||'No WTA Coins this time')+tr;})():'',
       records:g.stats?(g.mode==='practice'?[0]:[0,1]).map(i=>({name:nm[i],count:g.stats[i].combos.length,best:g.stats[i].best,coins:g.stats[i].coins})):[],
       allBest:(()=>{try{return +localStorage.getItem('wta8.bestCombo')||0;}catch(e){return 0;}})(),
       foulFx:(()=>{const f=g.foulFx;if(!f)return null;const E=React.createElement;
@@ -902,7 +980,7 @@ class Component extends DCLogic {
           f.mw?E('div',{style:{fontFamily:'Montserrat',fontWeight:900,fontStyle:'italic',fontSize:18,letterSpacing:'.12em',color:neon?'#ff5ad8':'#fff3c4',textShadow:`0 0 14px ${neon?'#ff3fc8':'rgba(255,200,60,.8)'}`}},f.mw):null,
           E('div',{style:{fontFamily:'Montserrat',fontWeight:900,fontStyle:'italic',fontSize:`clamp(${Math.round(44*sc)}px,${(9*sc).toFixed(1)}vw,${Math.round(96*sc)}px)`,lineHeight:1,letterSpacing:'-.02em',background:neon?'linear-gradient(90deg,#3ff0ff,#ffffff 40%,#ff3fc8 60%,#3ff0ff)':'linear-gradient(90deg,#ffb300,#fff6c8 40%,#ffd23a 60%,#ffb300)',backgroundSize:'200% 100%',WebkitBackgroundClip:'text',backgroundClip:'text',color:'transparent',filter:`drop-shadow(0 0 18px ${neon?'rgba(63,240,255,.8)':'rgba(255,180,20,.7)'}) drop-shadow(0 4px 0 rgba(0,0,0,.5))`,animation:'cfxShine 1.4s linear infinite'}},'COMBO ×'+f.n),
           E('div',{style:{marginTop:6,display:'flex',alignItems:'center',gap:10,fontFamily:'Montserrat',fontWeight:900,fontStyle:'italic',fontSize:`clamp(${Math.round(18*sc)}px,${(3*sc).toFixed(1)}vw,${Math.round(28*sc)}px)`,color:'#fff',textShadow:`0 0 16px ${fire?(neon?'#ff3fc8':'#ff6a00'):ac}, 0 0 34px ${fire?(neon?'#ff3fc8':'#ff3d00'):'transparent'}, 0 2px 0 rgba(0,0,0,.6)`}},fire?E('i',{className:'ph-fill ph-fire',style:{color:neon?'#ff5ad8':'#ff7a1a'}}):null,f.title,fire?E('i',{className:'ph-fill ph-fire',style:{color:neon?'#ff5ad8':'#ff7a1a'}}):null),
-          E('div',{style:{marginTop:10,display:'flex',alignItems:'center',gap:8,padding:'7px 14px',borderRadius:20,background:'rgba(10,7,5,.8)',border:`1.5px solid ${ac}`,color:'#f2c21b',fontWeight:800,fontSize:14,animation:'cfxCoin 2.2s ease forwards'}},E('i',{className:'ph-fill ph-coin'}),`${f.nm} +${f.coins} WTA Coins`));})(),
+          E('div',{style:{marginTop:10,display:'flex',alignItems:'center',gap:8,padding:'7px 14px',borderRadius:20,background:'rgba(10,7,5,.8)',border:`1.5px solid ${ac}`,color:'#f2c21b',fontWeight:800,fontSize:14,animation:'cfxCoin 2.2s ease forwards'}},E('i',{className:'ph-fill ph-star'}),`${f.nm} +${f.coins} pts`));})(),
       reactFx:(()=>{const r=g.react;if(!r)return null;const E=React.createElement,neon=!!this.felt().neon,bc=r.ai?(neon?'#ff3fc8':'#6fb6ff'):'#e2b437',tb=st.tbl||{l:12,r:12,t:112,w:600};
         const sz=Math.max(70,Math.min(100,tb.t-14));
         const cap={position:'absolute',left:4,right:4,bottom:6,textAlign:'center',fontFamily:'Impact,"Anton","Arial Black",sans-serif',fontSize:Math.round(sz*.15),lineHeight:1,color:'#fff',WebkitTextStroke:'1.2px #000',textShadow:'2px 2px 0 #000',textTransform:'uppercase'};
@@ -942,7 +1020,7 @@ class Component extends DCLogic {
               E('path',{d:'M72 103 q8 12 16 0 Z',fill:'#e85a7a'}),
               E('path',{d:'M30 92 L48 95 M30 101 L48 99 M130 92 L112 95 M130 101 L112 99',stroke:'rgba(58,36,22,.55)',strokeWidth:1.6,strokeLinecap:'round'}))),
           E('div',{style:{position:'absolute',left:'-40%',top:'-4%',padding:'5px 10px',borderRadius:12,background:'#fff',color:'#2a1a06',fontFamily:'Montserrat',fontWeight:900,fontStyle:'italic',fontSize:13,whiteSpace:'nowrap',boxShadow:'0 4px 10px rgba(0,0,0,.35)'}},'MEOW-VELOUS!'));})(),
-      rematch:()=>{if(g.mode==='online'){this.netClose();this.netQueue();return;}this.start(g.mode);},
+      rematch:()=>{if(g.mode==='online'){this.netClose();this.netQueue();return;}this.loadThen(g.mode,1100);},
     };
   }
 }

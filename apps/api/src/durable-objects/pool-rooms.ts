@@ -58,6 +58,10 @@ const REPORT_WAIT_MS = 30_000;
 const NO_SHOW_MS = 60_000;
 /** A settled table is kept this long for the claims, then wiped. */
 const KEEP_MS = 6 * 60 * 60 * 1000;
+/** A player counts as online this long after their last heartbeat. */
+const PRESENCE_MS = 70_000;
+/** A table still open after this is no longer counted as being played. */
+const TABLE_MAX_MS = 45 * 60 * 1000;
 
 const RELAYED = new Set(["aim", "place"]);
 
@@ -67,6 +71,10 @@ export class PoolRooms {
 
   // Lobby role.
   private waiting: Array<{ ws: WebSocket; player: PoolPlayer; since: number }> = [];
+  /** Who has had the game open lately: userId -> last heartbeat. */
+  private seen = new Map<string, number>();
+  /** Tables this lobby opened that have not finished: tableId -> opened at. */
+  private open = new Map<string, number>();
 
   // Table role.
   private meta: TableMeta | null = null;
@@ -88,6 +96,10 @@ export class PoolRooms {
         return this.join(request);
       case "/verdict":
         return this.verdict();
+      case "/presence":
+        return this.presence(request);
+      case "/table-done":
+        return this.tableDone(request);
       default:
         return new Response("Not found", { status: 404 });
     }
@@ -143,8 +155,32 @@ export class PoolRooms {
     return new Response(null, { status: 101, webSocket: client });
   }
 
+  private counts() {
+    const now = Date.now();
+    for (const [id, t] of this.seen) if (now - t > PRESENCE_MS) this.seen.delete(id);
+    for (const [id, t] of this.open) if (now - t > TABLE_MAX_MS) this.open.delete(id);
+    const searching = this.waiting.length;
+    const playing = this.open.size * 2;
+    // Everyone queueing or at a table is online, heartbeat or not.
+    const online = Math.max(this.seen.size, searching + playing);
+    return { online, searching, playing };
+  }
+
+  private async presence(request: Request): Promise<Response> {
+    const body: any = await request.json().catch(() => null);
+    if (body && typeof body.userId === "string") this.seen.set(body.userId, Date.now());
+    return Response.json(this.counts());
+  }
+
+  private async tableDone(request: Request): Promise<Response> {
+    const body: any = await request.json().catch(() => null);
+    if (body && typeof body.tableId === "string") this.open.delete(body.tableId);
+    return Response.json({ ok: true });
+  }
+
   private broadcastWaiting() {
-    const msg = JSON.stringify({ type: "waiting", count: this.waiting.length });
+    const c = this.counts();
+    const msg = JSON.stringify({ type: "waiting", count: c.searching, online: c.online, playing: c.playing });
     for (const w of this.waiting) safeSend(w.ws, msg);
   }
 
@@ -165,6 +201,8 @@ export class PoolRooms {
       for (const s of seats) safeSend(s.ws, JSON.stringify({ type: "error", message: "Could not open a table. Try again." }));
       return;
     }
+    this.open.set(tableId, Date.now());
+    for (const s of seats) this.seen.set(s.player.userId, Date.now());
     seats.forEach((s, seat) => {
       const other = seats[1 - seat].player;
       safeSend(
@@ -369,6 +407,7 @@ export class PoolRooms {
       await this.persist();
       this.broadcast({ type: "error", message: "Your opponent never sat down. Find another game." });
       await this.state.storage.setAlarm(now + KEEP_MS);
+      await this.tellLobbyDone();
       return;
     }
 
@@ -380,6 +419,7 @@ export class PoolRooms {
       meta.reason = "Both players left";
       await this.persist();
       await this.state.storage.setAlarm(now + KEEP_MS);
+      await this.tellLobbyDone();
       return;
     }
     if (away[0] || away[1]) {
@@ -417,6 +457,7 @@ export class PoolRooms {
     await this.persist();
     this.broadcast({ type: "final", winnerSeat, reason });
     await this.state.storage.setAlarm(meta.finishedAt + KEEP_MS);
+    await this.tellLobbyDone();
   }
 
   private async dispute() {
@@ -427,6 +468,19 @@ export class PoolRooms {
     await this.persist();
     this.broadcast({ type: "error", message: "The two screens disagreed about the result, so this game does not count." });
     await this.state.storage.setAlarm(meta.finishedAt + KEEP_MS);
+    await this.tellLobbyDone();
+  }
+
+  /** The lobby's "playing" count; best effort, it also expires tables itself. */
+  private async tellLobbyDone() {
+    const id = this.meta?.tableId;
+    if (!id) return;
+    try {
+      const lobby = this.env.POOL_ROOMS.get(this.env.POOL_ROOMS.idFromName("lobby"));
+      await lobby.fetch("https://pool/table-done", { method: "POST", body: JSON.stringify({ tableId: id }) });
+    } catch {
+      /* the lobby forgets it after TABLE_MAX_MS anyway */
+    }
   }
 
   private async verdict(): Promise<Response> {

@@ -389,6 +389,9 @@ export function awardsForOnlineGame(args: {
   aiRating?: number;
 }): CoinAward[] {
   if (!args.won) return [];
+  // Two players on one device: the same person can play both sides, so the
+  // result says nothing about anyone's skill. It is for fun and pays nothing.
+  if (args.mode === 2) return [];
 
   // A modest step per difficulty — one whole coin unit a level, so beating the
   // hardest AI is worth about half as much again as beating the easiest rather

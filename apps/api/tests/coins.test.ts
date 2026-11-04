@@ -279,10 +279,14 @@ describe("online play earns, but offline is clearly worth more", () => {
     expect(absurd).toBe(hard);
   });
 
-  it("pays two players on one device the same as the AI, since neither is verifiable", () => {
-    const vsAi = totalOf(awardsForOnlineGame({ won: true, mode: 1, aiRating: 1 }));
-    const vsFriend = totalOf(awardsForOnlineGame({ won: true, mode: 2 }));
-    expect(vsFriend).toBe(vsAi);
+  it("pays nothing for two players on one device, since one person can play both sides", () => {
+    expect(awardsForOnlineGame({ won: true, mode: 2 })).toEqual([]);
+  });
+
+  it("pays a real online opponent the same as the hardest AI", () => {
+    const hard = totalOf(awardsForOnlineGame({ won: true, mode: 1, aiRating: 3 }));
+    const online = totalOf(awardsForOnlineGame({ won: true, mode: 3, opponentName: "Asha" }));
+    expect(online).toBe(hard);
   });
 
   it("never pays a negative amount, so an online loss costs nothing either", () => {
