@@ -13,7 +13,7 @@ type AuthFormProps = {
 const content = {
   login: {
     title: "Welcome back",
-    subtitle: "Your nights, coins and trophies are right where you left them",
+    subtitle: "Your fights, coins and trophies are right where you left them",
     submit: "Log in",
     endpoint: "/api/auth/login",
   },
@@ -209,7 +209,7 @@ export function AuthForm({ mode }: AuthFormProps) {
             </div>
           ) : (
             <p className="muted">
-              You'll appear as <strong style={{ color: "var(--text)" }}>{effectiveName}</strong>{" "}
+              You'll appear as <strong style={{ color: "var(--text-primary)" }}>{effectiveName}</strong>{" "}
               <button
                 type="button"
                 onClick={() => setEditingName(true)}

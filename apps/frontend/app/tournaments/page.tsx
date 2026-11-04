@@ -122,7 +122,7 @@ export default function TournamentsPage() {
         <div className="app-header slide-in">
           <div className="header-info">
             <h1 className="glow-text">The Arena</h1>
-            <p className="muted">Pool, football, tennis, badminton, pickleball and table tennis nights, run by the people whose tables and courts they are.</p>
+            <p className="muted">Pool, football, tennis, badminton, pickleball and table tennis fights, run by the people whose tables and courts they are.</p>
           </div>
           <div className="header-actions" style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
             <div className="tab-switcher-v2">
@@ -149,7 +149,7 @@ export default function TournamentsPage() {
                 <span className="host-cta-plus" aria-hidden="true">+</span>
                 <span className="host-cta-text">
                   <span className="host-cta-label">Host Arena</span>
-                  <span className="host-cta-sub">Run your own night</span>
+                  <span className="host-cta-sub">Run your own fight</span>
                 </span>
               </Link>
             )}
@@ -268,7 +268,7 @@ export default function TournamentsPage() {
                 <div className="hall-stats">
                   <div className="hall-stat">
                     <span className="hall-stat-value">{past.length}</span>
-                    <span className="hall-stat-label">{past.length === 1 ? "Night played" : "Nights played"}</span>
+                    <span className="hall-stat-label">{past.length === 1 ? "Fight played" : "Fights played"}</span>
                   </div>
                   <div className="hall-stat">
                     <span className="hall-stat-value">{champions}</span>
@@ -323,7 +323,7 @@ export default function TournamentsPage() {
                               <span className="past-crown" aria-hidden="true">👑</span>
                               <span className="past-winner-name">{winners.map((w) => w.name).join(" & ")}</span>
                               <span className="past-winner-how">
-                                {shared ? `shared the title ${splitWays} ways` : decidedBy ?? "took the night"}
+                                {shared ? `shared the title ${splitWays} ways` : decidedBy ?? "took the fight"}
                               </span>
                             </div>
                           ) : (
@@ -444,7 +444,8 @@ export default function TournamentsPage() {
         .status-badge.OPEN { background: rgba(16, 185, 129, 0.1); color: var(--gold); border: 1px solid rgba(16, 185, 129, 0.2); }
         .status-badge.IN_PROGRESS { background: rgba(245, 158, 11, 0.1); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.2); }
 
-        .tournament-title { font-size: 1.25rem; font-weight: 800; margin-bottom: 0.5rem; background: linear-gradient(to right, #fff, #94a3b8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        /* Plain theme text: a white-to-grey gradient vanished on the light theme. */
+        .tournament-title { font-size: 1.25rem; font-weight: 800; margin-bottom: 0.5rem; color: var(--text-primary); }
         .tournament-type { font-size: 0.65rem; font-weight: 700; color: var(--text-muted); letter-spacing: 1px; }
 
         .card-footer { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 2rem; }
