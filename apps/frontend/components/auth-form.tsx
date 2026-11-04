@@ -12,14 +12,14 @@ type AuthFormProps = {
 
 const content = {
   login: {
-    title: "Welcome Back",
-    subtitle: "Sign in to your tournament dashboard",
+    title: "Welcome back",
+    subtitle: "Your nights, coins and trophies are right where you left them",
     submit: "Log in",
     endpoint: "/api/auth/login",
   },
   signup: {
     title: "Create your account",
-    subtitle: "Two fields and you're in",
+    subtitle: "One tap with Google, or just an email and a password",
     submit: "Create account",
     endpoint: "/api/auth/signup",
   },
@@ -129,29 +129,6 @@ export function AuthForm({ mode }: AuthFormProps) {
         <p className="muted" style={{ fontSize: "0.9rem" }}>{content[mode].subtitle}</p>
       </div>
 
-      {isSignup && (
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "8px",
-            padding: "10px 14px",
-            borderRadius: "10px",
-            background: "rgba(245, 158, 11, 0.08)",
-            border: "1px solid rgba(245, 158, 11, 0.25)",
-            fontSize: "0.85rem",
-            fontWeight: 700,
-            color: "var(--gold)",
-          }}
-        >
-          {/* Was "Rs 1,000 credited to your wallet on signup" — untrue since
-              Phase 0, and an inducement we should not have been advertising
-              for a service that runs games. */}
-          🪙 Earn WTA Coins every time you play
-        </div>
-      )}
-
       <GoogleButton mode={mode} onSignedIn={goNext} onError={setError} />
 
       <div>
@@ -162,7 +139,6 @@ export function AuthForm({ mode }: AuthFormProps) {
           type="email"
           inputMode="email"
           autoComplete="email"
-          autoFocus
           required
           placeholder="you@example.com"
           value={email}
