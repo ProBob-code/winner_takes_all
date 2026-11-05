@@ -342,7 +342,7 @@ function ballCss(n){const c=colorOf(n),s=`rgb(${c})`,hl='radial-gradient(circle 
   return n>8?`${hl},radial-gradient(circle,transparent 60%,rgba(0,0,0,.35)),linear-gradient(180deg,#f3f0e8 0 27%,${s} 27% 73%,#f3f0e8 73%)`:`${hl},radial-gradient(circle,${s} 55%,rgba(0,0,0,.55) 120%)`;}
 const groupOf=n=>n<8?'solid':'stripe';
 const MOODTAG={hype:'dance,gif',smug:'funny,gif',angry:'angry,gif',sad:'sad',shocked:'shocked',sleepy:'sleepy,gif',cute:'cute,gif'};
-const COMBO_COIN=1000,COMBO_MAX=4,FINE=0.0009,AIM_K=0.6;
+const COMBO_COIN=1000,COMBO_MAX=4,FINE=0.0009,AIM_K=0.6,TICK=1/240;
 const GOODEV={break_pot:1,long_pot:1,group:1,on_eight:1,win:1,combo:1};
 const LINES={"trash_pregame":["Rack 'em. I'll make this quick.","Brought a cue? Should've brought excuses.","I've beaten toasters with more talent.","Relax. Losing is a skill you've mastered.","You break, I break your spirit.","Hope your ego is insured.","Tonight's forecast: you, crying.","I'd go easy on you, but I don't do charity.","Welcome to your public humiliation.","Chalk up. It won't help.","Fun fact: nobody remembers second place.","I've seen your stats. Brave of you to show up.","Let's get this beatdown started.","You're not my opponent. You're my warm-up.","Take a good look at the crown. Last time you'll see it."],
  "trash_foul_scratch":["Scratch. Truly elite stupidity.","You potted the cue ball. Bold strategy.","Thanks for the ball in hand. Generous loser.","The cue ball fled. Smart ball.","Even the cue ball wants off your team.","Scratch. Your trademark move.","Gift received. You're too kind.","That pocket wasn't for you, genius.","Scratching again? It's almost a talent."],
@@ -529,8 +529,9 @@ class Component extends DCLogic {
     const g=this.g;
     if(g.stroke){g.stroke.t+=dt;if(g.stroke.t>=.075){const p=g.stroke.p;g.stroke=null;this.launch(p);}}
     if(g.phase==='moving'){
-      let mv=0;g.balls.forEach(b=>{if(b.on&&!b.sink)mv=Math.max(mv,Math.hypot(b.vx,b.vy));});
-      const n=clamp(Math.ceil(mv*dt/(R*.35)),1,80),h=dt/n;for(let i=0;i<n;i++)this.step(h);
+      let mv=0;this.acc=(this.acc||0)+dt;let tk=0;
+      while(this.acc>=TICK&&tk<16&&g.phase==='moving'){this.acc-=TICK;tk++;let m2=0;for(const b of g.balls)if(b.on&&!b.sink){const v=b.vx*b.vx+b.vy*b.vy;if(v>m2)m2=v;}const n=clamp(Math.ceil(Math.sqrt(m2)*TICK/(R*.35)),1,80),h=TICK/n;for(let i=0;i<n;i++)this.step(h);}
+      g.balls.forEach(b=>{if(b.on&&!b.sink)mv=Math.max(mv,Math.sqrt(b.vx*b.vx+b.vy*b.vy));});
       g.balls.forEach(b=>{if(b.sink){const S=b.sink,p=S.p;for(let k=0;k<6;k++){const hh=dt/6;S.t+=hh/.55;S.vx=(S.vx+(p.x-S.x)*70*hh)*(1-3.2*hh);S.vy=(S.vy+(p.y-S.y)*70*hh)*(1-3.2*hh);S.x+=S.vx*hh;S.y+=S.vy*hh;
           const sp=Math.hypot(S.vx,S.vy);if(sp>1){b.M=rotM(b.M,-S.vy/sp,S.vx/sp,sp*hh/R);b.dirty=true;}
           const lim=p.vr-R*(1-.3*Math.min(1,S.t))*.85,dx=S.x-p.x,dy=S.y-p.y,d=Math.hypot(dx,dy);if(S.t>.1&&d>lim){const nx=dx/d,ny=dy/d,vn=S.vx*nx+S.vy*ny;S.x=p.x+nx*lim;S.y=p.y+ny*lim;if(vn>0){S.vx-=1.45*vn*nx;S.vy-=1.45*vn*ny;if(vn>90)this.sound('rail',vn/1800);}}}
@@ -554,7 +555,7 @@ class Component extends DCLogic {
 
   step(h){
     const g=this.g,bs=g.balls,live=bs.filter(b=>b.on&&!b.sink);
-    for(const b of live){if(b.vx||b.vy){b.x+=b.vx*h;b.y+=b.vy*h;const s=Math.hypot(b.vx,b.vy);b.M=rotM(b.M,-b.vy/s,b.vx/s,s*h/R);b.ra=(b.ra||0)+s*h/R;if(b.ra>.022){b.ra=0;b.dirty=true;b.oz=true;}}}
+    for(const b of live){if(b.vx||b.vy){b.x+=b.vx*h;b.y+=b.vy*h;const s=Math.sqrt(b.vx*b.vx+b.vy*b.vy);b.M=rotM(b.M,-b.vy/s,b.vx/s,s*h/R);b.ra=(b.ra||0)+s*h/R;if(b.ra>.022){b.ra=0;b.dirty=true;b.oz=true;}}}
     for(let i=0;i<live.length;i++)for(let j=i+1;j<live.length;j++){const a=live[i],b=live[j],dx=b.x-a.x,dy=b.y-a.y,d2=dx*dx+dy*dy;
       if(d2<4*R*R&&d2>1e-9){const d=Math.sqrt(d2),nx=dx/d,ny=dy/d,ov=(2*R-d)/2;a.x-=nx*ov;a.y-=ny*ov;b.x+=nx*ov;b.y+=ny*ov;
         const vr=(a.vx-b.vx)*nx+(a.vy-b.vy)*ny;if(vr>0){const imp=vr*.975;a.vx-=imp*nx;a.vy-=imp*ny;b.vx+=imp*nx;b.vy+=imp*ny;
@@ -566,8 +567,8 @@ class Component extends DCLogic {
           if(vn<0){b.vx-=1.76*vn*nx;b.vy-=1.76*vn*ny;const tx=-ny,ty=nx,vt=b.vx*tx+b.vy*ty;b.vx-=tx*vt*.06;b.vy-=ty*vt*.06;
             const sh=g.shot;if(b.n===0&&sh&&sh.sx){b.vx+=tx*sh.sx*(-vn)*.4;b.vy+=ty*sh.sx*(-vn)*.4;sh.sx*=.5;}this.sound('rail',-vn/1500);}}}
       for(const p of POCKETS){const dx=b.x-p.x,dy=b.y-p.y;if(dx*dx+dy*dy<p.r*p.r){this.pot(b,p);break;}}
-      if(!b.sink&&(b.x<-26||b.x>1026||b.y<-26||b.y>526)){let best=POCKETS[0],bd=1e9;POCKETS.forEach(p=>{const q=Math.hypot(b.x-p.x,b.y-p.y);if(q<bd){bd=q;best=p;}});this.pot(b,best);}
-      if(b.sink)continue;const s=Math.hypot(b.vx,b.vy);if(s>0){let ns=s-(s<40?42:68)*h-s*.26*h;if(ns<1)ns=0;const f=ns/s;b.vx*=f;b.vy*=f;}}
+      if(!b.sink&&(b.x<-26||b.x>1026||b.y<-26||b.y>526)){let best=POCKETS[0],bd=1e9;POCKETS.forEach(p=>{const qx=b.x-p.x,qy=b.y-p.y,q=qx*qx+qy*qy;if(q<bd){bd=q;best=p;}});this.pot(b,best);}
+      if(b.sink)continue;const s=Math.sqrt(b.vx*b.vx+b.vy*b.vy);if(s>0){let ns=s-(s<40?42:68)*h-s*.26*h;if(ns<1)ns=0;const f=ns/s;b.vx*=f;b.vy*=f;}}
   }
   pot(b,p){b.sink={t:0,x:b.x,y:b.y,vx:b.vx*.85,vy:b.vy*.85,p};b.vx=b.vy=0;const sh=this.g.shot;if(sh){sh.potted.push(b.n);if(b.n===0)sh.cue=true;if(b.n===8)sh.eightP=POCKETS.indexOf(p);
       if(!sh.reacted){const g=this.g,gp=g.groups[g.turn];if(b.n===0){sh.reacted=true;if(Math.random()<.55)this.react('foul_scratch',g.turn);}else if(b.n!==8&&(sh.isBreak||!gp||groupOf(b.n)===gp)){sh.reacted=true;if(sh.isBreak||sh.hitD>500||Math.random()<.4)this.react(sh.isBreak?'break_pot':sh.hitD>500?'long_pot':'pot',g.turn);}}}(this.g.flashes||(this.g.flashes=[])).push({p,t:0,n:b.n});if(b.n!==0){this.g.chain=(this.g.chain||0)+1;this.chime(this.g.chain);}this.g.quake={t:0,a:b.n===8?1.7:b.n===0?.7:1};this.sound('pocket',.8);}
@@ -709,8 +710,10 @@ class Component extends DCLogic {
   }
   queueAI(){const g=this.g;if(g.mode==='system'&&g.turn===1&&g.phase==='aim')g.ai={stage:'wait',t:0};}
   shoot(p){const g=this.g;this.aimLock=false;if(this.needCall()&&g.called==null){g.power=0;this.sync();this.toast('On the 8 — tap a pocket to call it first');return;}g.stroke={t:0,p,pull:p*75};}
-  launch(p){
-    this.g.shotsN=(this.g.shotsN||0)+1;if(this.g.mode==='online'&&!this.netRemote&&this.g.turn===this.g.seat){const g0=this.g,c0=g0.balls[0];this.netSend({type:'shot',n:g0.shotsN,shot:{a:g0.aim,p,sx:g0.spin.x,sy:g0.spin.y,cx:c0.x,cy:c0.y,called:g0.called}});}const g=this.g,cue=g.balls[0],sp=80+2820*Math.pow(p,1.3),dx=Math.cos(g.aim),dy=Math.sin(g.aim);cue.vx=dx*sp;cue.vy=dy*sp;
+  launch(p,rv){
+    this.acc=0;this.g.shotsN=(this.g.shotsN||0)+1;const g=this.g,cue=g.balls[0];let dx,dy,vx,vy;if(rv&&rv.length===4){[vx,vy,dx,dy]=rv;}else{const sp=80+2820*Math.pow(p,1.3);dx=Math.cos(g.aim);dy=Math.sin(g.aim);vx=dx*sp;vy=dy*sp;}
+    if(g.mode==='online'&&!this.netRemote&&g.turn===g.seat)this.netSend({type:'shot',n:g.shotsN,shot:{a:g.aim,p,sx:g.spin.x,sy:g.spin.y,cx:cue.x,cy:cue.y,called:g.called,v:[vx,vy,dx,dy],balls:g.balls.map(b=>[b.n,b.x,b.y,b.on&&!b.sink?1:0])}});
+    cue.vx=vx;cue.vy=vy;
     const me=g.turn,grp=g.groups[me];
     g.shot={cx0:cue.x,cy0:cue.y,hitD:0,first:null,potted:[],cue:false,dx,dy,sy:g.spin.y,sx:g.spin.x,spinUsed:false,isBreak:g.isBreak,cleared:!!grp&&this.left(grp)===0,called:g.called,eightP:null};g.called=null;g.shotRemote=!!this.netRemote;
     this.shotLock=false;g.phase='moving';g.ballInHand=false;g.power=0;this.sound('cue',.3+p*.7);g.spin={x:0,y:0};this.sync();
@@ -832,18 +835,22 @@ class Component extends DCLogic {
     if(m.type==='error'){this.toast(m.message||'Table error');return;}
     if(m.type==='aim'||m.type==='shot'||m.type==='settled')this.inbox.push(m);}
   netTick(dt){const g=this.g;if(g.mode!=='online'||!g.inGame)return;
-    if(g.phase==='aim'&&this.human()){this.aimT=(this.aimT||0)+dt;if(this.aimT>.1){this.aimT=0;const c=g.balls[0];
-      this.netSend({type:'aim',a:+g.aim.toFixed(4),p:+(g.power||0).toFixed(2),x:g.ballInHand?Math.round(c.x*10)/10:null,y:g.ballInHand?Math.round(c.y*10)/10:null});}}
+    if(g.phase==='aim'&&this.human()){this.aimT=(this.aimT||0)+dt;this.aimK=(this.aimK||0)+dt;const c=g.balls[0],L=this.aimL||{};
+      const moved=Math.abs((L.a||0)-g.aim)>2e-4||Math.abs((L.p||0)-(g.power||0))>.006||(g.ballInHand&&(L.x!==c.x||L.y!==c.y));
+      if(this.aimT>.05&&(moved||this.aimK>1)){this.aimT=0;this.aimK=0;this.aimL={a:g.aim,p:g.power||0,x:c.x,y:c.y};
+      this.netSend({type:'aim',a:+g.aim.toFixed(5),p:+(g.power||0).toFixed(3),x:g.ballInHand?Math.round(c.x*10)/10:null,y:g.ballInHand?Math.round(c.y*10)/10:null});}}
+    if(g.phase==='aim'&&!this.human()&&this.rAim){const r=this.rAim,k=Math.min(1,dt*16);let d=r.a-g.aim;while(d>Math.PI)d-=2*Math.PI;while(d<-Math.PI)d+=2*Math.PI;g.aim+=d*k;g.power+=(r.p-(g.power||0))*k;}
     const box=this.inbox||[];
     while(box.length){const m=box[0];
-      if(m.type==='aim'){box.shift();if(g.phase==='aim'&&!this.human()){g.aim=m.a;g.power=m.p||0;if(m.x!=null&&g.ballInHand){const c=g.balls[0];Object.assign(c,{x:m.x,y:m.y,on:true,dirty:true});}}continue;}
+      if(m.type==='aim'){box.shift();if(g.phase==='aim'&&!this.human()){if(!this.rAim){g.aim=m.a;g.power=m.p||0;}this.rAim={a:m.a,p:m.p||0};if(m.x!=null&&g.ballInHand){const c=g.balls[0];Object.assign(c,{x:m.x,y:m.y,on:true,dirty:true});}}continue;}
       if(m.type==='shot'){if(g.phase!=='aim'||this.human()||g.awaitSnap||g.stroke)return;box.shift();const sh=m.shot,c=g.balls[0];
-        Object.assign(c,{x:sh.cx,y:sh.cy,on:true,sink:null,vx:0,vy:0,dirty:true});g.aim=sh.a;g.spin={x:sh.sx||0,y:sh.sy||0};g.called=sh.called;
-        this.netRemote=true;this.launch(sh.p);this.netRemote=false;continue;}
+        if(Array.isArray(sh.balls))sh.balls.forEach(([n,x,y,on])=>{const b=g.balls.find(q=>q.n===n);if(b)Object.assign(b,{x,y,on:!!on,sink:null,vx:0,vy:0,dirty:true});});
+        Object.assign(c,{x:sh.cx,y:sh.cy,on:true,sink:null,vx:0,vy:0,dirty:true});g.aim=sh.a;g.power=0;this.rAim=null;g.spin={x:sh.sx||0,y:sh.sy||0};g.called=sh.called;
+        this.netRemote=true;this.launch(sh.p,sh.v);this.netRemote=false;continue;}
       if(m.type==='settled'){if(g.phase==='moving'||g.stroke)return;box.shift();this.applySnap(m.snap);continue;}
       box.shift();}}
-  snapNow(over){const g=this.g;return {n:g.shotsN||0,balls:g.balls.map(b=>[b.n,Math.round(b.x*100)/100,Math.round(b.y*100)/100,b.on&&!b.sink?1:0]),turn:g.turn,groups:g.groups,ballInHand:g.ballInHand,kitchen:g.kitchen,isBreak:g.isBreak,over:over||null};}
-  applySnap(sn){const g=this.g;g.awaitSnap=false;if(!sn)return;
+  snapNow(over){const g=this.g;return {n:g.shotsN||0,balls:g.balls.map(b=>[b.n,b.x,b.y,b.on&&!b.sink?1:0]),turn:g.turn,groups:g.groups,ballInHand:g.ballInHand,kitchen:g.kitchen,isBreak:g.isBreak,over:over||null};}
+  applySnap(sn){const g=this.g;g.awaitSnap=false;this.rAim=null;if(!sn)return;
     (sn.balls||[]).forEach(([n,x,y,on])=>{const b=g.balls.find(q=>q.n===n);if(b)Object.assign(b,{x,y,on:!!on,sink:null,vx:0,vy:0,dirty:true});});
     g.shotsN=Math.max(g.shotsN||0,sn.n||0);
     if(sn.over){this.netFinal=true;this.finish(sn.over.w,sn.over.reason||'');this.netFinal=false;return;}

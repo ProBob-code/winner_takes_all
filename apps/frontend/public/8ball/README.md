@@ -32,7 +32,15 @@ It only runs inside `/play/8ball`. Opened directly, it sends the browser there.
   - Combo points (pts) are still shown for everyone, as score.
 - **vs Online:** real players, using the `PoolRooms` Durable Object in `apps/api`.
   - The game opens `/api/pool/lobby`, shows a versus screen when matched, then opens `/api/pool/table/<uuid>`.
-  - The shooter sends `aim`, `shot` and then `settled`. The other screen replays the shot, then snaps to `settled`.
+  - The shooter sends `aim`, `shot` and then `settled`. The other screen replays the shot, then confirms it with `settled`.
+  - **The replay is exact, not approximate.** Three things make it so:
+    - Physics runs in fixed ticks of 1/240 s (`TICK`), whatever the frame rate.
+    - A step uses only correctly rounded maths (`+ - * /` and `Math.sqrt`, never `Math.hypot`).
+    - `shot` carries every ball's exact position and the cue's exact velocity (`v`).
+
+    Both screens therefore compute the same shot bit for bit. In a two-player test with one screen's CPU slowed 4×, the replay matched the shooter on all 8 shots to 0.000000 units. Before this, balls jumped by up to 705 units when `settled` landed.
+  - Snapshots go at full precision. `aim` is sent only when it changes (at most 20 a second), and the other screen glides into it rather than jumping.
+  - The table Durable Object relays `shot` and `settled` before it writes them to storage, so the save never delays the replay.
   - Both screens send `result`. The server decides, and the coin claim reads that verdict.
   - The menu shows how many players are online. These are real heartbeats from `POST /api/pool/presence`, counted by the lobby.
 - **Host messages:**

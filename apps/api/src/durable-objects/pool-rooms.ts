@@ -332,16 +332,18 @@ export class PoolRooms {
     }
 
     switch (msg.type) {
+      // Passed on first and saved after: the other screen is replaying this
+      // shot live, so a storage write must never sit between the two.
       case "shot":
+        this.toOther(seat, raw);
         meta.shots = Math.max(meta.shots + 1, Number(msg.n) || 0);
         await this.persist();
-        this.toOther(seat, raw);
         return;
 
       case "settled":
+        this.toOther(seat, raw);
         meta.snapshot = msg.snap ?? null;
         await this.persist();
-        this.toOther(seat, raw);
         return;
 
       case "resign":
