@@ -392,4 +392,6 @@ export const claimOnlineGameSchema = z.object({
   /** How long the game ran, in seconds, and how many shots were taken. */
   seconds: z.coerce.number().int().min(0).max(86_400),
   shots: z.coerce.number().int().min(0).max(10_000),
+  /** Combos the claiming player made (two or more pots in a row). */
+  combos: z.coerce.number().int().min(0).max(100).optional(),
 });

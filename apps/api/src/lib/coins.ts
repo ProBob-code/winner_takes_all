@@ -92,6 +92,14 @@ export type CoinReason =
    */
   | "ONLINE_WON"
   /**
+   * Combos in a browser game that was won: two or more pots in a row.
+   *
+   * Paid with the win and never without it, so the rule "only the winner
+   * keeps the coins" holds. Capped per game (COMBO_COINS_MAX_PER_GAME) and
+   * counted against the online daily ceiling like the win itself.
+   */
+  | "ONLINE_COMBO"
+  /**
    * Signing in on a day you had not yet.
    *
    * The one award that is not for playing. It exists so somebody who creates
@@ -180,7 +188,19 @@ export const COIN_AWARDS: Record<CoinReason, number> = {
   // makes the easy setting pointless. Three keeps the step meaningful and
   // the spread sane at roughly two thirds.
   ONLINE_WON: 3 * COIN_UNIT,
+  /** Per combo in a won browser game, up to COMBO_COINS_MAX_PER_GAME combos. */
+  ONLINE_COMBO: 1 * COIN_UNIT,
 };
+
+/**
+ * The most combos one browser game pays for.
+ *
+ * Four, so a won game with a run of combos is worth at most 5k + 4k = 9k:
+ * still well under one frame at a venue (15k), which is the order the whole
+ * schedule keeps. The count comes from the player's own screen, so the cap
+ * is what keeps a forged report from being worth much.
+ */
+export const COMBO_COINS_MAX_PER_GAME = 4;
 
 /**
  * The most that can be earned from browser play in one day.
@@ -200,7 +220,7 @@ export const ONLINE_DAILY_CAP = 25 * COIN_UNIT;
  * before browser play became winner-only. It has to keep counting against the
  * cap or an account that earned it could exceed the ceiling for the day.
  */
-export const ONLINE_REASONS: string[] = ["ONLINE_PLAYED", "ONLINE_WON"];
+export const ONLINE_REASONS: string[] = ["ONLINE_PLAYED", "ONLINE_WON", "ONLINE_COMBO"];
 
 /**
  * The shortest a browser game can be and still count.
@@ -387,6 +407,8 @@ export function awardsForOnlineGame(args: {
   opponentName?: string;
   /** The AI's difficulty, 1 upwards. Ignored outside AI mode. */
   aiRating?: number;
+  /** Combos the winner made in the game. Paid up to COMBO_COINS_MAX_PER_GAME. */
+  combos?: number;
 }): CoinAward[] {
   if (!args.won) return [];
   // Two players on one device: the same person can play both sides, so the
@@ -401,7 +423,7 @@ export function awardsForOnlineGame(args: {
     args.mode === 1 ? Math.min(Math.max(args.aiRating ?? 1, 1), 3) : args.mode === 3 ? 3 : 1;
   const bonus = (difficulty - 1) * COIN_UNIT;
 
-  return [
+  const awards: CoinAward[] = [
     {
       reason: "ONLINE_WON",
       amount: COIN_AWARDS.ONLINE_WON + bonus,
@@ -413,6 +435,16 @@ export function awardsForOnlineGame(args: {
             : "Won a game",
     },
   ];
+
+  const combos = Math.min(Math.max(Math.floor(args.combos ?? 0) || 0, 0), COMBO_COINS_MAX_PER_GAME);
+  if (combos > 0) {
+    awards.push({
+      reason: "ONLINE_COMBO",
+      amount: combos * COIN_AWARDS.ONLINE_COMBO,
+      description: `${combos} combo${combos === 1 ? "" : "s"} in a won game`,
+    });
+  }
+  return awards;
 }
 
 /**

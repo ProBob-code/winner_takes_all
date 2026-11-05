@@ -13,6 +13,7 @@ import {
   awardsForOnlineGame,
   awardsForDailyVisit,
   ONLINE_DAILY_CAP,
+  COMBO_COINS_MAX_PER_GAME,
   ONLINE_REASONS,
   MIN_ONLINE_SECONDS,
   MIN_ONLINE_SHOTS,
@@ -287,6 +288,40 @@ describe("online play earns, but offline is clearly worth more", () => {
     const hard = totalOf(awardsForOnlineGame({ won: true, mode: 1, aiRating: 3 }));
     const online = totalOf(awardsForOnlineGame({ won: true, mode: 3, opponentName: "Asha" }));
     expect(online).toBe(hard);
+  });
+
+  it("pays combos on top of a win, one unit each", () => {
+    const plain = totalOf(awardsForOnlineGame({ won: true, mode: 1, aiRating: 2 }));
+    const withCombos = awardsForOnlineGame({ won: true, mode: 1, aiRating: 2, combos: 3 });
+    const combo = withCombos.find((a) => a.reason === "ONLINE_COMBO");
+    expect(combo?.amount).toBe(3 * COIN_AWARDS.ONLINE_COMBO);
+    expect(totalOf(withCombos)).toBe(plain + 3 * COIN_AWARDS.ONLINE_COMBO);
+  });
+
+  it("pays combos online too", () => {
+    const awards = awardsForOnlineGame({ won: true, mode: 3, combos: 2 });
+    expect(awards.map((a) => a.reason)).toEqual(["ONLINE_WON", "ONLINE_COMBO"]);
+  });
+
+  it("pays no combos without the win, or in pass and play", () => {
+    expect(awardsForOnlineGame({ won: false, mode: 1, combos: 4 })).toEqual([]);
+    expect(awardsForOnlineGame({ won: false, mode: 3, combos: 4 })).toEqual([]);
+    expect(awardsForOnlineGame({ won: true, mode: 2, combos: 4 })).toEqual([]);
+  });
+
+  it("caps combos per game so a forged count is worth little", () => {
+    const capped = awardsForOnlineGame({ won: true, mode: 3, combos: 99 }).find((a) => a.reason === "ONLINE_COMBO");
+    expect(capped?.amount).toBe(COMBO_COINS_MAX_PER_GAME * COIN_AWARDS.ONLINE_COMBO);
+    expect(awardsForOnlineGame({ won: true, mode: 3, combos: -2 }).length).toBe(1);
+  });
+
+  it("keeps the best possible browser game under one venue frame", () => {
+    const best = totalOf(awardsForOnlineGame({ won: true, mode: 3, combos: 99 }));
+    expect(best).toBeLessThan(COIN_AWARDS.FRAME_PLAYED + COIN_AWARDS.FRAME_WON);
+  });
+
+  it("counts combo coins against the online ceiling", () => {
+    expect(ONLINE_REASONS).toContain("ONLINE_COMBO");
   });
 
   it("never pays a negative amount, so an online loss costs nothing either", () => {

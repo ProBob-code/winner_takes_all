@@ -68,19 +68,34 @@ a{color:#e2b437;text-decoration:none}a:hover{color:#ffd35a}
 
   <div style="flex:1;min-height:0;display:flex;position:relative">
     <sc-if value="{{ landscape }}" hint-placeholder-val="{{ true }}">
-      <div style="flex:none;width:62px;display:flex;align-items:center;justify-content:center">
-        <div onPointerDown="{{ powDown }}" onPointerMove="{{ powMove }}" onPointerUp="{{ powUp }}" onPointerCancel="{{ powUp }}" style="position:relative;width:38px;height:min(66%,440px);border-radius:19px;background:linear-gradient(90deg,#0b0806,#1b150f 50%,#0b0806);border:1px solid {{ powBc }};box-shadow:inset 0 2px 10px rgba(0,0,0,.8){{ powSh }};cursor:ns-resize;touch-action:none;transition:border-color .15s,box-shadow .15s">
-          <div style="position:absolute;inset:3px;border-radius:16px;background:linear-gradient(0deg,#22c46a,#f2c21b 55%,#ec4a2a);clip-path:inset({{ powInv }} 0 0 0 round 16px);pointer-events:none"></div>
-          <div style="position:absolute;inset:3px;border-radius:16px;background:repeating-linear-gradient(0deg,transparent 0 calc(10% - 1px),rgba(0,0,0,.4) calc(10% - 1px) 10%);pointer-events:none"></div>
-          <div style="position:absolute;left:50%;bottom:12px;transform:translateX(-50%) rotate(180deg);writing-mode:vertical-rl;font-family:Montserrat;font-weight:800;font-size:9px;letter-spacing:.22em;color:rgba(255,255,255,.45);pointer-events:none">POWER</div>
+      <div style="flex:none;width:112px;display:flex;align-items:center;justify-content:center;gap:12px">
+        <div onPointerDown="{{ powDown }}" onPointerMove="{{ powMove }}" onPointerUp="{{ powUp }}" onPointerCancel="{{ powUp }}" title="Pull the cue down to set the power" style="position:relative;width:38px;height:min(66%,440px);cursor:ns-resize;touch-action:none">
+          <div style="position:absolute;inset:0;border-radius:19px;overflow:hidden;background:linear-gradient(90deg,#0b0806,#1b150f 50%,#0b0806);border:1px solid {{ powBc }};box-shadow:inset 0 2px 10px rgba(0,0,0,.8){{ powSh }};transition:border-color .15s,box-shadow .15s">
+            <div style="position:absolute;inset:3px;border-radius:16px;background:linear-gradient(180deg,#22c46a,#f2c21b 50%,#ec4a2a);clip-path:inset(0 0 {{ powClipV }} 0 round 16px);pointer-events:none"></div>
+            <div style="position:absolute;inset:3px;border-radius:16px;background:repeating-linear-gradient(180deg,transparent 0 calc(10% - 1px),rgba(0,0,0,.35) calc(10% - 1px) 10%);pointer-events:none"></div>
+            <div style="position:absolute;left:50%;top:7px;width:14px;height:14px;margin-left:-7px;border-radius:50%;background:radial-gradient(circle at 36% 30%,#fff,#e9e5dc 45%,#a9a398);box-shadow:0 1px 3px rgba(0,0,0,.6);pointer-events:none"></div>
+            <div style="position:absolute;left:50%;top:26px;bottom:-30px;width:12px;margin-left:-6px;transform:translateY({{ cueT }});pointer-events:none;filter:drop-shadow(0 2px 3px rgba(0,0,0,.7))">
+              <div style="width:100%;height:100%;clip-path:polygon(32% 0,68% 0,100% 100%,0 100%);background:linear-gradient(180deg,#4a86e0 0 5px,#f7f3ea 5px 13px,#ead29f 13px,#d4ae70 56%,#e2b437 56%,#e2b437 calc(56% + 3px),#6a3518 calc(56% + 3px),#2a130a)"></div>
+            </div>
+          </div>
           <div style="position:absolute;left:50%;top:-24px;transform:translateX(-50%);font-family:Montserrat;font-weight:900;font-size:12px;color:#f2c21b;opacity:{{ powOp }};transition:opacity .15s;pointer-events:none;white-space:nowrap">{{ powPct }}</div>
+          <div style="position:absolute;left:50%;bottom:-22px;transform:translateX(-50%);font-family:Montserrat;font-weight:800;font-size:8.5px;letter-spacing:.16em;color:#8d8378;pointer-events:none;white-space:nowrap">POWER</div>
+        </div>
+        <div onPointerDown="{{ fineDown }}" onPointerMove="{{ fineMove }}" onPointerUp="{{ fineUp }}" onPointerCancel="{{ fineUp }}" onWheel="{{ fineWheel }}" title="Drag for fine aim" style="position:relative;width:30px;height:min(46%,300px);cursor:ns-resize;touch-action:none">
+          <div style="position:absolute;inset:0;border-radius:15px;overflow:hidden;background:#0b0806;border:1px solid {{ fineBc }};box-shadow:inset 0 2px 10px rgba(0,0,0,.8);transition:border-color .15s">
+            <div style="position:absolute;inset:2px;border-radius:13px;background:repeating-linear-gradient(180deg,#4a3b2b 0 2px,#17110c 2px 7px);background-position:0 {{ ridgeOff }};pointer-events:none"></div>
+            <div style="position:absolute;inset:2px;border-radius:13px;background:linear-gradient(180deg,rgba(0,0,0,.9),transparent 32%,transparent 68%,rgba(0,0,0,.9));pointer-events:none"></div>
+            <div style="position:absolute;left:0;right:0;top:50%;height:2px;margin-top:-1px;background:#e2b437;box-shadow:0 0 8px #e2b437;pointer-events:none"></div>
+          </div>
+          <div style="position:absolute;left:50%;top:-24px;transform:translateX(-50%);font-family:Montserrat;font-weight:900;font-size:11px;color:#f2c21b;pointer-events:none;white-space:nowrap">{{ aimDeg }}°</div>
+          <div style="position:absolute;left:50%;bottom:-22px;transform:translateX(-50%);font-family:Montserrat;font-weight:800;font-size:8.5px;letter-spacing:.16em;color:#8d8378;pointer-events:none;white-space:nowrap">AIM</div>
         </div>
       </div>
     </sc-if>
     <div ref="{{ wrapRef }}" style="flex:1;min-width:0;min-height:0;position:relative">
       <canvas ref="{{ cvRef }}" onPointerDown="{{ pDown }}" onPointerMove="{{ pMove }}" onPointerUp="{{ pUp }}" onPointerCancel="{{ pUp }}" onWheel="{{ onWheel }}" style="position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:crosshair"></canvas>
       <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:5">{{ comboFx }}{{ foulFx }}{{ catFx }}{{ reactFx }}</div>
-      {{ feedFx }}
+      {{ feedFx }}{{ comboBarL }}
       <sc-for list="{{ trays }}" as="tr" hint-placeholder-count="2">
         <div style="position:absolute;{{ trayPos }};{{ tr.side }};display:flex;flex-direction:{{ tr.dir }};align-items:center;gap:7px;padding:4px 8px;border-radius:14px;background:rgba(10,7,5,.72);border:1px solid {{ tr.bc }};box-shadow:{{ tr.sh }};pointer-events:none">
           <span style="font-family:Montserrat;font-weight:800;font-size:8.5px;letter-spacing:.16em;color:{{ tr.lc }}">{{ tr.label }}</span>
@@ -137,11 +152,25 @@ a{color:#e2b437;text-decoration:none}a:hover{color:#ffd35a}
   </div>
 
   <sc-if value="{{ portrait }}" hint-placeholder-val="{{ false }}">
-    <div style="flex:none;padding:6px 16px 18px">
-      <div onPointerDown="{{ powDown }}" onPointerMove="{{ powMove }}" onPointerUp="{{ powUp }}" onPointerCancel="{{ powUp }}" style="position:relative;height:44px;border-radius:14px;background:linear-gradient(180deg,#0b0806,#1b150f 50%,#0b0806);border:1px solid rgba(226,180,55,.28);box-shadow:inset 0 2px 10px rgba(0,0,0,.8);touch-action:none">
-        <div style="position:absolute;inset:3px;border-radius:11px;background:linear-gradient(90deg,#22c46a,#f2c21b 55%,#ec4a2a);clip-path:inset(0 {{ powInv }} 0 0 round 11px);pointer-events:none"></div>
-        <div style="position:absolute;inset:3px;border-radius:11px;background:repeating-linear-gradient(90deg,transparent 0 calc(10% - 1px),rgba(0,0,0,.4) calc(10% - 1px) 10%);pointer-events:none"></div>
-        <div style="position:absolute;right:14px;top:50%;transform:translateY(-50%);font-family:Montserrat;font-weight:800;font-size:10px;letter-spacing:.22em;color:rgba(255,255,255,.5);pointer-events:none">POWER</div>
+    <div style="flex:none;padding:4px 12px 14px;display:flex;flex-direction:column;gap:7px">
+      {{ comboBarP }}
+      <div style="display:flex;gap:8px">
+        <div onPointerDown="{{ fineDown }}" onPointerMove="{{ fineMove }}" onPointerUp="{{ fineUp }}" onPointerCancel="{{ fineUp }}" aria-label="Fine aim" style="position:relative;flex:none;width:96px;height:46px;border-radius:14px;overflow:hidden;background:#0b0806;border:1px solid {{ fineBc }};box-shadow:inset 0 2px 10px rgba(0,0,0,.8);touch-action:none;transition:border-color .15s">
+          <div style="position:absolute;inset:2px;border-radius:12px;background:repeating-linear-gradient(90deg,#4a3b2b 0 2px,#17110c 2px 7px);background-position:{{ ridgeOff }} 0;pointer-events:none"></div>
+          <div style="position:absolute;inset:2px;border-radius:12px;background:linear-gradient(90deg,rgba(0,0,0,.92),transparent 34%,transparent 66%,rgba(0,0,0,.92));pointer-events:none"></div>
+          <div style="position:absolute;top:0;bottom:0;left:50%;width:2px;margin-left:-1px;background:#e2b437;box-shadow:0 0 8px #e2b437;pointer-events:none"></div>
+          <div style="position:absolute;left:50%;bottom:3px;transform:translateX(-50%);padding:1px 6px;border-radius:6px;background:rgba(10,7,5,.85);font-family:Montserrat;font-weight:900;font-size:10px;color:#f2c21b;pointer-events:none;white-space:nowrap">{{ aimDeg }}°</div>
+          <div style="position:absolute;left:50%;top:3px;transform:translateX(-50%);font-family:Montserrat;font-weight:800;font-size:7.5px;letter-spacing:.16em;color:#a59b8f;pointer-events:none">AIM</div>
+        </div>
+        <div onPointerDown="{{ powDown }}" onPointerMove="{{ powMove }}" onPointerUp="{{ powUp }}" onPointerCancel="{{ powUp }}" aria-label="Pull the cue back for power" style="position:relative;flex:1;min-width:0;height:46px;border-radius:14px;overflow:hidden;background:linear-gradient(180deg,#0b0806,#1b150f 50%,#0b0806);border:1px solid {{ powBc }};box-shadow:inset 0 2px 10px rgba(0,0,0,.8){{ powSh }};touch-action:none;transition:border-color .15s,box-shadow .15s">
+          <div style="position:absolute;inset:3px;border-radius:11px;background:linear-gradient(270deg,#22c46a,#f2c21b 50%,#ec4a2a);clip-path:inset(0 0 0 {{ powClipH }} round 11px);pointer-events:none"></div>
+          <div style="position:absolute;inset:3px;border-radius:11px;background:repeating-linear-gradient(90deg,transparent 0 calc(10% - 1px),rgba(0,0,0,.35) calc(10% - 1px) 10%);pointer-events:none"></div>
+          <div style="position:absolute;right:7px;top:50%;width:16px;height:16px;margin-top:-8px;border-radius:50%;background:radial-gradient(circle at 36% 30%,#fff,#e9e5dc 45%,#a9a398);box-shadow:0 1px 3px rgba(0,0,0,.6);pointer-events:none"></div>
+          <div style="position:absolute;top:50%;left:-30px;right:28px;height:11px;margin-top:-5.5px;transform:translateX(-{{ cueT }});pointer-events:none;filter:drop-shadow(0 2px 3px rgba(0,0,0,.7))">
+            <div style="width:100%;height:100%;clip-path:polygon(0 0,100% 32%,100% 68%,0 100%);background:linear-gradient(270deg,#4a86e0 0 5px,#f7f3ea 5px 13px,#ead29f 13px,#d4ae70 56%,#e2b437 56%,#e2b437 calc(56% + 3px),#6a3518 calc(56% + 3px),#2a130a)"></div>
+          </div>
+          <div style="position:absolute;left:12px;top:50%;transform:translateY(-50%);display:flex;align-items:center;gap:4px;padding:2px 8px;border-radius:8px;background:rgba(10,7,5,.78);font-family:Montserrat;font-weight:800;font-size:9.5px;letter-spacing:.14em;color:{{ pullC }};pointer-events:none;white-space:nowrap">{{ pullTxt }}</div>
+        </div>
       </div>
     </div>
   </sc-if>
@@ -255,7 +284,7 @@ a{color:#e2b437;text-decoration:none}a:hover{color:#ffd35a}
               <span style="flex:1;text-align:left;font-weight:700">{{ rc.name }}</span>
               <span style="color:#a59b8f">{{ rc.count }} combos</span>
               <span style="color:#f2c21b;font-weight:700">Best ×{{ rc.best }}</span>
-              <span style="display:flex;align-items:center;gap:3px;color:#f2c21b;font-weight:700"><i class="ph-fill ph-star"></i>{{ rc.coins }} pts</span>
+              <span style="display:flex;align-items:center;gap:3px;color:#f2c21b;font-weight:700"><i class="ph-fill ph-star"></i>{{ rc.coins }} pts</span><span style="display:{{ rc.ccd }};align-items:center;gap:3px;color:#ffd94d;font-weight:800"><i class="ph-fill ph-coin"></i>{{ rc.cc }}</span>
             </div>
           </sc-for>
           <div style="font-size:11px;color:#8d8378;text-align:left">All-time best combo: ×{{ allBest }}</div>
@@ -300,6 +329,7 @@ function ballCss(n){const c=colorOf(n),s=`rgb(${c})`,hl='radial-gradient(circle 
   return n>8?`${hl},radial-gradient(circle,transparent 60%,rgba(0,0,0,.35)),linear-gradient(180deg,#f3f0e8 0 27%,${s} 27% 73%,#f3f0e8 73%)`:`${hl},radial-gradient(circle,${s} 55%,rgba(0,0,0,.55) 120%)`;}
 const groupOf=n=>n<8?'solid':'stripe';
 const MOODTAG={hype:'dance,gif',smug:'funny,gif',angry:'angry,gif',sad:'sad',shocked:'shocked',sleepy:'sleepy,gif',cute:'cute,gif'};
+const COMBO_COIN=1000,COMBO_MAX=4,FINE=0.0009;
 const GOODEV={break_pot:1,long_pot:1,group:1,on_eight:1,win:1,combo:1};
 const LINES={"trash_pregame":["Rack 'em. I'll make this quick.","Brought a cue? Should've brought excuses.","I've beaten toasters with more talent.","Relax. Losing is a skill you've mastered.","You break, I break your spirit.","Hope your ego is insured.","Tonight's forecast: you, crying.","I'd go easy on you, but I don't do charity.","Welcome to your public humiliation.","Chalk up. It won't help.","Fun fact: nobody remembers second place.","I've seen your stats. Brave of you to show up.","Let's get this beatdown started.","You're not my opponent. You're my warm-up.","Take a good look at the crown. Last time you'll see it."],
  "trash_foul_scratch":["Scratch. Truly elite stupidity.","You potted the cue ball. Bold strategy.","Thanks for the ball in hand. Generous loser.","The cue ball fled. Smart ball.","Even the cue ball wants off your team.","Scratch. Your trademark move.","Gift received. You're too kind.","That pocket wasn't for you, genius.","Scratching again? It's almost a talent."],
@@ -372,7 +402,7 @@ class Component extends DCLogic {
     this.ro=new ResizeObserver(()=>this.layout()); this.ro.observe(this.wrapRef.current);
     this.layout();
     document.fonts&&document.fonts.load('900 30px Montserrat').then(()=>{this.gly=this.makeGlyphs();this.g.balls.forEach(b=>b.dirty=true);this.buildStatic();});
-    this.onKey=e=>{const g=this.g;if(g.phase!=='aim'||!this.human())return;if(e.key==='ArrowLeft'||e.key==='ArrowRight'){g.aim+=(e.key==='ArrowLeft'?-1:1)*(e.shiftKey?0.02:0.0025);e.preventDefault();}};
+    this.onKey=e=>{const g=this.g;if(g.phase!=='aim'||!this.human())return;if(e.key==='ArrowLeft'||e.key==='ArrowRight'){g.aim+=(e.key==='ArrowLeft'?-1:1)*(e.shiftKey?0.02:0.0025);this.aimLock=true;e.preventDefault();}};
     window.addEventListener('keydown',this.onKey);
     this.raf=requestAnimationFrame(this.loop);
   }
@@ -641,6 +671,8 @@ class Component extends DCLogic {
   namesFor(mode){const g=this.g,me=this.me();if(mode==='online')return g.onNames||[me,'Opponent'];if(mode==='system')return[me,'Machine · '+this.state.level];if(mode==='practice')return[me,'Practice'];return g.pvpNames||[me,'Player 2'];}
   me(){return (this.host&&this.host.name)||'You';}
   mySeat(){const g=this.g;return g.mode==='online'?(g.seat|0):0;}
+  comboPays(i){const g=this.g;return (g.mode==='system'||g.mode==='online')&&i===this.mySeat();}
+  comboCoins(i){const g=this.g,s=g.stats&&g.stats[i];return s&&this.comboPays(i)?Math.min(s.combos.length,COMBO_MAX)*COMBO_COIN:0;}
   fmtC(n){n=Math.max(0,Math.floor(+n||0));const t=x=>x.replace(/\.0$/,'');if(n>=1e6){const m=n/1e6;return (m<10?t(m.toFixed(1)):Math.round(m))+'M';}if(n>=1e3){const k=n/1e3;return (k<10?t(k.toFixed(1)):Math.round(k))+'K';}return String(n);}
   winFor(mode){return mode==='system'?(2+this.aiRating())*1000:mode==='online'?5000:0;}
   loadThen(mode,ms){ms=ms||1700;const nm=this.namesFor(mode);this.setState({menuOpen:false,spinOpen:false,pvpSetup:null,loading:{mode,a:nm[0],b:nm[1],t0:Date.now(),ms}});clearTimeout(this.loadT);this.loadT=setTimeout(()=>{this.setState({loading:null});this.start(mode);},ms);}
@@ -656,7 +688,7 @@ class Component extends DCLogic {
     clearTimeout(this.pgT);this.pgT=setTimeout(()=>{if(g.inGame&&g.phase==='aim')this.react('pregame',mode==='system'?0:g.turn);},650);
   }
   queueAI(){const g=this.g;if(g.mode==='system'&&g.turn===1&&g.phase==='aim')g.ai={stage:'wait',t:0};}
-  shoot(p){const g=this.g;if(this.needCall()&&g.called==null){g.power=0;this.sync();this.toast('On the 8 — tap a pocket to call it first');return;}g.stroke={t:0,p,pull:p*75};}
+  shoot(p){const g=this.g;this.aimLock=false;if(this.needCall()&&g.called==null){g.power=0;this.sync();this.toast('On the 8 — tap a pocket to call it first');return;}g.stroke={t:0,p,pull:p*75};}
   launch(p){
     this.g.shotsN=(this.g.shotsN||0)+1;if(this.g.mode==='online'&&!this.netRemote&&this.g.turn===this.g.seat){const g0=this.g,c0=g0.balls[0];this.netSend({type:'shot',n:g0.shotsN,shot:{a:g0.aim,p,sx:g0.spin.x,sy:g0.spin.y,cx:c0.x,cy:c0.y,called:g0.called}});}const g=this.g,cue=g.balls[0],sp=80+2820*Math.pow(p,1.3),dx=Math.cos(g.aim),dy=Math.sin(g.aim);cue.vx=dx*sp;cue.vy=dy*sp;
     const me=g.turn,grp=g.groups[me];
@@ -699,10 +731,10 @@ class Component extends DCLogic {
     const g=this.g,st=g.stats[i],nm=this.names()[i];
     const titles=['','','NICE!','GREAT COMBO!','AMAZING!','UNSTOPPABLE!','RAMPAGE!'],title=titles[n]||'LEGENDARY!';
     const mw=multi>=4?'QUAD POT':multi===3?'TRIPLE POT':multi===2?'DOUBLE POT':'';
-    const coins=5*n+(multi>=2?10*(multi-1):0);st.coins+=coins;st.best=Math.max(st.best,n);st.combos.push({n,coins});
+    const coins=5*n+(multi>=2?10*(multi-1):0);st.coins+=coins;st.best=Math.max(st.best,n);st.combos.push({n,coins});const paid=this.comboPays(i)&&st.combos.length<=COMBO_MAX;
     try{const ab=+localStorage.getItem('wta8.bestCombo')||0;if(n>ab)localStorage.setItem('wta8.bestCombo',String(n));}catch(e){}
     g.pulse={t:0,n};g.quake={t:0,a:Math.min(3.2,.9+n*.42),z:Math.min(.06,.012*n)};g.flash={t:0,a:Math.min(.6,.14+n*.08)};
-    this.cfxId=(this.cfxId||0)+1;g.comboFx={id:this.cfxId,n,title,mw,coins,nm};clearTimeout(this.cfxT);this.cfxT=setTimeout(()=>{g.comboFx=null;this.sync();},2300);
+    this.cfxId=(this.cfxId||0)+1;g.comboFx={id:this.cfxId,n,title,mw,coins,nm,paid};clearTimeout(this.cfxT);this.cfxT=setTimeout(()=>{g.comboFx=null;this.sync();},2300);
     const cv=this.cvRef.current,neon=!!this.felt().neon,cols=neon?['63,240,255','255,63,200','138,92,255','255,214,90']:['255,214,90','255,240,190','242,170,30','255,255,255'];
     if(cv){const cx=cv.width/2,cy=cv.height/2,cnt=Math.min(420,50+n*34);for(let k=0;k<cnt;k++){const a=Math.random()*6.283,sp=(220+Math.random()*760)*this.dpr*(0.7+n*.14);g.parts.push({x:cx,y:cy,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-150*this.dpr,life:1,dec:.55+Math.random()*.5,col:cols[k%cols.length],sz:(1.5+Math.random()*3)*this.dpr});}}
     this.hype(n);this.meow();g.catUrl=(this.catPool&&this.catPool.length&&Math.random()<.5?this.catPool.shift():null)||this.localCats[(this.catI++)%this.localCats.length];g.catCap=(g.mode==='system'&&i===1)?(['','','TOO EASY','CALCULATED','MACHINE GO BRRR','FLAWLESS','BOW DOWN'][n]||'UNBEATABLE'):(g.mode==='system'?(['','','NICE SHOT HOOMAN','MEOW-VELOUS','PURR-FECT','CAT-ASTROPHIC','PAWSOME'][n]||'LEGENDARY PURRR'):(['','','NICE SHOT','PAWSOME','FUR-REAL?','UNSTOPPABLE','LEGEND'][n]||'LEGENDARY'));const used=g.catUrl;setTimeout(()=>{if(used&&used.startsWith('blob:'))URL.revokeObjectURL(used);this.loadCat();},4000);(g.log||(g.log=[])).unshift({name:nm,n,coins});g.log=g.log.slice(0,6);const NW=['zero','one','two','three','four','five','six','seven','eight','nine','ten'],num=NW[n]||String(n);setTimeout(()=>this.speak([...(mw?[mw.charAt(0)+mw.slice(1).toLowerCase()+'!']:[]),'Combo '+num+'!',title.charAt(0)+title.slice(1).toLowerCase()]),330);
@@ -803,7 +835,7 @@ class Component extends DCLogic {
   hostSend(m){try{if(window.parent!==window)window.parent.postMessage(Object.assign({wtaCoins:true},m),location.origin);}catch(e){}}
   aiRating(){return ({Rookie:1,Pro:2,Legend:3})[this.state.level]||1;}
   hostStart(mode){const g=this.g;g.shotsN=0;g.t0=Date.now();g.reportedOver=false;this.setState({result:null});if(mode==='system')this.hostSend({type:'game_start',mode:1,aiRating:this.aiRating()});else if(mode==='pvp')this.hostSend({type:'game_start',mode:2});}
-  hostOver(w){const g=this.g;if(g.reportedOver||g.mode==='practice')return;g.reportedOver=true;this.setState({result:g.mode==='pvp'?{message:'Pass and play is just for fun, so it does not earn WTA Coins.'}:{pending:true}});const me0=g.mode==='online'?g.seat:0;this.hostSend({type:'game_over',mode:g.mode==='system'?1:g.mode==='online'?3:2,tableId:g.tableId,aiRating:this.aiRating(),won:w===me0,winner:w===me0?'p1':'p2',seconds:Math.round((Date.now()-(g.t0||Date.now()))/1000),shots:g.shotsN||0});}
+  hostOver(w){const g=this.g;if(g.reportedOver||g.mode==='practice')return;g.reportedOver=true;this.setState({result:g.mode==='pvp'?{message:'Pass and play is just for fun, so it does not earn WTA Coins.'}:{pending:true}});const me0=g.mode==='online'?g.seat:0;this.hostSend({type:'game_over',mode:g.mode==='system'?1:g.mode==='online'?3:2,tableId:g.tableId,aiRating:this.aiRating(),won:w===me0,winner:w===me0?'p1':'p2',seconds:Math.round((Date.now()-(g.t0||Date.now()))/1000),shots:g.shotsN||0,combos:(g.stats&&g.stats[me0]?g.stats[me0].combos.length:0)});}
   finish(w,reason){const g=this.g;if(g.mode==='online'){if(g.shotRemote&&!this.netFinal)return;if(!g.inGame)return;this.netSend({type:'result',winnerSeat:w,reason});if(!g.shotRemote&&!this.netFinal)this.netSend({type:'settled',n:g.shotsN||0,snap:this.snapNow({w,reason})});}this.hostOver(w);{const sys=g.mode==='system';const type=sys?(w===0?'win':'lose'):'win';const subj=sys?0:w;const ln=this.lineFor(type,subj);g.overLine=ln.text;g.overSpeaker=sys?'Machine · '+this.state.level:'Announcer';g.overGif=this.takeGif(sys?(w===0?'angry':'smug'):'hype');g.react=null;
 }
     {const nm=this.names(),hw=g.mode==='system'?w===0:g.mode==='online'?w===g.seat:true;if(hw){this.winJingle();setTimeout(()=>this.speak(g.mode==='pvp'?[nm[w]+' wins!','Winner takes all!']:['You win!','Winner takes all!']),900);}else{this.loseJingle();setTimeout(()=>this.speak(['You lost!','Sheeeesh!']),1500);}}
@@ -841,16 +873,30 @@ class Component extends DCLogic {
 
   pDown=(e)=>{this.initAudio();const g=this.g;if(!this.canShoot())return;const p=this.toW(e),cue=g.balls[0];
     if(this.needCall()){const pi=POCKETS.findIndex(q=>Math.hypot(q.x-p.x,q.y-p.y)<46);if(pi>=0){g.called=pi;this.toast('Pocket called — now take the shot');this.sync();return;}}e.currentTarget.setPointerCapture(e.pointerId);
-    if(g.ballInHand&&Math.hypot(p.x-cue.x,p.y-cue.y)<R*3.4){this.drag='cue';this.off={x:cue.x-p.x,y:cue.y-p.y};}else if(e.pointerType==='mouse'){this.drag='pull';this.p0=p;g.power=0;this.sync();}else{this.drag='aim';this.aimTo(p);}};
-  pMove=(e)=>{const g=this.g;if(!this.drag){if(e.pointerType==='mouse'&&this.canShoot()&&!this.powering)this.aimTo(this.toW(e));return;}const p=this.toW(e);
+    if(g.ballInHand&&Math.hypot(p.x-cue.x,p.y-cue.y)<R*3.4){this.drag='cue';this.off={x:cue.x-p.x,y:cue.y-p.y};}else if(e.pointerType==='mouse'){this.drag='pull';this.p0=p;g.power=0;this.sync();}else{this.drag='aim';this.aimLock=false;this.aimTo(p);}};
+  pMove=(e)=>{const g=this.g;if(!this.drag){if(e.pointerType==='mouse'&&this.canShoot()&&!this.powering&&!this.aimLock&&!this.fining)this.aimTo(this.toW(e));return;}const p=this.toW(e);
     if(this.drag==='aim')this.aimTo(p);
     else if(this.drag==='pull'){const pr=(this.p0.x-p.x)*Math.cos(g.aim)+(this.p0.y-p.y)*Math.sin(g.aim);const np=clamp(pr/170,0,1);if(Math.abs(np-g.power)>.004){g.power=np;this.sync();}}
     else this.moveCue(p.x+this.off.x,p.y+this.off.y);};
-  pUp=()=>{const g=this.g;if(this.drag==='pull'){if(g.power>.03&&this.canShoot())this.shoot(g.power);else{g.power=0;this.sync();}}this.drag=null;};
+  pUp=(e)=>{const g=this.g;if(this.drag==='pull'){if(g.power>.03&&this.canShoot())this.shoot(g.power);else{g.power=0;if(this.aimLock&&e&&e.clientX!=null){this.aimLock=false;this.aimTo(this.toW(e));}this.sync();}}this.drag=null;};
   aimTo(p){const cue=this.g.balls[0];if(Math.hypot(p.x-cue.x,p.y-cue.y)>R*.6)this.g.aim=Math.atan2(p.y-cue.y,p.x-cue.x);}
   moveCue(x,y){const g=this.g,cue=g.balls[0];x=clamp(x,R+1,(g.kitchen?250:W-R-1));y=clamp(y,R+1,H-R-1);if(g.balls.every(b=>!b.on||b.n===0||Math.hypot(b.x-x,b.y-y)>2*R+.5)){cue.x=x;cue.y=y;}}
-  setPow(e){const r=this.pr,f=this.state.portrait?(e.clientX-r.left)/r.width:(r.bottom-e.clientY)/r.height;this.g.power=clamp(f,0,1);this.sync();}
+  setPow(e){const r=this.pr,z=this.pz||{x:e.clientX,y:e.clientY},f=this.state.portrait?(z.x-e.clientX)/(r.width*.8):(e.clientY-z.y)/(r.height*.8);const np=clamp(f,0,1);if(Math.abs(np-this.g.power)>.003){this.g.power=np;this.sync();}}
 
+  comboBar(nm,inline){const g=this.g;if(!g.inGame&&g.phase!=='over')return null;if(!g.stats)return null;const E=React.createElement,neon=!!this.felt().neon;
+    const i=g.phase==='over'?this.mySeat():(g.mode==='practice'?0:g.turn),s=g.stats[i]||{streak:0,combos:[],best:0,coins:0},k=g.phase==='over'?0:s.streak;
+    const who=String(nm[i]).startsWith('Machine')?'Machine':String(nm[i]).trim().split(/\s+/)[0];
+    const me=this.mySeat(),mc=this.comboCoins(me),pays=this.comboPays(me);
+    const segs=Array.from({length:6},(_,q)=>E('div',{key:q,style:{width:inline?9:8,height:5,borderRadius:3,background:q<k?(neon?'linear-gradient(90deg,#3ff0ff,#ff3fc8)':'linear-gradient(90deg,#ffd94d,#ffb200)'):'rgba(255,255,255,.1)'}}));
+    const earn=pays?(i!==me?'You ':'')+(mc>0?`+${this.fmtC(mc)} on a win`:'+1K a combo on a win'):`${s.coins} pts`;
+    const kids=[E('i',{key:'f',className:'ph-fill ph-fire',style:{fontSize:13,color:k>=2?'#ff8a2a':'#6f665c'}}),
+      E('span',{key:'k',style:{fontFamily:'Montserrat',fontStyle:'italic',fontWeight:900,fontSize:14,color:k>=2?'#f2c21b':'#a59b8f',minWidth:22}},'×'+k),
+      inline&&typeof window!=='undefined'&&window.innerWidth<480?null:E('div',{key:'s',style:{display:'flex',gap:2,flex:'none'}},...segs),
+      E('span',{key:'t',style:{flex:1,minWidth:0,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',color:'#a59b8f'}},`${who} · ${s.combos.length} combo${s.combos.length===1?'':'s'} · best ×${s.best}`),
+      E('span',{key:'e',style:{flex:'none',display:'flex',alignItems:'center',gap:3,color:pays?'#ffd94d':'#f2c21b',fontWeight:800}},E('i',{className:pays?'ph-fill ph-coin':'ph-fill ph-star'}),earn)];
+    const box={display:'flex',alignItems:'center',gap:7,height:28,padding:'0 10px',borderRadius:10,background:'rgba(10,7,5,.72)',border:`1px solid ${k>=2?'rgba(242,194,27,.55)':'rgba(255,255,255,.08)'}`,fontSize:11.5,fontWeight:600,boxSizing:'border-box',transition:'border-color .2s'};
+    if(inline)return E('div',{style:box},...kids);
+    return E('div',{style:{...box,position:'absolute',left:'50%',top:6,transform:'translateX(-50%)',width:'min(440px,60%)',pointerEvents:'none',zIndex:4}},...kids);}
   renderVals(){
     const g=this.g,st=this.state,nm=this.names(),narrow=typeof window!=='undefined'&&window.innerWidth<720;
     const players=[0,1].map(i=>{
@@ -868,7 +914,7 @@ class Component extends DCLogic {
         border:active?'1.5px solid #e2b437':'1.5px solid rgba(255,255,255,.07)',glow:active?'0 0 0 3px rgba(226,180,55,.1),0 0 26px rgba(226,180,55,.2)':'none',
         avBg:i===0?'radial-gradient(circle at 35% 30%,#fff1a6,#f2c21b 45%,#b98200)':'radial-gradient(circle at 35% 30%,#ffffff,#d9d6cf 45%,#8f8b83)',dir:i===0?'row':'row-reverse',align:i===0?'flex-start':'flex-end'};});
     const human=this.human(),cue=g.balls[0];let hint='';
-    if(g.phase==='aim'&&!st.menuOpen){if(g.ai)hint='Machine is lining up a shot…';else if(this.needCall()&&g.called==null)hint='On the 8 · tap a pocket to call it';else if(this.drag==='pull')hint=g.power>.03?`Power ${Math.round(g.power*100)}% · release to shoot`:'Pull the mouse back to build power';else if(g.ballInHand)hint=(g.kitchen?'Ball in hand · drag the cue ball behind the line':'Ball in hand · drag the cue ball anywhere')+(st.portrait?'':' · or press away from it and pull back to shoot');else hint=st.portrait?'Drag to aim · slide power to shoot':'Move to aim · press and pull the mouse back for power · release to shoot';}
+    if(g.phase==='aim'&&!st.menuOpen){if(g.ai)hint='Machine is lining up a shot…';else if(this.needCall()&&g.called==null)hint='On the 8 · tap a pocket to call it';else if(this.drag==='pull'||this.powering)hint=g.power>.03?`Power ${Math.round(g.power*100)}% · release to shoot`:(this.powering?'Pull the cue back to build power':'Pull the mouse back to build power');else if(this.fining)hint=`Fine aim · ${(((g.aim*180/Math.PI)%360+360)%360).toFixed(1)}°`;else if(this.aimLock&&!st.portrait)hint='Fine aim set · press and pull back to shoot · click the table to aim with the mouse';else if(g.ballInHand)hint=(g.kitchen?'Ball in hand · drag the cue ball behind the line':'Ball in hand · drag the cue ball anywhere')+(st.portrait?'':' · or press away from it and pull back to shoot');else hint=st.portrait?'Drag to aim · pull the cue back to shoot':'Move to aim · press and pull the mouse back, or pull the cue · release to shoot';}
     const sx=g.spin.x,sy=g.spin.y,spinLabel=Math.hypot(sx,sy)<.12?'Center ball':(Math.abs(sy)>=Math.abs(sx)?(sy>0?'Top spin · follow':'Back spin · draw'):(sx>0?'Right English':'Left English'));
     const spinPos=(e)=>{const r=e.currentTarget.getBoundingClientRect();let x=(e.clientX-r.left-r.width/2)/(r.width/2),y=(e.clientY-r.top-r.height/2)/(r.height/2);const l=Math.hypot(x,y);if(l>.8){x*=.8/l;y*=.8/l;}g.spin={x,y:-y};this.sync();};
     const pick=(m)=>(e)=>{e&&e.preventDefault&&e.preventDefault();this.initAudio();if(!this.host||this.host.signedIn!==true)return;if(this.g.mode==='online'&&this.g.inGame)this.netResign();if(m==='online'){this.netQueue();return;}
@@ -908,7 +954,7 @@ class Component extends DCLogic {
             E('div',{style:{fontFamily:'Montserrat',fontWeight:800,fontSize:14,maxWidth:'100%',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}},name));
           const label={system:'VS SYSTEM · '+String(st.level).toUpperCase(),pvp:'PASS AND PLAY',online:'LIVE ONLINE MATCH',practice:'PRACTICE TABLE'}[L.mode]||'';
           const stake=L.mode==='system'?`Win for +${this.fmtC(this.winFor('system'))} WTA Coins`:L.mode==='online'?`Win for +${this.fmtC(this.winFor('online'))} WTA Coins`+(L.bt>0?` · ${L.b}: ${L.bt} trophies`:''):L.mode==='pvp'?'Just for fun · no WTA Coins':'Free play · no rules, no coins';
-          const tips=['Press anywhere and pull the mouse back: the further you pull, the harder the shot.','Use the spin button to draw the cue ball back or follow through.','Pot two in a row to start a combo.','On the 8, tap a pocket to call it before you shoot.'];
+          const tips=['Pull the cue back: the further you pull, the harder the shot.','Use the AIM dial for tiny changes to the angle.','Every combo in a game you win pays +1K WTA Coins, up to four a game.','Use the spin button to draw the cue ball back or follow through.','Pot two in a row to start a combo.','On the 8, tap a pocket to call it before you shoot.'];
           return wrap([...brand,
             E('div',{key:'l',style:{marginTop:10,fontSize:10.5,fontWeight:700,letterSpacing:'.3em',color:'#9b9083'}},label),
             E('div',{key:'vs',style:{marginTop:24,width:'100%',display:'flex',alignItems:'center',gap:12}},av(L.a,true,false,'a'),L.mode==='practice'?null:E('div',{key:'x',style:{flex:'none',fontFamily:'Montserrat',fontStyle:'italic',fontWeight:900,fontSize:30,color:'#f2c21b',textShadow:'0 0 18px rgba(242,194,27,.5)'}},'VS'),L.mode==='practice'?null:av(L.b,false,L.mode==='system','b')),
@@ -932,6 +978,10 @@ class Component extends DCLogic {
             E('div',{key:'b',style:{marginTop:20,display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,width:'100%'}},btn('START GAME',go,true,'go'),btn('BACK',()=>this.setState({pvpSetup:null,menuOpen:true}),false,'back'))]);}
         return null;})(),
       landscape:!st.portrait,portrait:st.portrait,powInv:((1-g.power)*100).toFixed(1)+'%',
+      cueT:(g.power*80).toFixed(1)+'%',powClipV:g.power<.01?'100%':`calc((100% - 23px) * ${(1-g.power*.8).toFixed(3)})`,powClipH:g.power<.01?'100%':`calc((100% - 22px) * ${(1-g.power*.8).toFixed(3)})`,
+      pullTxt:(this.powering||this.drag==='pull')&&g.power>.01?`POWER ${Math.round(g.power*100)}%`:'‹ PULL BACK',pullC:(this.powering||this.drag==='pull')&&g.power>.01?'#ffd94d':(this.canShoot()?'rgba(255,255,255,.62)':'rgba(255,255,255,.25)'),
+      aimDeg:(((g.aim*180/Math.PI)%360+360)%360).toFixed(1),ridgeOff:((((g.aim/FINE)%7)+7)%7).toFixed(2)+'px',fineBc:this.fining?'#f2c21b':(this.aimLock?'rgba(242,194,27,.6)':'rgba(255,255,255,.12)'),
+      comboBarP:st.portrait?this.comboBar(nm,true):null,comboBarL:!st.portrait&&!(st.side&&!st.portrait)?this.comboBar(nm,false):null,
       soundIcon:st.sound?'ph-speaker-high':'ph-speaker-slash',
       toggleSound:()=>{this.initAudio();this.setState({sound:!st.sound});},
       toggleSpin:()=>this.setState({spinOpen:!st.spinOpen}),spinOpen:st.spinOpen,
@@ -939,8 +989,12 @@ class Component extends DCLogic {
       spinDown:(e)=>{e.currentTarget.setPointerCapture(e.pointerId);this.spinDrag=true;spinPos(e);},spinMove:(e)=>{if(this.spinDrag)spinPos(e);},spinUp:()=>{this.spinDrag=false;},
       resetSpin:()=>{g.spin={x:0,y:0};this.sync();},
       pDown:this.pDown,pMove:this.pMove,pUp:this.pUp,
-      onWheel:(e)=>{if(g.phase==='aim'&&this.human()&&!g.ai){g.aim+=e.deltaY*.0006;}},
-      powDown:(e)=>{this.initAudio();if(!this.canShoot())return;e.currentTarget.setPointerCapture(e.pointerId);this.pr=e.currentTarget.getBoundingClientRect();this.powering=true;this.setPow(e);},
+      onWheel:(e)=>{if(g.phase==='aim'&&this.human()&&!g.ai){g.aim+=e.deltaY*.0006;this.aimLock=true;}},
+      powDown:(e)=>{this.initAudio();if(!this.canShoot())return;e.currentTarget.setPointerCapture(e.pointerId);this.pr=e.currentTarget.getBoundingClientRect();this.pz={x:e.clientX,y:e.clientY};this.powering=true;g.power=0;this.sync();},
+      fineDown:(e)=>{this.initAudio();if(!this.canShoot())return;e.currentTarget.setPointerCapture(e.pointerId);this.fz=st.portrait?e.clientX:e.clientY;this.fining=true;this.sync();},
+      fineMove:(e)=>{if(!this.fining||!this.canShoot())return;const v=st.portrait?e.clientX:e.clientY,d=v-this.fz;this.fz=v;if(d){g.aim+=d*FINE;this.aimLock=true;this.sync();}},
+      fineUp:()=>{if(!this.fining)return;this.fining=false;this.sync();},
+      fineWheel:(e)=>{if(!this.canShoot())return;e.stopPropagation();g.aim+=(e.deltaY>0?1:-1)*FINE*4;this.aimLock=true;this.sync();},
       powMove:(e)=>{if(this.powering)this.setPow(e);},
       powUp:()=>{if(!this.powering)return;this.powering=false;if(g.power>.03)this.shoot(g.power);else{g.power=0;this.sync();}},
       menuOpen:st.menuOpen,canResume:!!g.inGame,
@@ -962,8 +1016,8 @@ class Component extends DCLogic {
           log:(g.log||[]).map(l=>({txt:`${l.name} · Combo ×${l.n}`,coins:'+'+l.coins+' pts'})),noLog:!(g.log&&g.log.length),
           trays:[['SOLIDS',[1,2,3,4,5,6,7]],['STRIPES',[9,10,11,12,13,14,15]]].map(([label,ns])=>({label,balls:ns.map(n=>{const on=g.balls.length?g.balls.find(b=>b.n===n).on:true;return {bg:on?'rgba(255,255,255,.06)':ballCss(n)};})}))};})(),
       over:over&&!st.menuOpen,overName:over?nm[w]:'',overTitle:g.mode==='practice'?'CLEARS THE TABLE':'TAKES THE CROWN',overReason:over?g.reason:'',
-      coins:over&&g.mode!=='practice'?(()=>{const r=st.result;if(!r)return '';const tr=r.trophies?' · '+r.trophies:'';if(r.pending)return 'Counting your WTA Coins…';if(r.awarded>0)return `+${this.fmtC(r.awarded)} WTA Coins added`+(typeof r.balance==='number'?` · balance ${this.fmtC(r.balance)}`:'')+tr;return (r.message||'No WTA Coins this time')+tr;})():'',
-      records:g.stats?(g.mode==='practice'?[0]:[0,1]).map(i=>({name:nm[i],count:g.stats[i].combos.length,best:g.stats[i].best,coins:g.stats[i].coins})):[],
+      coins:over&&g.mode!=='practice'?(()=>{const r=st.result;if(!r)return '';const tr=r.trophies?' · '+r.trophies:'';if(r.pending)return 'Counting your WTA Coins…';if(r.awarded>0)return `+${this.fmtC(r.awarded)} WTA Coins added`+(r.combo>0?` (${this.fmtC(r.combo)} for combos)`:'')+(typeof r.balance==='number'?` · balance ${this.fmtC(r.balance)}`:'')+tr;return (r.message||'No WTA Coins this time')+tr;})():'',
+      records:g.stats?(g.mode==='practice'?[0]:[0,1]).map(i=>{const cc=this.comboCoins(i);return {name:nm[i],count:g.stats[i].combos.length,best:g.stats[i].best,coins:g.stats[i].coins,cc:'+'+this.fmtC(cc),ccd:cc>0?'flex':'none'};}):[],
       allBest:(()=>{try{return +localStorage.getItem('wta8.bestCombo')||0;}catch(e){return 0;}})(),
       foulFx:(()=>{const f=g.foulFx;if(!f)return null;const E=React.createElement;
         return E(React.Fragment,{key:'f'+f.id},
@@ -980,7 +1034,7 @@ class Component extends DCLogic {
           f.mw?E('div',{style:{fontFamily:'Montserrat',fontWeight:900,fontStyle:'italic',fontSize:18,letterSpacing:'.12em',color:neon?'#ff5ad8':'#fff3c4',textShadow:`0 0 14px ${neon?'#ff3fc8':'rgba(255,200,60,.8)'}`}},f.mw):null,
           E('div',{style:{fontFamily:'Montserrat',fontWeight:900,fontStyle:'italic',fontSize:`clamp(${Math.round(44*sc)}px,${(9*sc).toFixed(1)}vw,${Math.round(96*sc)}px)`,lineHeight:1,letterSpacing:'-.02em',background:neon?'linear-gradient(90deg,#3ff0ff,#ffffff 40%,#ff3fc8 60%,#3ff0ff)':'linear-gradient(90deg,#ffb300,#fff6c8 40%,#ffd23a 60%,#ffb300)',backgroundSize:'200% 100%',WebkitBackgroundClip:'text',backgroundClip:'text',color:'transparent',filter:`drop-shadow(0 0 18px ${neon?'rgba(63,240,255,.8)':'rgba(255,180,20,.7)'}) drop-shadow(0 4px 0 rgba(0,0,0,.5))`,animation:'cfxShine 1.4s linear infinite'}},'COMBO ×'+f.n),
           E('div',{style:{marginTop:6,display:'flex',alignItems:'center',gap:10,fontFamily:'Montserrat',fontWeight:900,fontStyle:'italic',fontSize:`clamp(${Math.round(18*sc)}px,${(3*sc).toFixed(1)}vw,${Math.round(28*sc)}px)`,color:'#fff',textShadow:`0 0 16px ${fire?(neon?'#ff3fc8':'#ff6a00'):ac}, 0 0 34px ${fire?(neon?'#ff3fc8':'#ff3d00'):'transparent'}, 0 2px 0 rgba(0,0,0,.6)`}},fire?E('i',{className:'ph-fill ph-fire',style:{color:neon?'#ff5ad8':'#ff7a1a'}}):null,f.title,fire?E('i',{className:'ph-fill ph-fire',style:{color:neon?'#ff5ad8':'#ff7a1a'}}):null),
-          E('div',{style:{marginTop:10,display:'flex',alignItems:'center',gap:8,padding:'7px 14px',borderRadius:20,background:'rgba(10,7,5,.8)',border:`1.5px solid ${ac}`,color:'#f2c21b',fontWeight:800,fontSize:14,animation:'cfxCoin 2.2s ease forwards'}},E('i',{className:'ph-fill ph-star'}),`${f.nm} +${f.coins} pts`));})(),
+          E('div',{style:{marginTop:10,display:'flex',alignItems:'center',gap:8,padding:'7px 14px',borderRadius:20,background:'rgba(10,7,5,.8)',border:`1.5px solid ${ac}`,color:'#f2c21b',fontWeight:800,fontSize:14,animation:'cfxCoin 2.2s ease forwards'}},...(f.paid?[E('i',{key:'i',className:'ph-fill ph-coin'}),`+${this.fmtC(COMBO_COIN)} WTA Coins · paid on a win`]:[E('i',{key:'i',className:'ph-fill ph-star'}),`${f.nm} +${f.coins} pts`])));})(),
       reactFx:(()=>{const r=g.react;if(!r)return null;const E=React.createElement,neon=!!this.felt().neon,bc=r.ai?(neon?'#ff3fc8':'#6fb6ff'):'#e2b437',tb=st.tbl||{l:12,r:12,t:112,w:600};
         const sz=Math.max(70,Math.min(100,tb.t-14));
         const cap={position:'absolute',left:4,right:4,bottom:6,textAlign:'center',fontFamily:'Impact,"Anton","Arial Black",sans-serif',fontSize:Math.round(sz*.15),lineHeight:1,color:'#fff',WebkitTextStroke:'1.2px #000',textShadow:'2px 2px 0 #000',textTransform:'uppercase'};

@@ -81,6 +81,7 @@ const EARN_LABELS: Array<{ key: string; label: string; note: string }> = [
   // is where the product says league nights matter more than the sofa. Note
   // there is no "play online" row: losing to the machine pays nothing.
   { key: "ONLINE_WON", label: "Beat the machine", note: "Winner only — more for a harder AI" },
+  { key: "ONLINE_COMBO", label: "Combos in a win", note: "Each combo in a game you win, up to four a game" },
 ];
 
 /**

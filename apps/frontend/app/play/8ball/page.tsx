@@ -175,6 +175,7 @@ export default function PlayEightBallPage() {
             aiRating: data.aiRating,
             seconds: Math.max(0, Math.round(Number(data.seconds) || 0)),
             shots: Math.max(0, Math.round(Number(data.shots) || 0)),
+            combos: Math.max(0, Math.round(Number(data.combos) || 0)),
           }),
         });
       try {
@@ -198,6 +199,11 @@ export default function PlayEightBallPage() {
           toFrame({
             type: "result",
             awarded: Number(payload.awarded) || 0,
+            combo: Array.isArray(payload?.awards)
+              ? payload.awards
+                  .filter((a: { reason: string }) => a.reason === "ONLINE_COMBO")
+                  .reduce((n: number, a: { amount: number }) => n + (Number(a.amount) || 0), 0)
+              : 0,
             balance: typeof payload.balance === "number" ? payload.balance : undefined,
             message: payload.message,
             trophies,
@@ -236,7 +242,7 @@ export default function PlayEightBallPage() {
       {auth.state === "in" && (
         <iframe
           ref={frameRef}
-          src="/8ball/index.html?v=6"
+          src="/8ball/index.html?v=7"
           title="WTA Eight Ball"
           sandbox="allow-scripts allow-same-origin allow-top-navigation-by-user-activation"
           allow="autoplay"

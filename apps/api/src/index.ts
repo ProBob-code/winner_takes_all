@@ -6017,6 +6017,8 @@ app.post("/api/coins/claim-online", async (c) => {
     mode: body.mode,
     aiRating: body.aiRating,
     opponentName,
+    // A combo needs a shot, so there cannot be more of them than shots taken.
+    combos: Math.min(body.combos ?? 0, shots),
   });
 
   // Two ceilings apply: the online-only one and the overall daily cap.
