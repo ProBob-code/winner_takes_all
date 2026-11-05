@@ -25,6 +25,10 @@
   ! Cache-Control
   Cache-Control: public, max-age=86400, stale-while-revalidate=604800
 
+/imposter/*
+  ! Cache-Control
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
 /sounds/*
   ! Cache-Control
   Cache-Control: public, max-age=86400, stale-while-revalidate=604800

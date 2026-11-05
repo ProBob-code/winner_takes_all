@@ -16,7 +16,7 @@ export const PUBLIC_PAGES: Record<string, { title: string; description: string }
   "/leaderboard": { title: "Rankings", description: "Player rankings from pool and football fights on Winner Takes All." },
   "/screening": { title: "Live screening", description: "The live table for the room: scores, the clock and standings on any spare screen as frames finish." },
   "/playbook": { title: "Host playbook", description: "How to host a pool or football fight with Winner Takes All, from setting it up to crowning the winner." },
-  "/games": { title: "Games", description: "The games you can run fights for on Winner Takes All, including 8-ball pool and football." },
+  "/games": { title: "Games", description: "The games you can run fights for on Winner Takes All, including 8-ball pool and football, plus Imposter, a party game for 3–10 players." },
   "/coins": { title: "WTA Coins", description: "How players earn WTA Coins for frames played and won. Coins are a record of play with no cash value." },
   "/shop": { title: "Shop", description: "The Winner Takes All shop." },
   "/code": { title: "Game code", description: "Check in to the game you're playing with the code on the scorer's screen, so it counts as verified." },

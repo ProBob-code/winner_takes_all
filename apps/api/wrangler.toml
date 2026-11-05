@@ -37,6 +37,16 @@ class_name = "PoolRooms"
 tag = "v2-pool-rooms"
 new_sqlite_classes = ["PoolRooms"]
 
+# Imposter, the party game. "room:<CODE>" runs one room: it deals the words,
+# keeps the clock, plays the bots, counts the votes and pays the coins.
+[[durable_objects.bindings]]
+name = "IMPOSTER_ROOMS"
+class_name = "ImposterRooms"
+
+[[migrations]]
+tag = "v3-imposter-rooms"
+new_sqlite_classes = ["ImposterRooms"]
+
 [[kv_namespaces]]
 binding = "SESSIONS"
 id = "788ab68ad9454e4ea7f2519b32792722"

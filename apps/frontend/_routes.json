@@ -12,6 +12,7 @@
     "/assets/*",
     "/goat/*",
     "/8ball/*",
+    "/imposter/*",
     "/sounds/*"
   ]
 }

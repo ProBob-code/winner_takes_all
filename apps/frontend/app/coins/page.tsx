@@ -82,6 +82,9 @@ const EARN_LABELS: Array<{ key: string; label: string; note: string }> = [
   // there is no "play online" row: losing to the machine pays nothing.
   { key: "ONLINE_WON", label: "Beat the machine", note: "Winner only — more for a harder AI" },
   { key: "ONLINE_COMBO", label: "Combos in a win", note: "Each combo in a game you win, up to four a game" },
+  // Imposter pays from the room itself, winners only, with 3+ real players.
+  { key: "IMPOSTER_CAUGHT", label: "Catch the imposters", note: "Imposter: every innocent, when the room votes out every imposter" },
+  { key: "IMPOSTER_ESCAPED", label: "Fool the room", note: "Imposter: every imposter, when one survives the vote" },
 ];
 
 /**

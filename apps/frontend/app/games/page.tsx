@@ -56,25 +56,32 @@ export default function GamesPage() {
               </div>
             </Link>
 
-            <div className="premium-card locked">
+            <Link href="/play/imposter" className="premium-card">
               <div className="card-glass"></div>
               <div className="card-content">
                 <div className="card-header">
-                  <span className="status-badge">COMING SOON</span>
+                  <span className="status-badge PARTY">NEW · PARTY</span>
+                  <span className="player-count">SOCIAL DEDUCTION</span>
                 </div>
                 <div className="card-body">
-                  <h3 className="tournament-title">🕶️ Mafia</h3>
-                  <div className="tournament-type">SOCIAL DEDUCTION</div>
+                  <h3 className="tournament-title">
+                    <svg className="title-icon" viewBox="0 0 256 256" width="1em" height="1em" fill="currentColor" aria-hidden="true">
+                      <path d="M256,120a8,8,0,0,1-8,8H8a8,8,0,0,1,0-16H35.92l47.5-65.41a16,16,0,0,1,25.31-.72l12.85,14.9.2.23a7.95,7.95,0,0,0,12.44,0l.2-.23,12.85-14.9a16,16,0,0,1,25.31.72L220.08,112H248A8,8,0,0,1,256,120Zm-76,24a36,36,0,0,0-35.77,32H111.77a36,36,0,1,0-1.83,16h36.12A36,36,0,1,0,180,144Z" />
+                    </svg>
+                    Imposter
+                  </h3>
+                  <div className="tournament-type">ONE WORD. ONE LIAR.</div>
                 </div>
                 <div className="card-footer">
                   <div className="entry-info">
-                    <span className="label">STATUS</span>
-                    <span className="value">DEVELOPMENT</span>
+                    <span className="label">GAME MODE</span>
+                    {/* Everyone on their own phone, in one room; winners earn. */}
+                    <span className="value free">3–10 PLAYERS · EARNS COINS</span>
                   </div>
-                  <div className="action-circle">🔒</div>
+                  <div className="action-circle">→</div>
                 </div>
               </div>
-            </div>
+            </Link>
           </div>
         ) : (
           <div className="slide-in stadium-hub">
@@ -182,6 +189,9 @@ export default function GamesPage() {
           border: 1px solid var(--border-color);
         }
         .status-badge.OPEN { background: rgba(16, 185, 129, 0.1); color: var(--gold); border: 1px solid rgba(16, 185, 129, 0.2); }
+        .status-badge.PARTY { background: rgba(255, 74, 61, 0.12); color: #ff6a5e; border: 1px solid rgba(255, 74, 61, 0.45); }
+        .tournament-title { display: flex; align-items: center; gap: 0.5rem; }
+        .title-icon { color: #8b6bff; filter: drop-shadow(0 0 6px rgba(139, 107, 255, 0.55)); flex: none; }
 
         .tournament-title { 
           font-size: 1.25rem; 

@@ -48,6 +48,7 @@ import {
 } from "./lib/realtime";
 import { authMiddleware, requireUser, requireAdmin, serializeUser, extractAccessToken } from "./middleware/auth";
 import { handlePoolSocket, isPoolSocket, poolVerdict, type PoolVerdict } from "./lib/pool";
+import { handleImposterSocket, isImposterSocket } from "./lib/imposter";
 import { centsToMoney, payoutFeeCents, PAYOUT_FEE_PERCENT } from "./lib/money";
 import {
   stakesEnabled,
@@ -6400,6 +6401,8 @@ export default {
   fetch(request: Request, env: Env, ctx: ExecutionContext) {
     // Online 8-ball sockets go straight to their Durable Object; see lib/pool.ts.
     if (isPoolSocket(request)) return handlePoolSocket(request, env, allowedOrigins(env));
+    // Imposter rooms too; see lib/imposter.ts.
+    if (isImposterSocket(request)) return handleImposterSocket(request, env, allowedOrigins(env));
     return app.fetch(request, env, ctx);
   },
   async scheduled(_event: unknown, env: Env, ctx: { waitUntil(p: Promise<unknown>): void }) {
@@ -6415,3 +6418,4 @@ export default {
 // the MATCH_FEEDS binding to resolve.
 export { MatchFeeds } from "./durable-objects/match-feeds";
 export { PoolRooms } from "./durable-objects/pool-rooms";
+export { ImposterRooms } from "./durable-objects/imposter-rooms";

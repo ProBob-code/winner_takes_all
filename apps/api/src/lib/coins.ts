@@ -100,6 +100,18 @@ export type CoinReason =
    */
   | "ONLINE_COMBO"
   /**
+   * Imposter, the party game: an innocent whose room voted out every imposter.
+   *
+   * Paid by the room itself (durable-objects/imposter-rooms.ts), which holds
+   * the words, the roles and the votes on the server, so unlike a browser
+   * 8-ball result nobody's device reports this one. Winners only, real
+   * players only, and only when at least IMPOSTER_MIN_PLAYERS_FOR_COINS of
+   * them actually played: a host with two bots is practising, not earning.
+   */
+  | "IMPOSTER_CAUGHT"
+  /** Imposter: an imposter who survived the vote. Harder, so it pays more. */
+  | "IMPOSTER_ESCAPED"
+  /**
    * Signing in on a day you had not yet.
    *
    * The one award that is not for playing. It exists so somebody who creates
@@ -190,7 +202,34 @@ export const COIN_AWARDS: Record<CoinReason, number> = {
   ONLINE_WON: 3 * COIN_UNIT,
   /** Per combo in a won browser game, up to COMBO_COINS_MAX_PER_GAME combos. */
   ONLINE_COMBO: 1 * COIN_UNIT,
+
+  // ── Imposter ──
+  //
+  // In the same band as a won browser 8-ball game and under the same online
+  // cap. The room decides the result, which is better than a self-report, but
+  // a room of friends can still agree to throw a game. Imposters are the
+  // minority and have to bluff a whole table, so they take more, in the
+  // design's 2 : 5 ratio.
+  IMPOSTER_CAUGHT: 2 * COIN_UNIT,
+  IMPOSTER_ESCAPED: 5 * COIN_UNIT,
 };
+
+/**
+ * The fewest real players an Imposter game needs before it pays anyone.
+ *
+ * Three, the smallest game there is. Bots fill seats for fun and never count,
+ * and a player only counts if they gave at least one clue of their own, so a
+ * seat left idle on a second account does not make a game pay.
+ */
+export const IMPOSTER_MIN_PLAYERS_FOR_COINS = 3;
+
+/** What one finished Imposter game earns a player. Winners only. */
+export function awardsForImposter(args: { won: boolean; imposter: boolean }): CoinAward[] {
+  if (!args.won) return [];
+  return args.imposter
+    ? [{ reason: "IMPOSTER_ESCAPED", amount: COIN_AWARDS.IMPOSTER_ESCAPED, description: "Fooled the room in Imposter" }]
+    : [{ reason: "IMPOSTER_CAUGHT", amount: COIN_AWARDS.IMPOSTER_CAUGHT, description: "Caught the imposters in Imposter" }];
+}
 
 /**
  * The most combos one browser game pays for.
@@ -220,7 +259,13 @@ export const ONLINE_DAILY_CAP = 25 * COIN_UNIT;
  * before browser play became winner-only. It has to keep counting against the
  * cap or an account that earned it could exceed the ceiling for the day.
  */
-export const ONLINE_REASONS: string[] = ["ONLINE_PLAYED", "ONLINE_WON", "ONLINE_COMBO"];
+export const ONLINE_REASONS: string[] = [
+  "ONLINE_PLAYED",
+  "ONLINE_WON",
+  "ONLINE_COMBO",
+  "IMPOSTER_CAUGHT",
+  "IMPOSTER_ESCAPED",
+];
 
 /**
  * The shortest a browser game can be and still count.
