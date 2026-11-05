@@ -41,6 +41,11 @@ It only runs inside `/play/8ball`. Opened directly, it sends the browser there.
     Both screens therefore compute the same shot bit for bit. In a two-player test with one screen's CPU slowed 4×, the replay matched the shooter on all 8 shots to 0.000000 units. Before this, balls jumped by up to 705 units when `settled` landed.
   - Snapshots go at full precision. `aim` is sent only when it changes (at most 20 a second), and the other screen glides into it rather than jumping.
   - The table Durable Object relays `shot` and `settled` before it writes them to storage, so the save never delays the replay.
+  - **Recovery from lost messages.** Both cases rejoin the table (`netResync`) and take the table from the `hello` snapshot. Neither happens in normal play (0 resyncs over an 8-shot two-player test).
+    - The end-of-shot `settled` never arrives (`awaitSnap` for over 4 s).
+    - The opponent's screen goes silent during their turn for 8 s. While aiming it sends `aim` at least once a second.
+  - Rejoining drops the old socket rather than waiting for it to close, because a half-closed socket can stay in `CLOSING` indefinitely.
+  - On the opponent's turn the hint names them ("Ben has ball in hand · waiting for their shot") instead of showing your own controls.
   - Both screens send `result`. The server decides, and the coin claim reads that verdict.
   - The menu shows how many players are online. These are real heartbeats from `POST /api/pool/presence`, counted by the lobby.
 - **Host messages:**

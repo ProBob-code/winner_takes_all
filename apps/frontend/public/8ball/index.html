@@ -823,7 +823,8 @@ class Component extends DCLogic {
     this.ws=ws;this.wsMode='table';this.tableId=id;this.inbox=this.inbox||[];
     ws.onmessage=e=>{let m;try{m=JSON.parse(e.data);}catch(x){return;}this.netMsg(m);};
     ws.onclose=()=>{if(this.ws!==ws)return;const g=this.g;if(g.mode==='online'&&g.inGame){this.toast('Connection lost · reconnecting…');this.retry=(this.retry||0)+1;setTimeout(()=>{if(this.ws===ws&&g.inGame)this.netJoin(id);},Math.min(6000,1000*this.retry));}};}
-  netMsg(m){const g=this.g;
+  netResync(){if(this.wsMode!=='table'||!this.tableId)return;this.lastRx=performance.now();this.rsN=(this.rsN||0)+1;if(this.rsN<=2)this.toast('Syncing the table…');const w=this.ws;this.ws=null;try{w&&w.close(4000,'resync');}catch(x){}this.netJoin(this.tableId);}
+  netMsg(m){const g=this.g;this.lastRx=performance.now();if(m.type==='aim'||m.type==='shot'||m.type==='settled')this.rsN=0;
     if(m.type==='hello'){this.retry=0;const nm=[0,1].map(i=>(m.players&&m.players[i]&&m.players[i].name)||'Player');
       if(m.finished){if(!(g.mode==='online'&&g.tableId===this.tableId)){this.netClose();this.toast('That game is over');clearTimeout(this.loadT);this.setState({searching:null,loading:null,menuOpen:true});}return;}
       if(!(g.mode==='online'&&g.tableId===this.tableId)){g.seat=m.seat;g.onNames=nm;g.tableId=this.tableId;g.breaker=0;g.awaitSnap=false;this.inbox=[];this.setState({searching:null});this.start('online');if(m.snapshot)this.applySnap(m.snapshot);this.endLoadSoon();}
@@ -838,7 +839,9 @@ class Component extends DCLogic {
     if(g.phase==='aim'&&this.human()){this.aimT=(this.aimT||0)+dt;this.aimK=(this.aimK||0)+dt;const c=g.balls[0],L=this.aimL||{};
       const moved=Math.abs((L.a||0)-g.aim)>2e-4||Math.abs((L.p||0)-(g.power||0))>.006||(g.ballInHand&&(L.x!==c.x||L.y!==c.y));
       if(this.aimT>.05&&(moved||this.aimK>1)){this.aimT=0;this.aimK=0;this.aimL={a:g.aim,p:g.power||0,x:c.x,y:c.y};
-      this.netSend({type:'aim',a:+g.aim.toFixed(5),p:+(g.power||0).toFixed(3),x:g.ballInHand?Math.round(c.x*10)/10:null,y:g.ballInHand?Math.round(c.y*10)/10:null});}}
+      this.netSend({type:'aim',a:+g.aim.toFixed(5),p:+(g.power||0).toFixed(3),x:g.ballInHand?c.x:null,y:g.ballInHand?c.y:null});}}
+    if(g.awaitSnap&&g.phase==='aim'){this.awT=(this.awT||0)+dt;if(this.awT>4){this.awT=0;this.netResync();}}else this.awT=0;
+    if(g.phase==='aim'&&!this.human()&&!g.awaitSnap){const now=performance.now();if(!this.waitT)this.waitT=now;const q=now-Math.max(this.lastRx||0,this.waitT);if(q>(this.rsN>1?15000:8000)){this.netResync();}}else this.waitT=0;
     if(g.phase==='aim'&&!this.human()&&this.rAim){const r=this.rAim,k=Math.min(1,dt*16);let d=r.a-g.aim;while(d>Math.PI)d-=2*Math.PI;while(d<-Math.PI)d+=2*Math.PI;g.aim+=d*k;g.power+=(r.p-(g.power||0))*k;}
     const box=this.inbox||[];
     while(box.length){const m=box[0];
@@ -955,7 +958,7 @@ class Component extends DCLogic {
         avBg:i===0?'radial-gradient(circle at 35% 30%,#fff1a6,#f2c21b 45%,#b98200)':'radial-gradient(circle at 35% 30%,#ffffff,#d9d6cf 45%,#8f8b83)',dir:i===0?'row':'row-reverse',align:i===0?'flex-start':'flex-end'};});
     const human=this.human(),cue=g.balls[0];let hint='';
     const deg=(((g.aim*180/Math.PI)%360+360)%360).toFixed(1),touch=this.isTouch();
-    if(g.phase==='aim'&&!st.menuOpen){if(g.ai)hint='Machine is lining up a shot…';else if(this.needCall()&&g.called==null)hint='On the 8 · tap a pocket to call it';else if(this.drag==='pull'||this.powering)hint=g.power>.03?`Power ${Math.round(g.power*100)}% · release to shoot`:'Pull back to build power';else if(this.fining)hint=`Fine aim · ${deg}°`;else if(this.drag==='rot')hint=`Aim ${deg}°`;else if(g.ballInHand)hint=(g.kitchen?'Ball in hand · drag the cue ball behind the line':'Ball in hand · drag the cue ball anywhere')+(touch?'':' · drag the table to aim');else hint=touch?'Drag to aim · pull the cue to shoot':(st.portrait?'Drag to turn the aim · pull the cue back to shoot':'Drag the table to turn the aim · pull straight back, or pull the cue, to shoot');}
+    if(g.phase==='aim'&&!st.menuOpen){const opn=String(nm[g.turn]).trim().split(/\s+/)[0];if(g.ai)hint='Machine is lining up a shot…';else if(g.mode==='online'&&!human)hint=g.ballInHand?`${opn} has ball in hand · waiting for their shot`:`${opn}'s turn · waiting for their shot`;else if(g.mode==='online'&&g.awaitSnap)hint='Syncing the table…';else if(this.needCall()&&g.called==null)hint='On the 8 · tap a pocket to call it';else if(this.drag==='pull'||this.powering)hint=g.power>.03?`Power ${Math.round(g.power*100)}% · release to shoot`:'Pull back to build power';else if(this.fining)hint=`Fine aim · ${deg}°`;else if(this.drag==='rot')hint=`Aim ${deg}°`;else if(g.ballInHand)hint=(g.kitchen?'Ball in hand · drag the cue ball behind the line':'Ball in hand · drag the cue ball anywhere')+(touch?'':' · drag the table to aim');else hint=touch?'Drag to aim · pull the cue to shoot':(st.portrait?'Drag to turn the aim · pull the cue back to shoot':'Drag the table to turn the aim · pull straight back, or pull the cue, to shoot');}
     const sx=g.spin.x,sy=g.spin.y,spinLabel=Math.hypot(sx,sy)<.12?'Center ball':(Math.abs(sy)>=Math.abs(sx)?(sy>0?'Top spin · follow':'Back spin · draw'):(sx>0?'Right English':'Left English'));
     const spinPos=(e)=>{const r=this.lr(e.currentTarget),c=this.cp(e);let x=(c.x-r.left-r.width/2)/(r.width/2),y=(c.y-r.top-r.height/2)/(r.height/2);const l=Math.hypot(x,y);if(l>.8){x*=.8/l;y*=.8/l;}g.spin={x,y:-y};this.sync();};
     const pick=(m)=>(e)=>{e&&e.preventDefault&&e.preventDefault();this.initAudio();this.tryLandscape();if(!this.host||this.host.signedIn!==true)return;if(this.g.mode==='online'&&this.g.inGame)this.netResign();if(m==='online'){this.netQueue();return;}
