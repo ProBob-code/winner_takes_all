@@ -10,9 +10,13 @@ It only runs inside `/play/8ball`. Opened directly, it sends the browser there.
 - **Real names:** the signed-in player's name is on the HUD, the menu ("Playing as …") and the result card.
 - **vs Player:** asks for both names first. Player 1 is filled with the signed-in name, and Player 2 is remembered on the device.
 - **Loading screen:** every game opens on a versus screen showing the players, the mode and what a win is worth.
-- **Cue-stick power:** the power control is a cue stick. Pull it back (down on desktop, left on phones) and the power fills in behind it; releasing shoots. On desktop you can also press anywhere on the table and pull the mouse back.
-- **Fine aim:** the AIM dial, next to the cue, turns the aim by about 0.05° per pixel dragged and shows the angle. The mouse wheel over it works too. After a fine adjustment, hovering the table no longer moves the aim; clicking the table brings mouse aiming back.
-- **Combo bar:** on phones, and on desktop without the side panel, a bar shows the shooter's streak, combos, best combo and the combo coins at stake.
+- **Landscape only on phones:** on a touch screen held upright, the whole game is turned 90° so it always plays in landscape. `rot()`, `cp(e)` and `lr(el)` map pointer positions and element rectangles into the turned frame, and every pointer handler goes through them. Picking a game on a phone also asks for full screen and a landscape lock. Where the browser allows that (Android Chrome), the rotation is real; elsewhere the CSS turn is the fallback. Add `?rot=1` to force touch mode for testing.
+- **Aiming:** a click or tap never moves the aim, and hovering does not either. Dragging on the table turns the aim from where it already points, following the drag's angle around the cue ball at 0.6×. With a mouse, a drag straight back along the cue is a power stroke instead.
+- **Cue-stick power:** on the left of the table. Pull it back (down in landscape, left in a tall desktop window) and the power fills in behind it; releasing shoots.
+- **Fine aim and spin:** on the right of the table. The AIM dial turns the aim by about 0.05° per pixel dragged and shows the angle, and the mouse wheel over it works too. The SPIN ball sits above the dial.
+- **Short screens (phones in landscape):** the table uses almost the full height. The combo stats move to a small badge above the power cue.
+- **Ball rows:** every ball of each group is shown; potted balls are dimmed and greyed.
+- **Combo bar:** on taller screens without the side panel, a bar shows the shooter's streak, combos, best combo and the combo coins at stake.
 - **Coins are real:**
   - The HUD chip and the menu show the player's actual WTA Coins balance.
   - The result card shows what the server paid, including the combo share.

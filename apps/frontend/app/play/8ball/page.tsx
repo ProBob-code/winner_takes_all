@@ -242,10 +242,11 @@ export default function PlayEightBallPage() {
       {auth.state === "in" && (
         <iframe
           ref={frameRef}
-          src="/8ball/index.html?v=7"
+          src="/8ball/index.html?v=8"
           title="WTA Eight Ball"
           sandbox="allow-scripts allow-same-origin allow-top-navigation-by-user-activation"
-          allow="autoplay"
+          allow="autoplay; fullscreen"
+          allowFullScreen
           style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: 0, display: "block" }}
         />
       )}

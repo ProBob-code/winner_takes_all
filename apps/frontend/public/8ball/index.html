@@ -34,9 +34,9 @@ a{color:#e2b437;text-decoration:none}a:hover{color:#ffd35a}
 @keyframes cfxShine{0%{background-position:-200% 0}100%{background-position:200% 0}}
 </style>
 </helmet>
-<div style="position:fixed;inset:0;display:flex;flex-direction:column;background:radial-gradient(120% 90% at 50% 45%,#1d150e 0%,#0a0705 62%,#050403 100%);user-select:none;-webkit-user-select:none">
+<div style="position:fixed;{{ rootPos }};display:flex;flex-direction:column;background:radial-gradient(120% 90% at 50% 45%,#1d150e 0%,#0a0705 62%,#050403 100%);user-select:none;-webkit-user-select:none">
 
-  <div style="flex:none;display:flex;align-items:center;gap:8px;padding:10px 12px 6px">
+  <div style="flex:none;display:flex;align-items:center;gap:8px;padding:{{ topPad }}">
     <button onClick="{{ openMenu }}" aria-label="Menu" style="all:unset;cursor:pointer;flex:none;width:{{ tbS }};height:40px;border-radius:11px;background:#15100c;border:1px solid rgba(226,180,55,.35);display:flex;align-items:center;justify-content:center;color:#e2b437"><i class="ph-bold ph-list" style="font-size:20px"></i></button>
     <div style="flex:1;min-width:0;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px">
       <sc-for list="{{ players }}" as="p" hint-placeholder-count="2">
@@ -58,7 +58,7 @@ a{color:#e2b437;text-decoration:none}a:hover{color:#ffd35a}
         </div>
       </sc-for>
     </div>
-    <button onClick="{{ toggleSpin }}" aria-label="Cue ball spin" style="all:unset;cursor:pointer;flex:none;width:{{ tbS }};height:40px;border-radius:11px;background:#15100c;border:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center">
+    <button onClick="{{ toggleSpin }}" aria-label="Cue ball spin" style="all:unset;cursor:pointer;flex:none;width:{{ tbS }};height:40px;border-radius:11px;background:#15100c;border:1px solid rgba(255,255,255,.1);display:{{ spinTopD }};align-items:center;justify-content:center">
       <div style="position:relative;width:24px;height:24px;border-radius:50%;background:radial-gradient(circle at 36% 30%,#fff,#e9e5dc 40%,#a9a398)">
         <div style="position:absolute;left:{{ spinL }};top:{{ spinT }};width:7px;height:7px;margin:-3.5px 0 0 -3.5px;border-radius:50%;background:#d0241c"></div>
       </div>
@@ -68,8 +68,9 @@ a{color:#e2b437;text-decoration:none}a:hover{color:#ffd35a}
 
   <div style="flex:1;min-height:0;display:flex;position:relative">
     <sc-if value="{{ landscape }}" hint-placeholder-val="{{ true }}">
-      <div style="flex:none;width:112px;display:flex;align-items:center;justify-content:center;gap:12px">
-        <div onPointerDown="{{ powDown }}" onPointerMove="{{ powMove }}" onPointerUp="{{ powUp }}" onPointerCancel="{{ powUp }}" title="Pull the cue down to set the power" style="position:relative;width:38px;height:min(66%,440px);cursor:ns-resize;touch-action:none">
+      <div style="flex:none;width:{{ colW }};display:flex;flex-direction:column;align-items:center;justify-content:center;gap:{{ colGap }}">
+        {{ comboBadge }}
+        <div onPointerDown="{{ powDown }}" onPointerMove="{{ powMove }}" onPointerUp="{{ powUp }}" onPointerCancel="{{ powUp }}" title="Pull the cue down to set the power" style="position:relative;width:38px;height:{{ powH }};cursor:ns-resize;touch-action:none">
           <div style="position:absolute;inset:0;border-radius:19px;overflow:hidden;background:linear-gradient(90deg,#0b0806,#1b150f 50%,#0b0806);border:1px solid {{ powBc }};box-shadow:inset 0 2px 10px rgba(0,0,0,.8){{ powSh }};transition:border-color .15s,box-shadow .15s">
             <div style="position:absolute;inset:3px;border-radius:16px;background:linear-gradient(180deg,#22c46a,#f2c21b 50%,#ec4a2a);clip-path:inset(0 0 {{ powClipV }} 0 round 16px);pointer-events:none"></div>
             <div style="position:absolute;inset:3px;border-radius:16px;background:repeating-linear-gradient(180deg,transparent 0 calc(10% - 1px),rgba(0,0,0,.35) calc(10% - 1px) 10%);pointer-events:none"></div>
@@ -81,15 +82,6 @@ a{color:#e2b437;text-decoration:none}a:hover{color:#ffd35a}
           <div style="position:absolute;left:50%;top:-24px;transform:translateX(-50%);font-family:Montserrat;font-weight:900;font-size:12px;color:#f2c21b;opacity:{{ powOp }};transition:opacity .15s;pointer-events:none;white-space:nowrap">{{ powPct }}</div>
           <div style="position:absolute;left:50%;bottom:-22px;transform:translateX(-50%);font-family:Montserrat;font-weight:800;font-size:8.5px;letter-spacing:.16em;color:#8d8378;pointer-events:none;white-space:nowrap">POWER</div>
         </div>
-        <div onPointerDown="{{ fineDown }}" onPointerMove="{{ fineMove }}" onPointerUp="{{ fineUp }}" onPointerCancel="{{ fineUp }}" onWheel="{{ fineWheel }}" title="Drag for fine aim" style="position:relative;width:30px;height:min(46%,300px);cursor:ns-resize;touch-action:none">
-          <div style="position:absolute;inset:0;border-radius:15px;overflow:hidden;background:#0b0806;border:1px solid {{ fineBc }};box-shadow:inset 0 2px 10px rgba(0,0,0,.8);transition:border-color .15s">
-            <div style="position:absolute;inset:2px;border-radius:13px;background:repeating-linear-gradient(180deg,#4a3b2b 0 2px,#17110c 2px 7px);background-position:0 {{ ridgeOff }};pointer-events:none"></div>
-            <div style="position:absolute;inset:2px;border-radius:13px;background:linear-gradient(180deg,rgba(0,0,0,.9),transparent 32%,transparent 68%,rgba(0,0,0,.9));pointer-events:none"></div>
-            <div style="position:absolute;left:0;right:0;top:50%;height:2px;margin-top:-1px;background:#e2b437;box-shadow:0 0 8px #e2b437;pointer-events:none"></div>
-          </div>
-          <div style="position:absolute;left:50%;top:-24px;transform:translateX(-50%);font-family:Montserrat;font-weight:900;font-size:11px;color:#f2c21b;pointer-events:none;white-space:nowrap">{{ aimDeg }}°</div>
-          <div style="position:absolute;left:50%;bottom:-22px;transform:translateX(-50%);font-family:Montserrat;font-weight:800;font-size:8.5px;letter-spacing:.16em;color:#8d8378;pointer-events:none;white-space:nowrap">AIM</div>
-        </div>
       </div>
     </sc-if>
     <div ref="{{ wrapRef }}" style="flex:1;min-width:0;min-height:0;position:relative">
@@ -100,17 +92,38 @@ a{color:#e2b437;text-decoration:none}a:hover{color:#ffd35a}
         <div style="position:absolute;{{ trayPos }};{{ tr.side }};display:flex;flex-direction:{{ tr.dir }};align-items:center;gap:7px;padding:4px 8px;border-radius:14px;background:rgba(10,7,5,.72);border:1px solid {{ tr.bc }};box-shadow:{{ tr.sh }};pointer-events:none">
           <span style="font-family:Montserrat;font-weight:800;font-size:8.5px;letter-spacing:.16em;color:{{ tr.lc }}">{{ tr.label }}</span>
           <div style="display:flex;gap:3px">
-            <sc-for list="{{ tr.balls }}" as="b" hint-placeholder-count="7"><div style="width:12px;height:12px;border-radius:50%;background:{{ b.bg }};box-shadow:{{ b.glow }}"></div></sc-for>
+            <sc-for list="{{ tr.balls }}" as="b" hint-placeholder-count="7"><div style="width:12px;height:12px;border-radius:50%;background:{{ b.bg }};box-shadow:{{ b.glow }};opacity:{{ b.op }};filter:{{ b.fl }};transition:opacity .4s,filter .4s"></div></sc-for>
           </div>
         </div>
       </sc-for>
       <sc-if value="{{ hint }}" hint-placeholder-val="{{ false }}">
-        <div style="position:absolute;left:50%;bottom:8px;transform:translateX(-50%);padding:5px 12px;border-radius:20px;background:rgba(10,7,5,.7);border:1px solid rgba(255,255,255,.08);font-size:11.5px;color:#cdc3b6;white-space:nowrap;pointer-events:none">{{ hint }}</div>
+        <div style="position:absolute;left:50%;bottom:{{ hintB }};transform:translateX(-50%);padding:{{ hintP }};border-radius:20px;background:rgba(10,7,5,.7);border:1px solid rgba(255,255,255,.08);font-size:{{ hintF }};color:#cdc3b6;white-space:nowrap;pointer-events:none">{{ hint }}</div>
       </sc-if>
       <sc-if value="{{ msg }}" hint-placeholder-val="{{ false }}">
         <div style="position:absolute;left:50%;bottom:40px;transform:translateX(-50%);padding:9px 18px;border-radius:24px;background:rgba(18,12,8,.92);border:1.5px solid rgba(226,180,55,.6);box-shadow:0 0 30px rgba(226,180,55,.2),0 10px 30px rgba(0,0,0,.5);font-family:Montserrat;font-weight:800;font-size:13px;color:#f6e7bf;white-space:nowrap;pointer-events:none">{{ msg }}</div>
       </sc-if>
     </div>
+    <sc-if value="{{ landscape }}" hint-placeholder-val="{{ true }}">
+      <div style="flex:none;width:{{ colW }};display:flex;flex-direction:column;align-items:center;justify-content:center;gap:{{ colGap }}">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:5px">
+          <button onClick="{{ toggleSpin }}" aria-label="Cue ball spin" style="all:unset;cursor:pointer;flex:none;width:44px;height:44px;border-radius:50%;background:#15100c;border:1px solid {{ spinBc }};display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(0,0,0,.5)">
+            <div style="position:relative;width:32px;height:32px;border-radius:50%;background:radial-gradient(circle at 36% 30%,#fff,#e9e5dc 40%,#a9a398)">
+              <div style="position:absolute;left:{{ spinL }};top:{{ spinT }};width:8px;height:8px;margin:-4px 0 0 -4px;border-radius:50%;background:#d0241c"></div>
+            </div>
+          </button>
+          <div style="font-family:Montserrat;font-weight:800;font-size:8.5px;letter-spacing:.16em;color:#8d8378">SPIN</div>
+        </div>
+        <div onPointerDown="{{ fineDown }}" onPointerMove="{{ fineMove }}" onPointerUp="{{ fineUp }}" onPointerCancel="{{ fineUp }}" onWheel="{{ fineWheel }}" title="Drag for fine aim" style="position:relative;width:30px;height:min(54%,300px);cursor:ns-resize;touch-action:none">
+          <div style="position:absolute;inset:0;border-radius:15px;overflow:hidden;background:#0b0806;border:1px solid {{ fineBc }};box-shadow:inset 0 2px 10px rgba(0,0,0,.8);transition:border-color .15s">
+            <div style="position:absolute;inset:2px;border-radius:13px;background:repeating-linear-gradient(180deg,#4a3b2b 0 2px,#17110c 2px 7px);background-position:0 {{ ridgeOff }};pointer-events:none"></div>
+            <div style="position:absolute;inset:2px;border-radius:13px;background:linear-gradient(180deg,rgba(0,0,0,.9),transparent 32%,transparent 68%,rgba(0,0,0,.9));pointer-events:none"></div>
+            <div style="position:absolute;left:0;right:0;top:50%;height:2px;margin-top:-1px;background:#e2b437;box-shadow:0 0 8px #e2b437;pointer-events:none"></div>
+          </div>
+          <div style="position:absolute;left:50%;top:-24px;transform:translateX(-50%);font-family:Montserrat;font-weight:900;font-size:11px;color:#f2c21b;pointer-events:none;white-space:nowrap">{{ aimDeg }}°</div>
+          <div style="position:absolute;left:50%;bottom:-22px;transform:translateX(-50%);font-family:Montserrat;font-weight:800;font-size:8.5px;letter-spacing:.16em;color:#8d8378;pointer-events:none;white-space:nowrap">AIM</div>
+        </div>
+      </div>
+    </sc-if>
     <sc-if value="{{ side }}" hint-placeholder-val="{{ false }}">
       <div style="flex:none;width:250px;box-sizing:border-box;padding:8px 12px 14px 2px;display:flex;flex-direction:column;gap:10px;overflow-y:auto;scrollbar-width:none">
         <div style="padding:14px;border-radius:14px;background:linear-gradient(180deg,#1d160f,#120d0a);border:1px solid rgba(226,180,55,.28);display:flex;flex-direction:column;gap:8px">
@@ -139,7 +152,7 @@ a{color:#e2b437;text-decoration:none}a:hover{color:#ffd35a}
           <div style="font-family:Montserrat;font-weight:800;font-size:10px;letter-spacing:.18em;color:#8d8378">POTTED</div>
           <sc-for list="{{ sd.trays }}" as="tr" hint-placeholder-count="2">
             <div style="display:flex;flex-direction:column;gap:5px"><span style="font-size:9.5px;font-weight:700;letter-spacing:.14em;color:#a59b8f">{{ tr.label }}</span>
-              <div style="display:flex;gap:4px"><sc-for list="{{ tr.balls }}" as="b" hint-placeholder-count="7"><div style="width:18px;height:18px;border-radius:50%;background:{{ b.bg }};box-shadow:0 1px 3px rgba(0,0,0,.6)"></div></sc-for></div>
+              <div style="display:flex;gap:4px"><sc-for list="{{ tr.balls }}" as="b" hint-placeholder-count="7"><div style="width:18px;height:18px;border-radius:50%;background:{{ b.bg }};box-shadow:0 1px 3px rgba(0,0,0,.6);opacity:{{ b.op }};filter:{{ b.fl }};transition:opacity .4s,filter .4s"></div></sc-for></div>
             </div>
           </sc-for>
         </div>
@@ -177,7 +190,7 @@ a{color:#e2b437;text-decoration:none}a:hover{color:#ffd35a}
 
   <sc-if value="{{ spinOpen }}" hint-placeholder-val="{{ false }}">
     <div onClick="{{ toggleSpin }}" style="position:absolute;inset:0;z-index:15"></div>
-    <div style="position:absolute;z-index:16;top:62px;right:12px;width:200px;box-sizing:border-box;padding:16px;border-radius:16px;background:#15100c;border:1px solid rgba(226,180,55,.35);box-shadow:0 20px 50px rgba(0,0,0,.6);display:flex;flex-direction:column;align-items:center;gap:12px">
+    <div style="position:absolute;z-index:16;{{ spinPopPos }};width:200px;box-sizing:border-box;padding:16px;border-radius:16px;background:#15100c;border:1px solid rgba(226,180,55,.35);box-shadow:0 20px 50px rgba(0,0,0,.6);display:flex;flex-direction:column;align-items:center;gap:12px">
       <div style="font-family:Montserrat;font-weight:800;font-size:11px;letter-spacing:.16em;color:#e2b437">CUE BALL SPIN</div>
       <div onPointerDown="{{ spinDown }}" onPointerMove="{{ spinMove }}" onPointerUp="{{ spinUp }}" style="position:relative;width:150px;height:150px;border-radius:50%;background:radial-gradient(circle at 36% 30%,#fff 0%,#eeebe3 35%,#bdb8ad 85%,#8d887e 100%);box-shadow:0 10px 24px rgba(0,0,0,.6);cursor:crosshair;touch-action:none">
         <div style="position:absolute;left:50%;top:12%;bottom:12%;width:1px;background:rgba(0,0,0,.15);pointer-events:none"></div>
@@ -329,7 +342,7 @@ function ballCss(n){const c=colorOf(n),s=`rgb(${c})`,hl='radial-gradient(circle 
   return n>8?`${hl},radial-gradient(circle,transparent 60%,rgba(0,0,0,.35)),linear-gradient(180deg,#f3f0e8 0 27%,${s} 27% 73%,#f3f0e8 73%)`:`${hl},radial-gradient(circle,${s} 55%,rgba(0,0,0,.55) 120%)`;}
 const groupOf=n=>n<8?'solid':'stripe';
 const MOODTAG={hype:'dance,gif',smug:'funny,gif',angry:'angry,gif',sad:'sad',shocked:'shocked',sleepy:'sleepy,gif',cute:'cute,gif'};
-const COMBO_COIN=1000,COMBO_MAX=4,FINE=0.0009;
+const COMBO_COIN=1000,COMBO_MAX=4,FINE=0.0009,AIM_K=0.6;
 const GOODEV={break_pot:1,long_pot:1,group:1,on_eight:1,win:1,combo:1};
 const LINES={"trash_pregame":["Rack 'em. I'll make this quick.","Brought a cue? Should've brought excuses.","I've beaten toasters with more talent.","Relax. Losing is a skill you've mastered.","You break, I break your spirit.","Hope your ego is insured.","Tonight's forecast: you, crying.","I'd go easy on you, but I don't do charity.","Welcome to your public humiliation.","Chalk up. It won't help.","Fun fact: nobody remembers second place.","I've seen your stats. Brave of you to show up.","Let's get this beatdown started.","You're not my opponent. You're my warm-up.","Take a good look at the crown. Last time you'll see it."],
  "trash_foul_scratch":["Scratch. Truly elite stupidity.","You potted the cue ball. Bold strategy.","Thanks for the ball in hand. Generous loser.","The cue ball fled. Smart ball.","Even the cue ball wants off your team.","Scratch. Your trademark move.","Gift received. You're too kind.","That pocket wasn't for you, genius.","Scratching again? It's almost a talent."],
@@ -399,10 +412,10 @@ class Component extends DCLogic {
     else if(d.type==='result'){this.setState({result:d});}};window.addEventListener('message',this.onHost);setTimeout(()=>this.hostSend({type:'ready',mode:0}),300);this.blinkT=setInterval(()=>{if(this.g.phase==='aim')this.sync();},450);
     this.rack();this._lastFelt=this.feltName();this.catPool=[];this.localCats=['assets/cats/cat1.gif','assets/cats/cat2.gif','assets/cats/cat3.gif','assets/animals/dog1.jpg','assets/animals/dog2.jpg','assets/animals/dog3.jpg','assets/animals/fox1.jpg','assets/animals/fox2.jpg'].sort(()=>Math.random()-.5);this.localCats.forEach(u=>{const im=new Image();im.src=u;});this.catI=0;for(let i=0;i<2;i++)this.loadCat();
     this.gly=this.makeGlyphs();
-    this.ro=new ResizeObserver(()=>this.layout()); this.ro.observe(this.wrapRef.current);
+    this.ro=new ResizeObserver(()=>this.layout()); this.ro.observe(this.wrapRef.current);this.onWin=()=>{this.sync();setTimeout(()=>this.layout(),60);};window.addEventListener('resize',this.onWin);try{screen.orientation&&screen.orientation.addEventListener('change',this.onWin);}catch(x){}
     this.layout();
     document.fonts&&document.fonts.load('900 30px Montserrat').then(()=>{this.gly=this.makeGlyphs();this.g.balls.forEach(b=>b.dirty=true);this.buildStatic();});
-    this.onKey=e=>{const g=this.g;if(g.phase!=='aim'||!this.human())return;if(e.key==='ArrowLeft'||e.key==='ArrowRight'){g.aim+=(e.key==='ArrowLeft'?-1:1)*(e.shiftKey?0.02:0.0025);this.aimLock=true;e.preventDefault();}};
+    this.onKey=e=>{const g=this.g;if(g.phase!=='aim'||!this.human())return;if(e.key==='ArrowLeft'||e.key==='ArrowRight'){g.aim+=(e.key==='ArrowLeft'?-1:1)*(e.shiftKey?0.02:0.0025);e.preventDefault();}};
     window.addEventListener('keydown',this.onKey);
     this.raf=requestAnimationFrame(this.loop);
   }
@@ -429,16 +442,23 @@ class Component extends DCLogic {
     const wrap=this.wrapRef.current,cv=this.cvRef.current;if(!wrap||!cv)return;
     const cw=wrap.clientWidth,ch=wrap.clientHeight;if(!cw||!ch)return;
     const dpr=Math.min(2,window.devicePixelRatio||1);this.dpr=dpr;cv.width=Math.round(cw*dpr);cv.height=Math.round(ch*dpr);
-    const portrait=window.innerHeight>window.innerWidth*1.05;
-    const side=!portrait&&window.innerWidth-((window.innerHeight-104)/624*1124+62)>270;if(side!==this.state.side)this.setState({side});
-    const pT=112*dpr,pB=30*dpr,pX=6*dpr,aw=cv.width-2*pX,ah=cv.height-pT-pB;let s;
+    const portrait=!this.isTouch()&&window.innerHeight>window.innerWidth*1.05,short=!portrait&&this.vh()<560;
+    const side=!portrait&&this.vw()-((this.vh()-104)/624*1124+150)>270;if(side!==this.state.side)this.setState({side});
+    const pT=(short?8:112)*dpr,pB=(short?28:30)*dpr,pX=6*dpr,aw=cv.width-2*pX,ah=cv.height-pT-pB;let s;
     if(!portrait){s=Math.min(aw/1124,ah/624);const ox=pX+(aw-1124*s)/2,oy=pT+(ah-624*s)/2;this.T=[s,0,0,s,ox+62*s,oy+62*s];}
     else{s=Math.min(aw/624,ah/1124);const ox=pX+(aw-624*s)/2,oy=pT+(ah-1124*s)/2;this.T=[0,-s,s,0,ox+62*s,oy+1062*s];}
     this.s=s;this.portrait=portrait;{const T=this.T,pts=[[-62,-62],[1062,-62],[-62,562],[1062,562]].map(([x,y])=>[(T[0]*x+T[2]*y+T[4])/dpr,(T[1]*x+T[3]*y+T[5])/dpr]),xs=pts.map(p=>p[0]),ys=pts.map(p=>p[1]);const tb={l:Math.min(...xs),r:cw-Math.max(...xs),t:Math.min(...ys),w:Math.max(...xs)-Math.min(...xs)};const o=this.state.tbl;if(!o||Math.abs(o.l-tb.l)+Math.abs(o.r-tb.r)+Math.abs(o.t-tb.t)>1)this.setState({tbl:tb});}this.g.balls.forEach(b=>b.dirty=true);this.buildStatic();
     if(portrait!==this.state.portrait)this.setState({portrait});
   }
+  isTouch(){if(this._touch==null){try{this._touch=/[?&]rot=1/.test(location.search)||(matchMedia('(pointer: coarse)').matches&&!matchMedia('(pointer: fine)').matches);}catch(e){this._touch=false;}}return this._touch;}
+  rot(){return this.isTouch()&&window.innerHeight>window.innerWidth;}
+  vw(){return this.rot()?window.innerHeight:window.innerWidth;}
+  vh(){return this.rot()?window.innerWidth:window.innerHeight;}
+  cp(e){return this.rot()?{x:e.clientY,y:window.innerWidth-e.clientX}:{x:e.clientX,y:e.clientY};}
+  lr(el){const r=el.getBoundingClientRect();if(!this.rot())return r;const W=window.innerWidth;return {left:r.top,top:W-r.right,width:r.height,height:r.width,right:r.bottom,bottom:W-r.left};}
+  tryLandscape(){if(!this.isTouch()||this._fsTried)return;this._fsTried=true;try{const d=document.documentElement,q=d.requestFullscreen?d.requestFullscreen({navigationUI:'hide'}):null;if(q&&q.then)q.then(()=>{try{const o=screen.orientation;if(o&&o.lock)o.lock('landscape').catch(()=>{});}catch(x){}}).catch(()=>{});}catch(x){}}
   toS(x,y){const T=this.T;return [T[0]*x+T[2]*y+T[4],T[1]*x+T[3]*y+T[5]];}
-  toW(e){const r=this.cvRef.current.getBoundingClientRect(),X=(e.clientX-r.left)*this.dpr,Y=(e.clientY-r.top)*this.dpr,T=this.T,s=this.s;
+  toW(e){const r=this.lr(this.cvRef.current),c=this.cp(e),X=(c.x-r.left)*this.dpr,Y=(c.y-r.top)*this.dpr,T=this.T,s=this.s;
     return this.portrait?{x:(T[5]-Y)/s,y:(X-T[4])/s}:{x:(X-T[4])/s,y:(Y-T[5])/s};}
 
   buildStatic(){
@@ -873,15 +893,21 @@ class Component extends DCLogic {
 
   pDown=(e)=>{this.initAudio();const g=this.g;if(!this.canShoot())return;const p=this.toW(e),cue=g.balls[0];
     if(this.needCall()){const pi=POCKETS.findIndex(q=>Math.hypot(q.x-p.x,q.y-p.y)<46);if(pi>=0){g.called=pi;this.toast('Pocket called — now take the shot');this.sync();return;}}e.currentTarget.setPointerCapture(e.pointerId);
-    if(g.ballInHand&&Math.hypot(p.x-cue.x,p.y-cue.y)<R*3.4){this.drag='cue';this.off={x:cue.x-p.x,y:cue.y-p.y};}else if(e.pointerType==='mouse'){this.drag='pull';this.p0=p;g.power=0;this.sync();}else{this.drag='aim';this.aimLock=false;this.aimTo(p);}};
-  pMove=(e)=>{const g=this.g;if(!this.drag){if(e.pointerType==='mouse'&&this.canShoot()&&!this.powering&&!this.aimLock&&!this.fining)this.aimTo(this.toW(e));return;}const p=this.toW(e);
-    if(this.drag==='aim')this.aimTo(p);
+    if(g.ballInHand&&Math.hypot(p.x-cue.x,p.y-cue.y)<R*3.4){this.drag='cue';this.off={x:cue.x-p.x,y:cue.y-p.y};return;}
+    // Nothing moves on the press itself. What the drag does is decided once it has gone a few pixels.
+    this.drag='press';this.p0=p;this.mouse=e.pointerType==='mouse';};
+  pMove=(e)=>{const g=this.g;if(!this.drag)return;const p=this.toW(e),cue=g.balls[0];
+    if(this.drag==='press'){const dx=p.x-this.p0.x,dy=p.y-this.p0.y;if(Math.hypot(dx,dy)*this.s/this.dpr<7)return;
+      const back=-(dx*Math.cos(g.aim)+dy*Math.sin(g.aim)),side=Math.abs(-dx*Math.sin(g.aim)+dy*Math.cos(g.aim));
+      // With a mouse, pulling straight back along the cue is a power stroke; any other drag turns the aim.
+      if(this.mouse&&back>0&&back>side*1.3){this.drag='pull';g.power=0;}else{this.drag='rot';this.a0=Math.atan2(this.p0.y-cue.y,this.p0.x-cue.x);}}
+    if(this.drag==='rot'){if(Math.hypot(p.x-cue.x,p.y-cue.y)<R*2.2)return;const a=Math.atan2(p.y-cue.y,p.x-cue.x);let d=a-this.a0;while(d>Math.PI)d-=2*Math.PI;while(d<-Math.PI)d+=2*Math.PI;this.a0=a;if(d){g.aim+=d*AIM_K;this.sync();}}
     else if(this.drag==='pull'){const pr=(this.p0.x-p.x)*Math.cos(g.aim)+(this.p0.y-p.y)*Math.sin(g.aim);const np=clamp(pr/170,0,1);if(Math.abs(np-g.power)>.004){g.power=np;this.sync();}}
-    else this.moveCue(p.x+this.off.x,p.y+this.off.y);};
-  pUp=(e)=>{const g=this.g;if(this.drag==='pull'){if(g.power>.03&&this.canShoot())this.shoot(g.power);else{g.power=0;if(this.aimLock&&e&&e.clientX!=null){this.aimLock=false;this.aimTo(this.toW(e));}this.sync();}}this.drag=null;};
+    else if(this.drag==='cue')this.moveCue(p.x+this.off.x,p.y+this.off.y);};
+  pUp=()=>{const g=this.g;if(this.drag==='pull'){if(g.power>.03&&this.canShoot())this.shoot(g.power);else{g.power=0;this.sync();}}else if(this.drag==='rot')this.sync();this.drag=null;};
   aimTo(p){const cue=this.g.balls[0];if(Math.hypot(p.x-cue.x,p.y-cue.y)>R*.6)this.g.aim=Math.atan2(p.y-cue.y,p.x-cue.x);}
   moveCue(x,y){const g=this.g,cue=g.balls[0];x=clamp(x,R+1,(g.kitchen?250:W-R-1));y=clamp(y,R+1,H-R-1);if(g.balls.every(b=>!b.on||b.n===0||Math.hypot(b.x-x,b.y-y)>2*R+.5)){cue.x=x;cue.y=y;}}
-  setPow(e){const r=this.pr,z=this.pz||{x:e.clientX,y:e.clientY},f=this.state.portrait?(z.x-e.clientX)/(r.width*.8):(e.clientY-z.y)/(r.height*.8);const np=clamp(f,0,1);if(Math.abs(np-this.g.power)>.003){this.g.power=np;this.sync();}}
+  setPow(e){const r=this.pr,c=this.cp(e),z=this.pz||c,f=this.state.portrait?(z.x-c.x)/(r.width*.8):(c.y-z.y)/(r.height*.8);const np=clamp(f,0,1);if(Math.abs(np-this.g.power)>.003){this.g.power=np;this.sync();}}
 
   comboBar(nm,inline){const g=this.g;if(!g.inGame&&g.phase!=='over')return null;if(!g.stats)return null;const E=React.createElement,neon=!!this.felt().neon;
     const i=g.phase==='over'?this.mySeat():(g.mode==='practice'?0:g.turn),s=g.stats[i]||{streak:0,combos:[],best:0,coins:0},k=g.phase==='over'?0:s.streak;
@@ -891,14 +917,21 @@ class Component extends DCLogic {
     const earn=pays?(i!==me?'You ':'')+(mc>0?`+${this.fmtC(mc)} on a win`:'+1K a combo on a win'):`${s.coins} pts`;
     const kids=[E('i',{key:'f',className:'ph-fill ph-fire',style:{fontSize:13,color:k>=2?'#ff8a2a':'#6f665c'}}),
       E('span',{key:'k',style:{fontFamily:'Montserrat',fontStyle:'italic',fontWeight:900,fontSize:14,color:k>=2?'#f2c21b':'#a59b8f',minWidth:22}},'×'+k),
-      inline&&typeof window!=='undefined'&&window.innerWidth<480?null:E('div',{key:'s',style:{display:'flex',gap:2,flex:'none'}},...segs),
+      inline&&this.vw()<480?null:E('div',{key:'s',style:{display:'flex',gap:2,flex:'none'}},...segs),
       E('span',{key:'t',style:{flex:1,minWidth:0,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',color:'#a59b8f'}},`${who} · ${s.combos.length} combo${s.combos.length===1?'':'s'} · best ×${s.best}`),
       E('span',{key:'e',style:{flex:'none',display:'flex',alignItems:'center',gap:3,color:pays?'#ffd94d':'#f2c21b',fontWeight:800}},E('i',{className:pays?'ph-fill ph-coin':'ph-fill ph-star'}),earn)];
     const box={display:'flex',alignItems:'center',gap:7,height:28,padding:'0 10px',borderRadius:10,background:'rgba(10,7,5,.72)',border:`1px solid ${k>=2?'rgba(242,194,27,.55)':'rgba(255,255,255,.08)'}`,fontSize:11.5,fontWeight:600,boxSizing:'border-box',transition:'border-color .2s'};
     if(inline)return E('div',{style:box},...kids);
     return E('div',{style:{...box,position:'absolute',left:'50%',top:6,transform:'translateX(-50%)',width:'min(440px,60%)',pointerEvents:'none',zIndex:4}},...kids);}
+  comboBadge(){const g=this.g;if(!g.stats||(!g.inGame&&g.phase!=='over'))return null;const E=React.createElement;
+    const i=g.phase==='over'?this.mySeat():(g.mode==='practice'?0:g.turn),s=g.stats[i]||{streak:0,combos:[],best:0,coins:0},k=g.phase==='over'?0:s.streak;
+    const me=this.mySeat(),pays=this.comboPays(me),mc=this.comboCoins(me);
+    return E('div',{title:'Combos',style:{width:54,boxSizing:'border-box',padding:'6px 4px',borderRadius:12,background:'rgba(10,7,5,.75)',border:`1px solid ${k>=2?'rgba(242,194,27,.6)':'rgba(255,255,255,.08)'}`,display:'flex',flexDirection:'column',alignItems:'center',gap:3,transition:'border-color .2s'}},
+      E('div',{style:{display:'flex',alignItems:'center',gap:3}},E('i',{className:'ph-fill ph-fire',style:{fontSize:12,color:k>=2?'#ff8a2a':'#6f665c'}}),E('span',{style:{fontFamily:'Montserrat',fontStyle:'italic',fontWeight:900,fontSize:14,color:k>=2?'#f2c21b':'#a59b8f'}},'×'+k)),
+      E('div',{style:{fontSize:9,fontWeight:700,color:'#a59b8f',whiteSpace:'nowrap'}},`${s.combos.length} · best ×${s.best}`),
+      E('div',{style:{display:'flex',alignItems:'center',gap:2,fontSize:10,fontWeight:800,color:pays?'#ffd94d':'#f2c21b',whiteSpace:'nowrap'}},E('i',{className:pays?'ph-fill ph-coin':'ph-fill ph-star'}),pays?'+'+this.fmtC(mc):s.coins+''));}
   renderVals(){
-    const g=this.g,st=this.state,nm=this.names(),narrow=typeof window!=='undefined'&&window.innerWidth<720;
+    const g=this.g,st=this.state,nm=this.names(),narrow=this.vw()<720;
     const players=[0,1].map(i=>{
       const active=g.phase!=='menu'&&g.phase!=='over'&&g.turn===i&&g.mode!=='practice'||(g.mode==='practice'&&i===0&&g.phase!=='menu');
       const grp=g.groups[i];let status=g.mode==='practice'?(i===0?'FREE PLAY':'NO RULES'):grp?(this.left(grp)===0?'ON THE 8':`${grp==='solid'?'SOLIDS':'STRIPES'} · ${this.left(grp)} LEFT`):'OPEN TABLE';
@@ -914,15 +947,16 @@ class Component extends DCLogic {
         border:active?'1.5px solid #e2b437':'1.5px solid rgba(255,255,255,.07)',glow:active?'0 0 0 3px rgba(226,180,55,.1),0 0 26px rgba(226,180,55,.2)':'none',
         avBg:i===0?'radial-gradient(circle at 35% 30%,#fff1a6,#f2c21b 45%,#b98200)':'radial-gradient(circle at 35% 30%,#ffffff,#d9d6cf 45%,#8f8b83)',dir:i===0?'row':'row-reverse',align:i===0?'flex-start':'flex-end'};});
     const human=this.human(),cue=g.balls[0];let hint='';
-    if(g.phase==='aim'&&!st.menuOpen){if(g.ai)hint='Machine is lining up a shot…';else if(this.needCall()&&g.called==null)hint='On the 8 · tap a pocket to call it';else if(this.drag==='pull'||this.powering)hint=g.power>.03?`Power ${Math.round(g.power*100)}% · release to shoot`:(this.powering?'Pull the cue back to build power':'Pull the mouse back to build power');else if(this.fining)hint=`Fine aim · ${(((g.aim*180/Math.PI)%360+360)%360).toFixed(1)}°`;else if(this.aimLock&&!st.portrait)hint='Fine aim set · press and pull back to shoot · click the table to aim with the mouse';else if(g.ballInHand)hint=(g.kitchen?'Ball in hand · drag the cue ball behind the line':'Ball in hand · drag the cue ball anywhere')+(st.portrait?'':' · or press away from it and pull back to shoot');else hint=st.portrait?'Drag to aim · pull the cue back to shoot':'Move to aim · press and pull the mouse back, or pull the cue · release to shoot';}
+    const deg=(((g.aim*180/Math.PI)%360+360)%360).toFixed(1),touch=this.isTouch();
+    if(g.phase==='aim'&&!st.menuOpen){if(g.ai)hint='Machine is lining up a shot…';else if(this.needCall()&&g.called==null)hint='On the 8 · tap a pocket to call it';else if(this.drag==='pull'||this.powering)hint=g.power>.03?`Power ${Math.round(g.power*100)}% · release to shoot`:'Pull back to build power';else if(this.fining)hint=`Fine aim · ${deg}°`;else if(this.drag==='rot')hint=`Aim ${deg}°`;else if(g.ballInHand)hint=(g.kitchen?'Ball in hand · drag the cue ball behind the line':'Ball in hand · drag the cue ball anywhere')+(touch?'':' · drag the table to aim');else hint=touch?'Drag to aim · pull the cue to shoot':(st.portrait?'Drag to turn the aim · pull the cue back to shoot':'Drag the table to turn the aim · pull straight back, or pull the cue, to shoot');}
     const sx=g.spin.x,sy=g.spin.y,spinLabel=Math.hypot(sx,sy)<.12?'Center ball':(Math.abs(sy)>=Math.abs(sx)?(sy>0?'Top spin · follow':'Back spin · draw'):(sx>0?'Right English':'Left English'));
-    const spinPos=(e)=>{const r=e.currentTarget.getBoundingClientRect();let x=(e.clientX-r.left-r.width/2)/(r.width/2),y=(e.clientY-r.top-r.height/2)/(r.height/2);const l=Math.hypot(x,y);if(l>.8){x*=.8/l;y*=.8/l;}g.spin={x,y:-y};this.sync();};
-    const pick=(m)=>(e)=>{e&&e.preventDefault&&e.preventDefault();this.initAudio();if(!this.host||this.host.signedIn!==true)return;if(this.g.mode==='online'&&this.g.inGame)this.netResign();if(m==='online'){this.netQueue();return;}
+    const spinPos=(e)=>{const r=this.lr(e.currentTarget),c=this.cp(e);let x=(c.x-r.left-r.width/2)/(r.width/2),y=(c.y-r.top-r.height/2)/(r.height/2);const l=Math.hypot(x,y);if(l>.8){x*=.8/l;y*=.8/l;}g.spin={x,y:-y};this.sync();};
+    const pick=(m)=>(e)=>{e&&e.preventDefault&&e.preventDefault();this.initAudio();this.tryLandscape();if(!this.host||this.host.signedIn!==true)return;if(this.g.mode==='online'&&this.g.inGame)this.netResign();if(m==='online'){this.netQueue();return;}
       if(m==='pvp'){let p2='';try{p2=localStorage.getItem('wta8.p2')||'';}catch(x){}const p1=(this.g.pvpNames&&this.g.pvpNames[0])||this.me();this.setState({menuOpen:false,spinOpen:false,pvpSetup:{p1,p2,err:''}});return;}
       this.loadThen(m,m==='practice'?1000:1700);};
     const w=g.winner,over=g.phase==='over';
     return {
-      wrapRef:this.wrapRef,cvRef:this.cvRef,players,hint,msg:st.msg,tbS:typeof window!=='undefined'&&window.innerWidth<420?'34px':'40px',
+      wrapRef:this.wrapRef,cvRef:this.cvRef,players,hint,msg:st.msg,tbS:this.vw()<420?'34px':'40px',
       sysSub:`Rated. Beat ${st.level} for +${this.fmtC(this.winFor('system'))} WTA Coins.`,
       pvpSub:'Two players, one device. Just for fun, no coins.',
       onSub:(()=>{const n=(st.presence&&st.presence.online)||0;return (n>1?`● ${n} players online now · `:'Real players, live · ')+`win +${this.fmtC(this.winFor('online'))} WTA Coins`;})(),
@@ -977,11 +1011,17 @@ class Component extends DCLogic {
             P.err?note(P.err,'e','#ff7a6a'):note('One device, two players. Pass it over after each turn. Just for fun: no WTA Coins.','e'),
             E('div',{key:'b',style:{marginTop:20,display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,width:'100%'}},btn('START GAME',go,true,'go'),btn('BACK',()=>this.setState({pvpSetup:null,menuOpen:true}),false,'back'))]);}
         return null;})(),
+      rootPos:this.rot()?`left:0;top:0;width:${window.innerHeight}px;height:${window.innerWidth}px;transform-origin:0 0;transform:rotate(90deg) translateY(-100%)`:'inset:0',
+      topPad:!st.portrait&&this.vh()<560?'6px 10px 2px':'10px 12px 6px',spinTopD:st.portrait?'flex':'none',
+      spinPopPos:st.portrait?'top:62px;right:12px':'top:50%;right:'+(this.vh()<560?76:84)+'px;transform:translateY(-50%)',spinBc:st.spinOpen?'#f2c21b':'rgba(226,180,55,.35)',
+      colW:this.vh()<560?'62px':'72px',colGap:this.vh()<560?'26px':'34px',powH:this.vh()<560?'min(56%,440px)':'min(66%,440px)',
+      hintB:!st.portrait&&this.vh()<560?'4px':'8px',hintP:!st.portrait&&this.vh()<560?'3px 10px':'5px 12px',hintF:!st.portrait&&this.vh()<560?'10.5px':'11.5px',
+      comboBadge:!st.portrait&&this.vh()<560?this.comboBadge():null,
       landscape:!st.portrait,portrait:st.portrait,powInv:((1-g.power)*100).toFixed(1)+'%',
       cueT:(g.power*80).toFixed(1)+'%',powClipV:g.power<.01?'100%':`calc((100% - 23px) * ${(1-g.power*.8).toFixed(3)})`,powClipH:g.power<.01?'100%':`calc((100% - 22px) * ${(1-g.power*.8).toFixed(3)})`,
       pullTxt:(this.powering||this.drag==='pull')&&g.power>.01?`POWER ${Math.round(g.power*100)}%`:'‹ PULL BACK',pullC:(this.powering||this.drag==='pull')&&g.power>.01?'#ffd94d':(this.canShoot()?'rgba(255,255,255,.62)':'rgba(255,255,255,.25)'),
       aimDeg:(((g.aim*180/Math.PI)%360+360)%360).toFixed(1),ridgeOff:((((g.aim/FINE)%7)+7)%7).toFixed(2)+'px',fineBc:this.fining?'#f2c21b':(this.aimLock?'rgba(242,194,27,.6)':'rgba(255,255,255,.12)'),
-      comboBarP:st.portrait?this.comboBar(nm,true):null,comboBarL:!st.portrait&&!(st.side&&!st.portrait)?this.comboBar(nm,false):null,
+      comboBarP:st.portrait?this.comboBar(nm,true):null,comboBarL:!st.portrait&&!(st.side&&!st.portrait)&&this.vh()>=560?this.comboBar(nm,false):null,
       soundIcon:st.sound?'ph-speaker-high':'ph-speaker-slash',
       toggleSound:()=>{this.initAudio();this.setState({sound:!st.sound});},
       toggleSpin:()=>this.setState({spinOpen:!st.spinOpen}),spinOpen:st.spinOpen,
@@ -990,9 +1030,9 @@ class Component extends DCLogic {
       resetSpin:()=>{g.spin={x:0,y:0};this.sync();},
       pDown:this.pDown,pMove:this.pMove,pUp:this.pUp,
       onWheel:(e)=>{if(g.phase==='aim'&&this.human()&&!g.ai){g.aim+=e.deltaY*.0006;this.aimLock=true;}},
-      powDown:(e)=>{this.initAudio();if(!this.canShoot())return;e.currentTarget.setPointerCapture(e.pointerId);this.pr=e.currentTarget.getBoundingClientRect();this.pz={x:e.clientX,y:e.clientY};this.powering=true;g.power=0;this.sync();},
-      fineDown:(e)=>{this.initAudio();if(!this.canShoot())return;e.currentTarget.setPointerCapture(e.pointerId);this.fz=st.portrait?e.clientX:e.clientY;this.fining=true;this.sync();},
-      fineMove:(e)=>{if(!this.fining||!this.canShoot())return;const v=st.portrait?e.clientX:e.clientY,d=v-this.fz;this.fz=v;if(d){g.aim+=d*FINE;this.aimLock=true;this.sync();}},
+      powDown:(e)=>{this.initAudio();if(!this.canShoot())return;e.currentTarget.setPointerCapture(e.pointerId);this.pr=this.lr(e.currentTarget);this.pz=this.cp(e);this.powering=true;g.power=0;this.sync();},
+      fineDown:(e)=>{this.initAudio();if(!this.canShoot())return;e.currentTarget.setPointerCapture(e.pointerId);{const c=this.cp(e);this.fz=st.portrait?c.x:c.y;}this.fining=true;this.sync();},
+      fineMove:(e)=>{if(!this.fining||!this.canShoot())return;const c=this.cp(e),v=st.portrait?c.x:c.y,d=v-this.fz;this.fz=v;if(d){g.aim+=d*FINE;this.aimLock=true;this.sync();}},
       fineUp:()=>{if(!this.fining)return;this.fining=false;this.sync();},
       fineWheel:(e)=>{if(!this.canShoot())return;e.stopPropagation();g.aim+=(e.deltaY>0?1:-1)*FINE*4;this.aimLock=true;this.sync();},
       powMove:(e)=>{if(this.powering)this.setPow(e);},
@@ -1004,7 +1044,7 @@ class Component extends DCLogic {
       exitGames:(e)=>{e.preventDefault();if(window.parent!==window)this.hostSend({type:'exit'});else location.href='/games';},playSystem:pick('system'),playPvp:pick('pvp'),playOnline:pick('online'),playPractice:pick('practice'),
       levels:Object.keys(LV).map(n=>({name:n,pick:()=>this.setState({level:n}),bg:st.level===n?'rgba(226,180,55,.18)':'transparent',fg:st.level===n?'#f2c21b':'#a59b8f',bc:st.level===n?'rgba(226,180,55,.6)':'rgba(255,255,255,.1)'})),
       trayPos:st.portrait?'top:6px':'bottom:6px',trays:st.side?[]:(()=>{const neon=!!this.felt().neon;return [['SOLIDS',[1,2,3,4,5,6,7],'40,240,255'],['STRIPES',[9,10,11,12,13,14,15],'255,60,210']].map(([label,ns,gc],i)=>({label,side:i?'right:10px':'left:10px',dir:i?'row-reverse':'row',bc:neon?`rgba(${gc},.7)`:'rgba(226,180,55,.3)',sh:neon?`0 0 14px rgba(${gc},.35)`:'none',lc:neon?`rgb(${gc})`:'#a59b8f',
-        balls:ns.map(n=>{const on=g.balls.length?g.balls.find(b=>b.n===n).on:true;return {bg:on?'rgba(255,255,255,.06)':ballCss(n),glow:!on&&neon?`0 0 8px rgba(${gc},.8)`:'0 1px 2px rgba(0,0,0,.6)'};})}));})(),
+        balls:ns.map(n=>{const on=g.balls.length?g.balls.find(b=>b.n===n).on:true;return {bg:ballCss(n),glow:on&&neon?`0 0 7px rgba(${gc},.7)`:'0 1px 2px rgba(0,0,0,.6)',op:on?'1':'.22',fl:on?'none':'grayscale(1)'};})}));})(),
       felts:Object.keys(FELTS).map(k=>{const F=FELTS[k],sel=this.feltName()===k;return {name:k,pick:()=>this.setState({feltSel:k}),bg:F.neon?'radial-gradient(circle at 35% 30%,#3a2470,#120a26 70%),#120a26':`radial-gradient(circle at 35% 30%,${F.c},${F.e})`,ring:sel?(F.neon?'0 0 0 2px #3ff0ff,0 0 14px #3ff0ff':'0 0 0 2px #e2b437,0 0 12px rgba(226,180,55,.5)'):'0 0 0 1px rgba(255,255,255,.15)',fg:sel?'#f3eee6':'#8d8378'};}),
       guideLabel:this.guideOn()?'On':'Off',guideBg:this.guideOn()?'linear-gradient(180deg,#ffd94d,#ffb200)':'#2a221b',guideX:this.guideOn()?'translateX(20px)':'translateX(0)',
       toggleGuide:()=>this.setState({guideSel:!this.guideOn()}),
@@ -1014,7 +1054,7 @@ class Component extends DCLogic {
           segs:Array.from({length:7},(_,i)=>({bg:i<k?(this.felt().neon?'linear-gradient(90deg,#3ff0ff,#ff3fc8)':'linear-gradient(90deg,#ffd94d,#ffb200)'):'rgba(255,255,255,.08)'})),
           coinRows:(g.mode==='practice'?[0]:[0,1]).map(i=>({name:nm[i],coins:g.stats?g.stats[i].coins:0,best:g.stats?g.stats[i].best:0})),
           log:(g.log||[]).map(l=>({txt:`${l.name} · Combo ×${l.n}`,coins:'+'+l.coins+' pts'})),noLog:!(g.log&&g.log.length),
-          trays:[['SOLIDS',[1,2,3,4,5,6,7]],['STRIPES',[9,10,11,12,13,14,15]]].map(([label,ns])=>({label,balls:ns.map(n=>{const on=g.balls.length?g.balls.find(b=>b.n===n).on:true;return {bg:on?'rgba(255,255,255,.06)':ballCss(n)};})}))};})(),
+          trays:[['SOLIDS',[1,2,3,4,5,6,7]],['STRIPES',[9,10,11,12,13,14,15]]].map(([label,ns])=>({label,balls:ns.map(n=>{const on=g.balls.length?g.balls.find(b=>b.n===n).on:true;return {bg:ballCss(n),op:on?'1':'.22',fl:on?'none':'grayscale(1)'};})}))};})(),
       over:over&&!st.menuOpen,overName:over?nm[w]:'',overTitle:g.mode==='practice'?'CLEARS THE TABLE':'TAKES THE CROWN',overReason:over?g.reason:'',
       coins:over&&g.mode!=='practice'?(()=>{const r=st.result;if(!r)return '';const tr=r.trophies?' · '+r.trophies:'';if(r.pending)return 'Counting your WTA Coins…';if(r.awarded>0)return `+${this.fmtC(r.awarded)} WTA Coins added`+(r.combo>0?` (${this.fmtC(r.combo)} for combos)`:'')+(typeof r.balance==='number'?` · balance ${this.fmtC(r.balance)}`:'')+tr;return (r.message||'No WTA Coins this time')+tr;})():'',
       records:g.stats?(g.mode==='practice'?[0]:[0,1]).map(i=>{const cc=this.comboCoins(i);return {name:nm[i],count:g.stats[i].combos.length,best:g.stats[i].best,coins:g.stats[i].coins,cc:'+'+this.fmtC(cc),ccd:cc>0?'flex':'none'};}):[],
