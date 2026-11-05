@@ -273,8 +273,36 @@ export const ONLINE_REASONS: string[] = [
  * A "game" that finished in four seconds was not played. Paired with a
  * minimum number of shots, this is what stops the obvious script.
  */
-export const MIN_ONLINE_SECONDS = 30;
-export const MIN_ONLINE_SHOTS = 4;
+export const MIN_ONLINE_SECONDS = 10;
+export const MIN_ONLINE_SHOTS = 2;
+
+/**
+ * What a win still pays once the online daily ceiling is reached.
+ *
+ * Every won game pays something. Past the ceiling that is one unit and no
+ * combos: enough that the win is never worth nothing, small enough that the
+ * overall DAILY_COIN_CAP, not this, is what bounds a day of grinding.
+ */
+export const ONLINE_WIN_FLOOR = 1 * COIN_UNIT;
+
+/**
+ * Guarantees a won game is paid at least ONLINE_WIN_FLOOR, whatever the
+ * online ceiling left of it. `wanted` is what the game earns before any cap,
+ * `granted` what the online ceiling allowed of it.
+ */
+export function withWinFloor(wanted: CoinAward[], granted: CoinAward[]): CoinAward[] {
+  if (wanted.length === 0) return granted;
+  const paid = granted.reduce((sum, a) => sum + a.amount, 0);
+  if (paid >= ONLINE_WIN_FLOOR) return granted;
+  const win = wanted.find((a) => a.reason === "ONLINE_WON") ?? wanted[0];
+  return [
+    {
+      reason: "ONLINE_WON",
+      amount: ONLINE_WIN_FLOOR,
+      description: `${win.description} (over today's browser limit)`,
+    },
+  ];
+}
 
 /**
  * How many league nights in a row at one venue earn the streak bonus.
@@ -456,9 +484,9 @@ export function awardsForOnlineGame(args: {
   combos?: number;
 }): CoinAward[] {
   if (!args.won) return [];
-  // Two players on one device: the same person can play both sides, so the
-  // result says nothing about anyone's skill. It is for fun and pays nothing.
-  if (args.mode === 2) return [];
+  // Two players on one device pay the signed-in player (player 1) for a win at
+  // the base rate: every won game pays. One person can play both sides, so it
+  // never pays more than the easiest AI, and the daily ceilings bound it.
 
   // A modest step per difficulty — one whole coin unit a level, so beating the
   // hardest AI is worth about half as much again as beating the easiest rather
@@ -477,7 +505,7 @@ export function awardsForOnlineGame(args: {
           ? `Beat the AI${difficulty > 1 ? ` (level ${difficulty})` : ""}`
           : args.mode === 3
             ? `Beat ${args.opponentName || "a player"} online`
-            : "Won a game",
+            : "Won a pass-and-play game",
     },
   ];
 

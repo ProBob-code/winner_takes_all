@@ -91,6 +91,7 @@ import {
   ONLINE_REASONS,
   MIN_ONLINE_SECONDS,
   MIN_ONLINE_SHOTS,
+  withWinFloor,
   type CoinAward,
 } from "./lib/coins";
 import { levelInfo } from "./lib/progression";
@@ -5919,17 +5920,6 @@ app.post("/api/coins/claim-online", async (c) => {
   const store = c.get("store");
   const body = parseBody(claimOnlineGameSchema, await readJson(c));
 
-  // Pass and play on one device is for fun: nothing about it can be checked,
-  // so nothing is written and nothing is paid.
-  if (body.mode === 2) {
-    return c.json({
-      ok: true,
-      awarded: 0,
-      awards: [],
-      message: "Pass and play is just for fun, so it does not earn WTA Coins.",
-    });
-  }
-
   // Online against a real player: the result is the table's, not the page's.
   // The table (a Durable Object) heard both screens and decided; see
   // durable-objects/pool-rooms.ts. What the page says about who won is ignored.
@@ -5966,7 +5956,10 @@ app.post("/api/coins/claim-online", async (c) => {
     opponentName = verdict.players[1 - seat]?.name;
   }
 
-  const tooShort = seconds < MIN_ONLINE_SECONDS || shots < MIN_ONLINE_SHOTS;
+  // Online the server refereed the game, so a quick win (a resignation, a foul
+  // on the 8) is still a real win. Elsewhere a few seconds and a shot or two
+  // is the least a played game takes.
+  const tooShort = body.mode !== 3 && (seconds < MIN_ONLINE_SECONDS || shots < MIN_ONLINE_SHOTS);
 
   // Trophies first, and whatever happens to the coins: a game the server saw
   // start is settled exactly once, here or as abandoned. A loss always counts;
@@ -6001,18 +5994,6 @@ app.post("/api/coins/claim-online", async (c) => {
     .coinsEarnedTodayFor(user.id, ONLINE_REASONS)
     .catch(() => 0);
 
-  if (earnedOnlineToday >= ONLINE_DAILY_CAP) {
-    return c.json({
-      ok: true,
-      trophies,
-      awarded: 0,
-      awards: [],
-      cappedOut: true,
-      message:
-        "You have earned all the coins browser play gives today. Play a league fight — a fight at a venue is worth far more.",
-    });
-  }
-
   const wanted = awardsForOnlineGame({
     won,
     mode: body.mode,
@@ -6023,9 +6004,12 @@ app.post("/api/coins/claim-online", async (c) => {
   });
 
   // Two ceilings apply: the online-only one and the overall daily cap.
+  // Every won game pays: past the online ceiling, a win still earns the floor.
   const byOnlineCap = applyDailyCap(wanted, earnedOnlineToday, ONLINE_DAILY_CAP);
+  const floored = withWinFloor(wanted, byOnlineCap.granted);
+  const cappedOut = earnedOnlineToday + floored.reduce((s, a) => s + a.amount, 0) > ONLINE_DAILY_CAP;
   const earnedToday = await store.coinsEarnedToday(user.id).catch(() => 0);
-  const { granted } = applyDailyCap(byOnlineCap.granted, earnedToday);
+  const { granted } = applyDailyCap(floored, earnedToday);
 
   // Losing earns nothing at all in the browser, so say that rather than
   // returning an empty success the page has to guess at.
@@ -6039,7 +6023,9 @@ app.post("/api/coins/claim-online", async (c) => {
       message:
         body.mode === 3
           ? `${opponentName || "Your opponent"} took that one. Only the winner keeps the coins.`
-          : "The machine took that one. Only the winner keeps the coins.",
+          : body.mode === 2
+            ? "Player 2 took that one. Only player 1's wins earn coins on this account."
+            : "The machine took that one. Only the winner keeps the coins.",
     });
   }
 
@@ -6069,6 +6055,7 @@ app.post("/api/coins/claim-online", async (c) => {
     balance: balance.balance,
     title: titleFor(balance.lifetime),
     onlineRemainingToday: Math.max(0, ONLINE_DAILY_CAP - earnedOnlineToday),
+    cappedOut,
   });
 });
 

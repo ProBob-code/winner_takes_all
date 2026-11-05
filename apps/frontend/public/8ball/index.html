@@ -692,10 +692,10 @@ class Component extends DCLogic {
   namesFor(mode){const g=this.g,me=this.me();if(mode==='online')return g.onNames||[me,'Opponent'];if(mode==='system')return[me,'Machine · '+this.state.level];if(mode==='practice')return[me,'Practice'];return g.pvpNames||[me,'Player 2'];}
   me(){return (this.host&&this.host.name)||'You';}
   mySeat(){const g=this.g;return g.mode==='online'?(g.seat|0):0;}
-  comboPays(i){const g=this.g;return (g.mode==='system'||g.mode==='online')&&i===this.mySeat();}
+  comboPays(i){const g=this.g;return (g.mode==='system'||g.mode==='online'||g.mode==='pvp')&&i===this.mySeat();}
   comboCoins(i){const g=this.g,s=g.stats&&g.stats[i];return s&&this.comboPays(i)?Math.min(s.combos.length,COMBO_MAX)*COMBO_COIN:0;}
   fmtC(n){n=Math.max(0,Math.floor(+n||0));const t=x=>x.replace(/\.0$/,'');if(n>=1e6){const m=n/1e6;return (m<10?t(m.toFixed(1)):Math.round(m))+'M';}if(n>=1e3){const k=n/1e3;return (k<10?t(k.toFixed(1)):Math.round(k))+'K';}return String(n);}
-  winFor(mode){return mode==='system'?(2+this.aiRating())*1000:mode==='online'?5000:0;}
+  winFor(mode){if(mode==='pvp')return 3000;return mode==='system'?(2+this.aiRating())*1000:mode==='online'?5000:0;}
   loadThen(mode,ms){ms=ms||1700;const nm=this.namesFor(mode);this.setState({menuOpen:false,spinOpen:false,pvpSetup:null,loading:{mode,a:nm[0],b:nm[1],t0:Date.now(),ms}});clearTimeout(this.loadT);this.loadT=setTimeout(()=>{this.setState({loading:null});this.start(mode);},ms);}
   endLoadSoon(){const L=this.state.loading;clearTimeout(this.loadT);if(!L)return;this.loadT=setTimeout(()=>this.setState({loading:null}),Math.max(0,L.t0+L.ms-Date.now()));}
   human(){const g=this.g;if(g.mode==='online')return g.turn===g.seat;return g.mode!=='system'||g.turn===0;}
@@ -865,7 +865,7 @@ class Component extends DCLogic {
   hostSend(m){try{if(window.parent!==window)window.parent.postMessage(Object.assign({wtaCoins:true},m),location.origin);}catch(e){}}
   aiRating(){return ({Rookie:1,Pro:2,Legend:3})[this.state.level]||1;}
   hostStart(mode){const g=this.g;g.shotsN=0;g.t0=Date.now();g.reportedOver=false;this.setState({result:null});if(mode==='system')this.hostSend({type:'game_start',mode:1,aiRating:this.aiRating()});else if(mode==='pvp')this.hostSend({type:'game_start',mode:2});}
-  hostOver(w){const g=this.g;if(g.reportedOver||g.mode==='practice')return;g.reportedOver=true;this.setState({result:g.mode==='pvp'?{message:'Pass and play is just for fun, so it does not earn WTA Coins.'}:{pending:true}});const me0=g.mode==='online'?g.seat:0;this.hostSend({type:'game_over',mode:g.mode==='system'?1:g.mode==='online'?3:2,tableId:g.tableId,aiRating:this.aiRating(),won:w===me0,winner:w===me0?'p1':'p2',seconds:Math.round((Date.now()-(g.t0||Date.now()))/1000),shots:g.shotsN||0,combos:(g.stats&&g.stats[me0]?g.stats[me0].combos.length:0)});}
+  hostOver(w){const g=this.g;if(g.reportedOver||g.mode==='practice')return;g.reportedOver=true;this.setState({result:{pending:true}});const me0=g.mode==='online'?g.seat:0;this.hostSend({type:'game_over',mode:g.mode==='system'?1:g.mode==='online'?3:2,tableId:g.tableId,aiRating:this.aiRating(),won:w===me0,winner:w===me0?'p1':'p2',seconds:Math.round((Date.now()-(g.t0||Date.now()))/1000),shots:g.shotsN||0,combos:(g.stats&&g.stats[me0]?g.stats[me0].combos.length:0)});}
   finish(w,reason){const g=this.g;if(g.mode==='online'){if(g.shotRemote&&!this.netFinal)return;if(!g.inGame)return;this.netSend({type:'result',winnerSeat:w,reason});if(!g.shotRemote&&!this.netFinal)this.netSend({type:'settled',n:g.shotsN||0,snap:this.snapNow({w,reason})});}this.hostOver(w);{const sys=g.mode==='system';const type=sys?(w===0?'win':'lose'):'win';const subj=sys?0:w;const ln=this.lineFor(type,subj);g.overLine=ln.text;g.overSpeaker=sys?'Machine · '+this.state.level:'Announcer';g.overGif=this.takeGif(sys?(w===0?'angry':'smug'):'hype');g.react=null;
 }
     {const nm=this.names(),hw=g.mode==='system'?w===0:g.mode==='online'?w===g.seat:true;if(hw){this.winJingle();setTimeout(()=>this.speak(g.mode==='pvp'?[nm[w]+' wins!','Winner takes all!']:['You win!','Winner takes all!']),900);}else{this.loseJingle();setTimeout(()=>this.speak(['You lost!','Sheeeesh!']),1500);}}
@@ -968,7 +968,7 @@ class Component extends DCLogic {
     return {
       wrapRef:this.wrapRef,cvRef:this.cvRef,players,hint,msg:st.msg,tbS:this.vw()<420?'34px':'40px',
       sysSub:`Rated. Beat ${st.level} for +${this.fmtC(this.winFor('system'))} WTA Coins.`,
-      pvpSub:'Two players, one device. Just for fun, no coins.',
+      pvpSub:`Two players, one device. Player 1 wins +${this.fmtC(this.winFor('pvp'))} WTA Coins.`,
       onSub:(()=>{const n=(st.presence&&st.presence.online)||0;return (n>1?`● ${n} players online now · `:'Real players, live · ')+`win +${this.fmtC(this.winFor('online'))} WTA Coins`;})(),
       powBc:(this.drag==='pull'||this.powering)?'#f2c21b':'rgba(226,180,55,.28)',powSh:(this.drag==='pull'||this.powering)?',0 0 18px rgba(242,194,27,.45)':'',
       powPct:Math.round(g.power*100)+'%',powOp:(this.drag==='pull'||this.powering)&&g.power>.01?'1':'0',
@@ -997,7 +997,7 @@ class Component extends DCLogic {
             E('div',{style:{width:64,height:64,borderRadius:'50%',background:gold?'radial-gradient(circle at 35% 30%,#fff1a6,#f2c21b 45%,#b98200)':'radial-gradient(circle at 35% 30%,#ffffff,#d9d6cf 45%,#8f8b83)',color:'#2a1a06',fontFamily:'Montserrat',fontWeight:900,fontSize:robot?28:20,display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 0 0 3px rgba(0,0,0,.4),0 0 26px rgba(226,180,55,.25)'}},robot?E('i',{className:'ph-fill ph-robot'}):this.initials(name)),
             E('div',{style:{fontFamily:'Montserrat',fontWeight:800,fontSize:14,maxWidth:'100%',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}},name));
           const label={system:'VS SYSTEM · '+String(st.level).toUpperCase(),pvp:'PASS AND PLAY',online:'LIVE ONLINE MATCH',practice:'PRACTICE TABLE'}[L.mode]||'';
-          const stake=L.mode==='system'?`Win for +${this.fmtC(this.winFor('system'))} WTA Coins`:L.mode==='online'?`Win for +${this.fmtC(this.winFor('online'))} WTA Coins`+(L.bt>0?` · ${L.b}: ${L.bt} trophies`:''):L.mode==='pvp'?'Just for fun · no WTA Coins':'Free play · no rules, no coins';
+          const stake=L.mode==='system'?`Win for +${this.fmtC(this.winFor('system'))} WTA Coins`:L.mode==='online'?`Win for +${this.fmtC(this.winFor('online'))} WTA Coins`+(L.bt>0?` · ${L.b}: ${L.bt} trophies`:''):L.mode==='pvp'?`${L.a} wins for +${this.fmtC(this.winFor('pvp'))} WTA Coins`:'Free play · no rules, no coins';
           const tips=['Pull the cue back: the further you pull, the harder the shot.','Use the AIM dial for tiny changes to the angle.','Every combo in a game you win pays +1K WTA Coins, up to four a game.','Use the spin button to draw the cue ball back or follow through.','Pot two in a row to start a combo.','On the 8, tap a pocket to call it before you shoot.'];
           return wrap([...brand,
             E('div',{key:'l',style:{marginTop:10,fontSize:10.5,fontWeight:700,letterSpacing:'.3em',color:'#9b9083'}},label),
@@ -1018,7 +1018,7 @@ class Component extends DCLogic {
           return wrap([...brand,
             E('div',{key:'l',style:{marginTop:10,fontSize:10.5,fontWeight:700,letterSpacing:'.3em',color:'#9b9083'}},'PASS AND PLAY'),
             E('div',{key:'f',style:{marginTop:22,width:'100%',display:'flex',flexDirection:'column',gap:14}},field('PLAYER 1','p1','Player 1',false),field('PLAYER 2','p2','Their name',true)),
-            P.err?note(P.err,'e','#ff7a6a'):note('One device, two players. Pass it over after each turn. Just for fun: no WTA Coins.','e'),
+            P.err?note(P.err,'e','#ff7a6a'):note('One device, two players. Pass it over after each turn. Player 1 is your account: their wins earn your WTA Coins.','e'),
             E('div',{key:'b',style:{marginTop:20,display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,width:'100%'}},btn('START GAME',go,true,'go'),btn('BACK',()=>this.setState({pvpSetup:null,menuOpen:true}),false,'back'))]);}
         return null;})(),
       rootPos:this.rot()?`left:0;top:0;width:${window.innerHeight}px;height:${window.innerWidth}px;transform-origin:0 0;transform:rotate(90deg) translateY(-100%)`:'inset:0',

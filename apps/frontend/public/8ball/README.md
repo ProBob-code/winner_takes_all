@@ -26,8 +26,10 @@ It only runs inside `/play/8ball`. Opened directly, it sends the browser there.
     | --- | --- | --- |
     | vs System | 3K, 4K or 5K by level | +1K, up to 4 a game |
     | vs Online | 5K | +1K, up to 4 a game |
-    | vs Player | nothing; one person can play both sides | nothing |
+    | vs Player | 3K when player 1 (the signed-in account) wins | +1K, up to 4 a game |
 
+  - **Every won game pays.** Once the 25K online daily ceiling is reached, a win still pays 1K (`ONLINE_WIN_FLOOR`, no combos), bounded only by the overall daily cap.
+  - An online win counts however short it is, because the server refereed it (a resignation, a foul on the 8). Elsewhere a game must last 10 s and 2 shots (`MIN_ONLINE_SECONDS`, `MIN_ONLINE_SHOTS`).
   - Combo coins (`ONLINE_COMBO`) are paid only with a win, and they count against the same online daily cap. `game_over` carries `combos`. The server caps the count at the number of shots taken and at four.
   - Combo points (pts) are still shown for everyone, as score.
 - **vs Online:** real players, using the `PoolRooms` Durable Object in `apps/api`.

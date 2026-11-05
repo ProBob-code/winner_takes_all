@@ -80,7 +80,7 @@ const EARN_LABELS: Array<{ key: string; label: string; note: string }> = [
   // Worth a fraction of the venue awards, and capped separately. The schedule
   // is where the product says league nights matter more than the sofa. Note
   // there is no "play online" row: losing to the machine pays nothing.
-  { key: "ONLINE_WON", label: "Beat the machine", note: "Winner only — more for a harder AI" },
+  { key: "ONLINE_WON", label: "Win a browser game", note: "Every win pays: more for a harder AI or a real player, and still +1K after the daily browser limit" },
   { key: "ONLINE_COMBO", label: "Combos in a win", note: "Each combo in a game you win, up to four a game" },
   // Imposter pays from the room itself, winners only, with 3+ real players.
   { key: "IMPOSTER_CAUGHT", label: "Catch the imposters", note: "Imposter: every innocent, when the room votes out every imposter" },

@@ -156,13 +156,8 @@ export default function PlayEightBallPage() {
       }
 
       if (data.type !== "game_over") return;
-      // Pass and play earns nothing; the game already says so.
-      if (data.mode === 2) {
-        sessionRef.current = newSessionId();
-        return;
-      }
 
-      const mode = data.mode === 3 ? 3 : 1;
+      const mode = data.mode === 3 ? 3 : data.mode === 2 ? 2 : 1;
       const claim = () =>
         backendFetch("/coins/claim-online", {
           method: "POST",
@@ -242,7 +237,7 @@ export default function PlayEightBallPage() {
       {auth.state === "in" && (
         <iframe
           ref={frameRef}
-          src="/8ball/index.html?v=11"
+          src="/8ball/index.html?v=12"
           title="WTA Eight Ball"
           sandbox="allow-scripts allow-same-origin allow-top-navigation-by-user-activation"
           allow="autoplay; fullscreen"

@@ -14,6 +14,8 @@ import {
   awardsForDailyVisit,
   ONLINE_DAILY_CAP,
   COMBO_COINS_MAX_PER_GAME,
+  ONLINE_WIN_FLOOR,
+  withWinFloor,
   ONLINE_REASONS,
   MIN_ONLINE_SECONDS,
   MIN_ONLINE_SHOTS,
@@ -280,8 +282,11 @@ describe("online play earns, but offline is clearly worth more", () => {
     expect(absurd).toBe(hard);
   });
 
-  it("pays nothing for two players on one device, since one person can play both sides", () => {
-    expect(awardsForOnlineGame({ won: true, mode: 2 })).toEqual([]);
+  it("pays a pass-and-play win at the easiest AI's rate, never more", () => {
+    const pvp = totalOf(awardsForOnlineGame({ won: true, mode: 2 }));
+    const easy = totalOf(awardsForOnlineGame({ won: true, mode: 1, aiRating: 1 }));
+    expect(pvp).toBe(easy);
+    expect(pvp).toBeGreaterThan(0);
   });
 
   it("pays a real online opponent the same as the hardest AI", () => {
@@ -303,10 +308,9 @@ describe("online play earns, but offline is clearly worth more", () => {
     expect(awards.map((a) => a.reason)).toEqual(["ONLINE_WON", "ONLINE_COMBO"]);
   });
 
-  it("pays no combos without the win, or in pass and play", () => {
+  it("pays no combos without the win", () => {
     expect(awardsForOnlineGame({ won: false, mode: 1, combos: 4 })).toEqual([]);
     expect(awardsForOnlineGame({ won: false, mode: 3, combos: 4 })).toEqual([]);
-    expect(awardsForOnlineGame({ won: true, mode: 2, combos: 4 })).toEqual([]);
   });
 
   it("caps combos per game so a forged count is worth little", () => {
@@ -318,6 +322,25 @@ describe("online play earns, but offline is clearly worth more", () => {
   it("keeps the best possible browser game under one venue frame", () => {
     const best = totalOf(awardsForOnlineGame({ won: true, mode: 3, combos: 99 }));
     expect(best).toBeLessThan(COIN_AWARDS.FRAME_PLAYED + COIN_AWARDS.FRAME_WON);
+  });
+
+  it("pays every won game at least the floor, even past the online ceiling", () => {
+    for (const mode of [1, 2, 3] as const) {
+      const wanted = awardsForOnlineGame({ won: true, mode, combos: 3 });
+      // Nothing left of the online ceiling at all.
+      const floored = withWinFloor(wanted, applyDailyCap(wanted, ONLINE_DAILY_CAP, ONLINE_DAILY_CAP).granted);
+      expect(totalOf(floored)).toBe(ONLINE_WIN_FLOOR);
+      expect(floored[0].reason).toBe("ONLINE_WON");
+    }
+  });
+
+  it("does not add the floor when the ceiling still pays the win in full", () => {
+    const wanted = awardsForOnlineGame({ won: true, mode: 1, aiRating: 3 });
+    expect(withWinFloor(wanted, wanted)).toEqual(wanted);
+  });
+
+  it("pays no floor for a loss", () => {
+    expect(withWinFloor(awardsForOnlineGame({ won: false, mode: 1 }), [])).toEqual([]);
   });
 
   it("counts combo coins against the online ceiling", () => {
