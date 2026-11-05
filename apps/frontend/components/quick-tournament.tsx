@@ -1,5 +1,7 @@
 "use client";
 
+import { ShareButton } from "@/components/share-sheet";
+import { liveArena, shareLink } from "@/lib/share";
 import { SPORTS, sportInfo } from '@/lib/sports';
 import { applyLocalScore, isRallySport } from '@/lib/local-score';
 import { RallyMatchEngine } from '@/components/rally-match-engine';
@@ -1802,23 +1804,21 @@ export function QuickTournament() {
             <h2 className="glow-text">Arena is Live!</h2>
             <p className="muted">Your battleground is now synchronized with the global spectator network. Share the link below.</p>
             <div className="share-link-premium mt-8">
-              <div className="link-display"><span className="link-text">{window.location.origin}/arena/{arenaId}</span></div>
+              <div className="link-display"><span className="link-text">{shareLink(`/arena/${arenaId}`)}</span></div>
               <div className="share-actions-group-v2 mt-6">
                 <button className="button button-gold w-full" onClick={() => {
-                  navigator.clipboard.writeText(`${window.location.origin}/arena/${arenaId}`);
+                  navigator.clipboard.writeText(shareLink(`/arena/${arenaId}`));
                   const btn = document.querySelector('.share-actions-group-v2 .button-gold') as HTMLButtonElement;
                   if (btn) { const old = btn.innerText; btn.innerText = 'COPIED! ✅'; setTimeout(() => btn.innerText = old, 2000); }
                 }}>📋 COPY LINK</button>
                 
-                {typeof navigator !== 'undefined' && navigator.share && (
-                  <button className="button button-secondary w-full" onClick={() => {
-                    navigator.share({
-                      title: `🏆 ARENA IS LIVE: ${arenaName}`,
-                      text: `🔥 WITNESS THE SHOWDOWN! Step into the world-class stadium arena for the ${arenaName} tournament. Watch real-time multi-game duels live on Stadium Arena!`,
-                      url: `${window.location.origin}/arena/${arenaId}`,
-                    }).catch(console.error);
-                  }}>🔗 SYSTEM SHARE</button>
-                )}
+                <ShareButton
+                  className="button button-secondary w-full"
+                  heading="Share the live arena"
+                  label="📲 SHARE ON WHATSAPP"
+                  message={() => liveArena({ name: arenaName, url: shareLink(`/arena/${arenaId}`) })}
+                  card={{ title: `LIVE: ${arenaName}`, description: "Scores, the clock and the table, live on W.T.A.", image: "/stadium-og-elite.png?v=6" }}
+                />
               </div>
             </div>
             <button className="button button-secondary mt-8 w-full" onClick={() => setShowShareModal(false)}>BACK TO CONTROL ROOM</button>

@@ -10,6 +10,8 @@
  * doesn't.
  */
 
+import { ShareButton } from "@/components/share-sheet";
+import { playerBrag } from "@/lib/share";
 import Link from "next/link";
 import { useState } from "react";
 import { Avatar } from "@/components/avatar";
@@ -56,23 +58,6 @@ export interface PlayerCardData {
 export function PlayerHero({ player, own }: { player: PlayerCardData; own: boolean }) {
   const { level } = player;
   const overall = player.trophies?.find((t) => t.track === "overall");
-  const [shared, setShared] = useState<string | null>(null);
-
-  async function share() {
-    const url = `${window.location.origin}/players/${encodeURIComponent(player.id)}`;
-    try {
-      if (navigator.share) {
-        await navigator.share({ title: `${player.name} on Winner Takes All`, url });
-        return;
-      }
-      await navigator.clipboard.writeText(url);
-      setShared("Link copied");
-    } catch {
-      // Cancelling the share sheet lands here too; that is not an error.
-      setShared(null);
-    }
-  }
-
   return (
     <section className="pp-hero slide-in" aria-label={`${player.name}'s profile`}>
       <div className={`pp-avatar-wrap${player.loadout?.borderId ? " framed" : ""}`}>
@@ -163,9 +148,23 @@ export function PlayerHero({ player, own }: { player: PlayerCardData; own: boole
               Edit avatar
             </Link>
           )}
-          <button type="button" className="button-secondary" onClick={share}>
-            {shared ?? "Share profile"}
-          </button>
+          <ShareButton
+            className="button-secondary"
+            heading={own ? "Share your card" : "Share this profile"}
+            label={own ? "📲 Share my card" : "📲 Share profile"}
+            message={() =>
+              playerBrag({
+                id: player.id,
+                name: player.name,
+                mine: own,
+                title: `Level ${level.level} · ${level.band.name}`,
+                trophies: overall?.trophies,
+                coins: player.coins.lifetime,
+              })
+            }
+            card={{ title: `${player.name} on Winner Takes All`, description: `Level ${level.level} · ${level.band.name}. Real tables, real rivals, real bragging rights.`, image: "/og-image.jpg" }}
+          />
+          
         </div>
       </div>
     </section>

@@ -232,6 +232,7 @@ a{color:#e2b437;text-decoration:none}a:hover{color:#ffd35a}
             <div style="flex:1;display:flex;flex-direction:column;gap:3px"><span style="font-family:Montserrat;font-weight:800;font-size:15px">vs Online</span><span style="font-size:12px;color:#a59b8f">{{ onSub }}</span></div>
             <i class="ph-bold ph-caret-right" style="color:#e2b437"></i>
           </button>
+          <button onClick="{{ challenge }}" style="all:unset;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;padding:10px 14px;border-radius:12px;border:1px dashed rgba(37,211,102,.55);color:#4ee38a;font-weight:700;font-size:13px"><i class="ph-fill ph-whatsapp-logo" style="font-size:17px"></i>Challenge a friend on WhatsApp</button>
         </div>
         <div style="margin-top:16px;width:100%;box-sizing:border-box;padding:12px 14px;border-radius:14px;background:#120d0a;border:1px solid rgba(255,255,255,.07);display:flex;flex-direction:column;gap:12px">
           <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
@@ -305,6 +306,7 @@ a{color:#e2b437;text-decoration:none}a:hover{color:#ffd35a}
         <div style="margin-top:22px;display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%">
           <button onClick="{{ rematch }}" style="all:unset;cursor:pointer;height:46px;border-radius:12px;background:linear-gradient(180deg,#ffd94d,#ffb200);color:#7a1a10;font-family:Montserrat;font-weight:800;font-size:14px;text-align:center">REMATCH</button>
           <button onClick="{{ openMenu }}" style="all:unset;cursor:pointer;height:46px;border-radius:12px;border:1.5px solid rgba(255,255,255,.25);font-family:Montserrat;font-weight:800;font-size:14px;text-align:center">MENU</button>
+          <button onClick="{{ shareResult }}" style="all:unset;cursor:pointer;grid-column:1 / -1;height:46px;border-radius:12px;background:#25d366;color:#062b15;font-family:Montserrat;font-weight:800;font-size:14px;text-align:center;display:flex;align-items:center;justify-content:center;gap:8px"><i class="ph-fill ph-whatsapp-logo" style="font-size:19px"></i>{{ shareLabel }}</button>
         </div>
       </div>
     </div>
@@ -692,6 +694,7 @@ class Component extends DCLogic {
   namesFor(mode){const g=this.g,me=this.me();if(mode==='online')return g.onNames||[me,'Opponent'];if(mode==='system')return[me,'Machine · '+this.state.level];if(mode==='practice')return[me,'Practice'];return g.pvpNames||[me,'Player 2'];}
   me(){return (this.host&&this.host.name)||'You';}
   mySeat(){const g=this.g;return g.mode==='online'?(g.seat|0):0;}
+  winnerIsMe(){const g=this.g;if(g.mode==='pvp')return g.winner===0;return g.winner===this.mySeat();}
   comboPays(i){const g=this.g;return (g.mode==='system'||g.mode==='online'||g.mode==='pvp')&&i===this.mySeat();}
   comboCoins(i){const g=this.g,s=g.stats&&g.stats[i];return s&&this.comboPays(i)?Math.min(s.combos.length,COMBO_MAX)*COMBO_COIN:0;}
   fmtC(n){n=Math.max(0,Math.floor(+n||0));const t=x=>x.replace(/\.0$/,'');if(n>=1e6){const m=n/1e6;return (m<10?t(m.toFixed(1)):Math.round(m))+'M';}if(n>=1e3){const k=n/1e3;return (k<10?t(k.toFixed(1)):Math.round(k))+'K';}return String(n);}
@@ -1065,6 +1068,9 @@ class Component extends DCLogic {
           coinRows:(g.mode==='practice'?[0]:[0,1]).map(i=>({name:nm[i],coins:g.stats?g.stats[i].coins:0,best:g.stats?g.stats[i].best:0})),
           log:(g.log||[]).map(l=>({txt:`${l.name} · Combo ×${l.n}`,coins:'+'+l.coins+' pts'})),noLog:!(g.log&&g.log.length),
           trays:[['SOLIDS',[1,2,3,4,5,6,7]],['STRIPES',[9,10,11,12,13,14,15]]].map(([label,ns])=>({label,balls:ns.map(n=>{const on=g.balls.length?g.balls.find(b=>b.n===n).on:true;return {bg:ballCss(n),op:on?'1':'.22',fl:on?'none':'grayscale(1)'};})}))};})(),
+      shareLabel:over&&g.mode!=='practice'?(this.winnerIsMe()?'SHARE THE WIN':'CHALLENGE THEM BACK'):'CHALLENGE A FRIEND',
+      shareResult:()=>{if(g.mode==='practice'){this.hostSend({type:'share',kind:'challenge'});return;}const nm2=this.names(),me=this.mySeat(),won=this.winnerIsMe(),opp=g.mode==='system'?`the Machine (${st.level})`:String(nm2[g.mode==='pvp'?1:1-me]);const r=st.result||{};const s2=g.stats&&g.stats[me];this.hostSend({type:'share',kind:'result',mode:g.mode,won,opponent:opp,coins:won?(r.awarded||0):0,combos:s2?s2.combos.length:0,bestCombo:s2?s2.best:0});},
+      challenge:(e)=>{e&&e.preventDefault&&e.preventDefault();this.hostSend({type:'share',kind:'challenge'});},
       over:over&&!st.menuOpen,overName:over?nm[w]:'',overTitle:g.mode==='practice'?'CLEARS THE TABLE':'TAKES THE CROWN',overReason:over?g.reason:'',
       coins:over&&g.mode!=='practice'?(()=>{const r=st.result;if(!r)return '';const tr=r.trophies?' · '+r.trophies:'';if(r.pending)return 'Counting your WTA Coins…';if(r.awarded>0)return `+${this.fmtC(r.awarded)} WTA Coins added`+(r.combo>0?` (${this.fmtC(r.combo)} for combos)`:'')+(typeof r.balance==='number'?` · balance ${this.fmtC(r.balance)}`:'')+tr;return (r.message||'No WTA Coins this time')+tr;})():'',
       records:g.stats?(g.mode==='practice'?[0]:[0,1]).map(i=>{const cc=this.comboCoins(i);return {name:nm[i],count:g.stats[i].combos.length,best:g.stats[i].best,coins:g.stats[i].coins,cc:'+'+this.fmtC(cc),ccd:cc>0?'flex':'none'};}):[],

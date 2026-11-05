@@ -5,6 +5,8 @@ import {
   tableText,
   shareText,
   whatsappShareUrl,
+  withSignOff,
+  SIGN_OFF,
   type ShareMatch,
   type ShareTeam,
 } from "../src/lib/share-text";
@@ -246,5 +248,27 @@ describe("whatsappShareUrl", () => {
     expect(url).toContain("%26");
     expect(url).toContain("%23");
     expect(decodeURIComponent(url.slice("https://wa.me/?text=".length))).toBe("a & b\n#1 100%");
+  });
+});
+
+describe("the W.T.A sign-off", () => {
+  it("ends every kind of message with the live link and the sign-off", () => {
+    for (const kind of ["bracket", "results", "table"] as const) {
+      const text = shareText(kind, "Monday Blues", [], [], undefined, "https://winnertakesall.live/tournaments/t1");
+      const tail = text.split(String.fromCharCode(10)).slice(-2);
+      expect(tail[0]).toBe("📺 Live table: https://winnertakesall.live/tournaments/t1");
+      expect(tail[1]).toBe(SIGN_OFF);
+    }
+  });
+
+  it("leaves the live line out when there is no page link", () => {
+    const text = withSignOff("body");
+    expect(text.endsWith(SIGN_OFF)).toBe(true);
+    expect(text).not.toContain("Live table");
+  });
+
+  it("keeps the sign-off in WhatsApp italics", () => {
+    expect(SIGN_OFF.startsWith("_")).toBe(true);
+    expect(SIGN_OFF.endsWith("_")).toBe(true);
   });
 });

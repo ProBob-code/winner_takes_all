@@ -380,7 +380,7 @@ export default function TournamentDetailPage() {
             {!isClosed && !iAmSeated && (
               <JoinTournamentButton tournamentId={id} isPrivate={tournament.isPrivate} onJoined={() => void fetchTournamentData()} />
             )}
-            <ShareTournament tournamentId={id} tournamentName={tournament.name} />
+            <ShareTournament tournamentId={id} tournamentName={tournament.name} sport={tournament.sport} maxPlayers={tournament.maxPlayers} joinedPlayers={seatCount} status={tournament.status} />
           </div>
         </div>
 

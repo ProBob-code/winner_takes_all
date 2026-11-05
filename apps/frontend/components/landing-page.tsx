@@ -4,6 +4,8 @@ import React, { useEffect, useRef } from "react";
 import Link from "next/link";
 import { HOME_FAQ } from "@/lib/home-faq";
 import { GoatHero } from "@/components/goat-hero";
+import { ShareButton } from "@/components/share-sheet";
+import { platformInvite } from "@/lib/share";
 
 export function LandingPage() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -378,6 +380,15 @@ export function LandingPage() {
             <div className="hero-buttons" style={{ display: "flex", gap: "1.5rem", justifyContent: "center", marginTop: "4rem" }}>
                 <Link href="/run" style={{ background: "var(--gradient-fill)", color: "var(--on-gold)", padding: "1.25rem 2.5rem", borderRadius: "16px", textDecoration: "none", fontWeight: 800, fontSize: "1.1rem" }}>START A FIGHT →</Link>
                 <Link href="/playbook" style={{ background: "var(--landing-card)", border: "1px solid var(--landing-card-line)", color: "var(--landing-ink)", padding: "1.25rem 2.5rem", borderRadius: "16px", textDecoration: "none", fontWeight: 800, fontSize: "1.1rem" }}>READ THE HOST PLAYBOOK</Link>
+            </div>
+            <div style={{ display: "flex", justifyContent: "center", marginTop: "1.75rem" }}>
+                <ShareButton
+                    message={() => platformInvite()}
+                    heading="Invite your crew"
+                    label={<span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}><span aria-hidden="true">📲</span> Invite friends on WhatsApp</span>}
+                    className=""
+                    style={{ background: "transparent", border: "1px dashed rgba(37,211,102,.6)", color: "#25d366", padding: "0.9rem 1.6rem", borderRadius: 14, fontWeight: 800, fontSize: "0.95rem", cursor: "pointer" }}
+                />
             </div>
         </section>
       </main>

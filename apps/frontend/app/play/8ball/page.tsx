@@ -26,6 +26,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { backendFetch, getApiBaseUrl } from "@/lib/backend";
 import { TRACKS, signedTrophies } from "@/lib/trophies";
+import { ShareSheet } from "@/components/share-sheet";
+import { eightBallChallenge, eightBallResult, type ShareMessage } from "@/lib/share";
 
 /** One id per game, so a result can only ever be claimed once. */
 function newSessionId(): string {
@@ -48,6 +50,8 @@ export default function PlayEightBallPage() {
   const frameRef = useRef<HTMLIFrameElement>(null);
   const [auth, setAuth] = useState<Auth>({ state: "checking" });
   const [frameReady, setFrameReady] = useState(false);
+  // The game asks for the share sheet; it cannot open WhatsApp from its sandbox.
+  const [share, setShare] = useState<ShareMessage | null>(null);
   const sessionRef = useRef<string>(newSessionId());
 
   const toFrame = useCallback((msg: Record<string, unknown>) => {
@@ -143,6 +147,23 @@ export default function PlayEightBallPage() {
       }
       if (auth.state !== "in") return;
 
+      if (data.type === "share") {
+        const first = (auth.name || "").trim().split(/\s+/)[0] || undefined;
+        setShare(
+          data.kind === "result"
+            ? eightBallResult({
+                opponent: String(data.opponent || "my opponent").slice(0, 40),
+                mode: data.mode === "online" ? "online" : data.mode === "pvp" ? "pvp" : "system",
+                won: !!data.won,
+                coins: Math.max(0, Number(data.coins) || 0),
+                combos: Math.max(0, Number(data.combos) || 0),
+                bestCombo: Math.max(0, Number(data.bestCombo) || 0),
+              })
+            : eightBallChallenge(first)
+        );
+        return;
+      }
+
       // A game against the AI has begun: on record before anyone knows how it
       // ends, so closing the tab while losing still counts as a loss.
       if (data.type === "game_start") {
@@ -237,7 +258,7 @@ export default function PlayEightBallPage() {
       {auth.state === "in" && (
         <iframe
           ref={frameRef}
-          src="/8ball/index.html?v=12"
+          src="/8ball/index.html?v=13"
           title="WTA Eight Ball"
           sandbox="allow-scripts allow-same-origin allow-top-navigation-by-user-activation"
           allow="autoplay; fullscreen"
@@ -297,6 +318,20 @@ export default function PlayEightBallPage() {
             @keyframes wta8Load{0%{width:8%;margin-left:0}50%{width:45%;margin-left:30%}100%{width:8%;margin-left:92%}}
           `}</style>
         </div>
+      )}
+
+      {share && (
+        <ShareSheet
+          open
+          message={share}
+          onClose={() => setShare(null)}
+          heading={share.title}
+          card={{
+            title: "W.T.A Eight Ball — play free in your browser",
+            description: "Beat the Machine, play a friend, or play live online. Every win pays WTA Coins.",
+            image: "/og-image.jpg",
+          }}
+        />
       )}
     </main>
   );

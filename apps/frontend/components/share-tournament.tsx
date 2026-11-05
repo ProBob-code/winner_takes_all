@@ -1,98 +1,52 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { ShareButton } from "@/components/share-sheet";
+import { tournamentInvite, type TournamentShareInfo } from "@/lib/share";
 
-interface ShareTournamentProps {
+interface ShareTournamentProps extends Partial<Omit<TournamentShareInfo, "id" | "name">> {
   tournamentId: string;
   tournamentName?: string;
   className?: string;
 }
 
-export function ShareTournament({ tournamentId, tournamentName, className }: ShareTournamentProps) {
+/** Invite people into a tournament: a WhatsApp-ready message, or just the link. */
+export function ShareTournament({ tournamentId, tournamentName, className, ...info }: ShareTournamentProps) {
   const [copied, setCopied] = useState(false);
-  const [shareUrl, setShareUrl] = useState("");
+  const message = () => tournamentInvite({ id: tournamentId, name: tournamentName || "Tournament", ...info });
 
-  useEffect(() => {
-    // Construct the URL on the client side
-    const url = `${window.location.origin}/tournaments/${tournamentId}`;
-    setShareUrl(url);
-  }, [tournamentId]);
-
-  const handleCopy = async () => {
+  const copyLink = async () => {
     try {
-      await navigator.clipboard.writeText(shareUrl);
+      await navigator.clipboard.writeText(message().url);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error("Failed to copy link: ", err);
-    }
-  };
-
-  const handleShare = async () => {
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: tournamentName || "Join my Tournament",
-          text: `Join my tournament "${tournamentName || "Tournament"}" on W.T.A!`,
-          url: shareUrl,
-        });
-      } catch (err) {
-        console.error("Error sharing:", err);
-      }
-    } else {
-      handleCopy();
+    } catch {
+      setCopied(false);
     }
   };
 
   return (
-    <div className={`share-container ${className || ""}`} style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-      <div 
-        className="share-link-box desktop-only" 
-        style={{ 
-          background: "var(--glass-bg)", 
-          border: "1px solid var(--glass-border-color)", 
-          padding: "0.5rem 1rem", 
-          borderRadius: "var(--radius-sm)",
-          fontSize: "0.85rem",
-          color: "var(--text-secondary)",
-          display: "flex",
-          alignItems: "center",
-          gap: "0.5rem",
-          flex: 1,
-          overflow: "hidden",
-          textOverflow: "ellipsis",
-          whiteSpace: "nowrap"
+    <div className={`share-container ${className || ""}`} style={{ display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap" }}>
+      <ShareButton
+        message={message}
+        heading="Invite players"
+        label="📲 Invite on WhatsApp"
+        className="button button-sm button-gold"
+        style={{ flex: "1 1 auto" }}
+        card={{
+          title: `${tournamentName || "Tournament"} · a fight on Winner Takes All`,
+          description: "Free to enter. Brackets, scoring and a live table on W.T.A.",
+          image: "/og-image.jpg",
         }}
-      >
-        <span style={{ fontSize: "1.1rem" }}>🔗</span>
-        <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{shareUrl || "Loading link..."}</span>
-      </div>
-      
-      <button 
-        onClick={handleCopy}
+      />
+      <button
+        type="button"
+        onClick={copyLink}
         className={`button button-sm ${copied ? "button-success" : "button-secondary"}`}
-        style={{ minWidth: "100px" }}
+        style={{ minWidth: "110px" }}
       >
-        {copied ? "✅ Copied!" : "📋 Copy"}
+        {copied ? "✅ Copied" : "🔗 Copy link"}
       </button>
-
-      {typeof navigator !== 'undefined' && (navigator as any).share && (
-        <button 
-          onClick={handleShare}
-          className="button button-sm button-secondary"
-          title="Share using system menu"
-          style={{ flex: 1 }}
-        >
-          📤 Share
-        </button>
-      )}
-      <style jsx>{`
-        @media (max-width: 600px) {
-          .desktop-only {
-            display: none !important;
-          }
-        }
-      `}</style>
     </div>
   );
 }

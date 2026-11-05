@@ -82,7 +82,7 @@ export function bracketText(
   matches: ShareMatch[],
   joinUrl?: string
 ): string {
-  const lines: string[] = [bold(tournamentName), ""];
+  const lines: string[] = [`🏆 ${bold(tournamentName)}`, ""];
 
   const ordered = [...matches].sort((a, b) => a.match_order - b.match_order);
   const byPhase = new Map<string, ShareMatch[]>();
@@ -109,7 +109,7 @@ export function bracketText(
   }
 
   if (joinUrl) {
-    lines.push(`Not entered yet? ${joinUrl}`);
+    lines.push(`👉 Not entered yet? ${joinUrl}`);
     lines.push("Free to enter.");
   }
 
@@ -132,7 +132,7 @@ export function resultsText(
     .filter((m) => m.status === "COMPLETED")
     .sort((a, b) => a.match_order - b.match_order);
 
-  const lines: string[] = [bold(`${tournamentName} — results`), ""];
+  const lines: string[] = [`📋 ${bold(`${tournamentName} — results`)}`, ""];
 
   if (done.length === 0) {
     lines.push("No frames have finished yet.");
@@ -164,7 +164,7 @@ export function resultsText(
  * engine ranks on, so the message and the screen never disagree.
  */
 export function tableText(tournamentName: string, teams: ShareTeam[]): string {
-  const lines: string[] = [bold(`${tournamentName} — table`), ""];
+  const lines: string[] = [`📊 ${bold(`${tournamentName} — table`)}`, ""];
 
   const ranked = [...teams].sort(
     (a, b) =>
@@ -235,16 +235,32 @@ export function tableText(tournamentName: string, teams: ShareTeam[]): string {
   return lines.join("\n");
 }
 
+/**
+ * Every message ends the same way: where to follow it live, then a quiet
+ * sign-off, so a group learns which messages are W.T.A's at a glance.
+ */
+export const SIGN_OFF = "_W.T.A · Winner Takes All — play the fight, take the crown_";
+
+export function withSignOff(body: string, pageUrl?: string): string {
+  const tail = [pageUrl ? `📺 Live table: ${pageUrl}` : null, SIGN_OFF].filter(Boolean).join("\n");
+  return `${body}\n\n${tail}`;
+}
+
 export function shareText(
   kind: ShareKind,
   tournamentName: string,
   teams: ShareTeam[],
   matches: ShareMatch[],
-  joinUrl?: string
+  joinUrl?: string,
+  pageUrl?: string
 ): string {
-  if (kind === "results") return resultsText(tournamentName, teams, matches);
-  if (kind === "table") return tableText(tournamentName, teams);
-  return bracketText(tournamentName, teams, matches, joinUrl);
+  const body =
+    kind === "results"
+      ? resultsText(tournamentName, teams, matches)
+      : kind === "table"
+        ? tableText(tournamentName, teams)
+        : bracketText(tournamentName, teams, matches, joinUrl);
+  return withSignOff(body, pageUrl);
 }
 
 /**

@@ -14,6 +14,8 @@
  * plus the live camera feeds once the host has put the tournament on air.
  */
 
+import { ShareButton } from "@/components/share-sheet";
+import { liveArena, shareLink } from "@/lib/share";
 import { sportInfo } from "@/lib/sports";
 import { racketRuleText } from "@/lib/local-score";
 import { RacketCallBanner, tennisGameScore } from "@/components/racket-call";
@@ -486,7 +488,7 @@ export function HostedArena({
   }, [liveMatch]);
 
   const spectatorLink =
-    typeof window !== "undefined" ? `${window.location.origin}/arena/${arenaId}` : `/arena/${arenaId}`;
+    shareLink(`/arena/${arenaId}`);
 
   const toggleStream = async () => {
     if (showBroadcastCode) {
@@ -1417,16 +1419,13 @@ export function HostedArena({
                 >
                   {copied ? "COPIED! ✅" : "📋 COPY LINK"}
                 </button>
-                {typeof navigator !== "undefined" && typeof navigator.share === "function" && (
-                  <button
-                    className="button button-secondary w-full"
-                    onClick={() =>
-                      navigator.share({ title: tournamentName, text: `Watch ${tournamentName} live`, url: spectatorLink }).catch(() => {})
-                    }
-                  >
-                    📤 SHARE
-                  </button>
-                )}
+                <ShareButton
+                  className="button button-secondary w-full"
+                  heading="Share the live table"
+                  label="📲 SHARE ON WHATSAPP"
+                  message={() => liveArena({ name: tournamentName, url: spectatorLink, sport })}
+                  card={{ title: `LIVE: ${tournamentName}`, description: "Scores, the clock and the table, live on W.T.A.", image: "/og-image.jpg" }}
+                />
               </div>
             </div>
             <div className="modal-actions mt-8">

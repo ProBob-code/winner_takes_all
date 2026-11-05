@@ -19,6 +19,8 @@
 
 import { useState } from "react";
 import { backendFetch } from "@/lib/backend";
+import { WhatsAppPreview } from "@/components/share-sheet";
+import { shareLink } from "@/lib/share";
 
 type Kind = "bracket" | "results" | "table";
 
@@ -99,24 +101,10 @@ export function WhatsappPush({ tournamentId }: { tournamentId: string }) {
         <div className="v-stack">
           {/* Shown before sending, because the owner is about to put this in
               front of forty regulars and should see it first. */}
-          <pre
-            style={{
-              margin: 0,
-              padding: "var(--space-4)",
-              borderRadius: "var(--radius-sm)",
-              background: "var(--bg-inset)",
-              border: "1px solid var(--glass-border-color)",
-              whiteSpace: "pre-wrap",
-              overflowWrap: "anywhere",
-              fontFamily: "inherit",
-              fontSize: "var(--text-sm)",
-              lineHeight: 1.7,
-              maxHeight: "22rem",
-              overflowY: "auto",
-            }}
-          >
-            {preview.text}
-          </pre>
+          <WhatsAppPreview
+            message={{ title: "W.T.A", text: preview.text, url: shareLink(`/tournaments/${tournamentId}`) }}
+            card={{ title: "A fight on Winner Takes All", description: "Brackets, scoring and a live table. Free to enter.", image: "/og-image.jpg" }}
+          />
 
           <div className="h-stack tight">
             <a

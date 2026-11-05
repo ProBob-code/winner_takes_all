@@ -4784,7 +4784,7 @@ app.get("/api/tournaments/:id/share", async (c) => {
   const joinCode = await store.getLiveJoinCodeFor(tournamentId).catch(() => null);
   const joinUrl = joinCode ? `${publicOrigin(c.env)}/join/${joinCode.code}` : undefined;
 
-  const text = shareText(kind, tournament.name, teams, matches, joinUrl);
+  const text = shareText(kind, tournament.name, teams, matches, joinUrl, `${publicOrigin(c.env)}/tournaments/${tournamentId}`);
   return c.json({ ok: true, kind, text, whatsappUrl: whatsappShareUrl(text) });
 });
 
