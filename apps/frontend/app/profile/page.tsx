@@ -16,6 +16,7 @@ import { formatCoins } from "@/lib/format";
 import { PlayerHero, PlayerShowcase, PlayerStats, PlayerTrophies, type PlayerCardData } from "@/components/player-profile";
 import { COINS_AWARDED_EVENT } from "@/components/coin-toast";
 import { PageSkeleton } from "@/components/skeleton";
+import { MascotBanner } from "@/components/mascot";
 
 interface OwnProfile extends PlayerCardData {
   email: string;
@@ -116,9 +117,9 @@ export default function ProfilePage() {
         <PlayerHero player={user} own />
         <PlayerStats player={user} />
 
-        <div className="pp-grid">
+        <div className="pp-cols">
+          <div className="pp-col">
           <PlayerTrophies player={user} />
-          <PlayerShowcase player={user} own />
           <section className="pp-card">
             <div className="h-stack between" style={{ marginBottom: "0.85rem" }}>
               <h2 style={{ margin: 0 }}>Recent coins</h2>
@@ -133,9 +134,9 @@ export default function ProfilePage() {
             ) : (
               <div className="pp-rows">
                 {ledger.map((e) => (
-                  <div className="pp-row" key={e.id}>
+                  <div className="pp-row pp-ledger" key={e.id}>
                     <span>
-                      {e.description || e.reason}
+                      <span className="pp-ledger-what">{e.description || e.reason}</span>
                       <span style={{ display: "block", fontSize: "var(--text-xs)" }}>
                         {formatDate(e.at)}
                       </span>
@@ -146,7 +147,21 @@ export default function ProfilePage() {
               </div>
             )}
           </section>
+          </div>
 
+          <div className="pp-col">
+          <PlayerShowcase player={user} own />
+          <MascotBanner
+            pose="coin-king"
+            title="Every win stacks coins."
+            action={
+              <Link href="/games" className="button button-sm">
+                Play a game →
+              </Link>
+            }
+          >
+            8-ball, Imposter and every frame at a fight pay WTA Coins. Spend them in the shop and fill that shelf.
+          </MascotBanner>
           <section className="pp-card">
             <h2>Account</h2>
             <div className="pp-rows">
@@ -173,6 +188,7 @@ export default function ProfilePage() {
               </div>
             </div>
           </section>
+          </div>
         </div>
       </div>
     </main>

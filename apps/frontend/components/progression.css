@@ -8,7 +8,7 @@
 .pp {
   display: grid;
   gap: var(--space-5, 1.25rem);
-  max-width: 64rem;
+  max-width: 76rem;
   margin: 0 auto;
 }
 
@@ -17,7 +17,7 @@
 .pp-hero {
   position: relative;
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   gap: var(--space-5, 1.25rem);
   align-items: center;
   padding: clamp(1.25rem, 3vw, 2rem);
@@ -235,6 +235,8 @@
 }
 
 .pp-gain {
+  flex: none;
+  white-space: nowrap;
   color: var(--gold);
   font-weight: 800;
   font-variant-numeric: tabular-nums;
@@ -1238,3 +1240,78 @@ button.pp-chip:hover { border-color: var(--gold); color: var(--text-primary); }
   text-decoration: none;
 }
 .pp-slot:hover { border-color: var(--gold); color: var(--gold); }
+
+/* ── The tiger in the hero, and two balanced columns ── */
+
+.pp-hero { overflow: hidden; }
+
+.pp-hero-tiger {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  align-self: end;
+  gap: 0.5rem;
+  margin: -0.5rem -0.5rem -0.25rem 0;
+}
+.pp-hero-tiger .wta-mascot { width: clamp(130px, 15vw, 180px) !important; }
+
+/* A speech bubble pointing down at the tiger. */
+.pp-tiger-say {
+  position: relative;
+  max-width: 13.5rem;
+  padding: 0.55rem 0.8rem;
+  border-radius: 0.9rem;
+  background: var(--bg-inset);
+  border: 1px solid color-mix(in oklab, var(--gold) 45%, transparent);
+  font-size: var(--text-xs, 0.75rem);
+  font-weight: 800;
+  line-height: 1.35;
+  text-align: center;
+  color: var(--text-primary);
+}
+.pp-tiger-say::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -7px;
+  width: 12px;
+  height: 12px;
+  margin-left: -6px;
+  background: var(--bg-inset);
+  border-right: 1px solid color-mix(in oklab, var(--gold) 45%, transparent);
+  border-bottom: 1px solid color-mix(in oklab, var(--gold) 45%, transparent);
+  transform: rotate(45deg);
+}
+
+@media (max-width: 720px) {
+  .pp-hero { grid-template-columns: auto minmax(0, 1fr); }
+  .pp-hero-tiger { display: none; }
+}
+
+.pp-cols {
+  display: grid;
+  gap: var(--space-5, 1.25rem);
+  grid-template-columns: minmax(0, 1fr);
+}
+@media (min-width: 900px) {
+  .pp-cols { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); }
+}
+.pp-col {
+  display: grid;
+  gap: var(--space-5, 1.25rem);
+  align-content: start;
+  min-width: 0;
+}
+.pp-col .mascot-banner { margin: 0; }
+
+.pp-ledger > :first-child { min-width: 0; }
+.pp-ledger-what {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.pp-hero .pp-xp { max-width: 34rem; }

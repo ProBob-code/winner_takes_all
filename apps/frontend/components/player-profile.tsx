@@ -24,6 +24,7 @@ import { TrophyBadge } from "@/components/trophy-badge";
 import { ArtifactArt, EmoteArt, FramedAvatar } from "@/components/shop-art";
 import { itemArt, RARITY_COLOUR } from "@/lib/shop";
 import { arenaProgress, type TrackStanding } from "@/lib/trophies";
+import { Mascot } from "@/components/mascot";
 import "@/components/progression.css";
 
 export interface PlayerCardData {
@@ -55,9 +56,24 @@ export interface PlayerCardData {
   };
 }
 
+/** What the tiger says beside a player's name: where they stand, in its voice. */
+function tigerLine(player: PlayerCardData, own: boolean): string {
+  const overall = player.trophies?.find((t) => t.track === "overall");
+  const first = player.name.trim().split(/\s+/)[0];
+  const online = (player.trophies ?? []).filter((t) => t.track.startsWith("online:"));
+  const played = player.stats.played + online.reduce((a, t) => a + t.games, 0);
+  if (played === 0) return own ? "Your first win is out there. Go take it." : `${first} hasn't played yet. Fresh meat.`;
+  if (overall?.nextArena) {
+    const n = Math.max(0, overall.nextArena.at - overall.trophies).toLocaleString("en-IN");
+    return own ? `${n} trophies to ${overall.nextArena.name}. I can smell it.` : `${first} is ${n} trophies off ${overall.nextArena.name}.`;
+  }
+  return own ? "Top arena. Now defend the crown." : `${first} sits in the top arena.`;
+}
+
 export function PlayerHero({ player, own }: { player: PlayerCardData; own: boolean }) {
   const { level } = player;
   const overall = player.trophies?.find((t) => t.track === "overall");
+  const winning = player.stats.winRate >= 50;
   return (
     <section className="pp-hero slide-in" aria-label={`${player.name}'s profile`}>
       <div className={`pp-avatar-wrap${player.loadout?.borderId ? " framed" : ""}`}>
@@ -121,6 +137,11 @@ export function PlayerHero({ player, own }: { player: PlayerCardData; own: boole
             )}
           </div>
         </div>
+      </div>
+
+      <div className="pp-hero-tiger" aria-hidden>
+        <span className="pp-tiger-say">{tigerLine(player, own)}</span>
+        <Mascot pose={winning ? "flat-trophy" : "flat-pool"} size={180} />
       </div>
 
       <div className="pp-coins">
@@ -398,7 +419,7 @@ export function PlayerShowcase({ player, own }: { player: PlayerCardData; own: b
         )}
       </div>
       {showcase.length > 0 ? (
-        <div className="pp-showcase">
+        <div className="pp-showcase pp-slots">
           {showcase.map((id) => {
             const item = itemArt(id);
             return (
@@ -408,6 +429,12 @@ export function PlayerShowcase({ player, own }: { player: PlayerCardData; own: b
               </div>
             );
           })}
+          {own &&
+            Array.from({ length: Math.max(0, 3 - showcase.length) }, (_, i) => (
+              <Link key={`slot${i}`} href="/shop" className="pp-slot" aria-label="Pick an artifact in the shop">
+                <span aria-hidden>+</span>
+              </Link>
+            ))}
         </div>
       ) : (
         own && (
