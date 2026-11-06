@@ -31,6 +31,9 @@ a{color:#e2b437;text-decoration:none}a:hover{color:#ffd35a}
 @keyframes rxUp{0%{transform:translateY(60px);opacity:0}10%{transform:translateY(0);opacity:1}88%{opacity:1}100%{transform:translateY(20px);opacity:0}}
 @keyframes rxDock{0%{transform:translateX(110%);opacity:0}7%{transform:translateX(0);opacity:1}86%{transform:translateX(0) scale(1);opacity:1}100%{transform:translateY(-30px) scale(.7);transform-origin:top right;opacity:0}}
 @keyframes feedIn{0%{transform:translateY(-14px) scale(.9);opacity:0}100%{transform:translateY(0) scale(1);opacity:1}}
+@keyframes tauntPop{0%{transform:translate(-50%,30px) scale(.4);opacity:0}10%{transform:translate(-50%,0) scale(1.08);opacity:1}16%{transform:translate(-50%,0) scale(1)}85%{transform:translate(-50%,0) scale(1);opacity:1}100%{transform:translate(-50%,-30px) scale(.9);opacity:0}}
+@keyframes tauntWob{0%,100%{transform:rotate(-6deg)}50%{transform:rotate(6deg)}}
+@keyframes cardIn{0%{transform:translateY(16px) scale(.97);opacity:0}100%{transform:none;opacity:1}}
 @keyframes cfxShine{0%{background-position:-200% 0}100%{background-position:200% 0}}
 </style>
 </helmet>
@@ -40,7 +43,7 @@ a{color:#e2b437;text-decoration:none}a:hover{color:#ffd35a}
     <button onClick="{{ openMenu }}" aria-label="Menu" style="all:unset;cursor:pointer;flex:none;width:{{ tbS }};height:40px;border-radius:11px;background:#15100c;border:1px solid rgba(226,180,55,.35);display:flex;align-items:center;justify-content:center;color:#e2b437"><i class="ph-bold ph-list" style="font-size:20px"></i></button>
     <div style="flex:1;min-width:0;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px">
       <sc-for list="{{ players }}" as="p" hint-placeholder-count="2">
-        <div style="min-width:0;height:48px;box-sizing:border-box;border-radius:12px;background:linear-gradient(180deg,#1b150f,#120d0a);border:{{ p.border }};box-shadow:{{ p.glow }};display:flex;flex-direction:{{ p.dir }};align-items:center;gap:{{ p.gap }};padding:{{ p.pad }};overflow:hidden;transition:border-color .3s,box-shadow .3s">
+        <div style="position:relative;min-width:0;height:48px;box-sizing:border-box;border-radius:12px;background:linear-gradient(180deg,#1b150f,#120d0a);border:{{ p.border }};box-shadow:{{ p.glow }};display:flex;flex-direction:{{ p.dir }};align-items:center;gap:{{ p.gap }};padding:{{ p.pad }};overflow:hidden;transition:border-color .3s,box-shadow .3s">
           <div style="flex:none;width:{{ p.avS }};height:{{ p.avS }};border-radius:50%;background:{{ p.avBg }};color:#2a1a06;font-family:Montserrat;font-weight:900;font-size:{{ p.avF }};display:flex;align-items:center;justify-content:center;box-shadow:inset 0 -2px 4px rgba(0,0,0,.25),0 0 0 2px rgba(0,0,0,.35)">{{ p.ini }}</div>
           <div style="min-width:0;flex:1;display:flex;flex-direction:column;align-items:{{ p.align }};gap:3px">
             <div style="display:flex;flex-direction:{{ p.dir }};align-items:center;gap:6px;min-width:0;max-width:100%">
@@ -55,6 +58,7 @@ a{color:#e2b437;text-decoration:none}a:hover{color:#ffd35a}
               <div style="width:12px;height:12px;border-radius:50%;background:{{ b.bg }};opacity:{{ b.op }};box-shadow:0 1px 2px rgba(0,0,0,.6)"></div>
             </sc-for>
           </div>
+          <div style="position:absolute;left:0;bottom:0;height:3px;width:{{ p.cw }};background:{{ p.cc }};box-shadow:0 0 8px {{ p.cc }};transition:width .45s linear,background .3s;pointer-events:none"></div>
         </div>
       </sc-for>
     </div>
@@ -63,6 +67,7 @@ a{color:#e2b437;text-decoration:none}a:hover{color:#ffd35a}
         <div style="position:absolute;left:{{ spinL }};top:{{ spinT }};width:7px;height:7px;margin:-3.5px 0 0 -3.5px;border-radius:50%;background:#d0241c"></div>
       </div>
     </button>
+    <button onClick="{{ openTaunt }}" aria-label="Taunt" style="all:unset;cursor:pointer;flex:none;width:{{ tbS }};height:40px;border-radius:11px;background:linear-gradient(180deg,#ffd94d,#ffb200);color:#5a1a08;display:{{ tauntD }};align-items:center;justify-content:center;box-shadow:0 0 16px rgba(255,190,30,.35)"><i class="ph-fill ph-sticker" style="font-size:20px"></i></button>
     <button onClick="{{ toggleSound }}" aria-label="Sound" style="all:unset;cursor:pointer;flex:none;width:{{ tbS }};height:40px;border-radius:11px;background:#15100c;border:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;color:#cfc6ba"><i class="ph-fill {{ soundIcon }}" style="font-size:19px"></i></button>
   </div>
 
@@ -210,6 +215,7 @@ a{color:#e2b437;text-decoration:none}a:hover{color:#ffd35a}
         <div style="margin-top:8px;font-family:Montserrat;font-style:italic;font-weight:900;font-size:44px;line-height:1;letter-spacing:-.01em;background:linear-gradient(180deg,#fff3b0,#f2c21b 50%,#d58a00);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 16px rgba(242,170,0,.35))">EIGHT BALL</div>
         <div style="margin-top:8px;font-size:10.5px;font-weight:600;letter-spacing:.3em;color:#9b9083">WINNER TAKES ALL</div>
         {{ whoEl }}
+        {{ resumeEl }}
         <div style="margin-top:24px;width:100%;display:flex;flex-direction:column;gap:10px">
           <button onClick="{{ playSystem }}" style="all:unset;cursor:pointer;display:flex;align-items:center;gap:14px;padding:12px 14px;border-radius:14px;background:linear-gradient(180deg,#2a1f10,#17110b);border:1.5px solid rgba(226,180,55,.75);box-shadow:0 0 24px rgba(226,180,55,.15)" style-hover="filter:brightness(1.12)">
             <div style="flex:none;width:40px;height:40px;border-radius:11px;background:rgba(226,180,55,.14);display:flex;align-items:center;justify-content:center;color:#f2c21b"><i class="ph-fill ph-robot" style="font-size:20px"></i></div>
@@ -248,12 +254,11 @@ a{color:#e2b437;text-decoration:none}a:hover{color:#ffd35a}
           </div>
           <div style="height:1px;background:rgba(255,255,255,.06)"></div>
           <button onClick="{{ toggleGuide }}" style="all:unset;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px">
-            <span style="display:flex;flex-direction:column;gap:2px"><span style="font-size:11px;color:#8d8378;font-weight:600;letter-spacing:.08em">AIM GUIDE</span><span style="font-size:11.5px;color:#a59b8f">Off shows only the contact circle</span></span>
+            <span style="display:flex;flex-direction:column;gap:2px"><span style="font-size:11px;color:#8d8378;font-weight:600;letter-spacing:.08em">AIM GUIDE</span><span style="font-size:11.5px;color:#a59b8f">{{ guideSub }}</span></span>
             <span style="display:flex;align-items:center;gap:8px"><span style="font-size:12px;font-weight:600;color:#cfc6ba">{{ guideLabel }}</span><span style="width:44px;height:24px;border-radius:12px;background:{{ guideBg }};padding:2px;box-sizing:border-box;display:flex"><span style="width:20px;height:20px;border-radius:50%;background:#fff;transform:{{ guideX }};transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.4)"></span></span></span>
           </button>
         </div>
         <div style="margin-top:18px;display:flex;gap:22px;font-size:12.5px;font-weight:500">
-          <sc-if value="{{ canResume }}" hint-placeholder-val="{{ false }}"><a href="#" onClick="{{ resume }}" style="text-decoration:underline;text-underline-offset:3px">Resume game</a></sc-if>
           <a href="#" onClick="{{ playPractice }}" style="color:#bdb2a5;text-decoration:underline;text-underline-offset:3px">Practice table</a>
           <a href="#" onClick="{{ exitGames }}" style="color:#bdb2a5;text-decoration:underline;text-underline-offset:3px">Back to games</a>
         </div>
@@ -311,6 +316,7 @@ a{color:#e2b437;text-decoration:none}a:hover{color:#ffd35a}
       </div>
     </div>
   </sc-if>
+  {{ overlayFx }}
   {{ gateFx }}
 </div>
 </x-dc>
@@ -345,6 +351,12 @@ function ballCss(n){const c=colorOf(n),s=`rgb(${c})`,hl='radial-gradient(circle 
 const groupOf=n=>n<8?'solid':'stripe';
 const MOODTAG={hype:'dance,gif',smug:'funny,gif',angry:'angry,gif',sad:'sad',shocked:'shocked',sleepy:'sleepy,gif',cute:'cute,gif'};
 const COMBO_COIN=1000,COMBO_MAX=4,FINE=0.0009,AIM_K=0.6,TICK=1/240;
+// A shot has SHOT_CLOCK seconds; running out is a foul (ball in hand to the other player).
+const SHOT_CLOCK=45,ASK_GAP=20000,SEAT_HOLD=90;
+// The 8-ball taunts: their own emotes, and the table's pictures with pool captions.
+const EMOTES=[['CALL IT','target','#7fd6ff'],["RACK 'EM",'triangle','#f2c21b'],['ICE COLD','snowflake','#9ae3ff'],['ON FIRE','fire','#ff8a2a'],['TICK TOCK','hourglass-medium','#c9a6ff'],['SCRATCH!','warning-octagon','#ff6a5e'],['LUCKY ROLL','clover','#7ee08f'],['BANK SHOT','arrow-bend-up-right','#6fb6ff'],['SNOOKERED','lock-simple','#e8e2ea'],['SIT DOWN','armchair','#ff6aa8'],['CROWN ME','crown-simple','#ffc21a'],['GG','handshake','#7ee08f']].map(([label,icon,col],i)=>({k:'e'+i,label,icon,col}));
+const STICKERS=[['assets/cats/cat1.gif','NICE SHOT. NOT.'],['assets/cats/cat2.gif','I SAW THAT SCRATCH'],['assets/cats/cat3.gif','MY TABLE NOW'],['assets/animals/dog1.jpg','SHAKY HANDS?'],['assets/animals/dog2.jpg','CALLED IT'],['assets/animals/dog3.jpg','RIGGED?'],['assets/animals/fox1.jpg','SLY BANK'],['assets/animals/fox2.jpg','BALL IN HAND, BABY']].map(([img,label],i)=>({k:'s'+i,img,label}));
+const TAUNT=k=>EMOTES.concat(STICKERS).find(x=>x.k===k);
 const GOODEV={break_pot:1,long_pot:1,group:1,on_eight:1,win:1,combo:1};
 const LINES={"trash_pregame":["Rack 'em. I'll make this quick.","Brought a cue? Should've brought excuses.","I've beaten toasters with more talent.","Relax. Losing is a skill you've mastered.","You break, I break your spirit.","Hope your ego is insured.","Tonight's forecast: you, crying.","I'd go easy on you, but I don't do charity.","Welcome to your public humiliation.","Chalk up. It won't help.","Fun fact: nobody remembers second place.","I've seen your stats. Brave of you to show up.","Let's get this beatdown started.","You're not my opponent. You're my warm-up.","Take a good look at the crown. Last time you'll see it."],
  "trash_foul_scratch":["Scratch. Truly elite stupidity.","You potted the cue ball. Bold strategy.","Thanks for the ball in hand. Generous loser.","The cue ball fled. Smart ball.","Even the cue ball wants off your team.","Scratch. Your trademark move.","Gift received. You're too kind.","That pocket wasn't for you, genius.","Scratching again? It's almost a talent."],
@@ -417,14 +429,75 @@ class Component extends DCLogic {
     this.ro=new ResizeObserver(()=>this.layout()); this.ro.observe(this.wrapRef.current);this.onWin=()=>{this.sync();setTimeout(()=>this.layout(),60);};window.addEventListener('resize',this.onWin);try{screen.orientation&&screen.orientation.addEventListener('change',this.onWin);}catch(x){}
     this.layout();
     document.fonts&&document.fonts.load('900 30px Montserrat').then(()=>{this.gly=this.makeGlyphs();this.g.balls.forEach(b=>b.dirty=true);this.buildStatic();});
-    this.onKey=e=>{const g=this.g;if(g.phase!=='aim'||!this.human())return;if(e.key==='ArrowLeft'||e.key==='ArrowRight'){g.aim+=(e.key==='ArrowLeft'?-1:1)*(e.shiftKey?0.02:0.0025);e.preventDefault();}};
+    this.onHide=()=>this.saveGame();window.addEventListener('pagehide',this.onHide);
+    this.onKey=e=>{const g=this.g;if(e.key==='Escape'&&g.inGame){this.setState({pauseOpen:!this.state.pauseOpen,tauntOpen:false,spinOpen:false});return;}if(g.phase!=='aim'||!this.human())return;if(e.key==='ArrowLeft'||e.key==='ArrowRight'){g.aim+=(e.key==='ArrowLeft'?-1:1)*(e.shiftKey?0.02:0.0025);e.preventDefault();}};
     window.addEventListener('keydown',this.onKey);
     this.raf=requestAnimationFrame(this.loop);
   }
   componentWillUnmount(){clearInterval(this.blinkT);cancelAnimationFrame(this.raf);this.ro&&this.ro.disconnect();window.removeEventListener('keydown',this.onKey);clearTimeout(this.mt);}
   componentDidUpdate(){const f=this.feltName();if(f!==this._lastFelt){this._lastFelt=f;this.buildStatic();this.g.balls.forEach(b=>b.dirty=true);}}
   feltName(){return this.state.feltSel||this.props.felt||'Teal';}
-  guideOn(){return this.state.guideSel!=null?this.state.guideSel:this.props.showGuide!==false;}
+  guidePref(){return this.state.guideSel!=null?this.state.guideSel:this.props.showGuide!==false;}
+  // Online and pass-and-play keep the guide as the game started: off for one is off for both,
+  // and turning it on needs the other player's yes. vs System and practice are yours to change.
+  guideLocked(){const g=this.g;return !!g.inGame&&(g.mode==='online'||g.mode==='pvp');}
+  guideOn(){const mine=this.guidePref();return this.guideLocked()?mine&&this.g.tableGuide===true:mine;}
+  toggleGuide(){const g=this.g;if(this.guideOn()){this.setState({guideSel:false});return;}
+    if(this.guideLocked()&&g.tableGuide!==true){
+      if(g.mode==='online'){const opp=String(g.onNames[1-g.seat]).split(/\s+/)[0];if(g.tableGuide==null){this.toast('Waiting for both players to sit down');return;}
+        if(Date.now()-(this.assistAskedAt||0)<ASK_GAP){this.toast('Waiting for '+opp+' to answer');return;}
+        this.assistAskedAt=Date.now();this.setState({guideSel:true});this.netSend({type:'assist_ask'});this.toast('Asked '+opp+' to allow the aim guide');return;}
+      const nm=this.names(),a=g.turn;this.setState({guideSel:true,assistAsk:{from:nm[a],to:nm[1-a],local:true}});return;}
+    this.setState({guideSel:true});}
+  answerAssist(yes){const g=this.g,A=this.state.assistAsk;this.setState({assistAsk:null});if(!A)return;
+    if(A.local){if(yes){g.tableGuide=true;this.saveGame();this.toast('Aim guide on for both players');}else this.toast(A.to+' said no · aim guide stays off');this.sync();return;}
+    if(yes){this.setState({guideSel:true});this.netSend({type:'assist_ok'});}else this.netSend({type:'assist_no'});}
+
+  // ── Leaving and coming back ──
+  saveGame(){const g=this.g;try{if(!g.inGame)return;
+      if(g.mode==='online'){if(g.tableId)localStorage.setItem('wta8.table',JSON.stringify({id:g.tableId,opp:(g.onNames||[])[1-(g.seat|0)]||'your opponent',at:Date.now()}));return;}
+      if(g.mode!=='system'&&g.mode!=='pvp')return;
+      localStorage.setItem('wta8.local',JSON.stringify({mode:g.mode,level:this.state.level,pvpNames:g.pvpNames||null,snap:this.snapNow(null),stats:g.stats,t0:g.t0,shotsN:g.shotsN||0,breaker:g.breaker|0,guide:g.tableGuide,at:Date.now()}));}catch(x){}}
+  clearSaved(kind){try{localStorage.removeItem(kind==='online'?'wta8.table':'wta8.local');}catch(x){}}
+  saved(){try{const t=JSON.parse(localStorage.getItem('wta8.table')||'null');if(t&&t.id&&Date.now()-t.at<10*60000)return {kind:'online',...t};
+      const l=JSON.parse(localStorage.getItem('wta8.local')||'null');if(l&&l.snap&&(l.mode==='system'||l.mode==='pvp')&&Date.now()-l.at<7*86400000)return {kind:'local',...l};}catch(x){}return null;}
+  rejoin(S){if(!this.host||this.host.signedIn!==true)return;this.netClose();this.rejoining=true;
+    this.setState({menuOpen:false,spinOpen:false,pauseOpen:false,loading:{mode:'online',online:true,a:this.me(),b:S.opp||'Opponent',t0:Date.now(),ms:1200}});
+    clearTimeout(this.loadT);this.loadT=setTimeout(()=>{if(this.rejoining){this.rejoining=false;this.netClose();this.clearSaved('online');this.setState({loading:null,menuOpen:true});this.toast('Could not get back to that table');}},12000);
+    this.netJoin(S.id);}
+  rejoinFailed(t){this.rejoining=false;this.clearSaved('online');clearTimeout(this.loadT);this.netClose();this.setState({loading:null,searching:null,menuOpen:true});this.toast(t||'That game is over');}
+  resumeLocal(S){if(!this.host||this.host.signedIn!==true)return;if(S.mode==='pvp'&&S.pvpNames)this.g.pvpNames=S.pvpNames;
+    this.setState({level:S.level||this.state.level},()=>this.loadThen(S.mode,900,()=>{const g=this.g;clearTimeout(this.pgT);g.ai=null;g.t0=S.t0||g.t0;g.breaker=S.breaker|0;if(S.stats)g.stats=S.stats;
+      g.tableGuide=S.guide==null?this.guidePref():S.guide;this.applySnap(S.snap);g.shotsN=Math.max(g.shotsN||0,S.shotsN||0);this.queueAI();this.saveGame();this.toast('Welcome back · your game is where you left it');}));}
+  quitGame(){const g=this.g;if(g.mode==='online'&&g.inGame)this.netResign();else{if(g.mode==='system'||g.mode==='pvp')this.clearSaved('local');g.inGame=false;g.ai=null;}
+    g.phase='menu';this.setState({pauseOpen:false,confirm:null,menuOpen:true});this.sync();}
+
+  // ── Shot clock ──
+  clockOn(){const g=this.g;return !!g.inGame&&g.mode!=='practice'&&g.phase==='aim'&&!(g.mode==='system'&&g.turn===1);}
+  clockLeft(){const g=this.g;return this.clockOn()&&g.clock?Math.max(0,g.clock.left):null;}
+  clockTick(dt){const g=this.g;if(!this.clockOn())return;const key=g.turn+':'+(g.shotsN||0)+':'+(g.toN||0);
+    if(!g.clock||g.clock.key!==key)g.clock={key,left:SHOT_CLOCK,warned:0};
+    const st=this.state,online=g.mode==='online';if(g.stroke||g.awaitSnap||st.loading)return;
+    // A local game stops the clock while a menu is up; an online one cannot.
+    if(!online&&(st.menuOpen||st.pauseOpen||st.confirm||st.assistAsk||st.pvpSetup))return;
+    g.clock.left-=dt;const L=g.clock.left,sec=Math.ceil(L);
+    if(this.human()&&L>0&&sec<=5&&sec!==g.clock.warned){g.clock.warned=sec;this.tick();try{navigator.vibrate&&navigator.vibrate(25);}catch(x){}}
+    // The shooter's screen calls time. If it has gone quiet (a phone locked mid-turn), the other screen does, ten seconds later.
+    if(L<=0&&this.human())this.timeout();else if(online&&L<=-10)this.timeout();}
+  tick(){if(!this.state.sound||!this.ac)return;try{this.mode(1560,.07,.16);}catch(x){}}
+  timeout(){const g=this.g,nm=this.names(),me=g.turn,op=1-me;this.drag=null;this.powering=false;this.fining=false;
+    g.power=0;g.called=null;g.stroke=null;g.toN=(g.toN||0)+1;g.clock=null;g.chain=0;
+    g.turn=op;g.ballInHand=true;if(!g.isBreak)g.kitchen=false;if(!g.balls[0].on)this.respawnCue();
+    this.foulNotice('Shot clock ran out',nm[me],nm[op]);this.queueAI();
+    if(g.mode==='online')this.netSend({type:'settled',n:g.shotsN||0,snap:this.snapNow(null)});this.saveGame();this.sync();}
+
+  // ── Taunts ──
+  canTaunt(){const g=this.g;return !!g.inGame&&(g.mode==='online'||g.mode==='system');}
+  sendTaunt(it){const g=this.g;if(Date.now()-(this.tauntAt||0)<2500){this.toast('Easy… one taunt at a time');return;}this.tauntAt=Date.now();
+    if(g.mode==='online')this.netSend({type:'taunt',k:it.k});this.showTaunt(it.k,'You',true);this.setState({tauntOpen:false});
+    if(g.mode==='system')setTimeout(()=>{if(this.g.inGame)this.showTaunt(pick(['e2','e4','e8','e9','e10']),'Machine',false);},1700);}
+  showTaunt(k,from,mine){const it=TAUNT(k);if(!it)return;this.tpId=(this.tpId||0)+1;this.setState({tpop:{id:this.tpId,it,from,mine}});
+    clearTimeout(this.tpT);this.tpT=setTimeout(()=>this.setState({tpop:null}),2600);if(!mine){try{navigator.vibrate&&navigator.vibrate(40);}catch(x){}if(this.state.sound&&this.ac)try{this.mode(880,.12,.12);this.mode(1320,.12,.1,.08);}catch(x){}}}
   felt(){return FELTS[this.feltName()]||FELTS.Teal;}
   sync(){this.setState(s=>({v:s.v+1}));}
   toast(m){this.setState({msg:m});clearTimeout(this.mt);this.mt=setTimeout(()=>this.setState({msg:''}),2200);}
@@ -552,7 +625,7 @@ class Component extends DCLogic {
       if(g.flames.length)g.flames=g.flames.filter(p=>{p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy-=50*dp*dt;p.vx+=(Math.random()-.5)*340*dp*dt;p.life-=p.dec*dt;return p.life>0;});}
     if(g.parts&&g.parts.length)g.parts=g.parts.filter(p=>{p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=1-1.6*dt;p.vy=p.vy*(1-1.6*dt)+500*this.dpr*dt;p.life-=p.dec*dt;return p.life>0;});
     if(this.felt().neon)g.balls.forEach(b=>{b.tr=b.tr||[];if(b.on&&!b.sink&&(b.vx||b.vy)){b.tr.push([b.x,b.y]);if(b.tr.length>12)b.tr.shift();}else if(b.tr.length)b.tr.shift();});
-    if(g.ai)this.aiStep(dt);this.netTick(dt);
+    if(g.ai)this.aiStep(dt);this.netTick(dt);this.clockTick(dt);
   }
 
   step(h){
@@ -607,7 +680,10 @@ class Component extends DCLogic {
       c.strokeStyle=`rgba(${F.neon?col:'255,214,90'},${1-t})`;c.lineWidth=(3-2*t)*this.dpr;c.beginPath();c.arc(fx,fy,base*(1+t*1.3),0,7);c.stroke();}
     if(g.parts&&g.parts.length){c.setTransform(1,0,0,1,0,0);for(const p of g.parts){c.fillStyle=`rgba(${p.col},${Math.min(1,p.life*1.4)})`;c.beginPath();c.arc(p.x,p.y,p.sz*(.5+p.life*.5),0,7);c.fill();}}
     c.globalCompositeOperation='source-over';
-    if(this.needCall()&&g.phase==='aim'){const tt=performance.now()/1000;POCKETS.forEach((p,i)=>{const [px,py]=this.toS(p.x,p.y),r0=p.vr*this.s,sel=g.called===i;
+    if(this.needCall()&&g.phase==='aim'){const tt=performance.now()/1000,mine=this.human(),[mx,my]=this.toS(500,250);POCKETS.forEach((p,i)=>{const [px,py]=this.toS(p.x,p.y),r0=p.vr*this.s,sel=g.called===i;
+      // Only the shooter picks; everyone else sees just the pocket they picked.
+      if(!mine&&!sel)return;
+      if(sel&&!mine){const vx=mx-px,vy=my-py,vl=Math.sqrt(vx*vx+vy*vy)||1;c.save();c.font=`900 ${Math.max(11*this.dpr,r0*.55)}px Montserrat, Arial`;c.textAlign='center';c.textBaseline='middle';c.fillStyle=F.neon?'#3ff0ff':'#f2c21b';c.shadowColor='rgba(0,0,0,.85)';c.shadowBlur=6*this.dpr;c.fillText('CALLED',px+vx/vl*r0*2.5,py+vy/vl*r0*2.5);c.restore();}
       c.save();c.shadowColor=F.neon?'#3ff0ff':'#f2c21b';c.shadowBlur=(sel?22:10)*this.dpr;c.strokeStyle=sel?(F.neon?'#3ff0ff':'#f2c21b'):`rgba(242,194,27,${.45+.35*Math.sin(tt*4+i)})`;c.lineWidth=(sel?3:2)*this.dpr;if(!sel)c.setLineDash([5*this.dpr,4*this.dpr]);c.beginPath();c.arc(px,py,r0*(sel?1.25:1.4),0,7);c.stroke();c.restore();
       if(sel){c.fillStyle='#111';c.beginPath();c.arc(px,py,r0*.62,0,7);c.fill();c.fillStyle='#fff';c.font=`900 ${r0*.7}px Montserrat, Arial`;c.textAlign='center';c.textBaseline='middle';c.fillText('8',px,py+1);}});}
     if(g.phase==='aim'&&g.mode&&g.mode!=='practice'&&!g.isBreak&&!g.ai){const tt=performance.now()/1000,pulse=.5+.5*Math.sin(tt*5),col=F.neon?'63,240,255':'255,214,90';
@@ -699,7 +775,7 @@ class Component extends DCLogic {
   comboCoins(i){const g=this.g,s=g.stats&&g.stats[i];return s&&this.comboPays(i)?Math.min(s.combos.length,COMBO_MAX)*COMBO_COIN:0;}
   fmtC(n){n=Math.max(0,Math.floor(+n||0));const t=x=>x.replace(/\.0$/,'');if(n>=1e6){const m=n/1e6;return (m<10?t(m.toFixed(1)):Math.round(m))+'M';}if(n>=1e3){const k=n/1e3;return (k<10?t(k.toFixed(1)):Math.round(k))+'K';}return String(n);}
   winFor(mode){if(mode==='pvp')return 3000;return mode==='system'?(2+this.aiRating())*1000:mode==='online'?5000:0;}
-  loadThen(mode,ms){ms=ms||1700;const nm=this.namesFor(mode);this.setState({menuOpen:false,spinOpen:false,pvpSetup:null,loading:{mode,a:nm[0],b:nm[1],t0:Date.now(),ms}});clearTimeout(this.loadT);this.loadT=setTimeout(()=>{this.setState({loading:null});this.start(mode);},ms);}
+  loadThen(mode,ms,after){ms=ms||1700;const nm=this.namesFor(mode);this.setState({menuOpen:false,spinOpen:false,pvpSetup:null,loading:{mode,a:nm[0],b:nm[1],t0:Date.now(),ms}});clearTimeout(this.loadT);this.loadT=setTimeout(()=>{this.setState({loading:null});this.start(mode);after&&after();},ms);}
   endLoadSoon(){const L=this.state.loading;clearTimeout(this.loadT);if(!L)return;this.loadT=setTimeout(()=>this.setState({loading:null}),Math.max(0,L.t0+L.ms-Date.now()));}
   human(){const g=this.g;if(g.mode==='online')return g.turn===g.seat;return g.mode!=='system'||g.turn===0;}
   left(grp){return this.g.balls.filter(b=>b.on&&b.n!==0&&b.n!==8&&groupOf(b.n)===grp).length;}
@@ -707,8 +783,8 @@ class Component extends DCLogic {
   canShoot(){const g=this.g;return g.phase==='aim'&&this.human()&&!g.awaitSnap&&g.balls[0].on&&!g.stroke&&!g.ai;}
 
   start(mode){
-    const g=this.g;g.mode=mode;this.rack();Object.assign(g,{feed:[],react:null,stats:[0,1].map(()=>({streak:0,coins:0,best:0,combos:[]})),parts:[],comboFx:null,called:null,flashes:[],phase:'aim',groups:[null,null],ballInHand:true,kitchen:true,isBreak:true,power:0,shot:null,ai:null,stroke:null,turn:mode==='practice'?0:g.breaker,inGame:true,winner:null});this.hostStart(mode);
-    Object.keys(MOODTAG).forEach(m=>this.fetchMood(m));this.setState({menuOpen:false,spinOpen:false});const nm=this.names();this.toast(`${nm[g.turn]} to break`);this.queueAI();this.sync();
+    const g=this.g;g.mode=mode;this.rack();Object.assign(g,{feed:[],react:null,stats:[0,1].map(()=>({streak:0,coins:0,best:0,combos:[]})),parts:[],comboFx:null,called:null,flashes:[],phase:'aim',groups:[null,null],ballInHand:true,kitchen:true,isBreak:true,power:0,shot:null,ai:null,stroke:null,turn:mode==='practice'?0:g.breaker,inGame:true,winner:null,clock:null,toN:0,tableGuide:mode==='online'?null:this.guidePref()});this.hostStart(mode);this.assistAskedAt=0;
+    Object.keys(MOODTAG).forEach(m=>this.fetchMood(m));this.setState({menuOpen:false,spinOpen:false,pauseOpen:false,tauntOpen:false,assistAsk:null,confirm:null});const nm=this.names();this.toast(`${nm[g.turn]} to break`);this.queueAI();this.saveGame();this.sync();
     clearTimeout(this.pgT);this.pgT=setTimeout(()=>{if(g.inGame&&g.phase==='aim')this.react('pregame',mode==='system'?0:g.turn);},650);
   }
   queueAI(){const g=this.g;if(g.mode==='system'&&g.turn===1&&g.phase==='aim')g.ai={stage:'wait',t:0};}
@@ -750,7 +826,7 @@ class Component extends DCLogic {
     if(foul){g.turn=op;g.ballInHand=true;if(s.cue)this.respawnCue();this.foulNotice(foul,nm[me],nm[op]);}
     else if(own){if(assigned)this.toast(`${nm[me]} takes ${g.groups[me]==='solid'?'solids':'stripes'}`);}
     else{g.turn=op;}
-    g.phase='aim';this.queueAI();this.netAfterShot();this.sync();
+    g.phase='aim';this.queueAI();this.netAfterShot();this.saveGame();this.sync();
   }
   track(i,n){const st=this.g.stats&&this.g.stats[i];if(!st)return;if(!n){st.streak=0;return;}st.streak+=n;if(st.streak>=2||n>=2)this.combo(i,Math.max(st.streak,n),n);}
   combo(i,n,multi){
@@ -825,30 +901,36 @@ class Component extends DCLogic {
   netJoin(id){let ws;try{ws=new WebSocket(this.apiBase().replace(/^http/,'ws')+'/api/pool/table/'+encodeURIComponent(id));}catch(e){return;}
     this.ws=ws;this.wsMode='table';this.tableId=id;this.inbox=this.inbox||[];
     ws.onmessage=e=>{let m;try{m=JSON.parse(e.data);}catch(x){return;}this.netMsg(m);};
-    ws.onclose=()=>{if(this.ws!==ws)return;const g=this.g;if(g.mode==='online'&&g.inGame){this.toast('Connection lost · reconnecting…');this.retry=(this.retry||0)+1;setTimeout(()=>{if(this.ws===ws&&g.inGame)this.netJoin(id);},Math.min(6000,1000*this.retry));}};}
+    ws.onclose=()=>{if(this.ws!==ws)return;const g=this.g;if(this.rejoining&&!(g.mode==='online'&&g.inGame)){this.rejoinFailed('That game is over');return;}if(g.mode==='online'&&g.inGame){this.toast('Connection lost · reconnecting…');this.retry=(this.retry||0)+1;setTimeout(()=>{if(this.ws===ws&&g.inGame)this.netJoin(id);},Math.min(6000,1000*this.retry));}};}
   netResync(){if(this.wsMode!=='table'||!this.tableId)return;this.lastRx=performance.now();this.rsN=(this.rsN||0)+1;if(this.rsN<=2)this.toast('Syncing the table…');const w=this.ws;this.ws=null;try{w&&w.close(4000,'resync');}catch(x){}this.netJoin(this.tableId);}
   netMsg(m){const g=this.g;this.lastRx=performance.now();if(m.type==='aim'||m.type==='shot'||m.type==='settled')this.rsN=0;
     if(m.type==='hello'){this.retry=0;const nm=[0,1].map(i=>(m.players&&m.players[i]&&m.players[i].name)||'Player');
-      if(m.finished){if(!(g.mode==='online'&&g.tableId===this.tableId)){this.netClose();this.toast('That game is over');clearTimeout(this.loadT);this.setState({searching:null,loading:null,menuOpen:true});}return;}
+      if(m.finished){if(!(g.mode==='online'&&g.tableId===this.tableId)){this.rejoining=false;this.clearSaved('online');this.netClose();this.toast('That game is over');clearTimeout(this.loadT);this.setState({searching:null,loading:null,menuOpen:true});}return;}
       if(!(g.mode==='online'&&g.tableId===this.tableId)){g.seat=m.seat;g.onNames=nm;g.tableId=this.tableId;g.breaker=0;g.awaitSnap=false;this.inbox=[];this.setState({searching:null});this.start('online');if(m.snapshot)this.applySnap(m.snapshot);this.endLoadSoon();}
       else if(m.snapshot&&g.phase!=='moving'){this.inbox=[];this.applySnap(m.snapshot);}
+      if(m.guide!=null)g.tableGuide=!!m.guide;this.netSend({type:'pref',on:this.guidePref()});if(this.rejoining){this.rejoining=false;this.toast('Back at the table');}this.saveGame();
       if(!m.opponentHere)this.toast('Waiting for '+nm[1-m.seat]+' to sit down…');return;}
     if(m.type==='opponent_left'){if(g.inGame)this.toast(g.onNames[1-g.seat]+' dropped · '+(m.grace||45)+'s to come back');return;}
     if(m.type==='opponent_back'){if(g.inGame)this.toast(g.onNames[1-g.seat]+' is back');return;}
     if(m.type==='final'){if(g.mode==='online'&&g.inGame){this.netFinal=true;this.finish(m.winnerSeat,m.reason||'');this.netFinal=false;}return;}
-    if(m.type==='error'){this.toast(m.message||'Table error');return;}
+    if(m.type==='guide'){const was=g.tableGuide;g.tableGuide=!!m.on;if(m.on&&was===false){this.assistAskedAt=0;this.toast('Aim guide is on for both players');}this.sync();return;}
+    if(m.type==='assist_ask'){if(g.inGame)this.setState({assistAsk:{from:g.onNames[1-g.seat]}});return;}
+    if(m.type==='assist_no'){this.assistAskedAt=0;this.toast(String(g.onNames[1-g.seat]).split(/\s+/)[0]+' said no · the aim guide stays off');return;}
+    if(m.type==='taunt'){if(g.inGame)this.showTaunt(m.k,String(g.onNames[1-g.seat]).split(/\s+/)[0],false);return;}
+    if(m.type==='error'){if(this.rejoining&&!(g.mode==='online'&&g.inGame)){this.rejoinFailed(m.message);return;}this.toast(m.message||'Table error');return;}
     if(m.type==='aim'||m.type==='shot'||m.type==='settled')this.inbox.push(m);}
   netTick(dt){const g=this.g;if(g.mode!=='online'||!g.inGame)return;
     if(g.phase==='aim'&&this.human()){this.aimT=(this.aimT||0)+dt;this.aimK=(this.aimK||0)+dt;const c=g.balls[0],L=this.aimL||{};
-      const moved=Math.abs((L.a||0)-g.aim)>2e-4||Math.abs((L.p||0)-(g.power||0))>.006||(g.ballInHand&&(L.x!==c.x||L.y!==c.y));
-      if(this.aimT>.05&&(moved||this.aimK>1)){this.aimT=0;this.aimK=0;this.aimL={a:g.aim,p:g.power||0,x:c.x,y:c.y};
-      this.netSend({type:'aim',a:+g.aim.toFixed(5),p:+(g.power||0).toFixed(3),x:g.ballInHand?c.x:null,y:g.ballInHand?c.y:null});}}
+      const moved=Math.abs((L.a||0)-g.aim)>2e-4||Math.abs((L.p||0)-(g.power||0))>.006||(g.ballInHand&&(L.x!==c.x||L.y!==c.y))||L.c!==g.called;
+      if(this.aimT>.05&&(moved||this.aimK>1)){this.aimT=0;this.aimK=0;this.aimL={a:g.aim,p:g.power||0,x:c.x,y:c.y,c:g.called};
+      this.netSend({type:'aim',a:+g.aim.toFixed(5),p:+(g.power||0).toFixed(3),x:g.ballInHand?c.x:null,y:g.ballInHand?c.y:null,c:g.called==null?null:g.called});}}
     if(g.awaitSnap&&g.phase==='aim'){this.awT=(this.awT||0)+dt;if(this.awT>4){this.awT=0;this.netResync();}}else this.awT=0;
     if(g.phase==='aim'&&!this.human()&&!g.awaitSnap){const now=performance.now();if(!this.waitT)this.waitT=now;const q=now-Math.max(this.lastRx||0,this.waitT);if(q>(this.rsN>1?15000:8000)){this.netResync();}}else this.waitT=0;
     if(g.phase==='aim'&&!this.human()&&this.rAim){const r=this.rAim,k=Math.min(1,dt*16);let d=r.a-g.aim;while(d>Math.PI)d-=2*Math.PI;while(d<-Math.PI)d+=2*Math.PI;g.aim+=d*k;g.power+=(r.p-(g.power||0))*k;}
     const box=this.inbox||[];
     while(box.length){const m=box[0];
-      if(m.type==='aim'){box.shift();if(g.phase==='aim'&&!this.human()){if(!this.rAim){g.aim=m.a;g.power=m.p||0;}this.rAim={a:m.a,p:m.p||0};if(m.x!=null&&g.ballInHand){const c=g.balls[0];Object.assign(c,{x:m.x,y:m.y,on:true,dirty:true});}}continue;}
+      if(m.type==='aim'){box.shift();if(g.phase==='aim'&&!this.human()){if(!this.rAim){g.aim=m.a;g.power=m.p||0;}this.rAim={a:m.a,p:m.p||0};if(m.x!=null&&g.ballInHand){const c=g.balls[0];Object.assign(c,{x:m.x,y:m.y,on:true,dirty:true});}
+          if(m.c!==undefined&&m.c!==g.called){g.called=m.c;if(m.c!=null&&this.needCall())this.toast(String(g.onNames[1-g.seat]).split(/\s+/)[0]+' called a pocket for the 8');this.sync();}}continue;}
       if(m.type==='shot'){if(g.phase!=='aim'||this.human()||g.awaitSnap||g.stroke)return;box.shift();const sh=m.shot,c=g.balls[0];
         if(Array.isArray(sh.balls))sh.balls.forEach(([n,x,y,on])=>{const b=g.balls.find(q=>q.n===n);if(b)Object.assign(b,{x,y,on:!!on,sink:null,vx:0,vy:0,dirty:true});});
         Object.assign(c,{x:sh.cx,y:sh.cy,on:true,sink:null,vx:0,vy:0,dirty:true});g.aim=sh.a;g.power=0;this.rAim=null;g.spin={x:sh.sx||0,y:sh.sy||0};g.called=sh.called;
@@ -856,13 +938,13 @@ class Component extends DCLogic {
       if(m.type==='settled'){if(g.phase==='moving'||g.stroke)return;box.shift();this.applySnap(m.snap);continue;}
       box.shift();}}
   snapNow(over){const g=this.g;return {n:g.shotsN||0,balls:g.balls.map(b=>[b.n,b.x,b.y,b.on&&!b.sink?1:0]),turn:g.turn,groups:g.groups,ballInHand:g.ballInHand,kitchen:g.kitchen,isBreak:g.isBreak,over:over||null};}
-  applySnap(sn){const g=this.g;g.awaitSnap=false;this.rAim=null;if(!sn)return;
+  applySnap(sn){const g=this.g;g.awaitSnap=false;this.rAim=null;g.called=null;if(!sn)return;
     (sn.balls||[]).forEach(([n,x,y,on])=>{const b=g.balls.find(q=>q.n===n);if(b)Object.assign(b,{x,y,on:!!on,sink:null,vx:0,vy:0,dirty:true});});
     g.shotsN=Math.max(g.shotsN||0,sn.n||0);
     if(sn.over){this.netFinal=true;this.finish(sn.over.w,sn.over.reason||'');this.netFinal=false;return;}
     g.turn=sn.turn;g.groups=sn.groups;g.ballInHand=!!sn.ballInHand;g.kitchen=!!sn.kitchen;g.isBreak=!!sn.isBreak;g.phase='aim';this.sync();}
   netAfterShot(){const g=this.g;if(g.mode!=='online')return;if(g.shotRemote)g.awaitSnap=true;else this.netSend({type:'settled',n:g.shotsN||0,snap:this.snapNow(null)});}
-  netResign(){const g=this.g;if(g.mode==='online'&&g.inGame){this.netSend({type:'resign'});
+  netResign(){const g=this.g;this.clearSaved('online');if(g.mode==='online'&&g.inGame){this.netSend({type:'resign'});
       this.hostSend({type:'game_over',mode:3,tableId:g.tableId,won:false,winner:'p2',seconds:Math.round((Date.now()-(g.t0||Date.now()))/1000),shots:g.shotsN||0});g.inGame=false;g.reportedOver=true;}
     setTimeout(()=>this.netClose(),150);}
   hostSend(m){try{if(window.parent!==window)window.parent.postMessage(Object.assign({wtaCoins:true},m),location.origin);}catch(e){}}
@@ -872,6 +954,7 @@ class Component extends DCLogic {
   finish(w,reason){const g=this.g;if(g.mode==='online'){if(g.shotRemote&&!this.netFinal)return;if(!g.inGame)return;this.netSend({type:'result',winnerSeat:w,reason});if(!g.shotRemote&&!this.netFinal)this.netSend({type:'settled',n:g.shotsN||0,snap:this.snapNow({w,reason})});}this.hostOver(w);{const sys=g.mode==='system';const type=sys?(w===0?'win':'lose'):'win';const subj=sys?0:w;const ln=this.lineFor(type,subj);g.overLine=ln.text;g.overSpeaker=sys?'Machine · '+this.state.level:'Announcer';g.overGif=this.takeGif(sys?(w===0?'angry':'smug'):'hype');g.react=null;
 }
     {const nm=this.names(),hw=g.mode==='system'?w===0:g.mode==='online'?w===g.seat:true;if(hw){this.winJingle();setTimeout(()=>this.speak(g.mode==='pvp'?[nm[w]+' wins!','Winner takes all!']:['You win!','Winner takes all!']),900);}else{this.loseJingle();setTimeout(()=>this.speak(['You lost!','Sheeeesh!']),1500);}}
+    if(g.mode==='online')this.clearSaved('online');else if(g.mode!=='practice')this.clearSaved('local');this.setState({pauseOpen:false,tauntOpen:false,assistAsk:null,confirm:null});
     g.phase='over';g.winner=w;g.reason=reason;g.inGame=false;g.ai=null;if(g.mode!=='practice')g.breaker=1-g.breaker;this.sync();}
 
   legal(p){const g=this.g,grp=g.groups[p];const on=g.balls.filter(b=>b.on&&b.n>0);if(!grp)return on.filter(b=>b.n!==8);const l=on.filter(b=>b.n!==8&&groupOf(b.n)===grp);return l.length?l:on.filter(b=>b.n===8);}
@@ -943,6 +1026,79 @@ class Component extends DCLogic {
       E('div',{style:{display:'flex',alignItems:'center',gap:3}},E('i',{className:'ph-fill ph-fire',style:{fontSize:12,color:k>=2?'#ff8a2a':'#6f665c'}}),E('span',{style:{fontFamily:'Montserrat',fontStyle:'italic',fontWeight:900,fontSize:14,color:k>=2?'#f2c21b':'#a59b8f'}},'×'+k)),
       E('div',{style:{fontSize:9,fontWeight:700,color:'#a59b8f',whiteSpace:'nowrap'}},`${s.combos.length} · best ×${s.best}`),
       E('div',{style:{display:'flex',alignItems:'center',gap:2,fontSize:10,fontWeight:800,color:pays?'#ffd94d':'#f2c21b',whiteSpace:'nowrap'}},E('i',{className:pays?'ph-fill ph-coin':'ph-fill ph-star'}),pays?'+'+this.fmtC(mc):s.coins+''));}
+  modeLabel(m){return ({system:'VS SYSTEM · '+String(this.state.level).toUpperCase(),pvp:'PASS AND PLAY',online:'LIVE ONLINE',practice:'PRACTICE TABLE'})[m]||'';}
+  resumeCard(nm){const g=this.g,E=React.createElement,h=this.host||{};if(h.signedIn!==true)return null;let title,sub,on,drop=null,icon='ph-play';
+    if(g.inGame){title='RESUME GAME';sub=g.mode==='practice'?'Practice table':`${nm[0]} vs ${nm[1]} · ${this.modeLabel(g.mode).toLowerCase()}`;on=()=>this.setState({menuOpen:false});}
+    else{const S=this.saved();if(!S)return null;
+      if(S.kind==='online'){title='REJOIN YOUR ONLINE GAME';sub=`vs ${S.opp} · your seat is held for ${SEAT_HOLD}s after you leave`;icon='ph-globe-hemisphere-west';on=()=>this.rejoin(S);}
+      else{const sn=S.mode==='system'?[this.me(),'Machine · '+(S.level||'Pro')]:(S.pvpNames||[this.me(),'Player 2']);title='CONTINUE YOUR GAME';sub=`${sn[0]} vs ${sn[1]} · ${(n=>n+(n===1?" shot":" shots"))(S.snap&&S.snap.n||0)} in`;on=()=>this.resumeLocal(S);
+        drop=E('button',{key:'x',onClick:(e)=>{e.stopPropagation();this.clearSaved('local');this.sync();},'aria-label':'Discard the saved game',style:{all:'unset',cursor:'pointer',flex:'none',width:30,height:30,borderRadius:9,display:'flex',alignItems:'center',justifyContent:'center',color:'#7a1a10',background:'rgba(0,0,0,.12)'}},E('i',{className:'ph-bold ph-x'}));}}
+    return E('div',{role:'button',tabIndex:0,onClick:on,onKeyDown:(e)=>{if(e.key==='Enter')on();},style:{marginTop:18,width:'100%',boxSizing:'border-box',cursor:'pointer',display:'flex',alignItems:'center',gap:12,padding:'12px 12px 12px 14px',borderRadius:16,background:'linear-gradient(180deg,#ffd94d,#ffb200)',color:'#2a1206',boxShadow:'0 0 30px rgba(255,190,30,.35),0 10px 24px rgba(0,0,0,.45)',animation:'cardIn .35s ease-out'}},
+      E('div',{style:{flex:'none',width:42,height:42,borderRadius:12,background:'rgba(0,0,0,.14)',display:'flex',alignItems:'center',justifyContent:'center'}},E('i',{className:'ph-fill '+icon,style:{fontSize:22}})),
+      E('div',{style:{flex:1,minWidth:0,display:'flex',flexDirection:'column',gap:2}},E('span',{style:{fontFamily:'Montserrat',fontWeight:900,fontSize:15,letterSpacing:'.02em'}},title),E('span',{style:{fontSize:12,fontWeight:600,color:'#5a2a0c',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}},sub)),
+      drop||E('i',{className:'ph-bold ph-caret-right',style:{fontSize:18}}));}
+  overlays(nm){const g=this.g,st=this.state,E=React.createElement,out=[];
+    const scrim=(k,z,onClose,kids,align)=>E('div',{key:k,onClick:onClose,style:{position:'absolute',inset:0,zIndex:z,background:'rgba(6,4,3,.62)',backdropFilter:'blur(7px)',WebkitBackdropFilter:'blur(7px)',display:'flex',alignItems:align||'center',justifyContent:'center',padding:16,boxSizing:'border-box',overflowY:'auto'}},kids);
+    const card=(kids,w)=>E('div',{onClick:e=>e.stopPropagation(),style:{margin:'auto',width:`min(${w||380}px,100%)`,boxSizing:'border-box',display:'flex',flexDirection:'column',alignItems:'center',textAlign:'center',padding:'22px 20px',borderRadius:22,background:'linear-gradient(180deg,#22180d,#120d09)',border:'1.5px solid rgba(226,180,55,.6)',boxShadow:'0 0 60px rgba(226,170,40,.2),0 30px 70px rgba(0,0,0,.6)',animation:'cardIn .25s ease-out'}},...kids);
+    const btn=(label,on,kind,k,icon)=>E('button',{key:k||label,onClick:on,style:{all:'unset',cursor:'pointer',boxSizing:'border-box',height:46,borderRadius:12,display:'flex',alignItems:'center',justifyContent:'center',gap:8,fontFamily:'Montserrat',fontWeight:800,fontSize:14,textAlign:'center',padding:'0 12px',
+      ...(kind==='gold'?{background:'linear-gradient(180deg,#ffd94d,#ffb200)',color:'#7a1a10'}:kind==='red'?{border:'1.5px solid rgba(255,74,61,.6)',color:'#ff7a6a'}:{border:'1.5px solid rgba(255,255,255,.25)',color:'#f3eee6'})}},icon?E('i',{className:icon,style:{fontSize:17}}):null,label);
+    const opp=g.mode==='online'?String((g.onNames||[])[1-(g.seat|0)]||'your opponent'):g.mode==='system'?'the Machine':String(nm[1]);
+
+    // Pause
+    if(st.pauseOpen&&g.inGame){const online=g.mode==='online',cl=this.clockLeft();
+      const sub=online?(this.human()?`Your shot clock is still running${cl!=null?' · '+Math.ceil(cl)+'s':''}`:'Online games keep going while this is open'):g.mode==='practice'?'Free play · no clock':'The shot clock is stopped';
+      const on=this.guideOn(),locked=this.guideLocked()&&g.tableGuide!==true;
+      out.push(scrim('pause',23,()=>this.setState({pauseOpen:false}),card([
+        E('i',{key:'i',className:online?'ph-fill ph-globe-hemisphere-west':'ph-fill ph-pause-circle',style:{fontSize:44,color:online?'#6fb6ff':'#f2c21b',filter:'drop-shadow(0 0 12px rgba(242,194,27,.45))'}}),
+        E('div',{key:'t',style:{marginTop:6,fontFamily:'Montserrat',fontStyle:'italic',fontWeight:900,fontSize:26,lineHeight:1.1}},online?'GAME ON':'PAUSED'),
+        E('div',{key:'m',style:{marginTop:6,fontSize:10.5,fontWeight:700,letterSpacing:'.26em',color:'#9b9083'}},this.modeLabel(g.mode)),
+        g.mode==='practice'?null:E('div',{key:'vs',style:{marginTop:12,display:'flex',alignItems:'center',justifyContent:'center',gap:10,maxWidth:'100%',fontFamily:'Montserrat',fontWeight:800,fontSize:14}},
+          E('span',{style:{minWidth:0,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',color:g.turn===0?'#ffd94d':'#f3eee6'}},String(nm[0])),E('span',{style:{flex:'none',fontStyle:'italic',fontWeight:900,color:'#f2c21b'}},'VS'),E('span',{style:{minWidth:0,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',color:g.turn===1?'#ffd94d':'#f3eee6'}},String(nm[1]))),
+        E('div',{key:'s',style:{marginTop:6,fontSize:12.5,color:'#bdb2a5'}},sub),
+        E('div',{key:'b',style:{marginTop:18,width:'100%',display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}},
+          E('div',{key:'r',style:{gridColumn:'1 / -1',display:'grid'}},btn('RESUME GAME',()=>this.setState({pauseOpen:false}),'gold','r','ph-fill ph-play')),
+          E('button',{key:'g',onClick:()=>this.toggleGuide(),style:{all:'unset',cursor:'pointer',gridColumn:'1 / -1',boxSizing:'border-box',display:'flex',alignItems:'center',justifyContent:'space-between',gap:10,padding:'10px 12px',borderRadius:12,background:'#120d0a',border:'1px solid rgba(255,255,255,.08)',textAlign:'left'}},
+            E('span',{style:{display:'flex',flexDirection:'column',gap:2,minWidth:0}},E('span',{style:{fontSize:11,color:'#8d8378',fontWeight:700,letterSpacing:'.08em'}},'AIM GUIDE'),E('span',{style:{fontSize:11.5,color:'#a59b8f'}},locked?`Off for this game · tap to ask ${g.mode==='online'?opp.split(/\s+/)[0]:'the other player'}`:on?'Full guide line':'Contact circle only')),
+            E('span',{style:{flex:'none',width:44,height:24,borderRadius:12,background:on?'linear-gradient(180deg,#ffd94d,#ffb200)':'#2a221b',padding:2,boxSizing:'border-box',display:'flex'}},E('span',{style:{width:20,height:20,borderRadius:'50%',background:'#fff',transform:on?'translateX(20px)':'none',transition:'transform .2s'}}))),
+          btn('MAIN MENU',()=>this.setState({pauseOpen:false,menuOpen:true}),null,'mm','ph-bold ph-list'),
+          btn('LEAVE',()=>{this.setState({pauseOpen:false});this.saveGame();if(window.parent!==window)this.hostSend({type:'exit'});else location.href='/games';},null,'lv','ph-bold ph-sign-out'),
+          g.mode==='practice'?null:E('div',{key:'q',style:{gridColumn:'1 / -1',display:'grid'}},btn(online?'RESIGN':'END GAME',()=>this.setState({confirm:{title:online?'Resign this game?':'End this game?',text:online?`${opp} wins, and the game is over for both of you.`:'The game is gone for good. Nobody wins it.',yes:online?'RESIGN':'END GAME',fn:()=>this.quitGame()}}),'red','q','ph-bold ph-flag'))),
+        E('div',{key:'n',style:{marginTop:12,fontSize:11.5,lineHeight:1.45,color:'#8d8378'}},online?`Left by accident? Your seat is held for ${SEAT_HOLD}s. Open 8-ball again and tap Rejoin.`:g.mode==='practice'?'':'Leaving keeps this game. Pick it up from the 8-ball menu.')])));}
+
+    // Confirm
+    if(st.confirm){const C=st.confirm;out.push(scrim('confirm',26,()=>this.setState({confirm:null}),card([
+      E('i',{key:'i',className:'ph-fill ph-warning-circle',style:{fontSize:40,color:'#ff7a6a'}}),
+      E('div',{key:'t',style:{marginTop:8,fontFamily:'Montserrat',fontWeight:900,fontSize:20}},C.title),
+      E('div',{key:'x',style:{marginTop:8,fontSize:13.5,lineHeight:1.5,color:'#bdb2a5'}},C.text),
+      E('div',{key:'b',style:{marginTop:18,width:'100%',display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}},btn('CANCEL',()=>this.setState({confirm:null}),null,'c'),btn(C.yes,()=>{this.setState({confirm:null});C.fn();},'red','y'))],340)));}
+
+    // Aim guide request
+    if(st.assistAsk&&g.inGame){const A=st.assistAsk;out.push(scrim('assist',27,()=>{},card([
+      E('i',{key:'i',className:'ph-fill ph-crosshair',style:{fontSize:42,color:'#f2c21b',filter:'drop-shadow(0 0 12px rgba(242,194,27,.5))'}}),
+      E('div',{key:'t',style:{marginTop:8,fontFamily:'Montserrat',fontWeight:900,fontSize:19,lineHeight:1.25}},`${String(A.from).split(/\s+/)[0]} wants the aim guide on`),
+      E('div',{key:'x',style:{marginTop:8,fontSize:13.5,lineHeight:1.5,color:'#bdb2a5'}},A.local?`This game started with it off. ${A.to}, allow the full guide line for both players?`:'This game started with it off. Allow the full guide line for both of you?'),
+      E('div',{key:'b',style:{marginTop:18,width:'100%',display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}},btn('NO THANKS',()=>this.answerAssist(false),null,'n'),btn('ALLOW',()=>this.answerAssist(true),'gold','y'))],340)));}
+
+    // Taunt panel
+    if(st.tauntOpen&&this.canTaunt()){const tab=st.tTab||'emotes',items=tab==='emotes'?EMOTES:STICKERS;
+      out.push(scrim('taunt',18,()=>this.setState({tauntOpen:false}),E('div',{onClick:e=>e.stopPropagation(),style:{marginTop:'auto',width:'min(460px,100%)',maxHeight:'100%',overflowY:'auto',boxSizing:'border-box',padding:14,borderRadius:20,background:'linear-gradient(180deg,#22180d,#120d09)',border:'1.5px solid rgba(226,180,55,.6)',boxShadow:'0 0 40px rgba(226,170,40,.2),0 20px 50px rgba(0,0,0,.6)',animation:'cardIn .22s ease-out'}},
+        E('div',{style:{display:'flex',alignItems:'center',gap:8}},E('i',{className:'ph-fill ph-sticker',style:{fontSize:20,color:'#ffc21a'}}),E('span',{style:{flex:1,fontFamily:'Montserrat',fontStyle:'italic',fontWeight:900,fontSize:16,letterSpacing:'.04em'}},'TAUNT ZONE'),
+          E('span',{style:{fontSize:11.5,color:'#9b9083'}},g.mode==='system'?'The Machine bites back':'to '+opp.split(/\s+/)[0]),
+          E('button',{onClick:()=>this.setState({tauntOpen:false}),'aria-label':'Close',style:{all:'unset',cursor:'pointer',width:30,height:30,borderRadius:9,display:'flex',alignItems:'center',justifyContent:'center',color:'#cfc6ba',background:'rgba(255,255,255,.06)'}},E('i',{className:'ph-bold ph-x'}))),
+        E('div',{style:{marginTop:10,display:'grid',gridTemplateColumns:'1fr 1fr',gap:6,padding:4,borderRadius:12,background:'rgba(0,0,0,.35)'}},...[['emotes','EMOTES'],['stickers','STICKERS']].map(([k,l])=>E('button',{key:k,onClick:()=>this.setState({tTab:k}),style:{all:'unset',cursor:'pointer',height:32,borderRadius:9,textAlign:'center',lineHeight:'32px',fontFamily:'Montserrat',fontWeight:800,fontSize:12,letterSpacing:'.08em',background:tab===k?'linear-gradient(180deg,#ffd94d,#ffb200)':'transparent',color:tab===k?'#5a1a08':'#a59b8f'}},l))),
+        E('div',{style:{marginTop:10,display:'grid',gridTemplateColumns:'repeat(4,minmax(0,1fr))',gap:8}},...items.map(it=>E('button',{key:it.k,onClick:()=>this.sendTaunt(it),'aria-label':it.label,style:{all:'unset',cursor:'pointer',boxSizing:'border-box',display:'flex',flexDirection:'column',alignItems:'center',gap:5,padding:'8px 4px',borderRadius:12,background:'rgba(10,2,5,.6)',border:'1px solid rgba(255,255,255,.08)'}},
+          it.img?E('img',{src:it.img,alt:'',style:{width:54,height:54,objectFit:'cover',borderRadius:9}}):E('div',{style:{width:44,height:44,borderRadius:'50%',background:it.col+'22',border:'1.5px solid '+it.col,display:'flex',alignItems:'center',justifyContent:'center'}},E('i',{className:'ph-fill ph-'+it.icon,style:{fontSize:23,color:it.col}})),
+          E('span',{style:{fontFamily:'Montserrat',fontWeight:800,fontSize:9.5,lineHeight:1.15,textAlign:'center',color:'#f3eee6',letterSpacing:'.02em'}},it.label))))),'flex-end'));}
+
+    // A taunt landing
+    if(st.tpop){const P=st.tpop,it=P.it;out.push(E('div',{key:'tp'+P.id,'aria-live':'polite',style:{position:'absolute',left:'50%',top:'16%',zIndex:30,pointerEvents:'none',animation:'tauntPop 2.6s cubic-bezier(.2,.8,.2,1) forwards'}},
+      E('div',{style:{display:'flex',flexDirection:'column',alignItems:'center',gap:8}},
+        E('div',{style:{padding:'3px 10px',borderRadius:10,background:P.mine?'#f2c21b':'#6fb6ff',color:'#0b0806',fontFamily:'Montserrat',fontWeight:900,fontSize:10.5,letterSpacing:'.1em',whiteSpace:'nowrap'}},P.mine?'YOU':String(P.from).toUpperCase()),
+        it.img?E('div',{style:{position:'relative',padding:5,background:'#fff',borderRadius:12,boxShadow:'0 0 0 2px #f2c21b,0 14px 30px rgba(0,0,0,.6)',animation:'tauntWob .5s ease-in-out infinite'}},E('img',{src:it.img,alt:'',style:{display:'block',width:130,height:130,objectFit:'cover',borderRadius:8}}),
+            E('div',{style:{position:'absolute',left:5,right:5,bottom:5,padding:'4px 5px',borderRadius:'0 0 8px 8px',background:'rgba(0,0,0,.75)',color:'#fff',fontFamily:'Impact,"Anton","Arial Black",sans-serif',fontSize:15,textAlign:'center',lineHeight:1.05}},it.label))
+          :E('div',{style:{display:'flex',alignItems:'center',gap:10,padding:'12px 18px',borderRadius:20,background:'rgba(12,8,6,.92)',border:'2px solid '+it.col,boxShadow:`0 0 30px ${it.col}66,0 14px 30px rgba(0,0,0,.6)`}},
+            E('i',{className:'ph-fill ph-'+it.icon,style:{fontSize:40,color:it.col,animation:'tauntWob .5s ease-in-out infinite'}}),E('span',{style:{fontFamily:'Montserrat',fontStyle:'italic',fontWeight:900,fontSize:24,color:'#fff',whiteSpace:'nowrap'}},it.label)))));}
+    return out.length?E(React.Fragment,null,...out):null;}
   renderVals(){
     const g=this.g,st=this.state,nm=this.names(),narrow=this.vw()<720;
     const players=[0,1].map(i=>{
@@ -953,20 +1109,27 @@ class Component extends DCLogic {
       const blink=active&&Math.floor(Date.now()/450)%2===0;const balls=nums?nums.map(n=>({bg:ballCss(n),op:g.balls.find(b=>b.n===n).on?(blink?'1':'.55'):'.15'})):Array.from({length:7},()=>({bg:'rgba(255,255,255,.07)',op:'1'}));
       const tags=g.mode==='online'?(g.seat===0?['YOU','ONLINE']:['ONLINE','YOU']):g.mode==='system'?['YOU','AI']:g.mode==='practice'?['YOU','—']:['P1','P2'];
       const stt=g.stats&&g.stats[i];if(stt&&stt.streak>=2&&!g.ai)status=`COMBO ×${stt.streak} · `+status;
+      const cl=g.turn===i?this.clockLeft():null;if(cl!=null)status=`⏱ ${Math.ceil(cl)}s · `+status;
       if(narrow)status=status.replace(' LEFT','').replace('OPEN TABLE','OPEN').replace('LINING UP…','THINKING…').replace('FREE PLAY','FREE').replace('NO RULES','—');
       const chip=(g.mode!=='pvp'&&i===this.mySeat()&&this.host&&typeof this.host.balance==='number')?this.fmtC(this.host.balance):'';
       const shortNm=String(nm[i]).startsWith('Machine')?'Machine':String(nm[i]).trim().split(/\s+/)[0];
-      return {coins:chip,cd:chip&&!narrow?'flex':'none',name:narrow?shortNm:nm[i],tag:tags[i],ini:g.mode==='system'&&i?'AI':g.mode==='practice'&&i?'—':this.initials(nm[i]),status,balls,bd:narrow?'none':'flex',avS:narrow?'28px':'34px',avF:narrow?'10px':'11px',gap:narrow?'6px':'10px',pad:narrow?'0 7px':'0 10px',td:narrow?'none':'inline-block',nf:narrow?'12px':'13px',sf:narrow?'8.5px':'9.5px',sl:narrow?'.06em':'.12em',
+      return {cw:cl!=null?(cl/SHOT_CLOCK*100).toFixed(1)+'%':'0%',cc:cl!=null&&cl<=10?'#ff4a3d':'#f2c21b',coins:chip,cd:chip&&!narrow?'flex':'none',name:narrow?shortNm:nm[i],tag:tags[i],ini:g.mode==='system'&&i?'AI':g.mode==='practice'&&i?'—':this.initials(nm[i]),status,balls,bd:narrow?'none':'flex',avS:narrow?'28px':'34px',avF:narrow?'10px':'11px',gap:narrow?'6px':'10px',pad:narrow?'0 7px':'0 10px',td:narrow?'none':'inline-block',nf:narrow?'12px':'13px',sf:narrow?'8.5px':'9.5px',sl:narrow?'.06em':'.12em',
         border:active?'1.5px solid #e2b437':'1.5px solid rgba(255,255,255,.07)',glow:active?'0 0 0 3px rgba(226,180,55,.1),0 0 26px rgba(226,180,55,.2)':'none',
         avBg:i===0?'radial-gradient(circle at 35% 30%,#fff1a6,#f2c21b 45%,#b98200)':'radial-gradient(circle at 35% 30%,#ffffff,#d9d6cf 45%,#8f8b83)',dir:i===0?'row':'row-reverse',align:i===0?'flex-start':'flex-end'};});
     const human=this.human(),cue=g.balls[0];let hint='';
     const deg=(((g.aim*180/Math.PI)%360+360)%360).toFixed(1),touch=this.isTouch();
-    if(g.phase==='aim'&&!st.menuOpen){const opn=String(nm[g.turn]).trim().split(/\s+/)[0];if(g.ai)hint='Machine is lining up a shot…';else if(g.mode==='online'&&!human)hint=g.ballInHand?`${opn} has ball in hand · waiting for their shot`:`${opn}'s turn · waiting for their shot`;else if(g.mode==='online'&&g.awaitSnap)hint='Syncing the table…';else if(this.needCall()&&g.called==null)hint='On the 8 · tap a pocket to call it';else if(this.drag==='pull'||this.powering)hint=g.power>.03?`Power ${Math.round(g.power*100)}% · release to shoot`:'Pull back to build power';else if(this.fining)hint=`Fine aim · ${deg}°`;else if(this.drag==='rot')hint=`Aim ${deg}°`;else if(g.ballInHand)hint=(g.kitchen?'Ball in hand · drag the cue ball behind the line':'Ball in hand · drag the cue ball anywhere')+(touch?'':' · drag the table to aim');else hint=touch?'Drag to aim · pull the cue to shoot':(st.portrait?'Drag to turn the aim · pull the cue back to shoot':'Drag the table to turn the aim · pull straight back, or pull the cue, to shoot');}
+    if(g.phase==='aim'&&!st.menuOpen){const opn=String(nm[g.turn]).trim().split(/\s+/)[0];if(g.ai)hint='Machine is lining up a shot…';else if(g.mode==='online'&&!human&&this.needCall())hint=g.called!=null?`${opn} is on the 8 · called the marked pocket`:`${opn} is on the 8 · picking a pocket`;else if(g.mode==='online'&&!human)hint=g.ballInHand?`${opn} has ball in hand · waiting for their shot`:`${opn}'s turn · waiting for their shot`;else if(g.mode==='online'&&g.awaitSnap)hint='Syncing the table…';else if(this.needCall()&&g.called==null)hint='On the 8 · tap a pocket to call it';else if(this.drag==='pull'||this.powering)hint=g.power>.03?`Power ${Math.round(g.power*100)}% · release to shoot`:'Pull back to build power';else if(this.fining)hint=`Fine aim · ${deg}°`;else if(this.drag==='rot')hint=`Aim ${deg}°`;else if(g.ballInHand)hint=(g.kitchen?'Ball in hand · drag the cue ball behind the line':'Ball in hand · drag the cue ball anywhere')+(touch?'':' · drag the table to aim');else hint=touch?'Drag to aim · pull the cue to shoot':(st.portrait?'Drag to turn the aim · pull the cue back to shoot':'Drag the table to turn the aim · pull straight back, or pull the cue, to shoot');}
+    {const cl=this.clockLeft();if(hint&&cl!=null&&cl<=10)hint=`⏱ ${Math.ceil(cl)}s · `+hint;}
     const sx=g.spin.x,sy=g.spin.y,spinLabel=Math.hypot(sx,sy)<.12?'Center ball':(Math.abs(sy)>=Math.abs(sx)?(sy>0?'Top spin · follow':'Back spin · draw'):(sx>0?'Right English':'Left English'));
     const spinPos=(e)=>{const r=this.lr(e.currentTarget),c=this.cp(e);let x=(c.x-r.left-r.width/2)/(r.width/2),y=(c.y-r.top-r.height/2)/(r.height/2);const l=Math.hypot(x,y);if(l>.8){x*=.8/l;y*=.8/l;}g.spin={x,y:-y};this.sync();};
-    const pick=(m)=>(e)=>{e&&e.preventDefault&&e.preventDefault();this.initAudio();this.tryLandscape();if(!this.host||this.host.signedIn!==true)return;if(this.g.mode==='online'&&this.g.inGame)this.netResign();if(m==='online'){this.netQueue();return;}
+    const go=(m)=>{const G=this.g;this.setState({confirm:null,pauseOpen:false});if(G.mode==='online'&&G.inGame)this.netResign();else if(G.inGame){if(G.mode==='system'||G.mode==='pvp')this.clearSaved('local');G.inGame=false;G.ai=null;}
+      if(m==='online'){this.netQueue();return;}
       if(m==='pvp'){let p2='';try{p2=localStorage.getItem('wta8.p2')||'';}catch(x){}const p1=(this.g.pvpNames&&this.g.pvpNames[0])||this.me();this.setState({menuOpen:false,spinOpen:false,pvpSetup:{p1,p2,err:''}});return;}
       this.loadThen(m,m==='practice'?1000:1700);};
+    const pick=(m)=>(e)=>{e&&e.preventDefault&&e.preventDefault();this.initAudio();this.tryLandscape();if(!this.host||this.host.signedIn!==true)return;const G=this.g;
+      if(G.inGame&&G.mode!=='practice'){const opp=G.mode==='online'?String(G.onNames[1-G.seat]):G.mode==='system'?'the Machine':String(nm[1]);
+        this.setState({confirm:{title:'Leave this game?',text:G.mode==='online'?`Starting a new game resigns this one, and ${opp} wins it.`:'Starting a new game ends the one you are playing.',yes:G.mode==='online'?'RESIGN & PLAY':'END & PLAY',fn:()=>go(m)}});return;}
+      go(m);};
     const w=g.winner,over=g.phase==='over';
     return {
       wrapRef:this.wrapRef,cvRef:this.cvRef,players,hint,msg:st.msg,tbS:this.vw()<420?'34px':'40px',
@@ -1050,17 +1213,20 @@ class Component extends DCLogic {
       fineWheel:(e)=>{if(!this.canShoot())return;e.stopPropagation();g.aim+=(e.deltaY>0?1:-1)*FINE*4;this.aimLock=true;this.sync();},
       powMove:(e)=>{if(this.powering)this.setPow(e);},
       powUp:()=>{if(!this.powering)return;this.powering=false;if(g.power>.03)this.shoot(g.power);else{g.power=0;this.sync();}},
-      menuOpen:st.menuOpen,canResume:!!g.inGame,
-      openMenu:()=>{this.setState({menuOpen:true,spinOpen:false});if(g.phase==='over'){g.phase='menu';this.sync();}},
-      resume:(e)=>{e.preventDefault();this.setState({menuOpen:false});},
+      menuOpen:st.menuOpen,
+      openMenu:()=>{if(g.inGame&&g.phase!=='over'){this.setState({pauseOpen:true,spinOpen:false,tauntOpen:false});return;}this.setState({menuOpen:true,spinOpen:false});if(g.phase==='over'){g.phase='menu';this.sync();}},
+      tauntD:this.canTaunt()?'flex':'none',openTaunt:()=>this.setState({tauntOpen:!st.tauntOpen,spinOpen:false}),
+      resumeEl:st.menuOpen?this.resumeCard(nm):null,
+      overlayFx:this.overlays(nm),
       searching:!!st.searching,searchTitle:st.searching?st.searching.title:'',searchSub:st.searching?st.searching.sub:'',searchBot:!!(st.searching&&st.searching.bot),searchCols:st.searching&&st.searching.bot?'1fr 1fr':'1fr',cancelSearch:()=>this.cancelSearch(),searchToSystem:()=>{this.netClose();this.setState({searching:null});this.loadThen('system');},
-      exitGames:(e)=>{e.preventDefault();if(window.parent!==window)this.hostSend({type:'exit'});else location.href='/games';},playSystem:pick('system'),playPvp:pick('pvp'),playOnline:pick('online'),playPractice:pick('practice'),
+      exitGames:(e)=>{e&&e.preventDefault&&e.preventDefault();this.saveGame();if(window.parent!==window)this.hostSend({type:'exit'});else location.href='/games';},playSystem:pick('system'),playPvp:pick('pvp'),playOnline:pick('online'),playPractice:pick('practice'),
       levels:Object.keys(LV).map(n=>({name:n,pick:()=>this.setState({level:n}),bg:st.level===n?'rgba(226,180,55,.18)':'transparent',fg:st.level===n?'#f2c21b':'#a59b8f',bc:st.level===n?'rgba(226,180,55,.6)':'rgba(255,255,255,.1)'})),
       trayPos:st.portrait?'top:6px':'bottom:6px',trays:st.side?[]:(()=>{const neon=!!this.felt().neon;return [['SOLIDS',[1,2,3,4,5,6,7],'40,240,255'],['STRIPES',[9,10,11,12,13,14,15],'255,60,210']].map(([label,ns,gc],i)=>({label,side:i?'right:10px':'left:10px',dir:i?'row-reverse':'row',bc:neon?`rgba(${gc},.7)`:'rgba(226,180,55,.3)',sh:neon?`0 0 14px rgba(${gc},.35)`:'none',lc:neon?`rgb(${gc})`:'#a59b8f',
         balls:ns.map(n=>{const on=g.balls.length?g.balls.find(b=>b.n===n).on:true;return {bg:ballCss(n),glow:on&&neon?`0 0 7px rgba(${gc},.7)`:'0 1px 2px rgba(0,0,0,.6)',op:on?'1':'.22',fl:on?'none':'grayscale(1)'};})}));})(),
       felts:Object.keys(FELTS).map(k=>{const F=FELTS[k],sel=this.feltName()===k;return {name:k,pick:()=>this.setState({feltSel:k}),bg:F.neon?'radial-gradient(circle at 35% 30%,#3a2470,#120a26 70%),#120a26':`radial-gradient(circle at 35% 30%,${F.c},${F.e})`,ring:sel?(F.neon?'0 0 0 2px #3ff0ff,0 0 14px #3ff0ff':'0 0 0 2px #e2b437,0 0 12px rgba(226,180,55,.5)'):'0 0 0 1px rgba(255,255,255,.15)',fg:sel?'#f3eee6':'#8d8378'};}),
       guideLabel:this.guideOn()?'On':'Off',guideBg:this.guideOn()?'linear-gradient(180deg,#ffd94d,#ffb200)':'#2a221b',guideX:this.guideOn()?'translateX(20px)':'translateX(0)',
-      toggleGuide:()=>this.setState({guideSel:!this.guideOn()}),
+      toggleGuide:()=>this.toggleGuide(),
+      guideSub:this.guideLocked()&&g.tableGuide!==true?'Off for this game · turning it on asks your opponent':'Off shows only the contact circle',
       side:!!st.side&&!st.portrait,
       sd:(()=>{const s=g.stats&&g.stats[g.turn],k=s?s.streak:0,titles=['Pot a ball to start a streak','One more for a combo','Next: GREAT COMBO','Next: AMAZING','Next: UNSTOPPABLE','Next: ON FIRE','Next: LEGENDARY'];
         return {shooter:g.inGame||g.phase==='over'?nm[g.turn]+(g.ai?' · thinking':''):'—',streak:k,next:titles[Math.min(k,6)]||'LEGENDARY run',

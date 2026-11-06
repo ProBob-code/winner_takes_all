@@ -211,11 +211,15 @@ export function PlayerStats({ player }: { player: PlayerCardData }) {
     const online = played.filter((t) => t.track.startsWith("online:"));
     wins = s.wins + online.reduce((a, t) => a + t.wins, 0);
     games = s.played + online.reduce((a, t) => a + t.games, 0);
+    // Every browser game won, from the trophy ladders. The coin ledger's
+    // ONLINE_WON count missed wins that paid nothing (past the daily cap, or
+    // from before every win paid), so it read 9 beside a 15-win ladder.
+    const onlineWins = Math.max(s.onlineWins, online.reduce((a, t) => a + t.wins, 0));
     tiles = [
       { icon: "🏆", label: "Fights won", value: n(s.nightsWon), zero: s.nightsWon === 0, hint: "Win a whole fight" },
       { icon: "🎟️", label: "Fights played", value: n(s.nightsPlayed), zero: s.nightsPlayed === 0, hint: "Join a fight at a venue" },
       { icon: "🎱", label: "Clearances", value: n(s.clearances), zero: s.clearances === 0, hint: "All seven and the black" },
-      { icon: "🌐", label: "Online wins", value: n(s.onlineWins), zero: s.onlineWins === 0, hint: "Beat the AI or a rival" },
+      { icon: "🌐", label: "Online wins", value: n(onlineWins), zero: onlineWins === 0, hint: "Beat the AI or a rival" },
       { icon: "🔥", label: "Streaks", value: n(s.streaks), zero: s.streaks === 0, hint: "Three fights in a row" },
       { icon: "👑", label: "Seasons won", value: n(s.seasonsWon), zero: s.seasonsWon === 0, hint: "Top a season's table" },
     ];

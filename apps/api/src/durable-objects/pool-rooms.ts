@@ -48,10 +48,17 @@ type TableMeta = {
   awayAt: [number | null, number | null];
   firstReportAt: number | null;
   snapshot: unknown;
+  /** Each seat's aim-guide setting as they sat down; null until they said. */
+  guidePref?: [boolean | null, boolean | null];
+  /**
+   * The aim guide for this table. Fixed once both have sat down: on only if
+   * both had it on. After that only an approved request turns it on.
+   */
+  guide?: boolean | null;
 };
 
 /** How long a dropped player has to come back before the game is theirs to lose. */
-const GRACE_MS = 45_000;
+const GRACE_MS = 90_000;
 /** How long a lone report waits for the other screen's. */
 const REPORT_WAIT_MS = 30_000;
 /** Before this, a table never had both players sit down; drop it. */
@@ -63,7 +70,9 @@ const PRESENCE_MS = 70_000;
 /** A table still open after this is no longer counted as being played. */
 const TABLE_MAX_MS = 45 * 60 * 1000;
 
-const RELAYED = new Set(["aim", "place"]);
+// Passed straight to the other seat: aim lines, taunts, and an aim-guide
+// request and its refusal (an approval goes through "assist_ok" below).
+const RELAYED = new Set(["aim", "place", "taunt", "assist_ask", "assist_no"]);
 
 export class PoolRooms {
   private state: DurableObjectState;
@@ -247,6 +256,8 @@ export class PoolRooms {
       awayAt: [null, null],
       firstReportAt: null,
       snapshot: null,
+      guidePref: [null, null],
+      guide: null,
     };
     await this.persist();
     await this.state.storage.setAlarm(Date.now() + NO_SHOW_MS);
@@ -297,6 +308,7 @@ export class PoolRooms {
         opponentHere: !!this.sockets[1 - seat],
         finished: meta.status !== "playing",
         winnerSeat: meta.winnerSeat,
+        guide: meta.guide ?? null,
       })
     );
     this.toOther(seat, { type: wasAway ? "opponent_back" : "opponent_joined" });
@@ -344,6 +356,28 @@ export class PoolRooms {
         this.toOther(seat, raw);
         meta.snapshot = msg.snap ?? null;
         await this.persist();
+        return;
+
+      // The aim guide is the table's, not each screen's: see TableMeta.guide.
+      case "pref": {
+        if (meta.guide == null) {
+          const prefs = meta.guidePref ?? [null, null];
+          prefs[seat] = !!msg.on;
+          meta.guidePref = prefs;
+          if (prefs[0] !== null && prefs[1] !== null) meta.guide = prefs[0] && prefs[1];
+          await this.persist();
+          if (meta.guide != null) this.broadcast({ type: "guide", on: meta.guide });
+        } else {
+          safeSend(ws, JSON.stringify({ type: "guide", on: meta.guide }));
+        }
+        return;
+      }
+
+      // The other player allowed the aim guide: on for both from here.
+      case "assist_ok":
+        meta.guide = true;
+        await this.persist();
+        this.broadcast({ type: "guide", on: true, by: seat });
         return;
 
       case "resign":
