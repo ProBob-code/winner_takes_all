@@ -61,7 +61,13 @@ export function Sidebar({ user: initialUser }: { user: any }) {
 
   // One list for the sidebar and the bottom bar, so a destination added in
   // one cannot go missing from the other. See lib/nav.ts.
-  const navItems = navFor(!!user);
+  // Plus the console, for the owner and anyone the owner let in. The API
+  // decides who that is; the role it reports is already the effective one.
+  // A copy, never a push: navFor returns the shared list.
+  const navItems =
+    user?.role === "admin"
+      ? [...navFor(true), { label: "Admin", short: "Admin", href: "/admin", icon: "crown-simple-bold" as const, color: "#ffd700" }]
+      : navFor(!!user);
 
   const [isOpen, setIsOpen] = useState(false);
 

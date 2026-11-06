@@ -17,7 +17,7 @@ import { computeSeasonStandings } from "./lib/season";
 import { ensureEngineSchema } from "./lib/engine-schema";
 import {
   createSessionTokens,
-  getRefreshSession,
+  getRefreshSessionInfo,
   deleteRefreshSession,
   deleteAccessSession,
   buildSessionCookies,
@@ -26,6 +26,8 @@ import {
 } from "./lib/kv-sessions";
 import { hashPassword, verifyPassword, createId, sha256Hex, timingSafeEqual, randomHex } from "./lib/crypto";
 import { verifyGoogleIdToken, GoogleTokenError } from "./lib/google";
+import { canManageAdmins } from "./lib/admin-access";
+import { registerAdminConsole } from "./routes/admin-console";
 import { createRazorpayOrder, verifyPaymentSignature, verifyWebhookSignature } from "./lib/razorpay";
 import {
   signBroadcastToken,
@@ -417,6 +419,22 @@ function serializeTournament(t: TournamentRecord) {
 app.get("/api/health", (c) => c.json({ ok: true, service: "api", timestamp: new Date().toISOString() }));
 
 // --- Auth ---
+
+/**
+ * One row per sign-in, for the admin console's login charts. Never blocks a
+ * sign-in: a failure here is logged and forgotten.
+ */
+async function recordLogin(c: Context<AppContext>, userId: string, method: string) {
+  try {
+    await ensureEngineSchema(c.env.DB);
+    await c.env.DB.prepare(`INSERT INTO login_events (id, user_id, method, created_at) VALUES (?, ?, ?, ?)`)
+      .bind(createId("login"), userId, method, new Date().toISOString())
+      .run();
+  } catch (err) {
+    console.warn("Could not record a login:", err);
+  }
+}
+
 app.post("/api/auth/signup", async (c) => {
   const limited = await rateLimit(c, "signup", 10, 300);
   if (limited) return limited;
@@ -443,7 +461,8 @@ app.post("/api/auth/signup", async (c) => {
     allowedSignupBonusCents(c.env, SIGNUP_BONUS_RUPEES)
   );
 
-  const tokens = await createSessionTokens(c.env.SESSIONS, user.id);
+  await recordLogin(c, user.id, "signup");
+  const tokens = await createSessionTokens(c.env.SESSIONS, user.id, "password");
   const [access, refresh] = buildSessionCookies(tokens);
   c.header("Set-Cookie", access, { append: true });
   c.header("Set-Cookie", refresh, { append: true });
@@ -463,7 +482,8 @@ app.post("/api/auth/login", async (c) => {
     return c.json({ ok: false, message: "Invalid email or password" }, 401);
   }
 
-  const tokens = await createSessionTokens(c.env.SESSIONS, user.id);
+  await recordLogin(c, user.id, "password");
+  const tokens = await createSessionTokens(c.env.SESSIONS, user.id, "password");
   const [access, refresh] = buildSessionCookies(tokens);
   c.header("Set-Cookie", access, { append: true });
   c.header("Set-Cookie", refresh, { append: true });
@@ -519,7 +539,9 @@ app.post("/api/auth/google", async (c) => {
     created = true;
   }
 
-  const tokens = await createSessionTokens(c.env.SESSIONS, user.id);
+  await recordLogin(c, user.id, created ? "google-signup" : "google");
+  // Marked as a Google session: the only kind the admin console accepts.
+  const tokens = await createSessionTokens(c.env.SESSIONS, user.id, "google");
   const [access, refresh] = buildSessionCookies(tokens);
   c.header("Set-Cookie", access, { append: true });
   c.header("Set-Cookie", refresh, { append: true });
@@ -554,7 +576,8 @@ app.post("/api/auth/refresh", async (c) => {
     return c.json({ ok: false, message: "Missing refresh token" }, 401);
   }
 
-  const userId = await getRefreshSession(c.env.SESSIONS, refreshToken);
+  const session = await getRefreshSessionInfo(c.env.SESSIONS, refreshToken);
+  const userId = session?.userId ?? null;
   if (!userId) {
     return c.json({ ok: false, message: "Invalid or expired refresh token" }, 401);
   }
@@ -567,7 +590,8 @@ app.post("/api/auth/refresh", async (c) => {
 
   await deleteRefreshSession(c.env.SESSIONS, refreshToken);
 
-  const tokens = await createSessionTokens(c.env.SESSIONS, user.id);
+  // A rotated session keeps the way it was signed in.
+  const tokens = await createSessionTokens(c.env.SESSIONS, user.id, session!.via);
   const [access, refresh] = buildSessionCookies(tokens);
   c.header("Set-Cookie", access, { append: true });
   c.header("Set-Cookie", refresh, { append: true });
@@ -1673,10 +1697,17 @@ app.post("/api/admin/payouts/:id/settle", async (c) => {
   return c.json({ ok: true, payout: serializePayout(settled) });
 });
 
-/** Promote or demote a member. */
+/**
+ * Promote or demote a member. The owner's alone (lib/admin-access.ts): making
+ * someone admin writes the grant row the auth middleware looks for, and taking
+ * it away deletes it. Another admin gets a 403.
+ */
 app.post("/api/admin/users/:id/role", async (c) => {
   const { admin, deny } = adminOr403(c);
   if (!admin) return deny;
+  if (!canManageAdmins(c.get("admin")!)) {
+    return c.json({ ok: false, message: "Only the owner can give or take away admin." }, 403);
+  }
 
   const target = c.req.param("id");
   if (target === admin.id) {
@@ -1687,8 +1718,24 @@ app.post("/api/admin/users/:id/role", async (c) => {
   const store = c.get("store");
   const changed = await store.setUserRole(target, body.role);
   if (!changed) return c.json({ ok: false, message: "No such member" }, 404);
+  const now = new Date().toISOString();
+  if (body.role === "admin") {
+    await c.env.DB.prepare(
+      `INSERT INTO admin_grants (user_id, granted_by, note, granted_at) VALUES (?, ?, NULL, ?)
+       ON CONFLICT(user_id) DO NOTHING`
+    ).bind(target, admin.id, now).run();
+  } else {
+    await c.env.DB.prepare(`DELETE FROM admin_grants WHERE user_id = ?`).bind(target).run();
+  }
+  await c.env.DB.prepare(
+    `INSERT INTO admin_audit (id, actor_id, actor_email, action, target, detail, created_at) VALUES (?, ?, ?, ?, ?, NULL, ?)`
+  ).bind(createId("audit"), admin.id, admin.email, body.role === "admin" ? "admin.grant" : "admin.revoke", target, now).run()
+    .catch(() => undefined);
   return c.json({ ok: true, role: body.role });
 });
+
+// Stats, access, AdSense and the artifact manager: routes/admin-console.ts.
+registerAdminConsole(app);
 
 /**
  * Set a new password for a member.

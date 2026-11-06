@@ -7,10 +7,12 @@ import type { Context, Next } from "hono";
 import {
   buildAccessCookie,
   createAccessSession,
-  getAccessSession,
-  getRefreshSession,
+  getAccessSessionInfo,
+  getRefreshSessionInfo,
   parseCookies,
+  type SessionVia,
 } from "../lib/kv-sessions";
+import { decideAdmin, effectiveRole, isOwnerEmail, ownerEmailFrom } from "../lib/admin-access";
 import type { AppContext } from "../types";
 
 export interface AuthUser {
@@ -45,22 +47,42 @@ export async function authMiddleware(c: Context<AppContext>, next: Next) {
   const kv = c.env.SESSIONS;
   const token = extractAccessToken(c);
   let userId: string | null = null;
+  let via: SessionVia | null = null;
 
-  if (token && kv) userId = await getAccessSession(kv, token);
+  if (token && kv) {
+    const info = await getAccessSessionInfo(kv, token);
+    if (info) ({ userId, via } = info);
+  }
 
   let renewed: string | null = null;
   if (!userId && kv) {
     const refresh = parseCookies(c.req.header("Cookie"))["wta_refresh_token"];
     if (refresh) {
-      userId = await getRefreshSession(kv, refresh);
-      if (userId) renewed = await createAccessSession(kv, userId).catch(() => null);
+      const info = await getRefreshSessionInfo(kv, refresh);
+      if (info) {
+        ({ userId, via } = info);
+        // The renewed token keeps the way the session was signed in, so a
+        // Google session stays a Google session for the console.
+        renewed = await createAccessSession(kv, info.userId, info.via).catch(() => null);
+      }
     }
   }
 
   if (userId) {
-    const user = await c.get("store").getUserById(userId);
+    const user = (await c.get("store").getUserById(userId)) as AuthUser | null;
     if (user) {
-      c.set("user", user as AuthUser);
+      // Admin is decided here, once, for every route: the owner by email, anyone
+      // else only with a grant row from the owner, and either only on a Google
+      // session. A stored role of 'admin' without that reads as 'player'.
+      const ownerEmail = ownerEmailFrom(c.env.ADMIN_OWNER_EMAIL);
+      let hasGrant = false;
+      if (user.role === "admin" && !isOwnerEmail(user.email, ownerEmail)) {
+        hasGrant = await hasAdminGrant(c.env.DB, user.id);
+      }
+      const decision = decideAdmin({ email: user.email, via, ownerEmail, hasGrant });
+      c.set("user", { ...user, role: effectiveRole(user.role, decision) });
+      c.set("authVia", via ?? "password");
+      c.set("admin", decision);
     } else {
       renewed = null;
     }
@@ -79,6 +101,17 @@ export async function authMiddleware(c: Context<AppContext>, next: Next) {
   }
 }
 
+/** Whether the owner has granted this account admin. False if the table is missing. */
+async function hasAdminGrant(db: D1Database | undefined, userId: string): Promise<boolean> {
+  if (!db) return false;
+  try {
+    const row = await db.prepare(`SELECT 1 AS ok FROM admin_grants WHERE user_id = ?`).bind(userId).first<any>();
+    return !!row;
+  } catch {
+    return false;
+  }
+}
+
 /** Helper: get user from context, or null (route returns 401). */
 export function requireUser(c: Context<AppContext>): AuthUser | null {
   return c.get("user") ?? null;
@@ -87,7 +120,7 @@ export function requireUser(c: Context<AppContext>): AuthUser | null {
 /** Helper: get user only if they hold the admin role. */
 export function requireAdmin(c: Context<AppContext>): AuthUser | null {
   const user = c.get("user");
-  if (!user || user.role !== "admin") return null;
+  if (!user || !c.get("admin")?.isAdmin) return null;
   return user;
 }
 

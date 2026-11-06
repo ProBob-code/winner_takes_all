@@ -45,8 +45,11 @@ export function GoogleButton({
   mode,
   onSignedIn,
   onError,
+  divider = true,
 }: {
   mode: "login" | "signup";
+  /** The "or with email" rule under the button. Off where Google is the only way in. */
+  divider?: boolean;
   onSignedIn: () => void;
   onError: (message: string) => void;
 }) {
@@ -123,11 +126,13 @@ export function GoogleButton({
         aria-busy={busy}
         style={{ width: "100%", minHeight: 44, display: "flex", justifyContent: "center", opacity: busy ? 0.5 : 1 }}
       />
-      <div className="muted" style={{ display: "flex", alignItems: "center", gap: "0.75rem", fontSize: "0.75rem", fontWeight: 700, letterSpacing: "1px" }}>
-        <span style={{ flex: 1, height: 1, background: "var(--line, rgba(255,255,255,0.12))" }} />
-        OR WITH EMAIL
-        <span style={{ flex: 1, height: 1, background: "var(--line, rgba(255,255,255,0.12))" }} />
-      </div>
+      {divider && (
+        <div className="muted" style={{ display: "flex", alignItems: "center", gap: "0.75rem", fontSize: "0.75rem", fontWeight: 700, letterSpacing: "1px" }}>
+          <span style={{ flex: 1, height: 1, background: "var(--line, rgba(255,255,255,0.12))" }} />
+          OR WITH EMAIL
+          <span style={{ flex: 1, height: 1, background: "var(--line, rgba(255,255,255,0.12))" }} />
+        </div>
+      )}
     </div>
   );
 }

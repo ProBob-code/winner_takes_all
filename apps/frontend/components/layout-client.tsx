@@ -9,6 +9,7 @@ import { NetworkBadge } from "@/components/network-badge";
 import { SplashScreen } from "@/components/splash-screen";
 import { CoinToast } from "@/components/coin-toast";
 import { ApiActivity } from "@/components/api-activity";
+import { AdsLoader } from "@/components/ads";
 import Link from "next/link";
 import { getApiUrl } from "@/lib/api-config";
 
@@ -67,6 +68,7 @@ export function LayoutClient({ children }: { children: React.ReactNode }) {
   return (
     <div className="app-container">
       <ApiActivity />
+      <AdsLoader />
       {/* First thing a keyboard reaches: past the sidebar's links to the page itself. */}
       <a href="#content" className="skip-link">Skip to content</a>
       <Sidebar user={user} />

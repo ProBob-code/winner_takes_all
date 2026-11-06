@@ -9,9 +9,44 @@ import { createSessionToken } from "./crypto";
 const ACCESS_TTL = 15 * 60; // seconds
 const REFRESH_TTL = 7 * 24 * 60 * 60; // seconds
 
+/**
+ * How a session was signed in. The admin console accepts only "google": its
+ * owner is named by a Google account, and a password can be guessed or reset
+ * where a Google sign-in cannot. Sessions from before this field existed read
+ * as "password", so an admin has to sign in with Google once more.
+ */
+export type SessionVia = "google" | "password";
+
 interface SessionData {
   userId: string;
   createdAt: string;
+  via?: SessionVia;
+}
+
+export interface SessionInfo {
+  userId: string;
+  via: SessionVia;
+}
+
+function readSession(raw: string | null): SessionInfo | null {
+  if (!raw) return null;
+  try {
+    const data: SessionData = JSON.parse(raw);
+    if (!data?.userId) return null;
+    return { userId: data.userId, via: data.via === "google" ? "google" : "password" };
+  } catch {
+    return null;
+  }
+}
+
+/** Look up an access token, with how its session was signed in. */
+export async function getAccessSessionInfo(kv: KVNamespace, token: string): Promise<SessionInfo | null> {
+  return readSession(await kv.get(`access:${token}`));
+}
+
+/** Look up a refresh token, with how its session was signed in. */
+export async function getRefreshSessionInfo(kv: KVNamespace, token: string): Promise<SessionInfo | null> {
+  return readSession(await kv.get(`refresh:${token}`));
 }
 
 export interface SessionTokens {
@@ -22,13 +57,14 @@ export interface SessionTokens {
 /** Create access + refresh session tokens and store them in KV. */
 export async function createSessionTokens(
   kv: KVNamespace,
-  userId: string
+  userId: string,
+  via: SessionVia = "password"
 ): Promise<SessionTokens> {
   const accessToken = createSessionToken();
   const refreshToken = createSessionToken();
   const now = new Date().toISOString();
 
-  const data: SessionData = { userId, createdAt: now };
+  const data: SessionData = { userId, createdAt: now, via };
 
   await Promise.all([
     kv.put(`access:${accessToken}`, JSON.stringify(data), {
@@ -96,9 +132,13 @@ export async function deleteAccessSession(
  * leave all but one holding a revoked token. One KV write per user per
  * ACCESS_TTL, at most a few when requests race.
  */
-export async function createAccessSession(kv: KVNamespace, userId: string): Promise<string> {
+export async function createAccessSession(
+  kv: KVNamespace,
+  userId: string,
+  via: SessionVia = "password"
+): Promise<string> {
   const accessToken = createSessionToken();
-  const data: SessionData = { userId, createdAt: new Date().toISOString() };
+  const data: SessionData = { userId, createdAt: new Date().toISOString(), via };
   await kv.put(`access:${accessToken}`, JSON.stringify(data), { expirationTtl: ACCESS_TTL });
   return accessToken;
 }

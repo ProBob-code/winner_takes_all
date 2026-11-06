@@ -370,6 +370,53 @@ const CREATE_STATEMENTS = [
     PRIMARY KEY (match_id, team_id)
   )`,
   `CREATE INDEX IF NOT EXISTS idx_match_checkins_user ON match_checkins(user_id, checked_in_at)`,
+
+  // ── The admin console ── See lib/admin-access.ts.
+  // Admin granted by the owner. Only the owner writes or deletes a row; a
+  // users.role of 'admin' without one counts for nothing.
+  `CREATE TABLE IF NOT EXISTS admin_grants (
+    user_id TEXT PRIMARY KEY,
+    granted_by TEXT NOT NULL,
+    note TEXT,
+    granted_at TEXT NOT NULL
+  )`,
+  // Every change made from the console, so the owner can see who did what.
+  `CREATE TABLE IF NOT EXISTS admin_audit (
+    id TEXT PRIMARY KEY,
+    actor_id TEXT NOT NULL,
+    actor_email TEXT,
+    action TEXT NOT NULL,
+    target TEXT,
+    detail TEXT,
+    created_at TEXT NOT NULL
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_admin_audit_time ON admin_audit(created_at DESC)`,
+  // One row per sign-in (password, Google or signup), for the login charts.
+  `CREATE TABLE IF NOT EXISTS login_events (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    method TEXT NOT NULL,
+    created_at TEXT NOT NULL
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_login_events_time ON login_events(created_at)`,
+  `CREATE INDEX IF NOT EXISTS idx_login_events_user ON login_events(user_id, created_at)`,
+  // Small key/value settings the console edits (the AdSense setup).
+  `CREATE TABLE IF NOT EXISTS platform_settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL,
+    updated_by TEXT,
+    updated_at TEXT NOT NULL
+  )`,
+  // AdSense earnings, a row per month, entered from the AdSense report.
+  `CREATE TABLE IF NOT EXISTS adsense_earnings (
+    month TEXT PRIMARY KEY,
+    amount_cents INTEGER NOT NULL DEFAULT 0,
+    impressions INTEGER NOT NULL DEFAULT 0,
+    clicks INTEGER NOT NULL DEFAULT 0,
+    page_views INTEGER NOT NULL DEFAULT 0,
+    note TEXT,
+    updated_at TEXT NOT NULL
+  )`,
 ];
 
 /**

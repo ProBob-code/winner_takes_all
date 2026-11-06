@@ -2,6 +2,8 @@
 
 import type { D1Store } from "./lib/d1-store";
 import type { AuthUser } from "./middleware/auth";
+import type { SessionVia } from "./lib/kv-sessions";
+import type { AdminDecision } from "./lib/admin-access";
 
 export interface Env {
   // D1 Database
@@ -73,12 +75,23 @@ export interface Env {
   REALTIME_API_BASE?: string;
   /** Origin used to build the scannable broadcast URL. */
   PUBLIC_APP_ORIGIN?: string;
+  /**
+   * The one admin console owner: a Google account's email. A secret
+   * (`wrangler secret put ADMIN_OWNER_EMAIL`) rather than a [vars] entry so the
+   * address stays out of git. Unset, nobody owns the console. See
+   * lib/admin-access.ts.
+   */
+  ADMIN_OWNER_EMAIL?: string;
 }
 
 /** Hono context variables shared across middleware and routes. */
 export interface AppVariables {
   store: D1Store;
   user?: AuthUser;
+  /** How this request's session was signed in. */
+  authVia?: SessionVia;
+  /** The admin decision for the signed-in user. */
+  admin?: AdminDecision;
 }
 
 export type AppContext = { Bindings: Env; Variables: AppVariables };
