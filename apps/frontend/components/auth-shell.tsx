@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { Mascot, type MascotPose } from "@/components/mascot";
 
 /**
  * The frame around the login and signup forms.
@@ -64,7 +65,9 @@ export function AuthShell({
   switchText,
   switchHref,
   switchLabel,
+  mascot = "flat-pool",
 }: {
+  mascot?: MascotPose;
   children: ReactNode;
   kicker: string;
   headline: ReactNode;
@@ -79,7 +82,10 @@ export function AuthShell({
           <div className="auth-kicker">{kicker}</div>
           <h1 className="auth-headline">{headline}</h1>
 
-          <SampleFinal />
+          <div className="auth-headrow">
+            <SampleFinal />
+            <div className="auth-tiger"><Mascot pose={mascot} size={150} /></div>
+          </div>
 
           <ul className="auth-sports" aria-label="Sports on WTA">
             {SPORTS.map((s) => (
@@ -104,7 +110,7 @@ export function AuthShell({
 
         <div className="auth-form-col">
           <div className="auth-card-wrap">
-            <div className="auth-emblem" aria-hidden>👑</div>
+            <div className="auth-emblem" aria-hidden><Mascot pose="logo" size={60} /></div>
             <section className="panel auth-card">{children}</section>
           </div>
           <p className="auth-switch">
@@ -146,6 +152,10 @@ export function AuthShell({
           font-weight: 900; line-height: 0.98; letter-spacing: -1px;
           margin: 0 0 1.5rem;
         }
+        .auth-headrow { display: flex; align-items: flex-end; gap: 0.75rem; }
+        .auth-headrow .auth-final { flex: 1; min-width: 0; }
+        .auth-tiger { flex: none; width: 150px; margin-bottom: 1.25rem; }
+        .auth-emblem .wta-mascot { width: 100% !important; height: 100%; border-radius: 50%; object-fit: cover; }
         .auth-headline .auth-accent { display: block; color: var(--accent, var(--gold)); }
 
         /* The sample final: a scorecard, tilted a touch like a card on a table. */
@@ -215,9 +225,9 @@ export function AuthShell({
         .auth-card-wrap { position: relative; padding-top: 26px; }
         .auth-emblem {
           position: absolute; top: 0; left: 50%; transform: translateX(-50%); z-index: 2;
-          width: 54px; height: 54px; border-radius: 50%;
-          display: grid; place-items: center; font-size: 1.6rem;
-          background: var(--bg-card, #16161c);
+          width: 64px; height: 64px; border-radius: 50%; overflow: hidden;
+          display: grid; place-items: center;
+          background: #0b0306;
           border: 2px solid var(--accent, #f5c518);
           box-shadow: 0 6px 20px color-mix(in oklab, var(--accent, #f5c518) 30%, transparent);
         }
@@ -230,7 +240,7 @@ export function AuthShell({
           .auth-grid { grid-template-columns: minmax(0, 1fr); max-width: 460px; gap: 2rem; padding-top: 1rem; }
           .auth-form-col { order: 1; }
           .auth-pitch { order: 2; }
-          .auth-kicker, .auth-headline { display: none; }
+          .auth-kicker, .auth-headline, .auth-tiger { display: none; }
           .auth-final { margin: 0 auto 1.25rem; transform: none; }
           .auth-sports { justify-content: center; }
           .auth-card { padding: 2.4rem 1.25rem 1.75rem; }

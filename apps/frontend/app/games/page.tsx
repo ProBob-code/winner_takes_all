@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { OfflineTracker } from "@/components/offline-tracker";
+import { Mascot, MascotBanner } from "@/components/mascot";
 
 export default function GamesPage() {
   const [activeTab, setActiveTab] = useState<"arena" | "offline">("arena");
@@ -31,11 +32,16 @@ export default function GamesPage() {
           </div>
         </div>
 
+        <MascotBanner pose="gamer" tone="violet" title="Warm up here. Then come find me.">
+          Beat the AI, beat your mates, bank the coins. Every win in the Vault pays.
+        </MascotBanner>
+
         {activeTab === "arena" ? (
           <div className="tournament-grid slide-in">
             <Link href="/play/8ball" className="premium-card">
               <div className="card-glass"></div>
               <div className="card-content">
+                <div className="mascot-card-art"><Mascot pose="hustler" size={320} /></div>
                 <div className="card-header">
                   <span className="status-badge OPEN">ONLINE</span>
                   <span className="player-count">SKILL GAME</span>
@@ -59,6 +65,7 @@ export default function GamesPage() {
             <Link href="/play/imposter" className="premium-card">
               <div className="card-glass"></div>
               <div className="card-content">
+                <div className="mascot-card-art"><Mascot pose="imposter" size={320} /></div>
                 <div className="card-header">
                   <span className="status-badge PARTY">NEW · PARTY</span>
                   <span className="player-count">SOCIAL DEDUCTION</span>

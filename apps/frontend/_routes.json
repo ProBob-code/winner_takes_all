@@ -13,6 +13,7 @@
     "/goat/*",
     "/8ball/*",
     "/imposter/*",
+    "/mascot/*",
     "/sounds/*"
   ]
 }

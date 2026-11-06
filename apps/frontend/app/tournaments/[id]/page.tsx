@@ -1,4 +1,5 @@
 "use client";
+import { Mascot } from "@/components/mascot";
 import { sportInfo } from "@/lib/sports";
 import { RALLY_RULES } from "@/lib/local-score";
 import { useEffect, useState, useCallback, useRef } from "react";
@@ -315,6 +316,11 @@ export default function TournamentDetailPage() {
                 background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.22)",
               }}
             >
+              {result && (
+                <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "0.6rem" }}>
+                  <Mascot pose="champion" size={120} label="The WTA Tiger holding the trophy for the winner" />
+                </div>
+              )}
               <div style={{ fontSize: "0.62rem", letterSpacing: "1.5px", opacity: 0.7, fontWeight: 800 }}>
                 {result ? (result.splitWays > 1 ? "SHARED BY" : "WON BY") : "WINNER TAKES"}
               </div>

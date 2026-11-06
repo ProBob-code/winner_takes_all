@@ -9,6 +9,7 @@ import { AuthShell } from "@/components/auth-shell";
 export default function SignupPage() {
   return (
     <AuthShell
+      mascot="flat-trophy"
       kicker="FREE TO PLAY, ALWAYS"
       headline={<>Play the fight.<span className="auth-accent">Take the crown.</span></>}
       switchText="Already have an account?"

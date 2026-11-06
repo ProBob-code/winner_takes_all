@@ -2,6 +2,7 @@
 
 export const dynamic = "force-dynamic";
 
+import { MascotBanner } from "@/components/mascot";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getApiUrl } from "@/lib/api-config";
@@ -138,6 +139,10 @@ export default function LeaderboardPage() {
             </div>
           </div>
         </div>
+
+        <MascotBanner pose="athlete" title="Every sport. One crown. Climb it.">
+          Pool, football, tennis, badminton, pickleball and table tennis all feed the same ladder. Win to climb, lose and you slide.
+        </MascotBanner>
 
         {/* Trophies first: the ladder a win climbs and a loss falls down. The
             points table below is the all-time record. */}

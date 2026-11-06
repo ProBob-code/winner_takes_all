@@ -1,7 +1,7 @@
 "use client";
 
-
 import { useEffect } from "react";
+import { Mascot } from "@/components/mascot";
 
 export default function Error({
   error,
@@ -15,11 +15,10 @@ export default function Error({
   }, [error]);
 
   return (
-    <main className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
-      <h1 className="text-4xl font-bold mb-4">Something went wrong!</h1>
-      <p className="text-muted-foreground mb-8">
-        We encountered an error while processing your request.
-      </p>
+    <main className="page mascot-deadend">
+      <Mascot pose="sulk" size={320} label="The WTA Tiger sulking under a rain cloud" />
+      <h1>That one went in off.</h1>
+      <p>Something broke on our side while loading this page. Give it another go.</p>
       <button onClick={() => reset()} className="button">
         Try again
       </button>

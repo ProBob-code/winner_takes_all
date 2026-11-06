@@ -1,5 +1,6 @@
 "use client";
 
+import { Mascot } from "@/components/mascot";
 import React, { useEffect, useRef } from "react";
 import Link from "next/link";
 import { HOME_FAQ } from "@/lib/home-faq";
@@ -319,6 +320,23 @@ export function LandingPage() {
                     <div style={{ background: "linear-gradient(135deg, var(--gold), var(--team-blue))", width: "60px", height: "60px", borderRadius: "16px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.5rem", marginBottom: "2rem", boxShadow: "0 0 20px rgba(16, 185, 129, 0.4)" }}>🏆</div>
                     <h3 style={{ fontSize: "1.5rem", marginBottom: "1rem" }}>Show the room</h3>
                     <p className="landing-dim" style={{ lineHeight: 1.6 }}>The table updates on any spare screen as frames finish, and the whole fight goes to the group chat in one tap.</p>
+                </div>
+            </div>
+        </section>
+
+        <section className="section reveal mascot-meet" style={{ marginTop: "120px" }}>
+            <div className="mascot-meet-hero">
+                <Mascot pose="flat-trophy" size={300} label="The WTA Tiger with a trophy and gear from every sport" />
+            </div>
+            <div className="mascot-meet-copy">
+                <span className="mascot-banner-kicker">MEET THE WTA TIGER</span>
+                <h2>Cocky. Crowned. Never loses gracefully.</h2>
+                <p className="landing-dim">He turns up at every fight: holding the trophy when you win, roaring at a combo, sulking under a rain cloud when you don&apos;t.</p>
+                <div className="mascot-meet-strip">
+                    <Mascot pose="champion" size={160} />
+                    <Mascot pose="hustler" size={160} />
+                    <Mascot pose="roar" size={160} />
+                    <Mascot pose="coin-king" size={160} />
                 </div>
             </div>
         </section>

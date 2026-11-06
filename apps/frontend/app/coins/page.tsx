@@ -19,6 +19,7 @@ export const dynamic = "force-dynamic";
  * feel real is being able to see exactly where every coin came from.
  */
 
+import { MascotBanner } from "@/components/mascot";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -158,6 +159,10 @@ export default function CoinsPage() {
             </div>
           </div>
         </header>
+
+        <MascotBanner pose="coin-king" title="Turn up. Play. Stack the coins.">
+          Every frame earns, win or lose. Win the whole fight and it rains. Spend them in the shop on frames, emotes and gear.
+        </MascotBanner>
 
         {/* The sentence the whole design turns on. First, not in a footnote. */}
         <div

@@ -24,6 +24,7 @@ export const dynamic = "force-dynamic";
  * itself.
  */
 
+import { Mascot, MascotBanner } from "@/components/mascot";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -127,6 +128,9 @@ export default function DashboardPage() {
       <main className="page">
         <div className="shell">
           <section className="panel" style={{ padding: "var(--space-7)", textAlign: "center" }}>
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: "var(--space-4)" }}>
+              <Mascot pose="flat-pool" size={150} />
+            </div>
             <h1 style={{ fontSize: "var(--text-3xl)", fontWeight: 900 }}>Enter the arena</h1>
             <p className="muted" style={{ margin: "var(--space-3) 0 var(--space-6)" }}>
               {error ?? "Sign in to see your coins and your fights."}
@@ -216,6 +220,20 @@ export default function DashboardPage() {
             </div>
           )}
         </section>
+
+        {coins && coins.earnedToday > 0 ? (
+          <MascotBanner pose="roar" title="That's how it's done.">
+            {formatCoins(coins.earnedToday)} coins today already. Keep the run going.
+          </MascotBanner>
+        ) : (
+          <MascotBanner
+            pose="champion"
+            title="Nothing played today? Fix that."
+            action={<Link href="/games" className="button" style={{ textDecoration: "none" }}>Play a game</Link>}
+          >
+            A quick game in the Vault pays coins. A fight at a venue pays far more.
+          </MascotBanner>
+        )}
 
         {/* Results still locking, and how today's games were proven. */}
         <div style={{ marginTop: "var(--space-5)" }}>

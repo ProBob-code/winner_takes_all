@@ -9,6 +9,7 @@
  * your Collection Level.
  */
 
+import { MascotBanner } from "@/components/mascot";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { backendFetch } from "@/lib/backend";
@@ -216,6 +217,10 @@ export default function ShopPage() {
             </div>
           )}
         </header>
+
+        <MascotBanner pose="taunt" title="Too easy. Now make them jealous.">
+          Frames, emotes and artifacts for your card. Everything you buy raises your Collection Level.
+        </MascotBanner>
 
         {failed && <p className="muted">Could not load the shop. Try again in a moment.</p>}
         {!data && !failed && <SkeletonCards cards={8} min={200} />}
