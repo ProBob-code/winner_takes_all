@@ -178,6 +178,8 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
   gap: var(--space-5, 1.25rem);
+  /* Cards keep their own height; stretched to a neighbour they were mostly air. */
+  align-items: start;
 }
 
 .pp-card {
@@ -1062,3 +1064,177 @@
 }
 .proof-locate > span { flex: 1 1 auto; min-width: 0; }
 .proof-code-locate { justify-content: center; text-align: left; }
+
+
+/* ── Record: a win-rate ring, sport chips and six tiles ── */
+
+.pp-record-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1.1rem;
+}
+
+.pp-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.pp-chip {
+  font: inherit;
+  font-size: var(--text-xs, 0.75rem);
+  font-weight: 800;
+  padding: 0.35rem 0.8rem;
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-inset);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+button.pp-chip:hover { border-color: var(--gold); color: var(--text-primary); }
+.pp-chip.on {
+  background: var(--gold-light);
+  border-color: var(--gold-light);
+  color: #16150f;
+}
+.pp-chip.ghost { cursor: default; border-style: dashed; color: var(--text-muted); background: transparent; }
+
+.pp-record-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.25rem;
+  align-items: center;
+}
+
+@media (min-width: 640px) {
+  .pp-record-body { grid-template-columns: 12rem minmax(0, 1fr); gap: 1.75rem; }
+}
+
+.pp-ring-wrap {
+  display: grid;
+  justify-items: center;
+  gap: 0.55rem;
+}
+
+.pp-ring-box {
+  position: relative;
+  width: 9.5rem;
+  height: 9.5rem;
+}
+
+.pp-ring { width: 100%; height: 100%; display: block; }
+.pp-ring-track { fill: none; stroke: var(--bg-inset); stroke-width: 12; }
+.pp-ring-fill {
+  fill: none;
+  stroke: var(--gold-light);
+  stroke-width: 12;
+  stroke-linecap: round;
+  transition: stroke-dasharray 0.45s ease;
+}
+
+.pp-ring-centre {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  text-align: center;
+}
+.pp-ring-centre strong { font-size: 2rem; font-weight: 900; line-height: 1; font-variant-numeric: tabular-nums; }
+.pp-ring-centre span { font-size: var(--text-xs, 0.75rem); color: var(--text-muted); font-weight: 700; margin-top: 0.2rem; }
+
+.pp-wl { display: flex; gap: 1rem; font-size: var(--text-sm, 0.875rem); color: var(--text-muted); }
+.pp-wl b { font-weight: 900; font-variant-numeric: tabular-nums; }
+.pp-wl b.w { color: #22c55e; }
+.pp-wl b.l { color: var(--wta-red, #ef4444); }
+.pp-ring-note { font-size: var(--text-xs, 0.75rem); color: var(--text-muted); }
+
+.pp-tiles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+@media (min-width: 900px) {
+  .pp-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+.pp-tile {
+  position: relative;
+  display: grid;
+  gap: 0.15rem;
+  align-content: start;
+  padding: 0.85rem 0.9rem;
+  border-radius: 0.8rem;
+  background: var(--bg-inset);
+  border: 1px solid var(--border-color);
+  min-width: 0;
+}
+
+.pp-tile-icon {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.6rem;
+  display: grid;
+  place-items: center;
+  font-size: 1.05rem;
+  margin-bottom: 0.35rem;
+  background: color-mix(in oklab, var(--gold-light) 16%, transparent);
+}
+
+.pp-tile strong {
+  font-size: 1.45rem;
+  font-weight: 900;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.pp-tile strong.word { font-size: 1.05rem; line-height: 1.25; padding-top: 0.2rem; }
+.pp-tile .pp-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.pp-tile.zero strong { color: var(--text-muted); }
+.pp-tile.zero .pp-tile-icon { filter: grayscale(1); opacity: 0.6; }
+.pp-tile-hint { font-size: 0.7rem; color: var(--text-muted); line-height: 1.3; margin-top: 0.15rem; }
+
+/* ── Trophy tracks ── */
+
+.pp-track { align-items: center; }
+.pp-track-main { display: flex; align-items: center; gap: 0.65rem; min-width: 0; flex: 1; }
+.pp-row > .pp-track-main { color: inherit; }
+.pp-track-name { display: block; color: var(--text-primary); font-weight: 800; }
+.pp-track-sub { display: block; font-size: var(--text-xs, 0.75rem); color: var(--text-muted); }
+.pp-track-score { font-size: 1.1rem; font-weight: 900; font-variant-numeric: tabular-nums; }
+
+.pp-split {
+  display: block;
+  height: 5px;
+  margin-top: 0.4rem;
+  border-radius: 999px;
+  overflow: hidden;
+  background: color-mix(in oklab, var(--wta-red, #ef4444) 55%, transparent);
+}
+.pp-split > span { display: block; height: 100%; background: #22c55e; }
+
+.pp-unplayed { display: grid; gap: 0.5rem; margin-top: 1rem; }
+
+/* ── Empty showcase slots ── */
+
+.pp-slots { flex-wrap: nowrap; }
+.pp-slot {
+  flex: 1;
+  aspect-ratio: 1;
+  max-width: 6.5rem;
+  display: grid;
+  place-items: center;
+  border-radius: 0.8rem;
+  border: 2px dashed var(--border-color);
+  color: var(--text-muted);
+  font-size: 1.6rem;
+  font-weight: 300;
+  text-decoration: none;
+}
+.pp-slot:hover { border-color: var(--gold); color: var(--gold); }
